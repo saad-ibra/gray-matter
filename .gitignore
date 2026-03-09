@@ -1,0 +1,34 @@
+# Android/Common
+build/
+.gradle/
+local.properties
+*.apk
+*.aar
+*.jar
+.kotlin/
+
+# iOS
+iosApp/iosApp.xcodeproj/project.xcworkspace/
+iosApp/iosApp.xcodeproj/xcuserdata/
+DerivedData/
+*.moved-aside
+*.xcuserstate
+.DS_Store
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Project Specific
+jdk17.zip
+*.zip
+*.7z
+*.rar
+.gemini/
+*build/
+.gradle/
+.idea/
+.DS_Store
+*.swp
+*.log

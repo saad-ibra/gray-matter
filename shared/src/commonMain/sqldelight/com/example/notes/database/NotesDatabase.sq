@@ -1,0 +1,33 @@
+import kotlin.Int;
+
+CREATE TABLE savedNoteEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    createdAtTimestamp INTEGER NOT NULL,
+    isDeleted INTEGER NOT NULL DEFAULT 0
+);
+
+insertNote:
+INSERT OR REPLACE INTO savedNoteEntity(id,title,content,createdAtTimestamp,isDeleted)
+VALUES (?,?,?,?,?);
+
+markNoteAsDeleted:
+UPDATE savedNoteEntity SET isDeleted = 1 WHERE id == :id;
+
+markNoteAsNotDeleted:
+UPDATE savedNoteEntity SET isDeleted = 0 WHERE id == :id;
+
+getAllSavedNotes:
+SELECT *
+FROM savedNoteEntity
+WHERE savedNoteEntity.isDeleted == 0
+ORDER BY savedNoteEntity.createdAtTimestamp DESC;
+
+deleteNote:
+DELETE FROM savedNoteEntity WHERE id == :id;
+
+deleteAllNotesMarkedAsDeleted:
+DELETE FROM savedNoteEntity WHERE savedNoteEntity.isDeleted == 1;
+
+

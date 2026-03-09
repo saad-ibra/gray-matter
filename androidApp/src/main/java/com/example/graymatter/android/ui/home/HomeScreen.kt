@@ -1,0 +1,249 @@
+package com.example.graymatter.android.ui.home
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.graymatter.android.ui.theme.GrayMatterColors
+import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
+import com.example.graymatter.domain.ItemWithDetails
+import com.example.graymatter.domain.ResourceType
+
+/**
+ * Home Screen.
+ * Minimalist entry point with primary action and 4 most recent entries.
+ */
+@Composable
+fun HomeScreen(
+    viewModel: GrayMatterViewModel,
+    continueReadingItem: ItemWithDetails?,
+    continueReadingProgress: com.example.graymatter.domain.ReadingProgress?,
+    onCreateNewEntryClick: () -> Unit,
+    onNavigateToLibrary: () -> Unit,
+    onItemClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Collect the reactive stream of the 4 most recent items with details
+    val recentItems by viewModel.recentItemsDetails.collectAsState()
+    
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .background(GrayMatterColors.BackgroundDark)
+            .statusBarsPadding(),
+        contentPadding = PaddingValues(bottom = 32.dp)
+    ) {
+        // Minimal top margin
+        item {
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+        
+        // Main action - Centered "+" button (Moved up)
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                AddNewEntryCard(onClick = onCreateNewEntryClick)
+            }
+        }
+
+        // Removed Continue Reading Card from Home as requested
+
+        // Recently Added Section (Limited to 4)
+        if (recentItems.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Recent Resources",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
+                        ),
+                        color = GrayMatterColors.TextPrimary
+                    )
+                    
+                    Text(
+                        text = "VIEW LIBRARY",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = GrayMatterColors.Primary,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
+                        modifier = Modifier.clickable(onClick = onNavigateToLibrary)
+                    )
+                }
+            }
+
+            items(recentItems, key = { it.item.id }) { details ->
+                RecentItemCard(
+                    title = details.resource.title ?: "Untitled Resource",
+                    time = formatTime(details.item.firstOpinionAt),
+                    type = details.resource.type,
+                    onClick = { onItemClick(details.item.id) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentItemCard(
+    title: String, 
+    time: String, 
+    type: ResourceType,
+    onClick: () -> Unit
+) {
+    val icon = when (type) {
+        ResourceType.WEB_LINK -> Icons.Default.Language
+        ResourceType.MARKDOWN -> Icons.Default.EditNote
+        ResourceType.PDF -> Icons.Default.PictureAsPdf
+        ResourceType.IMAGE -> Icons.Default.Image
+        else -> Icons.Default.Description
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(GrayMatterColors.SurfaceDark)
+            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick)
+            .padding(20.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically, 
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(GrayMatterColors.BackgroundDark)
+                        .border(1.dp, GrayMatterColors.Neutral700, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon, 
+                        contentDescription = null, 
+                        tint = if (type == ResourceType.MARKDOWN) GrayMatterColors.Primary else GrayMatterColors.Neutral500, 
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title, 
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), 
+                        color = GrayMatterColors.TextPrimary, 
+                        maxLines = 1
+                    )
+                    Text(
+                        text = time, 
+                        style = MaterialTheme.typography.labelSmall, 
+                        color = GrayMatterColors.Neutral600
+                    )
+                }
+            }
+            Icon(Icons.Default.ChevronRight, null, tint = GrayMatterColors.Neutral700, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun AddNewEntryCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth(0.85f)
+            .aspectRatio(1.8f),
+        contentAlignment = Alignment.Center
+    ) {
+        // Ambient glow effect
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(30.dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            GrayMatterColors.Primary.copy(alpha = 0.15f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+        
+        // Glassmorphism card
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(28.dp))
+                .background(GrayMatterColors.SurfaceDark)
+                .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(28.dp))
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .background(GrayMatterColors.Neutral900, CircleShape)
+                    .border(1.dp, GrayMatterColors.Neutral700, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "New Resource",
+                    tint = GrayMatterColors.Primary,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+        }
+    }
+}
+
+private fun formatTime(timestamp: Long): String {
+    val diff = System.currentTimeMillis() - timestamp
+    val mins = diff / (1000 * 60)
+    val hours = mins / 60
+    
+    return when {
+        mins < 1 -> "just now"
+        mins < 60 -> "${mins}m ago"
+        hours < 24 -> "${hours}h ago"
+        else -> "more than a day ago"
+    }
+}

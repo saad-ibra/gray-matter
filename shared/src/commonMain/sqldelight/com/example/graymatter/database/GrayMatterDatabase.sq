@@ -1,0 +1,238 @@
+import kotlin.Int;
+
+-- Resource table: external references (web links, documents, images)
+CREATE TABLE resourceEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    type TEXT NOT NULL,
+    url TEXT,
+    filePath TEXT,
+    extractedText TEXT,
+    title TEXT,
+    createdAt INTEGER NOT NULL
+);
+
+-- Opinion table: user's understanding at specific moments
+CREATE TABLE opinionEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    itemId TEXT NOT NULL,
+    text TEXT NOT NULL,
+    confidenceScore INTEGER NOT NULL,
+    pageNumber INTEGER,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL,
+    FOREIGN KEY (itemId) REFERENCES itemEntity(id) ON DELETE CASCADE
+);
+
+-- Item table: binds one resource to multiple opinions
+CREATE TABLE itemEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    resourceId TEXT NOT NULL UNIQUE,
+    topicId TEXT,
+    description TEXT,
+    firstOpinionAt INTEGER NOT NULL,
+    lastOpinionAt INTEGER NOT NULL,
+    opinionCount INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (resourceId) REFERENCES resourceEntity(id) ON DELETE CASCADE,
+    FOREIGN KEY (topicId) REFERENCES topicEntity(id) ON DELETE SET NULL
+);
+
+-- Topic table: organizational groupings
+CREATE TABLE topicEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    notes TEXT,
+    classificationKeywords TEXT NOT NULL DEFAULT '',
+    resourceCount INTEGER NOT NULL DEFAULT 0,
+    updatedAt INTEGER NOT NULL
+);
+
+-- Resource queries
+insertResource:
+INSERT OR REPLACE INTO resourceEntity(id, type, url, filePath, extractedText, title, createdAt)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+getResourceById:
+SELECT * FROM resourceEntity WHERE id = ?;
+
+getAllResources:
+SELECT * FROM resourceEntity ORDER BY createdAt DESC;
+
+deleteResource:
+DELETE FROM resourceEntity WHERE id = ?;
+
+-- Opinion queries
+insertOpinion:
+INSERT OR REPLACE INTO opinionEntity(id, itemId, text, confidenceScore, pageNumber, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+getOpinionById:
+SELECT * FROM opinionEntity WHERE id = ?;
+
+getOpinionsByItemId:
+SELECT * FROM opinionEntity WHERE itemId = ? ORDER BY createdAt DESC;
+
+updateOpinion:
+UPDATE opinionEntity SET text = ?, confidenceScore = ?, pageNumber = ?, updatedAt = ? WHERE id = ?;
+
+deleteOpinion:
+DELETE FROM opinionEntity WHERE id = ?;
+
+-- Item queries
+insertItem:
+INSERT OR REPLACE INTO itemEntity(id, resourceId, topicId, description, firstOpinionAt, lastOpinionAt, opinionCount)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+getItemById:
+SELECT * FROM itemEntity WHERE id = ?;
+
+getItemByResourceId:
+SELECT * FROM itemEntity WHERE resourceId = ?;
+
+getAllItems:
+SELECT * FROM itemEntity ORDER BY lastOpinionAt DESC;
+
+getItemsByTopicId:
+SELECT * FROM itemEntity WHERE topicId = ? ORDER BY lastOpinionAt DESC;
+
+updateItemTopic:
+UPDATE itemEntity SET topicId = ? WHERE id = ?;
+
+updateItemDescription:
+UPDATE itemEntity SET description = ? WHERE id = ?;
+
+updateItemOpinionMetadata:
+UPDATE itemEntity SET lastOpinionAt = ?, opinionCount = opinionCount + 1 WHERE id = ?;
+
+deleteItem:
+DELETE FROM itemEntity WHERE id = ?;
+
+-- Topic queries
+insertTopic:
+INSERT OR REPLACE INTO topicEntity(id, name, notes, classificationKeywords, resourceCount, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?);
+
+getTopicById:
+SELECT * FROM topicEntity WHERE id = ?;
+
+getAllTopics:
+SELECT * FROM topicEntity ORDER BY updatedAt DESC;
+
+updateTopicNotes:
+UPDATE topicEntity SET notes = ?, updatedAt = ? WHERE id = ?;
+
+updateTopicResourceCount:
+UPDATE topicEntity SET resourceCount = ?, updatedAt = ? WHERE id = ?;
+
+incrementTopicResourceCount:
+UPDATE topicEntity SET resourceCount = resourceCount + 1, updatedAt = ? WHERE id = ?;
+
+decrementTopicResourceCount:
+UPDATE topicEntity SET resourceCount = resourceCount - 1, updatedAt = ? WHERE id = ?;
+
+deleteTopic:
+DELETE FROM topicEntity WHERE id = ?;
+
+-- Search queries
+searchOpinions:
+SELECT * FROM opinionEntity WHERE text LIKE '%' || :query || '%' ORDER BY createdAt DESC;
+
+searchResources:
+SELECT * FROM resourceEntity WHERE 
+    (title LIKE '%' || :query || '%') OR 
+    (url LIKE '%' || :query || '%') OR 
+    (extractedText LIKE '%' || :query || '%') 
+ORDER BY createdAt DESC;
+
+searchTopics:
+SELECT * FROM topicEntity WHERE 
+    (name LIKE '%' || :query || '%') OR 
+    (notes LIKE '%' || :query || '%')
+ORDER BY updatedAt DESC;
+
+-- Update resource title (for rename feature)
+updateResourceTitle:
+UPDATE resourceEntity SET title = ? WHERE id = ?;
+
+-- Reading Progress table: tracks reading position per resource
+CREATE TABLE readingProgressEntity (
+    resourceId TEXT NOT NULL PRIMARY KEY,
+    currentPage INTEGER NOT NULL DEFAULT 0,
+    totalPages INTEGER NOT NULL DEFAULT 1,
+    percentComplete REAL NOT NULL DEFAULT 0.0,
+    currentChapter TEXT,
+    lastOpenedAt INTEGER NOT NULL,
+    FOREIGN KEY (resourceId) REFERENCES resourceEntity(id) ON DELETE CASCADE
+);
+
+-- Reading Progress queries
+insertOrUpdateReadingProgress:
+INSERT OR REPLACE INTO readingProgressEntity(resourceId, currentPage, totalPages, percentComplete, currentChapter, lastOpenedAt)
+VALUES (?, ?, ?, ?, ?, ?);
+
+getReadingProgressByResourceId:
+SELECT * FROM readingProgressEntity WHERE resourceId = ?;
+
+getLastOpenedProgress:
+SELECT * FROM readingProgressEntity ORDER BY lastOpenedAt DESC LIMIT 1;
+
+getAllReadingProgress:
+SELECT * FROM readingProgressEntity ORDER BY lastOpenedAt DESC;
+
+deleteReadingProgress:
+DELETE FROM readingProgressEntity WHERE resourceId = ?;
+
+-- Bookmark table: saved positions within a document
+CREATE TABLE bookmarkEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    resourceId TEXT NOT NULL,
+    page INTEGER NOT NULL,
+    percentPosition REAL NOT NULL DEFAULT 0.0,
+    title TEXT,
+    opinion TEXT,
+    confidenceScore INTEGER,
+    createdAt INTEGER NOT NULL,
+    FOREIGN KEY (resourceId) REFERENCES resourceEntity(id) ON DELETE CASCADE
+);
+
+-- Bookmark queries
+insertBookmark:
+INSERT OR REPLACE INTO bookmarkEntity(id, resourceId, page, percentPosition, title, opinion, confidenceScore, createdAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+getBookmarksByResourceId:
+SELECT * FROM bookmarkEntity WHERE resourceId = ? ORDER BY page ASC;
+
+getBookmarkById:
+SELECT * FROM bookmarkEntity WHERE id = ?;
+
+deleteBookmark:
+DELETE FROM bookmarkEntity WHERE id = ?;
+
+deleteBookmarksByResourceId:
+DELETE FROM bookmarkEntity WHERE resourceId = ?;
+
+-- Reading Settings table: per-document display preferences
+CREATE TABLE readingSettingsEntity (
+    resourceId TEXT NOT NULL PRIMARY KEY,
+    fontSize INTEGER NOT NULL DEFAULT 16,
+    typeface TEXT NOT NULL DEFAULT 'system',
+    lineSpacing REAL NOT NULL DEFAULT 1.5,
+    margins INTEGER NOT NULL DEFAULT 16,
+    theme TEXT NOT NULL DEFAULT 'day',
+    scrollMode TEXT NOT NULL DEFAULT 'paged',
+    brightness REAL NOT NULL DEFAULT -1.0,
+    keepScreenOn INTEGER NOT NULL DEFAULT 0,
+    textReflow INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (resourceId) REFERENCES resourceEntity(id) ON DELETE CASCADE
+);
+
+-- Reading Settings queries
+insertOrUpdateReadingSettings:
+INSERT OR REPLACE INTO readingSettingsEntity(resourceId, fontSize, typeface, lineSpacing, margins, theme, scrollMode, brightness, keepScreenOn, textReflow)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getReadingSettingsByResourceId:
+SELECT * FROM readingSettingsEntity WHERE resourceId = ?;
+
+deleteReadingSettings:
+DELETE FROM readingSettingsEntity WHERE resourceId = ?;

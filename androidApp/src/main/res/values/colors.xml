@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gray Matter color palette -->
+    <color name="background_dark">#0A0A0A</color>
+    <color name="background_light">#F6F7F8</color>
+    <color name="surface_dark">#161616</color>
+    <color name="surface_input">#18181B</color>
+    <color name="surface_border">#27272A</color>
+    
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#A1A1AA</color>
+    <color name="neutral_500">#71717A</color>
+    <color name="neutral_600">#52525B</color>
+    <color name="neutral_700">#3F3F46</color>
+    <color name="neutral_800">#27272A</color>
+</resources>
