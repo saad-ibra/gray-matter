@@ -306,6 +306,7 @@ fun PdfViewerContent(
                                 bitmapSize = IntSize(b.width, b.height),
                                 density = density,
                                 autoCropRect = cropCache[currentPage],
+                                cropPadding = if (autoCrop) (16 * density).toInt() else 0,
                                 onActionCompleted = { action, text ->
                                     if (text != null) {
                                         onTextSelectionAction(action, text)

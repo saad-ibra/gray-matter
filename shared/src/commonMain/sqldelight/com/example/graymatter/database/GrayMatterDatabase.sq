@@ -69,7 +69,7 @@ getOpinionById:
 SELECT * FROM opinionEntity WHERE id = ?;
 
 getOpinionsByItemId:
-SELECT * FROM opinionEntity WHERE itemId = ? ORDER BY createdAt DESC;
+SELECT * FROM opinionEntity WHERE itemId = ? ORDER BY createdAt ASC;
 
 updateOpinion:
 UPDATE opinionEntity SET text = ?, confidenceScore = ?, pageNumber = ?, updatedAt = ? WHERE id = ?;
@@ -134,7 +134,7 @@ DELETE FROM topicEntity WHERE id = ?;
 
 -- Search queries
 searchOpinions:
-SELECT * FROM opinionEntity WHERE text LIKE '%' || :query || '%' ORDER BY createdAt DESC;
+SELECT * FROM opinionEntity WHERE text LIKE '%' || :query || '%' ORDER BY createdAt ASC;
 
 searchResources:
 SELECT * FROM resourceEntity WHERE 

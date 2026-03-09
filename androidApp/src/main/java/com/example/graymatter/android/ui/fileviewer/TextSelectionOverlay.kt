@@ -31,6 +31,7 @@ fun TextSelectionOverlay(
     bitmapSize: IntSize,
     density: Float,
     autoCropRect: android.graphics.Rect?,
+    cropPadding: Int,
     onActionCompleted: (action: String, selectedText: String?) -> Unit
 ) {
     var dragStart by remember { mutableStateOf<Offset?>(null) }
@@ -50,19 +51,25 @@ fun TextSelectionOverlay(
     val offsetX = (imageSize.width - scaledBmpWidth) / 2f
     val offsetY = (imageSize.height - scaledBmpHeight) / 2f
 
+    // The scale used when initially rendering the PDF to a bitmap
+    val baseRenderScale = density * 1.5f
+
     // Mapping a point from screen to PDF coordinates
     fun screenToPdf(screenOffset: Offset): Offset {
+        // 1. Remove the ContentScale.Fit scale and center offset
         val xInBmp = (screenOffset.x - offsetX) / scale
         val yInBmp = (screenOffset.y - offsetY) / scale
 
-        val uncroppedX = xInBmp + (autoCropRect?.left ?: 0)
-        val uncroppedY = yInBmp + (autoCropRect?.top ?: 0)
+        // 2. Add back the crop rect origin offset, applying the padding shift
+        val cropLeft = autoCropRect?.left ?: 0
+        val cropTop = autoCropRect?.top ?: 0
+        val uncroppedX = xInBmp + cropLeft - (if (autoCropRect != null) cropPadding else 0)
+        val uncroppedY = yInBmp + cropTop - (if (autoCropRect != null) cropPadding else 0)
 
-        // b.width and b.height are density * 1.5f scaled.
-        val baseScale = density * 1.5f
+        // 3. Reverse the initial rendering scale to get raw PDF points (1/72 inch)
         return Offset(
-            x = uncroppedX / baseScale,
-            y = uncroppedY / baseScale
+            x = uncroppedX / baseRenderScale,
+            y = uncroppedY / baseRenderScale
         )
     }
 
@@ -133,16 +140,20 @@ fun TextSelectionOverlay(
         Canvas(modifier = Modifier.fillMaxSize()) {
             val hColor = Color(0x66007AFF) // Semi-transparent blue
             for (char in selectedCharacters.value) {
-                // PDF -> uncropped -> cropped -> screen
-                val baseScale = density * 1.5f
-                val uncroppedX = char.x * baseScale
-                val uncroppedY = char.y * baseScale
-                val uncroppedW = char.width * baseScale
-                val uncroppedH = char.height * baseScale
+                // 1. Map raw PDF points to uncropped bitmap pixels
+                val baseRenderScale = density * 1.5f
+                val uncroppedX = char.x * baseRenderScale
+                val uncroppedY = char.y * baseRenderScale
+                val uncroppedW = char.width * baseRenderScale
+                val uncroppedH = char.height * baseRenderScale
 
-                val croppedX = uncroppedX - (autoCropRect?.left ?: 0)
-                val croppedY = uncroppedY - (autoCropRect?.top ?: 0)
+                // 2. Map uncropped pixels to cropped bitmap pixels (subtracting crop origin and adding padding)
+                val cropLeft = autoCropRect?.left ?: 0
+                val cropTop = autoCropRect?.top ?: 0
+                val croppedX = uncroppedX - cropLeft + (if (autoCropRect != null) cropPadding else 0)
+                val croppedY = uncroppedY - cropTop + (if (autoCropRect != null) cropPadding else 0)
 
+                // 3. Map cropped bitmap pixels to view screen pixels (apply ContentScale.Fit scale and center offset)
                 val screenX = croppedX * scale + offsetX
                 val screenY = croppedY * scale + offsetY
                 val screenW = uncroppedW * scale
