@@ -599,9 +599,9 @@ private fun OpinionTimelineItem(
                         val hasPageNumber = opinion.pageNumber != null
                         
                         val (title, icon, color) = when {
-                            isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, Color(0xFFFF9800))
-                            hasPageNumber -> Triple("BOOKMARK", Icons.Default.Bookmark, Color(0xFFFFD700))
-                            else -> Triple("OPINION", Icons.Default.QuestionAnswer, Color(0xFF4CAF50))
+                            isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.Gamboge)
+                            hasPageNumber -> Triple("BOOKMARK", Icons.Default.Bookmark, GrayMatterColors.Jonquil)
+                            else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.Success)
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -645,12 +645,12 @@ private fun OpinionTimelineItem(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
-                        .background(Color(0xFFFFD700).copy(alpha = 0.1f))
+                        .background(GrayMatterColors.Jonquil.copy(alpha = 0.1f))
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.Bookmark, null, tint = Color(0xFFFFD700), modifier = Modifier.size(10.dp))
-                        Text("PAGE ${opinion.pageNumber!! + 1}", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700), maxLines = 1, softWrap = false)
+                        Icon(if (isAnnotation) Icons.Default.FormatQuote else Icons.Default.Bookmark, null, tint = if (isAnnotation) GrayMatterColors.Gamboge else GrayMatterColors.Jonquil, modifier = Modifier.size(10.dp))
+                        Text("PAGE ${opinion.pageNumber!! + 1}", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = if (isAnnotation) GrayMatterColors.Gamboge else GrayMatterColors.Jonquil, maxLines = 1, softWrap = false)
                     }
                 }
             }
@@ -684,8 +684,8 @@ private fun OpinionTimelineItem(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFFFF9800).copy(alpha = 0.08f), RoundedCornerShape(12.dp))
-                            .border(0.5.dp, Color(0xFFFF9800).copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.Gamboge.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+                            .border(0.5.dp, GrayMatterColors.Gamboge.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -697,7 +697,7 @@ private fun OpinionTimelineItem(
                                 .background(Color.White.copy(alpha = 0.05f))
                         ) {
                             Row(modifier = Modifier.fillMaxWidth()) {
-                                Box(modifier = Modifier.width(4.dp).height(IntrinsicSize.Min).background(Color(0xFFFF9800))) // Orange accent
+                                Box(modifier = Modifier.width(4.dp).height(IntrinsicSize.Min).background(GrayMatterColors.Gamboge)) // Orange accent
                                 Text(
                                     text = "\"$quote\"",
                                     style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic, lineHeight = 24.sp),
@@ -722,8 +722,8 @@ private fun OpinionTimelineItem(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFFFFD700).copy(alpha = 0.08f), RoundedCornerShape(12.dp))
-                            .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.Jonquil.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+                            .border(0.5.dp, GrayMatterColors.Jonquil.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
                             .padding(16.dp)
                     ) {
                         Text(

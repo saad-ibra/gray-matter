@@ -53,10 +53,11 @@ fun PdfViewerContent(
     currentPage: Int,
     autoCrop: Boolean = true,
     theme: String = "daylight",
+    opinions: List<com.example.graymatter.domain.Opinion> = emptyList(),
     onPageChanged: (page: Int, total: Int) -> Unit,
     onTotalPages: (Int) -> Unit,
     onChaptersFound: (List<com.example.graymatter.domain.ChapterOutline>) -> Unit = {},
-    onTextSelectionAction: (action: String, text: String) -> Unit = { _, _ -> }
+    onTextSelectionAction: (action: String, text: String, id: String?) -> Unit = { _, _, _ -> }
 ) {
     val context = LocalContext.current
     val isUrl = remember(filePath) { filePath.startsWith("http") }
@@ -307,9 +308,10 @@ fun PdfViewerContent(
                                 density = density,
                                 autoCropRect = cropCache[currentPage],
                                 cropPadding = if (autoCrop) (16 * density).toInt() else 0,
-                                onActionCompleted = { action, text ->
-                                    if (text != null) {
-                                        onTextSelectionAction(action, text)
+                                opinions = opinions.filter { it.pageNumber == currentPage },
+                                onActionCompleted = { action, text, id ->
+                                    if (text != null || id != null) {
+                                        onTextSelectionAction(action, text ?: "", id)
                                     }
                                 }
                             )

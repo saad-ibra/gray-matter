@@ -59,7 +59,10 @@ fun FileViewerScreen(
     val settings by viewModel.settings.collectAsState()
     val bookmarks by viewModel.bookmarks.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
+    val opinions by viewModel.opinions.collectAsState()
     val context = LocalContext.current
+    
+    var editingOpinion by remember { mutableStateOf<com.example.graymatter.domain.Opinion?>(null) }
 
     LaunchedEffect(resourceId, initialPage) {
         viewModel.loadResource(resourceId, initialPage)
@@ -145,7 +148,24 @@ fun FileViewerScreen(
                                     onPageChanged = { page, total -> viewModel.onPageChanged(page, total) },
                                     onTotalPages = { viewModel.updatePageCount(it) },
                                     onChaptersFound = { viewModel.setChapters(it) },
-                                    onTextSelectionAction = { action, text -> viewModel.onTextSelected(action, text) }
+                                    opinions = opinions,
+                                    onTextSelectionAction = { action, text, id -> 
+                                        when(action) {
+                                            "annotate", "create" -> viewModel.onTextSelected("annotate", text)
+                                            "edit" -> {
+                                                val op = opinions.find { it.id == id }
+                                                if(op != null) {
+                                                    editingOpinion = op
+                                                }
+                                            }
+                                            "delete" -> {
+                                                if(id != null) viewModel.deleteAnnotation(id)
+                                            }
+                                            "copy" -> {
+                                                // Handled in overlay via clipboardManager
+                                            }
+                                        }
+                                    }
                                 )
                             }
                         }
@@ -330,6 +350,31 @@ fun FileViewerScreen(
                 onDismiss = { viewModel.closeSelectionAnnotationDialog() },
                 onConfirm = { opinion, score ->
                     viewModel.saveAnnotation(opinion, score)
+                }
+            )
+        }
+
+        if (editingOpinion != null) {
+            val op = editingOpinion!!
+            var quote = "Selected Text"
+            var userText = op.text
+            if (op.text.startsWith("> ")) {
+                val parts = op.text.split("\n\n")
+                if (parts.size >= 2) {
+                    quote = parts[0].substring(2).trim()
+                    userText = parts.drop(1).joinToString("\n\n")
+                }
+            }
+
+            SelectionAnnotationDialog(
+                selectedText = quote,
+                initialOpinion = userText,
+                initialConfidence = op.confidenceScore / 10f,
+                onDismiss = { editingOpinion = null },
+                onConfirm = { updatedOpinion, score ->
+                    val fullOpinion = "> $quote\n\n$updatedOpinion"
+                    viewModel.updateAnnotation(op.id, fullOpinion, score)
+                    editingOpinion = null
                 }
             )
         }
@@ -717,11 +762,13 @@ fun BookmarkOpinionDialog(onDismiss: () -> Unit, onConfirm: (String, Int) -> Uni
 @Composable
 fun SelectionAnnotationDialog(
     selectedText: String,
+    initialOpinion: String = "",
+    initialConfidence: Float = 0.7f,
     onDismiss: () -> Unit,
     onConfirm: (String, Int) -> Unit
 ) {
-    var opinion by remember { mutableStateOf("") }
-    var confidence by remember { mutableFloatStateOf(0.7f) }
+    var opinion by remember { mutableStateOf(initialOpinion) }
+    var confidence by remember { mutableFloatStateOf(initialConfidence) }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Box(

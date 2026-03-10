@@ -182,17 +182,28 @@ fun NewEntryScreen(
                 }
             }
             
-            // Opinion Section (Simple UI)
-            OpinionSection(
-                opinionInput = opinionInput,
-                onOpinionChange = { opinionInput = it }
-            )
+            // Grouped Opinion and Confidence Container
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(GrayMatterColors.AppleGreen.copy(alpha = 0.1f))
+                    .border(1.dp, GrayMatterColors.Citrine.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                // Opinion Section (Simple UI)
+                OpinionSection(
+                    opinionInput = opinionInput,
+                    onOpinionChange = { opinionInput = it }
+                )
 
-            // Confidence Level Section
-            ConfidenceLevelSection(
-                confidence = confidence,
-                onConfidenceChange = { confidence = it }
-            )
+                // Confidence Level Section
+                ConfidenceLevelSection(
+                    confidence = confidence,
+                    onConfidenceChange = { confidence = it }
+                )
+            }
         }
         
         // Save Button logic: Link or File uploaded allows save; Note requires title.

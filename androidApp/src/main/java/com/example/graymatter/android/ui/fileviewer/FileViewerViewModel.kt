@@ -50,6 +50,9 @@ class FileViewerViewModel(
     private val _bookmarks = MutableStateFlow<List<Bookmark>>(emptyList())
     val bookmarks: StateFlow<List<Bookmark>> = _bookmarks.asStateFlow()
 
+    private val _opinions = MutableStateFlow<List<Opinion>>(emptyList())
+    val opinions: StateFlow<List<Opinion>> = _opinions.asStateFlow()
+
     private val _settings = MutableStateFlow(ReadingSettings(resourceId = ""))
     val settings: StateFlow<ReadingSettings> = _settings.asStateFlow()
 
@@ -110,6 +113,15 @@ class FileViewerViewModel(
             _settings.value = savedSettings ?: ReadingSettings(resourceId = resourceId)
 
             _bookmarks.value = resourceRepository.getBookmarks(resourceId)
+
+            val item = itemRepository.getItemByResourceId(res.id)
+            if (item != null) {
+                viewModelScope.launch {
+                    opinionRepository.getOpinionsByItemId(item.id).collect { list ->
+                        _opinions.value = list
+                    }
+                }
+            }
 
             // Trigger text extraction if missing
             if (res.extractedText == null && res.filePath != null) {
@@ -367,6 +379,25 @@ class FileViewerViewModel(
             }
             showSelectionAnnotationDialog = false
             selectedText = null
+        }
+    }
+
+    fun updateAnnotation(id: String, text: String, confidence: Int) {
+        viewModelScope.launch {
+            val existing = opinionRepository.getOpinionById(id) ?: return@launch
+            opinionRepository.updateOpinion(
+                existing.copy(
+                    text = text,
+                    confidenceScore = confidence,
+                    updatedAt = Clock.System.now().toEpochMilliseconds()
+                )
+            )
+        }
+    }
+
+    fun deleteAnnotation(id: String) {
+        viewModelScope.launch {
+            opinionRepository.deleteOpinion(id)
         }
     }
 
