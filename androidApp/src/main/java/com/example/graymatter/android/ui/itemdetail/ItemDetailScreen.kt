@@ -108,7 +108,7 @@ fun ItemDetailScreen(
             if (itemDetails != null) {
                 // Unified sorted list of Opinions
                 val sortedOpinions = remember(itemDetails.opinions) {
-                    itemDetails.opinions.sortedBy { it.createdAt }
+                    itemDetails.opinions.sortedByDescending { it.createdAt }
                 }
 
                 Column(

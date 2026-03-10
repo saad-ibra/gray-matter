@@ -219,6 +219,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 getBookmarksByResourceId:
 SELECT * FROM bookmarkEntity WHERE resourceId = ? ORDER BY page ASC;
 
+getBookmarkById:
+SELECT * FROM bookmarkEntity WHERE id = ?;
+
 deleteBookmark:
 DELETE FROM bookmarkEntity WHERE id = ?;
 

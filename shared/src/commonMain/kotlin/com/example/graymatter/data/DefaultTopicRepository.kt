@@ -56,7 +56,14 @@ class DefaultTopicRepository(
     }
     
     override suspend fun deleteTopic(id: String) = withContext(dispatcher) {
-        queries.deleteTopic(id)
+        queries.transaction {
+            // Cascade delete child items/resources first
+            val items = queries.getItemsByTopicId(id).executeAsList()
+            items.forEach { item ->
+                queries.deleteResource(item.resourceId) // cascades to Item and Opinions
+            }
+            queries.deleteTopic(id)
+        }
     }
     
     override suspend fun searchTopics(query: String): List<Topic> = withContext(dispatcher) {

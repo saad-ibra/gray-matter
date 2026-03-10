@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.coroutines.flow.first
 import java.io.File
 import kotlin.random.Random
 
@@ -372,6 +373,25 @@ class FileViewerViewModel(
     fun removeBookmark(bookmarkId: String) {
         val res = _resource.value ?: return
         viewModelScope.launch {
+            val bookmark = resourceRepository.getBookmarkById(bookmarkId)
+
+            if (bookmark != null) {
+                val item = itemRepository.getItemByResourceId(res.id)
+                if (item != null) {
+                    // Collect the first list of opinions from the Flow
+                    val opinions = opinionRepository.getOpinionsByItemId(item.id).first()
+
+                    val matchingOpinion = opinions.firstOrNull {
+                        it.createdAt == bookmark.createdAt ||
+                                (it.pageNumber == bookmark.page && (bookmark.opinion != null && it.text.contains(bookmark.opinion!!)))
+                    }
+                    if (matchingOpinion != null) {
+                        opinionRepository.deleteOpinion(matchingOpinion.id)
+                    }
+                }
+            }
+
+            // Delete the bookmark and refresh the local state
             resourceRepository.deleteBookmark(bookmarkId)
             _bookmarks.value = resourceRepository.getBookmarks(res.id)
         }

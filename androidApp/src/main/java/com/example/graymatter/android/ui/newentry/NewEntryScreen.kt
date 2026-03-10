@@ -182,8 +182,8 @@ fun NewEntryScreen(
                 }
             }
             
-            // Reverted Internal Reflection Section (Simple UI)
-            InternalReflectionSection(
+            // Opinion Section (Simple UI)
+            OpinionSection(
                 opinionInput = opinionInput,
                 onOpinionChange = { opinionInput = it }
             )
@@ -342,9 +342,9 @@ private fun TabButton(text: String, icon: androidx.compose.ui.graphics.vector.Im
 }
 
 @Composable
-private fun InternalReflectionSection(opinionInput: String, onOpinionChange: (String) -> Unit) {
+private fun OpinionSection(opinionInput: String, onOpinionChange: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("INTERNAL REFLECTION", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterColors.TextSecondary)
+        Text("OPINION", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterColors.TextSecondary)
         Box(modifier = Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(12.dp)).background(GrayMatterColors.SurfaceInput).border(1.dp, GrayMatterColors.SurfaceBorder, RoundedCornerShape(12.dp)).padding(16.dp)) {
             BasicTextField(value = opinionInput, onValueChange = onOpinionChange, textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary, lineHeight = 24.sp), modifier = Modifier.fillMaxSize(), cursorBrush = SolidColor(GrayMatterColors.Primary), decorationBox = { inner -> if (opinionInput.isEmpty()) Text("Type your understanding here...", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyLarge); inner() })
         }

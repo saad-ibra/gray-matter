@@ -98,6 +98,11 @@ interface ResourceRepository {
     suspend fun saveBookmark(bookmark: Bookmark)
 
     /**
+     * Get a bookmark by its ID.
+     */
+    suspend fun getBookmarkById(id: String): Bookmark?
+
+    /**
      * Delete a bookmark.
      */
     suspend fun deleteBookmark(id: String)

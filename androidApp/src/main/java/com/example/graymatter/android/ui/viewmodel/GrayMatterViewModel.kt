@@ -438,10 +438,33 @@ class GrayMatterViewModel(
     }
 
     /**
-     * Deletes a bookmark.
+     * Deletes a bookmark and its associated opinion (if it exists).
      */
     fun deleteBookmark(bookmarkId: String) {
         viewModelScope.launch {
+            // Find bookmark before deleting to match its opinion
+            val bookmark = resourceRepository.getBookmarkById(bookmarkId)
+            
+            if (bookmark != null) {
+                // Find and delete the corresponding opinion
+                val item = itemRepository.getItemByResourceId(bookmark.resourceId)
+                if (item != null) {
+                    // Try to find the exact opinion that was created alongside this bookmark
+                    val opinions = opinionRepository.getOpinionsByItemId(item.id).first()
+                    // The text format when saving a bookmark is: "[Page X] opinionText"
+                    // And timestamp should match exactly (but SQLite milliseconds might truncate slightly, 
+                    // so we match on text and pageNumber for safety).
+                    val matchingOpinion = opinions.firstOrNull { 
+                        it.createdAt == bookmark.createdAt || 
+                        (it.pageNumber == bookmark.page && it.text.contains(bookmark.opinion ?: ""))
+                    }
+                    
+                    if (matchingOpinion != null) {
+                        opinionRepository.deleteOpinion(matchingOpinion.id)
+                    }
+                }
+            }
+            
             resourceRepository.deleteBookmark(bookmarkId)
         }
     }

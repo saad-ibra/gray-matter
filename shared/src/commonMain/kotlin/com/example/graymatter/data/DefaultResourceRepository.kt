@@ -22,19 +22,19 @@ class DefaultResourceRepository(
     private val database: GrayMatterDatabase,
     private val dispatcher: CoroutineDispatcher
 ) : ResourceRepository {
-    
+
     private val queries = database.grayMatterDatabaseQueries
-    
+
     override val resourcesStream: Flow<List<Resource>> = queries
         .getAllResources()
         .asFlow()
         .mapToList(dispatcher)
-        .map { entities: List<ResourceEntity> -> entities.map { it.toResource() } }
-    
+        .map { entities -> entities.map { it.toResource() } }
+
     override suspend fun getResourceById(id: String): Resource? = withContext(dispatcher) {
         queries.getResourceById(id).executeAsOneOrNull()?.toResource()
     }
-    
+
     override suspend fun saveResource(resource: Resource) = withContext(dispatcher) {
         queries.insertResource(
             id = resource.id,
@@ -46,13 +46,15 @@ class DefaultResourceRepository(
             createdAt = resource.createdAt
         )
     }
-    
+
     override suspend fun deleteResource(id: String) = withContext(dispatcher) {
         queries.deleteResource(id)
     }
-    
+
     override suspend fun searchResources(query: String): List<Resource> = withContext(dispatcher) {
-        queries.searchResources(query, query, query).executeAsList().map { it.toResource() }
+        // Using % wildcards if not already handled in the SQL file
+        val searchQuery = "%$query%"
+        queries.searchResources(searchQuery, searchQuery, searchQuery).executeAsList().map { it.toResource() }
     }
 
     override suspend fun updateResourceTitle(id: String, title: String) = withContext(dispatcher) {
@@ -110,10 +112,14 @@ class DefaultResourceRepository(
         .getBookmarksByResourceId(resourceId)
         .asFlow()
         .mapToList(dispatcher)
-        .map { entities: List<BookmarkEntity> -> entities.map { it.toBookmark() } }
+        .map { entities -> entities.map { it.toBookmark() } }
 
     override suspend fun getBookmarks(resourceId: String): List<Bookmark> = withContext(dispatcher) {
         queries.getBookmarksByResourceId(resourceId).executeAsList().map { it.toBookmark() }
+    }
+
+    override suspend fun getBookmarkById(id: String): Bookmark? = withContext(dispatcher) {
+        queries.getBookmarkById(id).executeAsOneOrNull()?.toBookmark()
     }
 
     override suspend fun saveBookmark(bookmark: Bookmark) = withContext(dispatcher) {
@@ -163,15 +169,15 @@ class DefaultResourceRepository(
     }
 }
 
-// -- Entity to Domain mappers --
+// -- Entity to Domain mappers (Enhanced with safety) --
 
 private fun ResourceEntity.toResource(): Resource = Resource(
     id = id,
     type = try { ResourceType.valueOf(type) } catch (e: Exception) { ResourceType.UNSUPPORTED },
-    url = url,
+    url = url ?: "",
     filePath = filePath,
     extractedText = extractedText,
-    title = title,
+    title = title ?: "Untitled",
     createdAt = createdAt
 )
 
@@ -189,7 +195,7 @@ private fun BookmarkEntity.toBookmark(): Bookmark = Bookmark(
     resourceId = resourceId,
     page = page.toInt(),
     percentPosition = percentPosition,
-    title = title,
+    title = title ?: "",
     opinion = opinion,
     confidenceScore = confidenceScore?.toInt(),
     createdAt = createdAt
