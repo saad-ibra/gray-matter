@@ -478,7 +478,7 @@ private fun OpinionTimeline(
         opinions.forEachIndexed { index, opinion ->
             OpinionTimelineItem(
                 opinion = opinion,
-                serialNumber = index + 1,
+                serialNumber = opinions.size - index,
                 isFirst = index == 0,
                 isLast = index == opinions.lastIndex,
                 isEditing = isEditing,
@@ -601,7 +601,7 @@ private fun OpinionTimelineItem(
                         val (title, icon, color) = when {
                             isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.Gamboge)
                             hasPageNumber -> Triple("BOOKMARK", Icons.Default.Bookmark, GrayMatterColors.Jonquil)
-                            else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.Success)
+                            else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.Citrine)
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -684,8 +684,8 @@ private fun OpinionTimelineItem(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(GrayMatterColors.Gamboge.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
-                            .border(0.5.dp, GrayMatterColors.Gamboge.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.Gamboge.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.Gamboge.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -722,8 +722,8 @@ private fun OpinionTimelineItem(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(GrayMatterColors.Jonquil.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
-                            .border(0.5.dp, GrayMatterColors.Jonquil.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.Jonquil.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.Jonquil.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                             .padding(16.dp)
                     ) {
                         Text(
@@ -733,12 +733,12 @@ private fun OpinionTimelineItem(
                         )
                     }
                 } else {
-                    // General Opinion (Green)
+                    // General Opinion (Citrine)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFF4CAF50).copy(alpha = 0.08f), RoundedCornerShape(12.dp))
-                            .border(0.5.dp, Color(0xFF4CAF50).copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.Citrine.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.Citrine.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                             .padding(16.dp)
                     ) {
                         Text(

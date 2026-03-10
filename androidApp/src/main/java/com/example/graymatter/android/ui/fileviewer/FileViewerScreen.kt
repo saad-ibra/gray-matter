@@ -61,6 +61,7 @@ fun FileViewerScreen(
     val searchResults by viewModel.searchResults.collectAsState()
     val opinions by viewModel.opinions.collectAsState()
     val context = LocalContext.current
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     
     var editingOpinion by remember { mutableStateOf<com.example.graymatter.domain.Opinion?>(null) }
 
@@ -88,10 +89,12 @@ fun FileViewerScreen(
                     when (keyEvent.key) {
                         Key.VolumeUp -> {
                             viewModel.previousPage()
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                             true
                         }
                         Key.VolumeDown -> {
                             viewModel.nextPage()
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                             true
                         }
                         else -> false
@@ -127,47 +130,33 @@ fun FileViewerScreen(
                 ) {
                     when (res.type) {
                         ResourceType.PDF -> {
-                            AnimatedContent(
-                                targetState = viewModel.currentPage,
-                                transitionSpec = {
-                                    if (targetState > initialState) {
-                                        // Slide left for Next Page
-                                        slideInHorizontally { width -> width } togetherWith slideOutHorizontally { width -> -width }
-                                    } else {
-                                        // Slide right for Previous Page
-                                        slideInHorizontally { width -> -width } togetherWith slideOutHorizontally { width -> width }
-                                    }
-                                },
-                                label = "PageFlipAnimation"
-                            ) { targetPage ->
-                                PdfViewerContent(
-                                    filePath = res.filePath ?: "",
-                                    currentPage = targetPage,
-                                    autoCrop = settings.autoCrop,
-                                    theme = settings.theme,
-                                    onPageChanged = { page, total -> viewModel.onPageChanged(page, total) },
-                                    onTotalPages = { viewModel.updatePageCount(it) },
-                                    onChaptersFound = { viewModel.setChapters(it) },
-                                    opinions = opinions,
-                                    onTextSelectionAction = { action, text, id -> 
-                                        when(action) {
-                                            "annotate", "create" -> viewModel.onTextSelected("annotate", text)
-                                            "edit" -> {
-                                                val op = opinions.find { it.id == id }
-                                                if(op != null) {
-                                                    editingOpinion = op
-                                                }
-                                            }
-                                            "delete" -> {
-                                                if(id != null) viewModel.deleteAnnotation(id)
-                                            }
-                                            "copy" -> {
-                                                // Handled in overlay via clipboardManager
+                            PdfViewerContent(
+                                filePath = res.filePath ?: "",
+                                currentPage = viewModel.currentPage,
+                                autoCrop = settings.autoCrop,
+                                theme = settings.theme,
+                                onPageChanged = { page, total -> viewModel.onPageChanged(page, total) },
+                                onTotalPages = { viewModel.updatePageCount(it) },
+                                onChaptersFound = { viewModel.setChapters(it) },
+                                opinions = opinions,
+                                onTextSelectionAction = { action, text, id -> 
+                                    when(action) {
+                                        "annotate", "create" -> viewModel.onTextSelected("annotate", text)
+                                        "edit" -> {
+                                            val op = opinions.find { it.id == id }
+                                            if(op != null) {
+                                                editingOpinion = op
                                             }
                                         }
+                                        "delete" -> {
+                                            if(id != null) viewModel.deleteAnnotation(id)
+                                        }
+                                        "copy" -> {
+                                            // Handled in overlay via clipboardManager
+                                        }
                                     }
-                                )
-                            }
+                                }
+                            )
                         }
                         ResourceType.MARKDOWN -> TextViewerContent(
                             filePath = res.filePath ?: "",
@@ -223,7 +212,10 @@ fun FileViewerScreen(
                                 .fillMaxHeight()
                                 .weight(0.15f)
                                 .pointerInput(Unit) {
-                                    detectTapGestures(onTap = { viewModel.previousPage() })
+                                    detectTapGestures(onTap = { 
+                                        viewModel.previousPage()
+                                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                    })
                                 }
                         )
                         
@@ -236,7 +228,10 @@ fun FileViewerScreen(
                                 .fillMaxHeight()
                                 .weight(0.15f)
                                 .pointerInput(Unit) {
-                                    detectTapGestures(onTap = { viewModel.nextPage() })
+                                    detectTapGestures(onTap = { 
+                                        viewModel.nextPage() 
+                                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                    })
                                 }
                         )
                     }
