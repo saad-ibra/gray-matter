@@ -87,16 +87,6 @@ fun HomeScreen(
                         ),
                         color = GrayMatterColors.TextPrimary
                     )
-                    
-                    Text(
-                        text = "VIEW LIBRARY",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = GrayMatterColors.Primary,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
-                        ),
-                        modifier = Modifier.clickable(onClick = onNavigateToLibrary)
-                    )
                 }
             }
 
