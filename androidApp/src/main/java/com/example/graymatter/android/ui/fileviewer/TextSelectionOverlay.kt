@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -42,15 +44,28 @@ fun TextSelectionOverlay(
     onEmptyTap: (Offset, Float) -> Unit = {_, _ -> },
     onActionCompleted: (action: String, selectedText: String?, id: String?) -> Unit
 ) {
-    var dragStart by remember { mutableStateOf<Offset?>(null) }
-    var dragEnd by remember { mutableStateOf<Offset?>(null) }
-    var showPopup by remember { mutableStateOf(false) }
+    val offsetSaver = Saver<Offset?, String>(
+        save = { it?.let { "${it.x},${it.y}" } ?: "" },
+        restore = { 
+            if (it.isEmpty()) null 
+            else {
+                val parts = it.split(",")
+                Offset(parts[0].toFloat(), parts[1].toFloat())
+            }
+        }
+    )
+
+    var dragStart by rememberSaveable(stateSaver = offsetSaver) { mutableStateOf<Offset?>(null) }
+    var dragEnd by rememberSaveable(stateSaver = offsetSaver) { mutableStateOf<Offset?>(null) }
+    var showPopup by rememberSaveable { mutableStateOf(false) }
     
     // Tap to show popup for existing annotations
     var showAnnotationPopupId by remember { mutableStateOf<String?>(null) }
     var annotationPopupOffset by remember { mutableStateOf<Offset?>(null) }
 
-    LaunchedEffect(characters) {
+    val pageText = remember(characters) { characters.joinToString("") { it.unicode } }
+
+    LaunchedEffect(pageText) {
         dragStart = null
         dragEnd = null
         showPopup = false
@@ -156,7 +171,6 @@ fun TextSelectionOverlay(
     }
 
     // Identify characters mapped to existing annoted opinions
-    val pageText = remember(characters) { characters.joinToString("") { it.unicode } }
     val persistentHighlights = remember(opinions, characters) {
         opinions.mapNotNull { opinion ->
             var quote = ""
@@ -270,14 +284,16 @@ fun TextSelectionOverlay(
                             isDraggingEndHandle = isEnd
                             showPopup = false
                             down.consume()
+                            var currentPos = if (isStart) (dragStart ?: down.position) else (dragEnd ?: down.position)
 
                             do {
                                 val event = awaitPointerEvent()
                                 val change = event.changes.firstOrNull { it.id == down.id }
                                 if (change != null && change.pressed) {
                                     change.consume()
-                                    if (isStart) dragStart = change.position
-                                    else dragEnd = change.position
+                                    currentPos += (change.position - change.previousPosition)
+                                    if (isStart) dragStart = currentPos
+                                    else dragEnd = currentPos
                                 }
                             } while (change != null && change.pressed)
 
