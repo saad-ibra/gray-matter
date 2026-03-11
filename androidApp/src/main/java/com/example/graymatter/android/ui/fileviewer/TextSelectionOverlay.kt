@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,6 +38,9 @@ fun TextSelectionOverlay(
     autoCropRect: android.graphics.Rect?,
     cropPadding: Int,
     opinions: List<com.example.graymatter.domain.Opinion> = emptyList(),
+    zoomScale: Float = 1f,
+    panOffset: Offset = Offset.Zero,
+    onZoomChanged: (Float, Offset) -> Unit = { _, _ -> },
     onActionCompleted: (action: String, selectedText: String?, id: String?) -> Unit
 ) {
     var dragStart by remember { mutableStateOf<Offset?>(null) }
@@ -65,8 +69,14 @@ fun TextSelectionOverlay(
 
     // Mapping a point from screen to PDF coordinates
     fun screenToPdf(screenOffset: Offset): Offset {
-        val xInBmp = (screenOffset.x - offsetX) / scale
-        val yInBmp = (screenOffset.y - offsetY) / scale
+        val cx = imageSize.width / 2f
+        val cy = imageSize.height / 2f
+        
+        val unzoomedX = (screenOffset.x - panOffset.x - cx) / zoomScale + cx
+        val unzoomedY = (screenOffset.y - panOffset.y - cy) / zoomScale + cy
+
+        val xInBmp = (unzoomedX - offsetX) / scale
+        val yInBmp = (unzoomedY - offsetY) / scale
 
         val cropLeft = autoCropRect?.left ?: 0
         val cropTop = autoCropRect?.top ?: 0
@@ -92,13 +102,23 @@ fun TextSelectionOverlay(
         val screenX = croppedX * scale + offsetX
         val screenY = croppedY * scale + offsetY
 
-        return Offset(screenX, screenY)
+        val cx = imageSize.width / 2f
+        val cy = imageSize.height / 2f
+        
+        val zoomedX = (screenX - cx) * zoomScale + cx + panOffset.x
+        val zoomedY = (screenY - cy) * zoomScale + cy + panOffset.y
+
+        return Offset(zoomedX, zoomedY)
     }
 
-    fun getCharIndexAt(pdfOffset: Offset): Int {
+    fun getCharIndexAt(pdfOffset: Offset, expandHitArea: Boolean = false): Int {
         if (characters.isEmpty()) return -1
+        
+        val padX = if (expandHitArea) 15f / baseRenderScale / scale / zoomScale else 0f
+        val padY = if (expandHitArea) 15f / baseRenderScale / scale / zoomScale else 0f
+
         val exactMatch = characters.indexOfFirst { char ->
-            val bounds = android.graphics.RectF(char.x, char.y, char.x + char.width, char.y + char.height)
+            val bounds = android.graphics.RectF(char.x - padX, char.y - padY, char.x + char.width + padX, char.y + char.height + padY)
             bounds.contains(pdfOffset.x, pdfOffset.y)
         }
         if (exactMatch != -1) return exactMatch
@@ -151,53 +171,84 @@ fun TextSelectionOverlay(
     }
 
     // Determine position of start and end drag handles
-    val startHandlePos = derivedStateOf {
+    val startHandleInfo = derivedStateOf {
         val chars = selectedCharacters.value
         if (chars.isNotEmpty()) {
             val first = chars.first()
-            val screenPos = pdfToScreen(first.x, first.y + first.height)
-            Offset(screenPos.x, screenPos.y)
+            val screenPosBase = pdfToScreen(first.x, first.y + first.height)
+            val screenPosTop = pdfToScreen(first.x, first.y)
+            Pair(Offset(screenPosBase.x, screenPosBase.y), screenPosBase.y - screenPosTop.y)
         } else null
     }
 
-    val endHandlePos = derivedStateOf {
+    val endHandleInfo = derivedStateOf {
         val chars = selectedCharacters.value
         if (chars.isNotEmpty()) {
             val last = chars.last()
-            val screenPos = pdfToScreen(last.x + last.width, last.y + last.height)
-            Offset(screenPos.x, screenPos.y)
+            val screenPosBase = pdfToScreen(last.x + last.width, last.y + last.height)
+            val screenPosTop = pdfToScreen(last.x + last.width, last.y)
+            Pair(Offset(screenPosBase.x, screenPosBase.y), screenPosBase.y - screenPosTop.y)
         } else null
     }
 
     // Handle Dragging state for the handles themselves
     var isDraggingStartHandle by remember { mutableStateOf(false) }
     var isDraggingEndHandle by remember { mutableStateOf(false) }
-    val handleRadius = 24.dp.value * density // 24dp touch target
+    val handleHitRadius = 32.dp.value * density // 32dp touch target
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .pointerInput(Unit) {
+                detectTransformGestures { _, pan, zoom, _ ->
+                    val newScale = (zoomScale * zoom).coerceIn(1f, 5f)
+                    val maxX = (imageSize.width * (newScale - 1)) / 2f
+                    val maxY = (imageSize.height * (newScale - 1)) / 2f
+                    val newOffset = panOffset + pan * newScale
+                    val finalOffset = Offset(
+                        newOffset.x.coerceIn(-maxX, maxX),
+                        newOffset.y.coerceIn(-maxY, maxY)
+                    )
+                    onZoomChanged(newScale, if (newScale <= 1.01f) Offset.Zero else finalOffset)
+                }
+            }
+            .pointerInput(persistentHighlights) {
                 detectTapGestures(
                     onTap = { offset ->
                         val pdfOffset = screenToPdf(offset)
-                        val tappedCharIdx = getCharIndexAt(pdfOffset)
+                        // Robust character-based hit check first
+                        val tappedCharIdx = getCharIndexAt(pdfOffset, expandHitArea = true)
+                        var tappedHighlightId: String? = null
+
                         if (tappedCharIdx != -1) {
-                            val tappedHighlight = persistentHighlights.find { (_, chars) ->
+                            tappedHighlightId = persistentHighlights.find { (_, chars) ->
                                 chars.any { it === characters[tappedCharIdx] }
+                            }?.first
+                        }
+
+                        // Backup bounding-box hit check for small gaps
+                        if (tappedHighlightId == null) {
+                            val expandByPdf = (12.dp.value * density) / (baseRenderScale * scale * zoomScale)
+                            for ((id, chars) in persistentHighlights.asReversed()) {
+                                val bounds = android.graphics.RectF(
+                                    chars.minOf { it.x } - expandByPdf,
+                                    chars.minOf { it.y } - expandByPdf,
+                                    chars.maxOf { it.x + it.width } + expandByPdf,
+                                    chars.maxOf { it.y + it.height } + expandByPdf
+                                )
+                                if (bounds.contains(pdfOffset.x, pdfOffset.y)) {
+                                    tappedHighlightId = id
+                                    break
+                                }
                             }
-                            if (tappedHighlight != null) {
-                                showAnnotationPopupId = tappedHighlight.first
-                                annotationPopupOffset = offset
-                                dragStart = null
-                                dragEnd = null
-                                showPopup = false
-                            } else {
-                                showAnnotationPopupId = null
-                                dragStart = null
-                                dragEnd = null
-                                showPopup = false
-                            }
+                        }
+
+                        if (tappedHighlightId != null) {
+                            showAnnotationPopupId = tappedHighlightId
+                            annotationPopupOffset = offset
+                            dragStart = null
+                            dragEnd = null
+                            showPopup = false
                         } else {
                             showAnnotationPopupId = null
                             dragStart = null
@@ -207,18 +258,21 @@ fun TextSelectionOverlay(
                     }
                 )
             }
-            .pointerInput(handleRadius) {
+            .pointerInput(handleHitRadius, zoomScale, panOffset) {
                 detectDragGestures(
                     onDragStart = { offset ->
-                        val sh = startHandlePos.value
-                        val eh = endHandlePos.value
+                        val shInfo = startHandleInfo.value
+                        val ehInfo = endHandleInfo.value
                         isDraggingStartHandle = false
                         isDraggingEndHandle = false
                         
-                        if (sh != null && (offset - sh).getDistance() < handleRadius * 2) {
+                        val sh = shInfo?.first
+                        val eh = ehInfo?.first
+
+                        if (sh != null && (offset - sh).getDistance() < handleHitRadius) {
                             isDraggingStartHandle = true
                             showPopup = false
-                        } else if (eh != null && (offset - eh).getDistance() < handleRadius * 2) {
+                        } else if (eh != null && (offset - eh).getDistance() < handleHitRadius) {
                             isDraggingEndHandle = true
                             showPopup = false
                         }
@@ -245,7 +299,7 @@ fun TextSelectionOverlay(
                     }
                 )
             }
-            .pointerInput(Unit) {
+            .pointerInput(zoomScale, panOffset) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = { offset ->
                         dragStart = offset
@@ -303,45 +357,54 @@ fun TextSelectionOverlay(
             }
 
             // Draw Drag Handles
-            val sh = startHandlePos.value
-            val eh = endHandlePos.value
-            if (sh != null && eh != null) {
-                // Left Handle (Start)
-                drawCircle(
-                    color = GrayMatterColors.CocoaBrown,
-                    radius = 8.dp.toPx(),
-                    center = sh
-                )
-                // Stem Left
+            val shInfo = startHandleInfo.value
+            val ehInfo = endHandleInfo.value
+            if (shInfo != null && ehInfo != null) {
+                val sh = shInfo.first
+                val shHeight = shInfo.second
+                val eh = ehInfo.first
+                val ehHeight = ehInfo.second
+                
+                val handleRadiusPx = 8.dp.toPx()
+                val handleColor = GrayMatterColors.CocoaBrown
+
+                // Left Handle (Start): Tear drop down-left
+                drawCircle(color = handleColor, radius = handleRadiusPx, center = sh.copy(x = sh.x - handleRadiusPx / 2f, y = sh.y + handleRadiusPx))
                 drawLine(
-                    color = GrayMatterColors.CocoaBrown,
-                    start = sh.copy(y = sh.y - 8.dp.toPx()),
-                    end = sh.copy(y = sh.y - 20.dp.toPx()),
-                    strokeWidth = 2.dp.toPx()
+                    color = handleColor,
+                    start = sh,
+                    end = sh.copy(y = sh.y - shHeight),
+                    strokeWidth = 3.dp.toPx()
                 )
 
-                // Right Handle (End)
-                drawCircle(
-                    color = GrayMatterColors.CocoaBrown,
-                    radius = 8.dp.toPx(),
-                    center = eh
-                )
-                // Stem Right
+                // Right Handle (End): Tear drop down-right
+                drawCircle(color = handleColor, radius = handleRadiusPx, center = eh.copy(x = eh.x + handleRadiusPx / 2f, y = eh.y + handleRadiusPx))
                 drawLine(
-                    color = GrayMatterColors.CocoaBrown,
-                    start = eh.copy(y = eh.y - 8.dp.toPx()),
-                    end = eh.copy(y = eh.y - 20.dp.toPx()),
-                    strokeWidth = 2.dp.toPx()
+                    color = handleColor,
+                    start = eh,
+                    end = eh.copy(y = eh.y - ehHeight),
+                    strokeWidth = 3.dp.toPx()
                 )
             }
         }
 
         // Selected Text Popup
-        if (showPopup && dragEnd != null) {
-            val popupX = dragEnd!!.x.toInt()
-            val popupY = (dragEnd!!.y - 140f).toInt()
+        if (showPopup && selectedCharacters.value.isNotEmpty()) {
+            val minX = selectedCharacters.value.minOf { pdfToScreen(it.x, it.y).x }
+            val maxX = selectedCharacters.value.maxOf { pdfToScreen(it.x + it.width, it.y).x }
+            val minY = selectedCharacters.value.minOf { pdfToScreen(it.x, it.y).y }
+            val maxY = selectedCharacters.value.maxOf { pdfToScreen(it.x, it.y + it.height).y }
             
-            Popup(offset = IntOffset(popupX.coerceAtLeast(0), popupY.coerceAtLeast(0))) {
+            val bubbleWidth = 200f
+            val bubbleHeight = 140f
+            
+            val popupX = ((minX + maxX) / 2f - bubbleWidth / 2f).coerceIn(16f, (imageSize.width - bubbleWidth - 16f).coerceAtLeast(16f))
+            var popupY = minY - bubbleHeight - 56f
+            if (popupY < 16f) {
+                popupY = maxY + 64f
+            }
+            
+            Popup(offset = IntOffset(popupX.toInt(), popupY.toInt())) {
                 Row(
                     modifier = Modifier
                         .background(GrayMatterColors.SurfaceDark, RoundedCornerShape(8.dp))
@@ -374,7 +437,23 @@ fun TextSelectionOverlay(
         val pId = showAnnotationPopupId
         val pOffset = annotationPopupOffset
         if (pId != null && pOffset != null) {
-            Popup(offset = IntOffset(pOffset.x.toInt(), (pOffset.y - 140f).toInt().coerceAtLeast(0))) {
+            val highlightChars = persistentHighlights.find { it.first == pId }?.second
+            if (highlightChars != null && highlightChars.isNotEmpty()) {
+                val minX = highlightChars.minOf { pdfToScreen(it.x, it.y).x }
+                val maxX = highlightChars.maxOf { pdfToScreen(it.x + it.width, it.y).x }
+                val minY = highlightChars.minOf { pdfToScreen(it.x, it.y).y }
+                val maxY = highlightChars.maxOf { pdfToScreen(it.x, it.y + it.height).y }
+                
+                val bubbleWidth = 250f
+                val bubbleHeight = 140f
+                
+                val popupX = ((minX + maxX) / 2f - bubbleWidth / 2f).coerceIn(16f, (imageSize.width - bubbleWidth - 16f).coerceAtLeast(16f))
+                var popupY = minY - bubbleHeight - 56f
+                if (popupY < 16f) {
+                    popupY = maxY + 64f
+                }
+                
+                Popup(offset = IntOffset(popupX.toInt(), popupY.toInt())) {
                 Row(
                     modifier = Modifier
                         .background(GrayMatterColors.SurfaceDark, RoundedCornerShape(8.dp))
@@ -402,10 +481,14 @@ fun TextSelectionOverlay(
                     TextButton(onClick = {
                         showAnnotationPopupId = null
                         annotationPopupOffset = null
+                        dragStart = null
+                        dragEnd = null
+                        showPopup = false
                         onActionCompleted("delete", null, pId)
                     }) {
                         Text("Delete", color = GrayMatterColors.Error)
                     }
+                }
                 }
             }
         }

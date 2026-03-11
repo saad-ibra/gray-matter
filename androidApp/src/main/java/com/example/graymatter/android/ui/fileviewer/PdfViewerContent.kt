@@ -22,6 +22,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -290,11 +295,25 @@ fun PdfViewerContent(
                     var imageLayoutSize by remember { mutableStateOf(IntSize.Zero) }
                     val density = LocalDensity.current.density
                     
-                    Box(modifier = Modifier.fillMaxSize()) {
+                    var zoomScale by remember { mutableFloatStateOf(1f) }
+                    var panOffset by remember { mutableStateOf(Offset.Zero) }
+                    
+                    Box(modifier = Modifier
+                        .fillMaxSize()
+                        .clipToBounds()
+                    ) {
                         Image(
                             bitmap = b.asImageBitmap(),
                             contentDescription = null,
-                            modifier = Modifier.fillMaxSize().onSizeChanged { imageLayoutSize = it },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .onSizeChanged { imageLayoutSize = it }
+                                .graphicsLayer {
+                                    scaleX = zoomScale
+                                    scaleY = zoomScale
+                                    translationX = panOffset.x
+                                    translationY = panOffset.y
+                                },
                             contentScale = ContentScale.Fit,
                             colorFilter = themeColorFilter
                         )
@@ -309,6 +328,12 @@ fun PdfViewerContent(
                                 autoCropRect = cropCache[currentPage],
                                 cropPadding = if (autoCrop) (16 * density).toInt() else 0,
                                 opinions = opinions.filter { it.pageNumber == currentPage },
+                                zoomScale = zoomScale,
+                                panOffset = panOffset,
+                                onZoomChanged = { newScale, newOffset ->
+                                    zoomScale = newScale
+                                    panOffset = newOffset
+                                },
                                 onActionCompleted = { action, text, id ->
                                     if (text != null || id != null) {
                                         onTextSelectionAction(action, text ?: "", id)
