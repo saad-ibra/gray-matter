@@ -2,10 +2,9 @@ package com.example.graymatter.android.ui.fileviewer
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,7 +39,7 @@ fun TextSelectionOverlay(
     opinions: List<com.example.graymatter.domain.Opinion> = emptyList(),
     zoomScale: Float = 1f,
     panOffset: Offset = Offset.Zero,
-    onZoomChanged: (Float, Offset) -> Unit = { _, _ -> },
+    onEmptyTap: (Offset, Float) -> Unit = {_, _ -> },
     onActionCompleted: (action: String, selectedText: String?, id: String?) -> Unit
 ) {
     var dragStart by remember { mutableStateOf<Offset?>(null) }
@@ -50,6 +49,14 @@ fun TextSelectionOverlay(
     // Tap to show popup for existing annotations
     var showAnnotationPopupId by remember { mutableStateOf<String?>(null) }
     var annotationPopupOffset by remember { mutableStateOf<Offset?>(null) }
+
+    LaunchedEffect(characters) {
+        dragStart = null
+        dragEnd = null
+        showPopup = false
+        showAnnotationPopupId = null
+        annotationPopupOffset = null
+    }
 
     val clipboardManager = LocalClipboardManager.current
 
@@ -199,19 +206,6 @@ fun TextSelectionOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
-                detectTransformGestures { _, pan, zoom, _ ->
-                    val newScale = (zoomScale * zoom).coerceIn(1f, 5f)
-                    val maxX = (imageSize.width * (newScale - 1)) / 2f
-                    val maxY = (imageSize.height * (newScale - 1)) / 2f
-                    val newOffset = panOffset + pan * newScale
-                    val finalOffset = Offset(
-                        newOffset.x.coerceIn(-maxX, maxX),
-                        newOffset.y.coerceIn(-maxY, maxY)
-                    )
-                    onZoomChanged(newScale, if (newScale <= 1.01f) Offset.Zero else finalOffset)
-                }
-            }
             .pointerInput(persistentHighlights) {
                 detectTapGestures(
                     onTap = { offset ->
@@ -254,52 +248,47 @@ fun TextSelectionOverlay(
                             dragStart = null
                             dragEnd = null
                             showPopup = false
+                            onEmptyTap(offset, imageSize.width.toFloat())
                         }
                     }
                 )
             }
-            .pointerInput(handleHitRadius, zoomScale, panOffset) {
-                detectDragGestures(
-                    onDragStart = { offset ->
+            .pointerInput(handleHitRadius) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val down = awaitFirstDown(requireUnconsumed = false)
                         val shInfo = startHandleInfo.value
                         val ehInfo = endHandleInfo.value
-                        isDraggingStartHandle = false
-                        isDraggingEndHandle = false
-                        
                         val sh = shInfo?.first
                         val eh = ehInfo?.first
 
-                        if (sh != null && (offset - sh).getDistance() < handleHitRadius) {
-                            isDraggingStartHandle = true
+                        val isStart = sh != null && (down.position - sh).getDistance() < handleHitRadius
+                        val isEnd = eh != null && (down.position - eh).getDistance() < handleHitRadius
+
+                        if (isStart || isEnd) {
+                            isDraggingStartHandle = isStart
+                            isDraggingEndHandle = isEnd
                             showPopup = false
-                        } else if (eh != null && (offset - eh).getDistance() < handleHitRadius) {
-                            isDraggingEndHandle = true
-                            showPopup = false
-                        }
-                    },
-                    onDrag = { change, _ ->
-                        if (isDraggingStartHandle) {
-                            change.consume()
-                            dragStart = change.position
-                        } else if (isDraggingEndHandle) {
-                            change.consume()
-                            dragEnd = change.position
-                        }
-                    },
-                    onDragEnd = {
-                        if (isDraggingStartHandle || isDraggingEndHandle) {
+                            down.consume()
+
+                            do {
+                                val event = awaitPointerEvent()
+                                val change = event.changes.firstOrNull { it.id == down.id }
+                                if (change != null && change.pressed) {
+                                    change.consume()
+                                    if (isStart) dragStart = change.position
+                                    else dragEnd = change.position
+                                }
+                            } while (change != null && change.pressed)
+
                             showPopup = true
                             isDraggingStartHandle = false
                             isDraggingEndHandle = false
                         }
-                    },
-                    onDragCancel = {
-                        isDraggingStartHandle = false
-                        isDraggingEndHandle = false
                     }
-                )
+                }
             }
-            .pointerInput(zoomScale, panOffset) {
+            .pointerInput(Unit) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = { offset ->
                         dragStart = offset
@@ -334,8 +323,8 @@ fun TextSelectionOverlay(
             for ((_, chars) in persistentHighlights) {
                 for (char in chars) {
                     val pScreen = pdfToScreen(char.x, char.y)
-                    val screenW = char.width * baseRenderScale * scale
-                    val screenH = char.height * baseRenderScale * scale
+                    val screenW = char.width * baseRenderScale * scale * zoomScale
+                    val screenH = char.height * baseRenderScale * scale * zoomScale
                     drawRect(
                         color = highlightColor,
                         topLeft = pScreen,
@@ -347,8 +336,8 @@ fun TextSelectionOverlay(
             // Draw Active Selection
             for (char in selectedCharacters.value) {
                 val pScreen = pdfToScreen(char.x, char.y)
-                val screenW = char.width * baseRenderScale * scale
-                val screenH = char.height * baseRenderScale * scale
+                val screenW = char.width * baseRenderScale * scale * zoomScale
+                val screenH = char.height * baseRenderScale * scale * zoomScale
                 drawRect(
                     color = selectionColor,
                     topLeft = pScreen,

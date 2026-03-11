@@ -62,6 +62,7 @@ fun PdfViewerContent(
     onPageChanged: (page: Int, total: Int) -> Unit,
     onTotalPages: (Int) -> Unit,
     onChaptersFound: (List<com.example.graymatter.domain.ChapterOutline>) -> Unit = {},
+    onEmptyTap: (Offset, Float) -> Unit = {_,_ -> },
     onTextSelectionAction: (action: String, text: String, id: String?) -> Unit = { _, _, _ -> }
 ) {
     val context = LocalContext.current
@@ -298,9 +299,37 @@ fun PdfViewerContent(
                     var zoomScale by remember { mutableFloatStateOf(1f) }
                     var panOffset by remember { mutableStateOf(Offset.Zero) }
                     
+                    LaunchedEffect(currentPage) {
+                        zoomScale = 1f
+                        panOffset = Offset.Zero
+                    }
+                    
                     Box(modifier = Modifier
                         .fillMaxSize()
                         .clipToBounds()
+                        .pointerInput(imageLayoutSize) {
+                            detectTransformGestures { centroid, pan, zoom, _ ->
+                                val targetScale = zoomScale * zoom
+                                val newScale = targetScale.coerceIn(1f, 5f)
+                                val actualZoom = if (zoomScale > 0f) newScale / zoomScale else 1f
+                                
+                                val center = Offset(imageLayoutSize.width / 2f, imageLayoutSize.height / 2f)
+                                val centroidOffset = centroid - center - panOffset
+                                val zoomPan = centroidOffset * (1f - actualZoom)
+                                
+                                val newPan = panOffset + pan + zoomPan
+                                
+                                val maxX = maxOf(0f, (imageLayoutSize.width * (newScale - 1)) / 2f)
+                                val maxY = maxOf(0f, (imageLayoutSize.height * (newScale - 1)) / 2f)
+                                
+                                val finalOffset = Offset(
+                                    newPan.x.coerceIn(-maxX, maxX),
+                                    newPan.y.coerceIn(-maxY, maxY)
+                                )
+                                zoomScale = newScale
+                                panOffset = if (newScale <= 1.01f) Offset.Zero else finalOffset
+                            }
+                        }
                     ) {
                         Image(
                             bitmap = b.asImageBitmap(),
@@ -330,10 +359,7 @@ fun PdfViewerContent(
                                 opinions = opinions.filter { it.pageNumber == currentPage },
                                 zoomScale = zoomScale,
                                 panOffset = panOffset,
-                                onZoomChanged = { newScale, newOffset ->
-                                    zoomScale = newScale
-                                    panOffset = newOffset
-                                },
+                                onEmptyTap = onEmptyTap,
                                 onActionCompleted = { action, text, id ->
                                     if (text != null || id != null) {
                                         onTextSelectionAction(action, text ?: "", id)

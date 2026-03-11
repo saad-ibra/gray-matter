@@ -123,9 +123,19 @@ fun FileViewerScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(Unit) {
-                            // Listen for taps in the center to toggle bars
-                            detectTapGestures(onTap = { viewModel.toggleBars() })
+                        .pointerInput(isPaged) {
+                            detectTapGestures(onTap = { offset ->
+                                val width = size.width
+                                if (isPaged && offset.x < width * 0.15f) {
+                                    viewModel.previousPage()
+                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                } else if (isPaged && offset.x > width * 0.85f) {
+                                    viewModel.nextPage()
+                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                } else {
+                                    viewModel.toggleBars()
+                                }
+                            })
                         }
                 ) {
                     when (res.type) {
@@ -139,6 +149,17 @@ fun FileViewerScreen(
                                 onTotalPages = { viewModel.updatePageCount(it) },
                                 onChaptersFound = { viewModel.setChapters(it) },
                                 opinions = opinions,
+                                onEmptyTap = { offset, width ->
+                                    if (offset.x < width * 0.15f) {
+                                        viewModel.previousPage()
+                                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                    } else if (offset.x > width * 0.85f) {
+                                        viewModel.nextPage()
+                                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                    } else {
+                                        viewModel.toggleBars()
+                                    }
+                                },
                                 onTextSelectionAction = { action, text, id -> 
                                     when(action) {
                                         "annotate", "create" -> viewModel.onTextSelected("annotate", text)
@@ -203,39 +224,7 @@ fun FileViewerScreen(
                     }
                 }
 
-                // ── Navigation Taps Overlays (Sides Only) ──
-                if (isPaged) {
-                    Row(modifier = Modifier.fillMaxSize()) {
-                        // Previous Page Zone (15% width)
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .weight(0.15f)
-                                .pointerInput(Unit) {
-                                    detectTapGestures(onTap = { 
-                                        viewModel.previousPage()
-                                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                    })
-                                }
-                        )
-                        
-                        // Center Area (70% width) - empty so touches pass through to content/toggle
-                        Box(modifier = Modifier.fillMaxHeight().weight(0.70f))
-                        
-                        // Next Page Zone (15% width)
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .weight(0.15f)
-                                .pointerInput(Unit) {
-                                    detectTapGestures(onTap = { 
-                                        viewModel.nextPage() 
-                                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                    })
-                                }
-                        )
-                    }
-                }
+                // Navigation Taps Overlays Removed to allow unified gestures
             }
         }
 
