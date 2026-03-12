@@ -228,7 +228,13 @@ fun TextSelectionOverlay(
             val first = chars.first()
             val screenPosBase = pdfToScreen(first.x, first.y + first.height)
             val screenPosTop = pdfToScreen(first.x, first.y)
-            Pair(Offset(screenPosBase.x, screenPosBase.y), screenPosBase.y - screenPosTop.y)
+            
+            val hPad = 5.dp.value * density
+            val vPad = 3.dp.value * density
+            
+            val handlePos = Offset(screenPosBase.x - hPad, screenPosBase.y + vPad)
+            val height = (screenPosBase.y - screenPosTop.y) + vPad * 2
+            Pair(handlePos, height)
         } else null
     }
 
@@ -238,7 +244,13 @@ fun TextSelectionOverlay(
             val last = chars.last()
             val screenPosBase = pdfToScreen(last.x + last.width, last.y + last.height)
             val screenPosTop = pdfToScreen(last.x + last.width, last.y)
-            Pair(Offset(screenPosBase.x, screenPosBase.y), screenPosBase.y - screenPosTop.y)
+            
+            val hPad = 5.dp.value * density
+            val vPad = 3.dp.value * density
+            
+            val handlePos = Offset(screenPosBase.x + hPad, screenPosBase.y + vPad)
+            val height = (screenPosBase.y - screenPosTop.y) + vPad * 2
+            Pair(handlePos, height)
         } else null
     }
 
@@ -370,6 +382,9 @@ fun TextSelectionOverlay(
             val selectionColor = GrayMatterColors.CocoaBrown.copy(alpha = 0.4f)
             val highlightColor = GrayMatterColors.Gamboge.copy(alpha = 0.4f)
             
+            val hPad = 5.dp.toPx()
+            val vPad = 3.dp.toPx()
+            
             // Draw Persistent Highlights First
             for ((_, chars) in persistentHighlights) {
                 val lineRects = groupCharactersIntoRects(chars)
@@ -377,10 +392,16 @@ fun TextSelectionOverlay(
                     val pScreen = pdfToScreen(rect.left, rect.top)
                     val screenW = rect.width() * baseRenderScale * scale * zoomScale
                     val screenH = rect.height() * baseRenderScale * scale * zoomScale
+                    
+                    val paddedX = pScreen.x - hPad
+                    val paddedY = pScreen.y - vPad
+                    val paddedW = screenW + hPad * 2
+                    val paddedH = screenH + vPad * 2
+                    
                     drawRect(
                         color = highlightColor,
-                        topLeft = pScreen,
-                        size = androidx.compose.ui.geometry.Size(screenW, screenH)
+                        topLeft = Offset(paddedX, paddedY),
+                        size = androidx.compose.ui.geometry.Size(paddedW, paddedH)
                     )
                 }
             }
@@ -391,10 +412,16 @@ fun TextSelectionOverlay(
                 val pScreen = pdfToScreen(rect.left, rect.top)
                 val screenW = rect.width() * baseRenderScale * scale * zoomScale
                 val screenH = rect.height() * baseRenderScale * scale * zoomScale
+                
+                val paddedX = pScreen.x - hPad
+                val paddedY = pScreen.y - vPad
+                val paddedW = screenW + hPad * 2
+                val paddedH = screenH + vPad * 2
+                
                 drawRect(
                     color = selectionColor,
-                    topLeft = pScreen,
-                    size = androidx.compose.ui.geometry.Size(screenW, screenH)
+                    topLeft = Offset(paddedX, paddedY),
+                    size = androidx.compose.ui.geometry.Size(paddedW, paddedH)
                 )
             }
 
@@ -453,7 +480,7 @@ fun TextSelectionOverlay(
                         .padding(4.dp)
                 ) {
                     TextButton(onClick = {
-                        val text = selectedCharacters.value.sortedWith(compareBy({ it.y }, { it.x })).joinToString("") { it.unicode }
+                        val text = selectedCharacters.value.joinToString("") { it.unicode }
                         clipboardManager.setText(AnnotatedString(text))
                         dragStart = null
                         dragEnd = null
@@ -463,7 +490,7 @@ fun TextSelectionOverlay(
                         Text("Copy", color = Color.White)
                     }
                     TextButton(onClick = {
-                        val text = selectedCharacters.value.sortedWith(compareBy({ it.y }, { it.x })).joinToString("") { it.unicode }
+                        val text = selectedCharacters.value.joinToString("") { it.unicode }
                         dragStart = null
                         dragEnd = null
                         showPopup = false
@@ -503,7 +530,7 @@ fun TextSelectionOverlay(
                 ) {
                     TextButton(onClick = {
                         val chars = persistentHighlights.find { it.first == pId }?.second ?: emptyList()
-                        val text = chars.sortedWith(compareBy({ it.y }, { it.x })).joinToString("") { it.unicode }
+                        val text = chars.joinToString("") { it.unicode }
                         clipboardManager.setText(AnnotatedString(text))
                         showAnnotationPopupId = null
                         annotationPopupOffset = null
@@ -513,7 +540,7 @@ fun TextSelectionOverlay(
                     }
                     TextButton(onClick = {
                         val chars = persistentHighlights.find { it.first == pId }?.second ?: emptyList()
-                        val text = chars.sortedWith(compareBy({ it.y }, { it.x })).joinToString("") { it.unicode }
+                        val text = chars.joinToString("") { it.unicode }
                         showAnnotationPopupId = null
                         annotationPopupOffset = null
                         onActionCompleted("edit", text, pId)
