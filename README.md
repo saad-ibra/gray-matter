@@ -9,8 +9,9 @@ Built with Kotlin Multiplatform (KMP), Gray Matter provides a seamless experienc
 ## Core Philosophy: Forced Deliberation
 
 We believe that passive collection is the enemy of actual knowledge. Gray Matter is built around an **Opinion-First** methodology:
-*   **No mindless bookmarking:** When you add any resource (a PDF, a Markdown note, an Image, or a Web Link), you are **required** to write an initial reflection (an "Opinion") and assign a confidence score to your understanding before saving.
+*   **No mindless data collection:** When you add any resource (a PDF, a Markdown note or a Web Link), you are **required** to write an initial reflection (an "Opinion") and assign a confidence score to your preconceived notion about the file before saving.
 *   **Active synthesis:** Your library is not a dump of files; it's a curated collection of your categorized thoughts and reflections on those files.
+*   **Logging Further Thoughts:** Further opinions can be added to the timeline. Deliberation is favoured as users are prompted to add opinion, whenever they create bookmarks or text annotations in pdf reader.
 
 ---
 
