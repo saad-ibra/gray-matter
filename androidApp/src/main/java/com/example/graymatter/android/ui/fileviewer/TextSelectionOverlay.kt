@@ -73,6 +73,38 @@ fun TextSelectionOverlay(
         annotationPopupOffset = null
     }
 
+    // Helper to group characters into contiguous line rectangles (in PDF coordinates)
+    fun groupCharactersIntoRects(chars: List<PdfCharacter>): List<android.graphics.RectF> {
+        if (chars.isEmpty()) return emptyList()
+        val rects = mutableListOf<android.graphics.RectF>()
+        
+        var currentLineMinX = chars.first().x
+        var currentLineMaxX = chars.first().x + chars.first().width
+        var currentLineMinY = chars.first().y
+        var currentLineMaxY = chars.first().y + chars.first().height
+        
+        for (i in 1 until chars.size) {
+            val char = chars[i]
+            // If the char is roughly on the same line (y overlap)
+            val centerY = char.y + char.height / 2f
+            if (centerY >= currentLineMinY && centerY <= currentLineMaxY) {
+                currentLineMinX = minOf(currentLineMinX, char.x)
+                currentLineMaxX = maxOf(currentLineMaxX, char.x + char.width)
+                currentLineMinY = minOf(currentLineMinY, char.y)
+                currentLineMaxY = maxOf(currentLineMaxY, char.y + char.height)
+            } else {
+                // New line
+                rects.add(android.graphics.RectF(currentLineMinX, currentLineMinY, currentLineMaxX, currentLineMaxY))
+                currentLineMinX = char.x
+                currentLineMaxX = char.x + char.width
+                currentLineMinY = char.y
+                currentLineMaxY = char.y + char.height
+            }
+        }
+        rects.add(android.graphics.RectF(currentLineMinX, currentLineMinY, currentLineMaxX, currentLineMaxY))
+        return rects
+    }
+
     val clipboardManager = LocalClipboardManager.current
 
     // Calculate ContentScale.Fit properties
@@ -156,11 +188,9 @@ fun TextSelectionOverlay(
 
     val selectedCharacters = derivedStateOf {
         if (dragStart == null || dragEnd == null || characters.isEmpty()) return@derivedStateOf emptyList<PdfCharacter>()
-        val startPdf = screenToPdf(dragStart!!)
-        val endPdf = screenToPdf(dragEnd!!)
 
-        val startIdx = getCharIndexAt(startPdf)
-        val endIdx = getCharIndexAt(endPdf)
+        val startIdx = getCharIndexAt(dragStart!!)
+        val endIdx = getCharIndexAt(dragEnd!!)
 
         if (startIdx == -1 || endIdx == -1) return@derivedStateOf emptyList<PdfCharacter>()
 
@@ -284,16 +314,20 @@ fun TextSelectionOverlay(
                             isDraggingEndHandle = isEnd
                             showPopup = false
                             down.consume()
-                            var currentPos = if (isStart) (dragStart ?: down.position) else (dragEnd ?: down.position)
+
+                            // Remember initial physical screen position of the handle to accumulate deltas
+                            var currentScreenPos = if (isStart) sh!! else eh!!
 
                             do {
                                 val event = awaitPointerEvent()
                                 val change = event.changes.firstOrNull { it.id == down.id }
                                 if (change != null && change.pressed) {
                                     change.consume()
-                                    currentPos += (change.position - change.previousPosition)
-                                    if (isStart) dragStart = currentPos
-                                    else dragEnd = currentPos
+                                    currentScreenPos += (change.position - change.previousPosition)
+                                    // Convert screen position back to document space and save
+                                    val newDocPos = screenToPdf(currentScreenPos)
+                                    if (isStart) dragStart = newDocPos
+                                    else dragEnd = newDocPos
                                 }
                             } while (change != null && change.pressed)
 
@@ -307,13 +341,14 @@ fun TextSelectionOverlay(
             .pointerInput(Unit) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = { offset ->
-                        dragStart = offset
-                        dragEnd = offset
+                        val docPos = screenToPdf(offset)
+                        dragStart = docPos
+                        dragEnd = docPos
                         showPopup = false
                         showAnnotationPopupId = null
                     },
                     onDrag = { change, _ ->
-                        dragEnd = change.position
+                        dragEnd = screenToPdf(change.position)
                     },
                     onDragEnd = {
                         if (selectedCharacters.value.isNotEmpty()) {
@@ -337,10 +372,11 @@ fun TextSelectionOverlay(
             
             // Draw Persistent Highlights First
             for ((_, chars) in persistentHighlights) {
-                for (char in chars) {
-                    val pScreen = pdfToScreen(char.x, char.y)
-                    val screenW = char.width * baseRenderScale * scale * zoomScale
-                    val screenH = char.height * baseRenderScale * scale * zoomScale
+                val lineRects = groupCharactersIntoRects(chars)
+                for (rect in lineRects) {
+                    val pScreen = pdfToScreen(rect.left, rect.top)
+                    val screenW = rect.width() * baseRenderScale * scale * zoomScale
+                    val screenH = rect.height() * baseRenderScale * scale * zoomScale
                     drawRect(
                         color = highlightColor,
                         topLeft = pScreen,
@@ -350,10 +386,11 @@ fun TextSelectionOverlay(
             }
 
             // Draw Active Selection
-            for (char in selectedCharacters.value) {
-                val pScreen = pdfToScreen(char.x, char.y)
-                val screenW = char.width * baseRenderScale * scale * zoomScale
-                val screenH = char.height * baseRenderScale * scale * zoomScale
+            val selectionRects = groupCharactersIntoRects(selectedCharacters.value)
+            for (rect in selectionRects) {
+                val pScreen = pdfToScreen(rect.left, rect.top)
+                val screenW = rect.width() * baseRenderScale * scale * zoomScale
+                val screenH = rect.height() * baseRenderScale * scale * zoomScale
                 drawRect(
                     color = selectionColor,
                     topLeft = pScreen,
