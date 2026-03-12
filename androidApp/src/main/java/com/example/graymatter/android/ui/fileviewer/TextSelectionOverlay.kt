@@ -36,11 +36,12 @@ fun TextSelectionOverlay(
     imageSize: IntSize,
     bitmapSize: IntSize,
     density: Float,
-    autoCropRect: android.graphics.Rect?,
+    autoCropRect: android.graphics.RectF?,
     cropPadding: Int,
     opinions: List<com.example.graymatter.domain.Opinion> = emptyList(),
     zoomScale: Float = 1f,
     panOffset: Offset = Offset.Zero,
+    renderScale: Float = density * 1.5f,
     onEmptyTap: (Offset, Float) -> Unit = {_, _ -> },
     onActionCompleted: (action: String, selectedText: String?, id: String?) -> Unit
 ) {
@@ -118,8 +119,8 @@ fun TextSelectionOverlay(
     val offsetX = (imageSize.width - scaledBmpWidth) / 2f
     val offsetY = (imageSize.height - scaledBmpHeight) / 2f
 
-    // The scale used when initially rendering the PDF to a bitmap
-    val baseRenderScale = density * 1.5f
+    // Dynamic scale used for the current bitmap
+    val baseRenderScale = renderScale
 
     // Mapping a point from screen to PDF coordinates
     fun screenToPdf(screenOffset: Offset): Offset {
@@ -132,26 +133,26 @@ fun TextSelectionOverlay(
         val xInBmp = (unzoomedX - offsetX) / scale
         val yInBmp = (unzoomedY - offsetY) / scale
 
-        val cropLeft = autoCropRect?.left ?: 0
-        val cropTop = autoCropRect?.top ?: 0
-        val uncroppedX = xInBmp + cropLeft - (if (autoCropRect != null) cropPadding else 0)
-        val uncroppedY = yInBmp + cropTop - (if (autoCropRect != null) cropPadding else 0)
-
+        val cropLeft = autoCropRect?.left ?: 0f
+        val cropTop = autoCropRect?.top ?: 0f
+        
+        val padding = if (autoCropRect != null) cropPadding else 0
+        
         return Offset(
-            x = uncroppedX / baseRenderScale,
-            y = uncroppedY / baseRenderScale
+            x = (xInBmp - padding) / baseRenderScale + cropLeft,
+            y = (yInBmp - padding) / baseRenderScale + cropTop
         )
     }
 
     // Mapping a point from PDF to screen coordinates
     fun pdfToScreen(pdfX: Float, pdfY: Float): Offset {
-        val uncroppedX = pdfX * baseRenderScale
-        val uncroppedY = pdfY * baseRenderScale
-
-        val cropLeft = autoCropRect?.left ?: 0
-        val cropTop = autoCropRect?.top ?: 0
-        val croppedX = uncroppedX - cropLeft + (if (autoCropRect != null) cropPadding else 0)
-        val croppedY = uncroppedY - cropTop + (if (autoCropRect != null) cropPadding else 0)
+        val cropLeft = autoCropRect?.left ?: 0f
+        val cropTop = autoCropRect?.top ?: 0f
+        
+        val padding = if (autoCropRect != null) cropPadding else 0
+        
+        val croppedX = (pdfX - cropLeft) * baseRenderScale + padding
+        val croppedY = (pdfY - cropTop) * baseRenderScale + padding
 
         val screenX = croppedX * scale + offsetX
         val screenY = croppedY * scale + offsetY

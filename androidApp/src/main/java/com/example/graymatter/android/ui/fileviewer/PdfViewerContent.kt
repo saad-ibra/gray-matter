@@ -66,6 +66,7 @@ fun PdfViewerContent(
     onTextSelectionAction: (action: String, text: String, id: String?) -> Unit = { _, _, _ -> }
 ) {
     val context = LocalContext.current
+    val density = LocalDensity.current.density
     val isUrl = remember(filePath) { filePath.startsWith("http") }
 
     if (isUrl) {
@@ -96,7 +97,7 @@ fun PdfViewerContent(
         var isLoading by remember { mutableStateOf(true) }
         var loadError by remember { mutableStateOf<String?>(null) }
         
-        val cropCache = remember { mutableMapOf<Int, Rect>() }
+        val cropCache = remember { mutableMapOf<Int, android.graphics.RectF>() }
         // Low resolution cache for instant placeholder display
         val lowResPageCache = remember { android.util.LruCache<Int, Bitmap>(15) }
         // High resolution cache for sharp reading
@@ -104,6 +105,7 @@ fun PdfViewerContent(
         val renderMutex = remember { Mutex() }
         var pdDocument by remember { mutableStateOf<PDDocument?>(null) }
         var extractedCharacters by remember { mutableStateOf<List<PdfCharacter>>(emptyList()) }
+        var currentRenderScale by remember { mutableFloatStateOf(1f) }
 
         LaunchedEffect(filePath) {
             withContext(Dispatchers.IO) {
@@ -208,9 +210,11 @@ fun PdfViewerContent(
 
             if (cachedHighRes != null) {
                 bitmap = cachedHighRes
+                currentRenderScale = 1.5f * density
                 onPageChanged(currentPage, r.pageCount)
             } else if (cachedLowRes != null) {
                 bitmap = cachedLowRes
+                currentRenderScale = 0.5f * density
                 onPageChanged(currentPage, r.pageCount)
             }
 
@@ -221,6 +225,7 @@ fun PdfViewerContent(
                     if (lowRes != null && isActive && bitmap == null) {
                         withContext(Dispatchers.Main) {
                             bitmap = lowRes
+                            currentRenderScale = 0.5f * density
                             onPageChanged(currentPage, r.pageCount)
                         }
                     }
@@ -233,6 +238,7 @@ fun PdfViewerContent(
                 if (b != null && isActive && bitmap != cachedHighRes) {
                     withContext(Dispatchers.Main) {
                         bitmap = b
+                        currentRenderScale = 1.5f * density
                         onPageChanged(currentPage, r.pageCount)
                     }
                 }
@@ -294,7 +300,6 @@ fun PdfViewerContent(
             } else {
                 bitmap?.let { b ->
                     var imageLayoutSize by remember { mutableStateOf(IntSize.Zero) }
-                    val density = LocalDensity.current.density
                     
                     var zoomScale by remember { mutableFloatStateOf(1f) }
                     var panOffset by remember { mutableStateOf(Offset.Zero) }
@@ -354,11 +359,12 @@ fun PdfViewerContent(
                                 imageSize = imageLayoutSize,
                                 bitmapSize = IntSize(b.width, b.height),
                                 density = density,
-                                autoCropRect = cropCache[currentPage],
+                                autoCropRect = if (autoCrop) cropCache[currentPage] else null,
                                 cropPadding = if (autoCrop) (16 * density).toInt() else 0,
                                 opinions = opinions.filter { it.pageNumber == currentPage },
                                 zoomScale = zoomScale,
                                 panOffset = panOffset,
+                                renderScale = currentRenderScale,
                                 onEmptyTap = onEmptyTap,
                                 onActionCompleted = { action, text, id ->
                                     if (text != null || id != null) {
@@ -433,7 +439,7 @@ private suspend fun getOrRenderPdfPage(
     renderer: PdfRenderer,
     context: android.content.Context,
     autoCrop: Boolean,
-    cropCache: MutableMap<Int, Rect>,
+    cropCache: MutableMap<Int, android.graphics.RectF>,
     pageCache: android.util.LruCache<Int, Bitmap>,
     lowResPageCache: android.util.LruCache<Int, Bitmap>,
     renderMutex: Mutex,
@@ -466,35 +472,27 @@ private suspend fun getOrRenderPdfPage(
                 page.render(b, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                 page.close()
 
-                if (autoCrop && !isLowRes) {
-                    val cropRect = cropCache[pageIndex] ?: detectContentBounds(b)
-                    cropCache[pageIndex] = cropRect
-                    
-                    val padding = (16 * density).toInt()
-                    val paddedRect = Rect(
-                        (cropRect.left - padding).coerceAtLeast(0),
-                        (cropRect.top - padding).coerceAtLeast(0),
-                        (cropRect.right + padding).coerceAtMost(b.width),
-                        (cropRect.bottom + padding).coerceAtMost(b.height)
-                    )
-                    
-                    if (paddedRect.width() > 0 && paddedRect.height() > 0) {
-                        b = Bitmap.createBitmap(b, paddedRect.left, paddedRect.top, paddedRect.width(), paddedRect.height())
+                if (autoCrop) {
+                    val cropRectPdf = cropCache[pageIndex] ?: run {
+                        val bounds = detectContentBounds(b)
+                        val rs = (b.width.toFloat() / page.width)
+                        android.graphics.RectF(
+                            bounds.left / rs,
+                            bounds.top / rs,
+                            bounds.right / rs,
+                            bounds.bottom / rs
+                        )
                     }
-                } else if (autoCrop && isLowRes) {
-                    // Fast fake crop for low-res if we already have the Rect from a previous high-res render
-                    val cachedRect = cropCache[pageIndex]
-                    if (cachedRect != null) {
-                        // The scale difference between low-res (0.5f) and high-res (1.5f) is 3x
-                        val scaleFactor = 3f
-                        val scaledLeft = (cachedRect.left / scaleFactor).toInt().coerceAtLeast(0)
-                        val scaledTop = (cachedRect.top / scaleFactor).toInt().coerceAtLeast(0)
-                        val scaledWidth = (cachedRect.width() / scaleFactor).toInt().coerceAtMost(b.width - scaledLeft)
-                        val scaledHeight = (cachedRect.height() / scaleFactor).toInt().coerceAtMost(b.height - scaledTop)
-                        
-                        if (scaledWidth > 0 && scaledHeight > 0) {
-                            b = Bitmap.createBitmap(b, scaledLeft, scaledTop, scaledWidth, scaledHeight)
-                        }
+                    cropCache[pageIndex] = cropRectPdf
+                    
+                    val rs = (b.width.toFloat() / page.width)
+                    val left = (cropRectPdf.left * rs - 16 * density).toInt().coerceAtLeast(0)
+                    val top = (cropRectPdf.top * rs - 16 * density).toInt().coerceAtLeast(0)
+                    val right = (cropRectPdf.right * rs + 16 * density).toInt().coerceAtMost(b.width)
+                    val bottom = (cropRectPdf.bottom * rs + 16 * density).toInt().coerceAtMost(b.height)
+                    
+                    if (right > left && bottom > top) {
+                        b = Bitmap.createBitmap(b, left, top, right - left, bottom - top)
                     }
                 }
                 
