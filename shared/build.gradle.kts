@@ -74,7 +74,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.example.notes"
+    namespace = "com.example.graymatter.notes"
     compileSdk = 33
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -85,7 +85,7 @@ android {
 sqldelight {
     databases {
         create("NotesDatabase") {
-            packageName.set("com.example.notes.database")
+            packageName.set("com.example.graymatter.notes.database")
             srcDirs("src/commonMain/sqldelight-notes")
         }
         create("GrayMatterDatabase") {

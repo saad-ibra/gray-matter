@@ -147,6 +147,18 @@ class FileViewerViewModel(
         }
     }
 
+    /**
+     * Updates the content of a resource (Markdown).
+     */
+    fun updateResourceText(newText: String) {
+        val res = _resource.value ?: return
+        viewModelScope.launch {
+            resourceRepository.updateResourceText(res.id, newText)
+            _resource.value = res.copy(extractedText = newText)
+            _pageTextMap[0] = newText
+        }
+    }
+
     fun onPageChanged(page: Int, total: Int) {
         currentPage = page
         totalPages = total

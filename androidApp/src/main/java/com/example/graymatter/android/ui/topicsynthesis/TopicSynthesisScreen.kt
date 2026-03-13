@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -17,24 +16,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.OffsetMapping
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.input.TransformedText
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.domain.Resource
 import com.example.graymatter.domain.ResourceType
 import com.example.graymatter.domain.Topic
+import com.example.graymatter.android.ui.components.MarkdownEditor
 
 /**
  * Topic Synthesis Screen.
@@ -57,23 +46,24 @@ fun TopicSynthesisScreen(
     var showEditor by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    Scaffold(
-        modifier = modifier
-            .fillMaxSize()
-            .background(GrayMatterColors.BackgroundDark),
-        containerColor = GrayMatterColors.BackgroundDark
-    ) { paddingValues ->
-        if (showEditor) {
-            OverallOpinionEditor(
-                title = topic.name,
-                initialText = topic.notes ?: "",
-                onBackClick = { showEditor = false },
-                onSave = { content -> 
-                    onSaveOverallOpinion(content)
-                    showEditor = false
-                }
-            )
-        } else {
+    if (showEditor) {
+        MarkdownEditor(
+            title = topic.name,
+            initialText = topic.notes ?: "",
+            onBackClick = { showEditor = false },
+            onSave = { content -> 
+                onSaveOverallOpinion(content)
+                showEditor = false
+            },
+            initialPreviewMode = topic.notes?.isNotBlank() == true
+        )
+    } else {
+        Scaffold(
+            modifier = modifier
+                .fillMaxSize()
+                .background(GrayMatterColors.BackgroundDark),
+            containerColor = GrayMatterColors.BackgroundDark
+        ) { paddingValues ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -136,225 +126,6 @@ fun TopicSynthesisScreen(
                 }
             }
         )
-    }
-}
-@Composable
-fun OverallOpinionEditor(
-    title: String,
-    initialText: String,
-    onBackClick: () -> Unit,
-    onSave: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var textFieldValue by remember {
-        mutableStateOf(TextFieldValue(initialText, selection = TextRange(initialText.length)))
-    }
-    var showDiscardConfirm by remember { mutableStateOf(false) }
-    var textAlign by remember { mutableStateOf(TextAlign.Left) }
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(GrayMatterColors.BackgroundDark)
-            .statusBarsPadding()
-            .imePadding() // Ensures the editor moves above the keyboard
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = {
-                if (textFieldValue.text != initialText) {
-                    showDiscardConfirm = true
-                } else {
-                    onBackClick()
-                }
-            }) {
-                Icon(Icons.Default.Close, "Close", tint = GrayMatterColors.TextPrimary)
-            }
-            Text(
-                text = "CONTENT EDITOR",
-                style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 2.sp),
-                color = GrayMatterColors.Neutral500
-            )
-            TextButton(onClick = { onSave(textFieldValue.text) }) {
-                Text("Save", color = GrayMatterColors.Primary, fontWeight = FontWeight.Bold)
-            }
-        }
-
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-            color = GrayMatterColors.TextPrimary,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-        )
-
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-        ) {
-            BasicTextField(
-                value = textFieldValue,
-                onValueChange = { textFieldValue = it },
-                textStyle = MaterialTheme.typography.bodyLarge.copy(
-                    color = GrayMatterColors.TextPrimary,
-                    textAlign = textAlign,
-                    lineHeight = 28.sp
-                ),
-                cursorBrush = SolidColor(GrayMatterColors.Primary),
-                visualTransformation = MarkdownVisualTransformation(GrayMatterColors.Primary),
-                modifier = Modifier.fillMaxSize(),
-                decorationBox = { inner ->
-                    if (textFieldValue.text.isEmpty()) {
-                        Text("Share your thoughts...", color = GrayMatterColors.Neutral700)
-                    }
-                    inner()
-                }
-            )
-        }
-
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(16.dp)),
-            color = GrayMatterColors.SurfaceDark,
-            tonalElevation = 8.dp
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { textFieldValue = wrapSelection(textFieldValue, "**") }) {
-                    Icon(Icons.Default.FormatBold, "Bold", tint = GrayMatterColors.Neutral500)
-                }
-                IconButton(onClick = { textFieldValue = wrapSelection(textFieldValue, "_") }) {
-                    Icon(Icons.Default.FormatItalic, "Italic", tint = GrayMatterColors.Neutral500)
-                }
-                Box(modifier = Modifier.width(1.dp).height(24.dp).background(GrayMatterColors.Neutral800))
-                IconButton(onClick = { textAlign = TextAlign.Left }) {
-                    Icon(Icons.Default.FormatAlignLeft, "Left", tint = if (textAlign == TextAlign.Left) GrayMatterColors.Primary else GrayMatterColors.Neutral500)
-                }
-                IconButton(onClick = { textAlign = TextAlign.Center }) {
-                    Icon(Icons.Default.FormatAlignCenter, "Center", tint = if (textAlign == TextAlign.Center) GrayMatterColors.Primary else GrayMatterColors.Neutral500)
-                }
-                IconButton(onClick = { textAlign = TextAlign.Right }) {
-                    Icon(Icons.Default.FormatAlignRight, "Right", tint = if (textAlign == TextAlign.Right) GrayMatterColors.Primary else GrayMatterColors.Neutral500)
-                }
-                Box(modifier = Modifier.width(1.dp).height(24.dp).background(GrayMatterColors.Neutral800))
-                IconButton(onClick = { textFieldValue = toggleLineStart(textFieldValue, "• ") }) {
-                    Icon(Icons.Default.FormatListBulleted, "Bullets", tint = GrayMatterColors.Neutral500)
-                }
-            }
-        }
-        Spacer(modifier = Modifier.navigationBarsPadding().height(8.dp))
-    }
-
-    if (showDiscardConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDiscardConfirm = false },
-            title = { Text("Discard Changes?", color = Color.White) },
-            text = { Text("You have unsaved changes. Are you sure you want to discard them?", color = GrayMatterColors.TextSecondary) },
-            containerColor = Color(0xFF1A1A1E),
-            confirmButton = {
-                TextButton(onClick = {
-                    showDiscardConfirm = false
-                    onBackClick()
-                }) {
-                    Text("Discard", color = GrayMatterColors.Error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDiscardConfirm = false }) {
-                    Text("Cancel", color = Color.White)
-                }
-            }
-        )
-    }
-}
-
-private fun wrapSelection(value: TextFieldValue, marker: String): TextFieldValue {
-    val text = value.text
-    val selection = value.selection
-    val start = selection.start
-    val end = selection.end
-    
-    return if (selection.collapsed) {
-        if (start >= marker.length && end <= text.length - marker.length &&
-            text.substring(start - marker.length, start) == marker &&
-            text.substring(end, end + marker.length) == marker) {
-            val newText = text.substring(0, start - marker.length) + 
-                          text.substring(start, end) + 
-                          text.substring(end + marker.length)
-            TextFieldValue(newText, TextRange(start - marker.length))
-        } else {
-            val newText = StringBuilder(text).insert(start, marker + marker).toString()
-            TextFieldValue(newText, TextRange(start + marker.length))
-        }
-    } else {
-        val selected = text.substring(start, end)
-        if (selected.startsWith(marker) && selected.endsWith(marker)) {
-            val unwrapped = selected.removePrefix(marker).removeSuffix(marker)
-            val newText = text.substring(0, start) + unwrapped + text.substring(end)
-            return TextFieldValue(newText, TextRange(start, start + unwrapped.length))
-        } else if (start >= marker.length && end <= text.length - marker.length &&
-                   text.substring(start - marker.length, start) == marker &&
-                   text.substring(end, end + marker.length) == marker) {
-            val newText = text.substring(0, start - marker.length) + selected + text.substring(end + marker.length)
-            return TextFieldValue(newText, TextRange(start - marker.length, end - marker.length))
-        } else {
-            val newText = text.substring(0, start) + marker + selected + marker + text.substring(end)
-            return TextFieldValue(newText, TextRange(start, end + marker.length * 2))
-        }
-    }
-}
-
-private fun toggleLineStart(value: TextFieldValue, prefix: String): TextFieldValue {
-    val text = value.text
-    val selection = value.selection
-    var lineStart = text.lastIndexOf('\n', selection.start - 1) + 1
-    if (lineStart < 0) lineStart = 0
-    var lineEnd = text.indexOf('\n', selection.start)
-    if (lineEnd < 0) lineEnd = text.length
-    val line = text.substring(lineStart, lineEnd)
-    return if (line.startsWith(prefix)) {
-        val newText = text.substring(0, lineStart) + line.removePrefix(prefix) + text.substring(lineEnd)
-        TextFieldValue(newText, TextRange(selection.start - prefix.length))
-    } else {
-        val newText = text.substring(0, lineStart) + prefix + text.substring(lineStart)
-        TextFieldValue(newText, TextRange(selection.start + prefix.length))
-    }
-}
-
-class MarkdownVisualTransformation(private val highlightColor: Color) : VisualTransformation {
-    override fun filter(text: AnnotatedString): TransformedText {
-        val annotatedString = buildAnnotatedString {
-            val rawText = text.text
-            append(rawText)
-            Regex("""\*\*(.*?)\*\*""").findAll(rawText).forEach { match ->
-                addStyle(SpanStyle(fontWeight = FontWeight.Bold), match.range.first, match.range.last + 1)
-                addStyle(SpanStyle(color = Color.Gray.copy(alpha = 0.4f)), match.range.first, match.range.first + 2)
-                addStyle(SpanStyle(color = Color.Gray.copy(alpha = 0.4f)), match.range.last - 1, match.range.last + 1)
-            }
-            Regex("""_(.*?)_""").findAll(rawText).forEach { match ->
-                addStyle(SpanStyle(fontStyle = FontStyle.Italic), match.range.first, match.range.last + 1)
-                addStyle(SpanStyle(color = Color.Gray.copy(alpha = 0.4f)), match.range.first, match.range.first + 1)
-                addStyle(SpanStyle(color = Color.Gray.copy(alpha = 0.4f)), match.range.last, match.range.last + 1)
-            }
-            Regex("""(?m)^•\s""").findAll(rawText).forEach { match ->
-                addStyle(SpanStyle(color = highlightColor, fontWeight = FontWeight.Bold), match.range.first, match.range.first + 1)
-            }
-        }
-        return TransformedText(annotatedString, OffsetMapping.Identity)
     }
 }
 

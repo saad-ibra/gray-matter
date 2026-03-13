@@ -22,7 +22,7 @@ import com.example.graymatter.android.ui.library.LibraryScreen
 import com.example.graymatter.android.ui.newentry.EntryType
 import com.example.graymatter.android.ui.newentry.NewEntryScreen
 import com.example.graymatter.android.ui.topicsynthesis.TopicSynthesisScreen
-import com.example.graymatter.android.ui.topicsynthesis.OverallOpinionEditor
+import com.example.graymatter.android.ui.components.MarkdownEditor
 import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
 import com.example.graymatter.di.AppModule
 import com.example.graymatter.domain.business.ExportService
@@ -268,11 +268,11 @@ fun GrayMatterNavigation(
 
             // Overlay the editor if we are editing a note
             if (editingResource != null) {
-                com.example.graymatter.android.ui.topicsynthesis.OverallOpinionEditor(
+                MarkdownEditor(
                     title = "Edit Note: ${editingResource?.title ?: "Untitled"}",
                     initialText = editingResource?.extractedText ?: "",
                     onBackClick = { editingResource = null },
-                    onSave = { newText ->
+                    onSave = { newText: String ->
                         editingResource?.let { res ->
                             viewModel.updateResourceText(res.id, newText)
                         }

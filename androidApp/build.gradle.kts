@@ -78,4 +78,7 @@ dependencies {
     
     // PDF text extraction and advanced features
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+
+    // Markdown rendering
+    implementation("com.github.jeziellago:compose-markdown:0.5.0")
 }

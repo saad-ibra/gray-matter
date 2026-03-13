@@ -30,7 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
-import com.example.graymatter.android.ui.topicsynthesis.OverallOpinionEditor
+import com.example.graymatter.android.ui.components.MarkdownEditor
 
 /**
  * New Resource Screen.
@@ -87,7 +87,7 @@ fun NewEntryScreen(
     }
 
     if (isNoteEditorOpen) {
-        OverallOpinionEditor(
+        MarkdownEditor(
             title = if (titleInput.isBlank()) "New Note" else titleInput,
             initialText = noteContent,
             onBackClick = { isNoteEditorOpen = false },

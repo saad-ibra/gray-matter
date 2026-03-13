@@ -43,6 +43,7 @@ import androidx.core.net.toUri
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.type
 import com.example.graymatter.android.util.FileUtils
+import com.example.graymatter.android.ui.components.MarkdownEditor
 
 /**
  * Main file viewer screen.
@@ -192,19 +193,16 @@ fun FileViewerScreen(
                                 }
                             )
                         }
-                        ResourceType.MARKDOWN -> TextViewerContent(
-                            filePath = res.filePath ?: "",
-                            extractedText = res.extractedText,
-                            settings = settings,
-                            context = context,
-                            onChaptersParsed = { viewModel.setChapters(it) },
-                            onTextSelected = { text, x, y -> 
-                                if (text.isNotBlank()) viewModel.onTextSelected("annotate", text, x, y)
-                            },
-                            searchQuery = viewModel.searchQuery,
-                            searchMatchIndex = viewModel.currentSearchIndex,
-                            searchResults = searchResults
-                        )
+                        ResourceType.MARKDOWN -> {
+                            MarkdownEditor(
+                                title = res.title ?: "Markdown Note",
+                                initialText = res.extractedText ?: "",
+                                onBackClick = onBackClick,
+                                onSave = { content -> viewModel.updateResourceText(content) },
+                                initialPreviewMode = true,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                         else -> {
                             // Handled by LaunchedEffect - show loading while intent triggers
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -218,7 +216,7 @@ fun FileViewerScreen(
 
         // ── Top Bar (Animated) ──
         AnimatedVisibility(
-            visible = viewModel.showTopBar,
+            visible = viewModel.showTopBar && (resource?.type != ResourceType.MARKDOWN),
             enter = fadeIn() + slideInVertically(),
             exit = fadeOut() + slideOutVertically(),
             modifier = Modifier.align(Alignment.TopCenter)
@@ -232,7 +230,7 @@ fun FileViewerScreen(
 
         // ── Bottom Bar (Animated) ──
         AnimatedVisibility(
-            visible = viewModel.showBottomBar,
+            visible = viewModel.showBottomBar && (resource?.type != ResourceType.MARKDOWN),
             enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
             exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
             modifier = Modifier.align(Alignment.BottomCenter)
