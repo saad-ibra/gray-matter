@@ -31,6 +31,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.ui.platform.LocalContext
+import com.example.graymatter.android.util.FileUtils
 import kotlinx.coroutines.launch
 
 /**
@@ -212,12 +213,21 @@ fun GrayMatterNavigation(
                 onBackClick = { navController.popBackStack() },
                 onOpenResource = {
                     itemDetails?.resource?.let { resource ->
-                        if (resource.type == com.example.graymatter.domain.ResourceType.WEB_LINK) {
-                            if (resource.url != null) {
-                                viewModel.openUrlInBrowser(context, resource.url!!)
+                        when (resource.type) {
+                            com.example.graymatter.domain.ResourceType.WEB_LINK -> {
+                                if (resource.url != null) {
+                                    viewModel.openUrlInBrowser(context, resource.url!!)
+                                }
                             }
-                        } else {
-                            navController.navigate(NavigationDestination.FileViewer.buildRoute(resource.id))
+                            com.example.graymatter.domain.ResourceType.PDF,
+                            com.example.graymatter.domain.ResourceType.MARKDOWN -> {
+                                navController.navigate(NavigationDestination.FileViewer.buildRoute(resource.id))
+                            }
+                            else -> {
+                                resource.filePath?.let { path ->
+                                    FileUtils.openFileWithIntent(context, path)
+                                }
+                            }
                         }
                     }
                 },

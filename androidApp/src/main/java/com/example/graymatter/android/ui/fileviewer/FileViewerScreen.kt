@@ -42,6 +42,7 @@ import com.example.graymatter.domain.ResourceType
 import androidx.core.net.toUri
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.type
+import com.example.graymatter.android.util.FileUtils
 
 /**
  * Main file viewer screen.
@@ -67,6 +68,18 @@ fun FileViewerScreen(
 
     LaunchedEffect(resourceId, initialPage) {
         viewModel.loadResource(resourceId, initialPage)
+    }
+
+    // Auto-trigger external viewer for unsupported internal types
+    LaunchedEffect(resource) {
+        resource?.let { res ->
+            if (res.type != ResourceType.PDF && res.type != ResourceType.MARKDOWN) {
+                res.filePath?.let { path ->
+                    FileUtils.openFileWithIntent(context, path)
+                }
+                onBackClick()
+            }
+        }
     }
 
     DisposableEffect(Unit) {
@@ -116,7 +129,7 @@ fun FileViewerScreen(
 
         // ── Content Area ──
         resource?.let { res ->
-            val isPaged = res.type == ResourceType.PDF || res.type == ResourceType.IMAGE
+            val isPaged = res.type == ResourceType.PDF
 
             Box(modifier = Modifier.fillMaxSize()) {
                 // ── The Viewer Content ──
@@ -190,41 +203,16 @@ fun FileViewerScreen(
                             },
                             searchQuery = viewModel.searchQuery,
                             searchMatchIndex = viewModel.currentSearchIndex,
-                            searchResults = searchResults,
-                            onScrollToOffset = null
+                            searchResults = searchResults
                         )
                         else -> {
-                            UnsupportedFileView(
-                                resourceType = res.type.name,
-                                onBackClick = onBackClick,
-                                onOpenWithClick = {
-                                    res.filePath?.let { path ->
-                                        try {
-                                            val uri = if (path.startsWith("content://") || path.startsWith("http")) {
-                                                path.toUri()
-                                            } else {
-                                                androidx.core.content.FileProvider.getUriForFile(
-                                                    context,
-                                                    "${context.packageName}.provider",
-                                                    java.io.File(path)
-                                                )
-                                            }
-                                            val intent = Intent(Intent.ACTION_VIEW).apply {
-                                                setDataAndType(uri, "*/*")
-                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                            }
-                                            context.startActivity(Intent.createChooser(intent, "Open with"))
-                                        } catch (_: Exception) {
-                                            android.widget.Toast.makeText(context, "Cannot open file", android.widget.Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                }
-                            )
+                            // Handled by LaunchedEffect - show loading while intent triggers
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = GrayMatterColors.Primary)
+                            }
                         }
                     }
                 }
-
-                // Navigation Taps Overlays Removed to allow unified gestures
             }
         }
 
@@ -361,135 +349,6 @@ fun FileViewerScreen(
                     editingOpinion = null
                 }
             )
-        }
-    }
-}
-
-@Composable
-fun UnsupportedFileView(
-    resourceType: String,
-    onBackClick: () -> Unit,
-    onOpenWithClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(GrayMatterColors.BackgroundDark),
-        contentAlignment = Alignment.Center
-    ) {
-        // Gradient background effect
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            GrayMatterColors.Error.copy(alpha = 0.05f),
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(32.dp)
-        ) {
-            // Elegant Icon Container
-            Box(
-                modifier = Modifier
-                    .size(140.dp)
-                    .clip(CircleShape)
-                    .background(GrayMatterColors.SurfaceDark)
-                    .border(1.dp, GrayMatterColors.Neutral800.copy(alpha = 0.5f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                // Subtle inner glow
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.05f),
-                                    Color.Transparent
-                                )
-                            )
-                        )
-                )
-                
-                Icon(
-                    imageVector = Icons.Outlined.FileOpen,
-                    contentDescription = null,
-                    tint = GrayMatterColors.Error.copy(alpha = 0.8f),
-                    modifier = Modifier.size(56.dp)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            Text(
-                text = "Format Not Supported",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = (-0.5).sp
-                ),
-                color = GrayMatterColors.TextPrimary,
-                textAlign = TextAlign.Center
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Text(
-                text = "Gray Matter currently focuses on PDF and Markdown for the best experience. Support for $resourceType is not available yet.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = GrayMatterColors.Neutral500,
-                textAlign = TextAlign.Center,
-                lineHeight = 24.sp,
-                modifier = Modifier.padding(horizontal = 24.dp)
-            )
-            
-            Spacer(modifier = Modifier.height(48.dp))
-            
-            Button(
-                onClick = onOpenWithClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = GrayMatterColors.SurfaceDark,
-                    contentColor = GrayMatterColors.TextPrimary
-                ),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, GrayMatterColors.Neutral700),
-                modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .height(56.dp)
-            ) {
-                Text(
-                    "Open with...",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onBackClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = GrayMatterColors.Primary,
-                    contentColor = GrayMatterColors.OnPrimary
-                ),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .height(56.dp),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
-            ) {
-                Text(
-                    "Back to Library",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-            }
         }
     }
 }
@@ -632,8 +491,6 @@ fun ReaderActionBar(
     onBookmarksClick: () -> Unit,
     onChaptersClick: () -> Unit
 ) {
-    val showTOC by remember { mutableStateOf(true) } // Could be conditional
-    
     Surface(
         color = Color.Black.copy(alpha = 0.92f),
         modifier = Modifier.fillMaxWidth()
