@@ -354,23 +354,29 @@ private fun TabButton(text: String, icon: androidx.compose.ui.graphics.vector.Im
 
 @Composable
 private fun OpinionSection(opinionInput: String, onOpinionChange: (String) -> Unit) {
+    val greenBg = GrayMatterColors.AppleGreen.copy(alpha = 0.08f)
+    val greenBorder = GrayMatterColors.AppleGreen.copy(alpha = 0.2f)
+    
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("OPINION", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterColors.TextSecondary)
-        Box(modifier = Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(12.dp)).background(GrayMatterColors.SurfaceInput).border(1.dp, GrayMatterColors.SurfaceBorder, RoundedCornerShape(12.dp)).padding(16.dp)) {
-            BasicTextField(value = opinionInput, onValueChange = onOpinionChange, textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary, lineHeight = 24.sp), modifier = Modifier.fillMaxSize(), cursorBrush = SolidColor(GrayMatterColors.Primary), decorationBox = { inner -> if (opinionInput.isEmpty()) Text("Type your understanding here...", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyLarge); inner() })
+        Box(modifier = Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(12.dp)).background(greenBg).border(1.dp, greenBorder, RoundedCornerShape(12.dp)).padding(16.dp)) {
+            BasicTextField(value = opinionInput, onValueChange = onOpinionChange, textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary, lineHeight = 24.sp), modifier = Modifier.fillMaxSize(), cursorBrush = SolidColor(GrayMatterColors.AppleGreen), decorationBox = { inner -> if (opinionInput.isEmpty()) Text("Type your understanding here...", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyLarge); inner() })
         }
     }
 }
 
 @Composable
 private fun ConfidenceLevelSection(confidence: Float, onConfidenceChange: (Float) -> Unit) {
+    val greenBg = GrayMatterColors.AppleGreen.copy(alpha = 0.08f)
+    val greenBorder = GrayMatterColors.AppleGreen.copy(alpha = 0.2f)
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("CONFIDENCE LEVEL", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterColors.TextSecondary)
             Text("${(confidence * 100).toInt()}%", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
         }
-        Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(GrayMatterColors.SurfaceInput).border(1.dp, GrayMatterColors.SurfaceBorder, RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Slider(value = confidence, onValueChange = onConfidenceChange, valueRange = 0f..1f, colors = SliderDefaults.colors(thumbColor = GrayMatterColors.Primary, activeTrackColor = GrayMatterColors.Primary, inactiveTrackColor = GrayMatterColors.Neutral800))
+        Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(greenBg).border(1.dp, greenBorder, RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Slider(value = confidence, onValueChange = onConfidenceChange, valueRange = 0f..1f, colors = SliderDefaults.colors(thumbColor = GrayMatterColors.AppleGreen, activeTrackColor = GrayMatterColors.AppleGreen, inactiveTrackColor = GrayMatterColors.Neutral800))
         }
     }
 }
