@@ -33,7 +33,7 @@ object GrayMatterColors {
     val Jonquil = Color(0xFFEFCA08)
     val Gamboge = Color(0xFFF49F0A)
     val CocoaBrown = Color(0xFFD96C06)
-    
+
     // Neutral grays
     val Neutral100 = Color(0xFFF4F4F5)
     val Neutral200 = Color(0xFFE4E4E7)

@@ -230,7 +230,7 @@ fun TextSelectionOverlay(
             val screenPosBase = pdfToScreen(first.x, first.y + first.height)
             val screenPosTop = pdfToScreen(first.x, first.y)
             
-            val hPad = 5.dp.value * density
+            val hPad = 0.dp.value * density
             val vPad = 3.dp.value * density
             
             val handlePos = Offset(screenPosBase.x - hPad, screenPosBase.y + vPad)
@@ -246,7 +246,7 @@ fun TextSelectionOverlay(
             val screenPosBase = pdfToScreen(last.x + last.width, last.y + last.height)
             val screenPosTop = pdfToScreen(last.x + last.width, last.y)
             
-            val hPad = 5.dp.value * density
+            val hPad = 0.dp.value * density
             val vPad = 3.dp.value * density
             
             val handlePos = Offset(screenPosBase.x + hPad, screenPosBase.y + vPad)
@@ -383,7 +383,7 @@ fun TextSelectionOverlay(
             val selectionColor = GrayMatterColors.CocoaBrown.copy(alpha = 0.4f)
             val highlightColor = GrayMatterColors.Gamboge.copy(alpha = 0.4f)
             
-            val hPad = 5.dp.toPx()
+            val hPad = 0.dp.toPx()
             val vPad = 3.dp.toPx()
             
             // Draw Persistent Highlights First
