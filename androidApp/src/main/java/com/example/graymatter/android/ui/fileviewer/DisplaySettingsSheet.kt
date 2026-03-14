@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.example.graymatter.domain.ReadingSettings
 
 /**
- * Display settings bottom sheet for configuring font, themes, and auto-crop.
+ * Display settings bottom sheet for configuring themes.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,33 +48,6 @@ fun DisplaySettingsSheet(
                 color = Color.White
             )
             Spacer(modifier = Modifier.height(20.dp))
-
-            // ── Auto Crop Toggle ──
-            ToggleRow("Auto Crop Margins (PDF)", settings.autoCrop) {
-                onSettingsChanged(settings.copy(autoCrop = it))
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ── Font Size ──
-            SettingLabel("Font Size")
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = {
-                    onSettingsChanged(settings.copy(fontSize = (settings.fontSize - 1).coerceAtLeast(10)))
-                }) {
-                    Text("A", color = Color.White, fontSize = 14.sp)
-                }
-                Text("${settings.fontSize}", color = Color.White, fontWeight = FontWeight.SemiBold)
-                IconButton(onClick = {
-                    onSettingsChanged(settings.copy(fontSize = (settings.fontSize + 1).coerceAtMost(32)))
-                }) {
-                    Text("A", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
 
             // ── Themes List ──
             ThemeGroup("Light Modes", listOf(
