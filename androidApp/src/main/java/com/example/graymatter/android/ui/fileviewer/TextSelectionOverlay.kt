@@ -230,8 +230,9 @@ fun TextSelectionOverlay(
             val screenPosBase = pdfToScreen(first.x, first.y + first.height)
             val screenPosTop = pdfToScreen(first.x, first.y)
             
-            val hPad = 0.dp.value * density
-            val vPad = 3.dp.value * density
+            // Scaled padding to maintain relative shape during zoom
+            val hPad = 0.dp.value * density * zoomScale
+            val vPad = 5.dp.value * density * zoomScale
             
             val handlePos = Offset(screenPosBase.x - hPad, screenPosBase.y + vPad)
             val height = (screenPosBase.y - screenPosTop.y) + vPad * 2
@@ -246,8 +247,9 @@ fun TextSelectionOverlay(
             val screenPosBase = pdfToScreen(last.x + last.width, last.y + last.height)
             val screenPosTop = pdfToScreen(last.x + last.width, last.y)
             
-            val hPad = 0.dp.value * density
-            val vPad = 3.dp.value * density
+            // Scaled padding to maintain relative shape during zoom
+            val hPad = 0.dp.value * density * zoomScale
+            val vPad = 5.dp.value * density * zoomScale
             
             val handlePos = Offset(screenPosBase.x + hPad, screenPosBase.y + vPad)
             val height = (screenPosBase.y - screenPosTop.y) + vPad * 2
@@ -383,8 +385,9 @@ fun TextSelectionOverlay(
             val selectionColor = GrayMatterColors.CocoaBrown.copy(alpha = 0.4f)
             val highlightColor = GrayMatterColors.Gamboge.copy(alpha = 0.4f)
             
-            val hPad = 0.dp.toPx()
-            val vPad = 3.dp.toPx()
+            // Scaled padding to maintain relative shape during zoom
+            val hPad = 0.dp.toPx() * zoomScale
+            val vPad = 5.dp.toPx() * zoomScale
             
             // Draw Persistent Highlights First
             for ((_, chars) in persistentHighlights) {
