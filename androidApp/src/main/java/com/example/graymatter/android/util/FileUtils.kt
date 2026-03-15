@@ -3,6 +3,7 @@ package com.example.graymatter.android.util
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.core.content.FileProvider
@@ -12,39 +13,54 @@ import java.io.InputStream
 import java.util.UUID
 
 object FileUtils {
+    private const val TAG = "FileUtils"
+
     /**
      * Copies the content from the given URI to the app's internal storage
-     * and returns the absolute path of the copied file.
+     * specifically in the 'resources' folder.
      */
     fun copyUriToInternalStorage(context: Context, uri: Uri, fileName: String): String? {
         return try {
             val contentResolver = context.contentResolver
+            // Using openInputStream handles Scoped Storage automatically if we have URI permissions
             val inputStream: InputStream? = contentResolver.openInputStream(uri)
             
-            if (inputStream == null) return null
+            if (inputStream == null) {
+                Log.e(TAG, "InputStream is null for URI: $uri")
+                return null
+            }
 
-            val outputDir = File(context.filesDir, "graymatter_docs")
+            val outputDir = File(context.filesDir, "resources")
             if (!outputDir.exists()) {
                 outputDir.mkdirs()
             }
 
-            // Sanitize filename and prepend UUID to avoid collisions
-            val safeFileName = fileName.replace("[^a-zA-Z0-9.\\-]".toRegex(), "_")
-            val uniqueName = "${UUID.randomUUID()}_$safeFileName"
-            val outputFile = File(outputDir, uniqueName)
+            // Extract extension
+            val extension = fileName.substringAfterLast('.', "bin")
+            // Use UUID for internal storage to avoid collisions and simplify backup
+            val internalName = "${UUID.randomUUID()}.$extension"
+            val outputFile = File(outputDir, internalName)
 
-            val outputStream = FileOutputStream(outputFile)
             inputStream.use { input ->
-                outputStream.use { output ->
+                FileOutputStream(outputFile).use { output ->
                     input.copyTo(output)
                 }
             }
             
             outputFile.absolutePath
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error copying URI to internal storage", e)
             null
         }
+    }
+
+    /**
+     * Checks if a file exists at the given path.
+     */
+    fun verifyFileExists(path: String?): Boolean {
+        if (path.isNullOrBlank()) return false
+        val file = File(path)
+        return file.exists() && file.isFile
     }
 
     /**
@@ -53,17 +69,16 @@ object FileUtils {
     fun openFileWithIntent(context: Context, filePath: String) {
         try {
             val file = File(filePath)
-            val uri = if (filePath.startsWith("content://")) {
-                Uri.parse(filePath)
-            } else if (filePath.startsWith("http")) {
-                Uri.parse(filePath)
-            } else {
-                FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.provider",
-                    file
-                )
+            if (!file.exists()) {
+                Toast.makeText(context, "File no longer exists locally.", Toast.LENGTH_SHORT).show()
+                return
             }
+
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                file
+            )
 
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, getMimeType(filePath))
@@ -71,6 +86,7 @@ object FileUtils {
             }
             context.startActivity(Intent.createChooser(intent, "Open with"))
         } catch (e: Exception) {
+            Log.e(TAG, "Cannot open file", e)
             Toast.makeText(context, "Cannot open file: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }

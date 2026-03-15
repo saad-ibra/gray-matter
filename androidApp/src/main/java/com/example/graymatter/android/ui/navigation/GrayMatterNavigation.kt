@@ -30,6 +30,7 @@ import android.content.Intent
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
 import com.example.graymatter.android.util.FileUtils
 import kotlinx.coroutines.launch
@@ -56,6 +57,7 @@ fun GrayMatterNavigation(
     val items by viewModel.itemsStream.collectAsState(initial = emptyList())
     var editingResource by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.example.graymatter.domain.Resource?>(null) }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     NavHost(
         navController = navController,
@@ -136,7 +138,6 @@ fun GrayMatterNavigation(
         ) { backStackEntry ->
             val topicId = backStackEntry.arguments?.getString(NavigationDestination.TopicDetail.ARG_TOPIC_ID)
             val topic = topics.find { it.id == topicId }
-            val context = LocalContext.current
             
             // Collect resources for this topic
             val topicItems by viewModel.getItemsByTopic(topicId ?: "").collectAsState(initial = emptyList())
@@ -175,18 +176,41 @@ fun GrayMatterNavigation(
 
         // New Entry Screen
         composable(NavigationDestination.NewEntry.route) {
+            val isImporting by viewModel.isImporting.collectAsState()
+
             NewEntryScreen(
                 onBackClick = { navController.popBackStack() },
+                isSaving = isImporting,
                 onSaveClick = { type, value, opinion, confidence, fileName, description ->
                     coroutineScope.launch {
                         val newItemId = when (type) {
                             EntryType.LINK -> viewModel.createNewItem(value, opinion, confidence, description)
-                            EntryType.FILE -> viewModel.createNewItemFromFile(fileName ?: "Unknown", value, opinion, confidence, description)
-                            EntryType.NOTE -> viewModel.createNewNote(fileName?.removeSuffix(".md") ?: "Untitled", value, opinion, confidence, description)
+                            EntryType.FILE -> {
+                                viewModel.createNewItemFromFile(
+                                    context = context,
+                                    fileName = fileName ?: "Unknown",
+                                    uri = Uri.parse(value),
+                                    opinionText = opinion,
+                                    confidence = confidence,
+                                    description = description
+                                )
+                            }
+                            EntryType.NOTE -> {
+                                viewModel.createNewNote(
+                                    context = context,
+                                    title = fileName?.removeSuffix(".md") ?: "Untitled",
+                                    content = value,
+                                    opinionText = opinion,
+                                    confidence = confidence,
+                                    description = description
+                                )
+                            }
                         }
                         
-                        navController.navigate(NavigationDestination.AddToTopic.buildRoute(newItemId)) {
-                            popUpTo(NavigationDestination.Home.route) { saveState = true }
+                        if (newItemId != null) {
+                            navController.navigate(NavigationDestination.AddToTopic.buildRoute(newItemId)) {
+                                popUpTo(NavigationDestination.Home.route) { saveState = true }
+                            }
                         }
                     }
                 }
@@ -205,7 +229,6 @@ fun GrayMatterNavigation(
             val itemId = backStackEntry.arguments?.getString(NavigationDestination.ItemDetail.ARG_ITEM_ID) ?: return@composable
             val itemDetails by viewModel.getItemDetails(itemId).collectAsState(initial = null)
             val readingProgress by viewModel.getReadingProgressStream(itemDetails?.resource?.id ?: "").collectAsState(initial = null)
-            val context = androidx.compose.ui.platform.LocalContext.current
 
             ItemDetailScreen(
                 itemDetails = itemDetails,
@@ -221,7 +244,12 @@ fun GrayMatterNavigation(
                             }
                             com.example.graymatter.domain.ResourceType.PDF,
                             com.example.graymatter.domain.ResourceType.MARKDOWN -> {
-                                navController.navigate(NavigationDestination.FileViewer.buildRoute(resource.id))
+                                // Check integrity before opening
+                                if (FileUtils.verifyFileExists(resource.filePath)) {
+                                    navController.navigate(NavigationDestination.FileViewer.buildRoute(resource.id))
+                                } else {
+                                    android.widget.Toast.makeText(context, "File missing from storage", android.widget.Toast.LENGTH_LONG).show()
+                                }
                             }
                             else -> {
                                 resource.filePath?.let { path ->
@@ -359,7 +387,6 @@ fun GrayMatterNavigation(
 }
 
 private fun shareText(context: Context, text: String, title: String) {
-    // Also copy to clipboard for convenience
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val clip = ClipData.newPlainText("Gray Matter Export", text)
     clipboard.setPrimaryClip(clip)

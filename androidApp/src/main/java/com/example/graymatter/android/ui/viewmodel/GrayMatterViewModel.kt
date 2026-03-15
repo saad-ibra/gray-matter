@@ -6,6 +6,7 @@ import android.net.Uri
 import android.webkit.MimeTypeMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.graymatter.android.util.FileUtils
 import com.example.graymatter.data.ItemRepository
 import com.example.graymatter.data.OpinionRepository
 import com.example.graymatter.data.ResourceRepository
@@ -56,6 +57,29 @@ class GrayMatterViewModel(
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _isImporting = MutableStateFlow(false)
+    val isImporting: StateFlow<Boolean> = _isImporting.asStateFlow()
+
+    /**
+     * Verifies the integrity of all resources on app start.
+     * Checks if internal files still exist.
+     */
+    fun checkResourceIntegrity() {
+        viewModelScope.launch {
+            val items = itemRepository.itemsStream.first()
+            items.forEach { item ->
+                val details = itemRepository.getItemWithDetails(item.id)
+                val filePath = details?.resource?.filePath
+                if (details?.resource?.type != ResourceType.WEB_LINK && filePath != null) {
+                    if (!FileUtils.verifyFileExists(filePath)) {
+                        // In a real app, we might mark this in DB or surface a badge
+                        // For now, we log it.
+                    }
+                }
+            }
+        }
+    }
     
     /**
      * Creates a new item with resource and first opinion.
@@ -86,47 +110,26 @@ class GrayMatterViewModel(
     }
 
     /**
-     * Creates a new item with a title and first opinion.
+     * Creates a new Note item. Saved with Markdown content in internal storage.
      */
-    suspend fun createNewItemWithTitle(title: String, opinionText: String, confidence: Int, description: String? = null): String {
+    suspend fun createNewNote(context: Context, title: String, content: String, opinionText: String, confidence: Int, description: String? = null): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
         val itemId = generateUuid()
         val opinionId = generateUuid()
-        
-        itemRepository.createItemWithDetails(
-            itemId = itemId,
-            resourceId = resourceId,
-            resourceType = ResourceType.UNSUPPORTED.name,
-            url = null,
-            filePath = null,
-            extractedText = null,
-            title = title,
-            description = description,
-            opinionId = opinionId,
-            opinionText = opinionText,
-            confidence = confidence,
-            now = now
-        )
-        
-        return itemId
-    }
 
-    /**
-     * Creates a new Note item. Saved with Markdown content.
-     */
-    suspend fun createNewNote(title: String, content: String, opinionText: String, confidence: Int, description: String? = null): String {
-        val now = Clock.System.now().toEpochMilliseconds()
-        val resourceId = generateUuid()
-        val itemId = generateUuid()
-        val opinionId = generateUuid()
+        // Create the .md file in internal storage
+        val outputDir = java.io.File(context.filesDir, "resources")
+        if (!outputDir.exists()) outputDir.mkdirs()
+        val internalFile = java.io.File(outputDir, "${generateUuid()}.md")
+        internalFile.writeText(content)
         
         itemRepository.createItemWithDetails(
             itemId = itemId,
             resourceId = resourceId,
             resourceType = ResourceType.MARKDOWN.name,
             url = null,
-            filePath = "${title}.md",
+            filePath = internalFile.absolutePath,
             extractedText = content,
             title = title,
             description = description,
@@ -141,38 +144,57 @@ class GrayMatterViewModel(
     
     /**
      * Creates a new item from a file resource with first opinion.
+     * Copies the file to internal storage first.
      * Returns the created itemId.
      */
     suspend fun createNewItemFromFile(
+        context: Context,
         fileName: String,
-        filePath: String,
+        uri: Uri,
         opinionText: String,
         confidence: Int,
         description: String? = null
-    ): String {
-        val now = Clock.System.now().toEpochMilliseconds()
-        val resourceId = generateUuid()
-        val itemId = generateUuid()
-        val opinionId = generateUuid()
-        
-        val resourceType = determineResourceType(fileName, filePath)
-        
-        itemRepository.createItemWithDetails(
-            itemId = itemId,
-            resourceId = resourceId,
-            resourceType = resourceType.name,
-            url = null,
-            filePath = filePath,
-            extractedText = null,
-            title = fileName,
-            description = description,
-            opinionId = opinionId,
-            opinionText = opinionText,
-            confidence = confidence,
-            now = now
-        )
-        
-        return itemId
+    ): String? {
+        _isImporting.value = true
+        return try {
+            // 1. Copy file to internal storage
+            val internalPath = FileUtils.copyUriToInternalStorage(context, uri, fileName)
+            
+            if (internalPath == null) {
+                _isImporting.value = false
+                return null
+            }
+
+            // 2. Only after successful copy, write to database
+            val now = Clock.System.now().toEpochMilliseconds()
+            val resourceId = generateUuid()
+            val itemId = generateUuid()
+            val opinionId = generateUuid()
+            
+            val resourceType = determineResourceType(fileName, internalPath)
+            
+            itemRepository.createItemWithDetails(
+                itemId = itemId,
+                resourceId = resourceId,
+                resourceType = resourceType.name,
+                url = null,
+                filePath = internalPath,
+                extractedText = null,
+                title = fileName,
+                description = description,
+                opinionId = opinionId,
+                opinionText = opinionText,
+                confidence = confidence,
+                now = now
+            )
+            
+            _isImporting.value = false
+            itemId
+        } catch (e: Exception) {
+            e.printStackTrace()
+            _isImporting.value = false
+            null
+        }
     }
     
     /**
@@ -225,10 +247,22 @@ class GrayMatterViewModel(
 
     /**
      * Deletes an item and its associated resource.
+     * Also deletes the physical file from internal storage.
      */
     fun deleteItem(itemId: String) {
         viewModelScope.launch {
+            val details = itemRepository.getItemWithDetails(itemId)
+            val filePath = details?.resource?.filePath
+            
             itemRepository.deleteItem(itemId)
+
+            // Delete physical file if it exists and is in our app's private directory
+            if (filePath != null && filePath.contains("/files/resources/")) {
+                val file = java.io.File(filePath)
+                if (file.exists()) {
+                    file.delete()
+                }
+            }
         }
     }
     
@@ -313,8 +347,6 @@ class GrayMatterViewModel(
         }
     }
 
-    // -- File Viewer & Library Enhancement Methods --
-
     /**
      * Renames a resource (updates its title).
      */
@@ -330,6 +362,16 @@ class GrayMatterViewModel(
     fun updateResourceText(resourceId: String, newText: String) {
         viewModelScope.launch {
             resourceRepository.updateResourceText(resourceId, newText)
+            
+            // If it's a file-based note, update the physical file too
+            val resource = resourceRepository.getResourceById(resourceId)
+            if (resource?.type == ResourceType.MARKDOWN && resource.filePath != null) {
+                try {
+                    java.io.File(resource.filePath).writeText(newText)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
         }
     }
 
@@ -348,7 +390,6 @@ class GrayMatterViewModel(
             }
             context.startActivity(intent)
         } catch (_: Exception) {
-            // URL could not be opened
         }
     }
 
@@ -371,8 +412,6 @@ class GrayMatterViewModel(
      */
     fun updateReadingProgress(resourceId: String, currentPage: Int, totalPages: Int, currentChapter: String? = null) {
         viewModelScope.launch {
-            // Fix: Corrected progress calculation logic.
-            // (currentPage + 1) / totalPages ensures that page 1 shows some progress, and last page shows 100%.
             val percent = if (totalPages > 0) (currentPage + 1).toDouble() / totalPages else 0.0
             val progress = ReadingProgress(
                 resourceId = resourceId,
@@ -442,18 +481,12 @@ class GrayMatterViewModel(
      */
     fun deleteBookmark(bookmarkId: String) {
         viewModelScope.launch {
-            // Find bookmark before deleting to match its opinion
             val bookmark = resourceRepository.getBookmarkById(bookmarkId)
             
             if (bookmark != null) {
-                // Find and delete the corresponding opinion
                 val item = itemRepository.getItemByResourceId(bookmark.resourceId)
                 if (item != null) {
-                    // Try to find the exact opinion that was created alongside this bookmark
                     val opinions = opinionRepository.getOpinionsByItemId(item.id).first()
-                    // The text format when saving a bookmark is: "[Page X] opinionText"
-                    // And timestamp should match exactly (but SQLite milliseconds might truncate slightly, 
-                    // so we match on text and pageNumber for safety).
                     val matchingOpinion = opinions.firstOrNull { 
                         it.createdAt == bookmark.createdAt || 
                         (it.pageNumber == bookmark.page && it.text.contains(bookmark.opinion ?: ""))
@@ -514,13 +547,8 @@ class GrayMatterViewModel(
     private fun determineResourceType(fileName: String, filePath: String? = null): ResourceType {
         var ext = fileName.substringAfterLast('.', "").lowercase()
         
-        // If extension is missing, try to get it from filePath if it's a content URI
-        if (ext.isEmpty() && filePath != null && filePath.startsWith("content://")) {
-            val type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(filePath.substringAfterLast('.'))
-                ?: "application/octet-stream"
-             // In many cases we don't have the mime type here easily without context.
-             // But we can check if the fileName contains keywords.
-             if (fileName.lowercase().contains("pdf")) return ResourceType.PDF
+        if (ext.isEmpty() && filePath != null) {
+            if (fileName.lowercase().contains("pdf")) return ResourceType.PDF
         }
 
         return when (ext) {

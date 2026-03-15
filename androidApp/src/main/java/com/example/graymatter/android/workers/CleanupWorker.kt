@@ -1,7 +1,6 @@
 package com.example.graymatter.android.workers
 
 import android.content.Context
-import androidx.work.Configuration
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ListenableWorker
@@ -11,11 +10,13 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.example.graymatter.di.AppModule
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
  * A [CoroutineWorker] that performs background cleanup tasks for Gray Matter.
- * Currently a placeholder as we transition from the legacy Notes architecture.
+ * Deletes orphaned files in the internal resources directory that are no longer referenced in the database.
  */
 class CleanupWorker(
     appContext: Context,
@@ -24,8 +25,34 @@ class CleanupWorker(
 ) : CoroutineWorker(appContext = appContext, params = workerParameters) {
 
     override suspend fun doWork(): Result = try {
-        // TODO: Implement Gray Matter specific cleanup logic here
-        // e.g., cleaning up orphaned resources or temporary files
+        val resourceDir = File(applicationContext.filesDir, "resources")
+        if (resourceDir.exists()) {
+            val files = resourceDir.listFiles()
+            if (files != null) {
+                // Fetch current items from the database
+                // itemsStream is a Flow<List<Item>>, so we use .first() to get the current snapshot
+                val itemsList = appModule.itemRepository.itemsStream.first()
+                
+                // Collect all valid file paths currently tracked in the database
+                val validPaths = mutableSetOf<String>()
+                for (item in itemsList) {
+                    // getItemWithDetails is a suspend function, so we must call it within the suspend doWork()
+                    // or another coroutine context. A simple for-loop is the safest way.
+                    val details = appModule.itemRepository.getItemWithDetails(item.id)
+                    details?.resource?.filePath?.let { path ->
+                        // Store the absolute path for reliable comparison
+                        validPaths.add(File(path).absolutePath)
+                    }
+                }
+                
+                // Remove files from storage that are no longer in the database
+                for (file in files) {
+                    if (!validPaths.contains(file.absolutePath)) {
+                        file.delete()
+                    }
+                }
+            }
+        }
         Result.success()
     } catch (exception: Exception) {
         if (exception is CancellationException) throw exception
