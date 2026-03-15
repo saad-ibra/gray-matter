@@ -181,24 +181,39 @@ fun GrayMatterNavigation(
             NewEntryScreen(
                 onBackClick = { navController.popBackStack() },
                 isSaving = isImporting,
-                onSaveClick = { type, value, opinion, confidence, fileName, description ->
+                onSaveClick = { type, value, opinion, confidence, title, description, originalFileName ->
                     coroutineScope.launch {
                         val newItemId = when (type) {
-                            EntryType.LINK -> viewModel.createNewItem(value, opinion, confidence, description)
+                            EntryType.LINK -> viewModel.createNewItem(
+                                url = value, 
+                                opinionText = opinion, 
+                                confidence = confidence, 
+                                title = title, 
+                                description = description
+                            )
                             EntryType.FILE -> {
+                                // If title lacks extension, append original extension
+                                val finalTitle = if (title != null && originalFileName != null && !title.contains(".")) {
+                                    val ext = originalFileName.substringAfterLast('.', "")
+                                    if (ext.isNotEmpty()) "$title.$ext" else title
+                                } else title ?: originalFileName ?: "Unknown"
+
                                 viewModel.createNewItemFromFile(
                                     context = context,
-                                    fileName = fileName ?: "Unknown",
+                                    fileName = originalFileName ?: "Unknown",
                                     uri = Uri.parse(value),
                                     opinionText = opinion,
                                     confidence = confidence,
+                                    title = finalTitle,
                                     description = description
                                 )
                             }
                             EntryType.NOTE -> {
+                                // Ensure .md extension for notes
+                                val finalTitle = if (title != null && !title.endsWith(".md")) "$title.md" else (title ?: "Untitled.md")
                                 viewModel.createNewNote(
                                     context = context,
-                                    title = fileName?.removeSuffix(".md") ?: "Untitled",
+                                    title = finalTitle,
                                     content = value,
                                     opinionText = opinion,
                                     confidence = confidence,
@@ -276,7 +291,13 @@ fun GrayMatterNavigation(
                 },
                 onRenameResource = { newName ->
                     itemDetails?.resource?.let { resource ->
-                        viewModel.renameResource(resource.id, newName)
+                        // Maintain extension when renaming if it's a file
+                        val finalName = if (resource.type != com.example.graymatter.domain.ResourceType.WEB_LINK && !newName.contains(".")) {
+                            val oldExt = resource.title?.substringAfterLast('.', "") ?: ""
+                            if (oldExt.isNotEmpty()) "$newName.$oldExt" else newName
+                        } else newName
+                        
+                        viewModel.renameResource(resource.id, finalName)
                     }
                 },
                 onDeleteItem = {

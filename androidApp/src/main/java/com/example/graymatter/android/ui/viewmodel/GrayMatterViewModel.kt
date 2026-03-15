@@ -22,6 +22,7 @@ import com.example.graymatter.domain.Topic
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import java.util.Locale
 import kotlin.random.Random
 
 /**
@@ -74,7 +75,6 @@ class GrayMatterViewModel(
                 if (details?.resource?.type != ResourceType.WEB_LINK && filePath != null) {
                     if (!FileUtils.verifyFileExists(filePath)) {
                         // In a real app, we might mark this in DB or surface a badge
-                        // For now, we log it.
                     }
                 }
             }
@@ -85,7 +85,7 @@ class GrayMatterViewModel(
      * Creates a new item with resource and first opinion.
      * Returns the created itemId.
      */
-    suspend fun createNewItem(url: String, opinionText: String, confidence: Int, description: String? = null): String {
+    suspend fun createNewItem(url: String, opinionText: String, confidence: Int, title: String? = null, description: String? = null): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
         val itemId = generateUuid()
@@ -98,7 +98,7 @@ class GrayMatterViewModel(
             url = url,
             filePath = null,
             extractedText = null,
-            title = extractTitleFromUrl(url),
+            title = title ?: extractTitleFromUrl(url),
             description = description,
             opinionId = opinionId,
             opinionText = opinionText,
@@ -153,6 +153,7 @@ class GrayMatterViewModel(
         uri: Uri,
         opinionText: String,
         confidence: Int,
+        title: String? = null,
         description: String? = null
     ): String? {
         _isImporting.value = true
@@ -180,7 +181,7 @@ class GrayMatterViewModel(
                 url = null,
                 filePath = internalPath,
                 extractedText = null,
-                title = fileName,
+                title = title ?: fileName,
                 description = description,
                 opinionId = opinionId,
                 opinionText = opinionText,
@@ -568,17 +569,29 @@ class GrayMatterViewModel(
     /**
      * Extracts title from URL.
      */
-    private fun extractTitleFromUrl(url: String): String {
+    fun extractTitleFromUrl(url: String): String {
         return try {
-            val cleanUrl = url
+            var clean = url
                 .removePrefix("https://")
                 .removePrefix("http://")
                 .removePrefix("www.")
-            cleanUrl.split("/")
-                .lastOrNull { it.isNotBlank() }
-                ?.replace("-", " ")
-                ?.replace("_", " ")
-                ?: cleanUrl.split("/").first()
+            
+            // Remove trailing slash
+            if (clean.endsWith("/")) clean = clean.dropLast(1)
+            
+            // Take the last part of the path (the slug)
+            val parts = clean.split("/")
+            var slug = parts.lastOrNull { it.isNotBlank() } ?: parts.first()
+            
+            // Clean hyphens and underscores, replace with spaces
+            slug = slug.replace("-", " ").replace("_", " ")
+            
+            // Basic capitalization (sentence case)
+            if (slug.isNotEmpty()) {
+                slug = slug.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+            }
+            
+            slug
         } catch (e: Exception) {
             url
         }

@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.components.MarkdownEditor
+import java.util.Locale
 
 /**
  * New Resource Screen.
@@ -40,7 +41,7 @@ import com.example.graymatter.android.ui.components.MarkdownEditor
 @Composable
 fun NewEntryScreen(
     onBackClick: () -> Unit,
-    onSaveClick: (type: EntryType, value: String, opinion: String, confidence: Int, fileName: String?, description: String?) -> Unit,
+    onSaveClick: (type: EntryType, value: String, opinion: String, confidence: Int, title: String?, description: String?, originalFileName: String?) -> Unit,
     isSaving: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -83,6 +84,18 @@ fun NewEntryScreen(
             if (selectedFileName == null) {
                 selectedFileName = it.lastPathSegment ?: "Unknown file"
             }
+            
+            // Auto-fill title from filename if blank
+            if (titleInput.isBlank()) {
+                titleInput = selectedFileName?.substringBeforeLast('.') ?: ""
+            }
+        }
+    }
+
+    // Auto-fill title from URL if blank
+    LaunchedEffect(urlInput) {
+        if (selectedTab == 0 && urlInput.isNotBlank() && titleInput.isBlank()) {
+            titleInput = inferTitleFromUrl(urlInput)
         }
     }
 
@@ -116,10 +129,12 @@ fun NewEntryScreen(
                 .padding(top = 8.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Source Material Section (Reordered: Link, File, Note)
+            // Source Material Section
             SourceMaterialSection(
                 selectedTab = selectedTab,
-                onTabChange = { selectedTab = it },
+                onTabChange = { 
+                    selectedTab = it 
+                },
                 titleInput = titleInput,
                 onTitleChange = { titleInput = it },
                 urlInput = urlInput,
@@ -206,7 +221,7 @@ fun NewEntryScreen(
             }
         }
         
-        // Save Button logic: Link or File uploaded allows save; Note requires title.
+        // Save Button logic
         val isLinkValid = selectedTab == 0 && urlInput.isNotBlank()
         val isFileValid = selectedTab == 1 && selectedFileUri != null
         val isNoteValid = selectedTab == 2 && titleInput.isNotBlank()
@@ -214,14 +229,14 @@ fun NewEntryScreen(
         SaveButton(
             onClick = {
                 val finalDesc = descriptionInput.takeIf { it.isNotBlank() }
+                val finalTitle = titleInput.takeIf { it.isNotBlank() }
                 when (selectedTab) {
-                    0 -> onSaveClick(EntryType.LINK, urlInput, opinionInput, (confidence * 100).toInt(), null, finalDesc)
+                    0 -> onSaveClick(EntryType.LINK, urlInput, opinionInput, (confidence * 100).toInt(), finalTitle, finalDesc, null)
                     1 -> selectedFileUri?.let { uri ->
-                        onSaveClick(EntryType.FILE, uri.toString(), opinionInput, (confidence * 100).toInt(), selectedFileName, finalDesc)
+                        onSaveClick(EntryType.FILE, uri.toString(), opinionInput, (confidence * 100).toInt(), finalTitle, finalDesc, selectedFileName)
                     }
                     2 -> {
-                        // For notes, we pass noteContent as the file content (will be saved as .md)
-                        onSaveClick(EntryType.NOTE, noteContent, opinionInput, (confidence * 100).toInt(), "${titleInput}.md", finalDesc)
+                        onSaveClick(EntryType.NOTE, noteContent, opinionInput, (confidence * 100).toInt(), titleInput, finalDesc, null)
                     }
                 }
             },
@@ -233,6 +248,80 @@ fun NewEntryScreen(
                 .imePadding()
                 .padding(16.dp)
         )
+    }
+}
+
+private fun inferTitleFromUrl(url: String): String {
+    return try {
+        val uri = Uri.parse(url)
+        var clean = url
+            .removePrefix("https://")
+            .removePrefix("http://")
+            .removePrefix("www.")
+        
+        if (clean.endsWith("/")) clean = clean.dropLast(1)
+        
+        // Remove query parameters and fragments
+        clean = clean.substringBefore("?").substringBefore("#")
+        
+        val parts = clean.split("/").filter { it.isNotBlank() }
+        if (parts.isEmpty()) return ""
+
+        // Common non-title segments to ignore
+        val ignoreKeywords = setOf(
+            "articleshow", "article", "post", "blog", "news", "story", "p", "id", 
+            "view", "details", "html", "php", "cms", "aspx", "category", "tag", "archives"
+        )
+
+        var slug = ""
+        
+        // Iterate backwards to find the most descriptive part
+        for (i in parts.indices.reversed()) {
+            val part = parts[i].lowercase()
+            
+            // Skip domain names (first part usually)
+            if (i == 0 && parts.size > 1) continue
+            
+            // Skip technical IDs or short noise
+            if (part.all { it.isDigit() || it == '.' } || 
+                part.length < 4 || 
+                ignoreKeywords.contains(part.substringBeforeLast(".")) ||
+                part.contains("index.")
+            ) continue
+            
+            // If it has hyphens or underscores, it's likely the title slug
+            if (part.contains("-") || part.contains("_")) {
+                slug = parts[i]
+                break
+            }
+            
+            // Fallback to the first non-ignored part from the end
+            if (slug.isEmpty()) {
+                slug = parts[i]
+            }
+        }
+        
+        if (slug.isEmpty()) slug = parts.last()
+
+        // Final cleanup
+        var formatted = slug
+            .substringBeforeLast(".cms")
+            .substringBeforeLast(".html")
+            .substringBeforeLast(".php")
+            .substringBeforeLast(".htm")
+            .replace("-", " ")
+            .replace("_", " ")
+            .replace(Regex("\\s+"), " ") // Double spaces
+            .trim()
+        
+        // Robust formatting: Title Case
+        formatted = formatted.split(" ").filter { it.isNotBlank() }.joinToString(" ") { word ->
+            word.lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+        }
+        
+        formatted
+    } catch (e: Exception) {
+        ""
     }
 }
 
@@ -283,12 +372,28 @@ private fun SourceMaterialSection(
         }
         
         when (selectedTab) {
-            0 -> InputField(urlInput, onUrlChange, "https://example.com", Icons.Default.Public)
-            1 -> FilePickerField(selectedFileName, onPickFile)
+            0 -> {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    InputField(urlInput, onUrlChange, "https://example.com", Icons.Default.Public)
+                    if (urlInput.isNotBlank()) {
+                        InputField(titleInput, onTitleChange, "Resource Title", Icons.Default.Title)
+                    }
+                }
+            }
+            1 -> {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    FilePickerField(selectedFileName, onPickFile)
+                    if (selectedFileName != null) {
+                        InputField(titleInput, onTitleChange, "Resource Title", Icons.Default.Title)
+                    }
+                }
+            }
             2 -> {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    InputField(titleInput, onTitleChange, "Note Title", Icons.Default.Title)
                     AddNoteContentButton(onClick = onAddNoteContent, hasContent = hasNoteContent)
+                    if (hasNoteContent) {
+                        InputField(titleInput, onTitleChange, "Note Title", Icons.Default.Title)
+                    }
                 }
             }
         }
