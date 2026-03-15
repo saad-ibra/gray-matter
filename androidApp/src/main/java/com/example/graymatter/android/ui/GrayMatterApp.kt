@@ -25,7 +25,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.graymatter.android.ui.navigation.GrayMatterNavigation
-import com.example.graymatter.android.ui.navigation.NavigationDestination
+import com.example.graymatter.android.ui.navigation. NavigationDestination
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.di.AppModule
 

@@ -1,39 +1,15 @@
+// DEPRECATED
 package com.example.graymatter.notes.android.ui.workers
-
 import android.content.Context
 import androidx.work.CoroutineWorker
-import androidx.work.ListenableWorker
-import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.example.graymatter.notes.data.NotesRepository
-import kotlinx.coroutines.CancellationException
+import androidx.work.WorkerFactory
+import androidx.work.ListenableWorker
 
-/**
- * A [CoroutineWorker] that deletes redundant data from the database.
- */
-class CleanupWorker(
-    appContext: Context,
-    workerParameters: WorkerParameters,
-    private val notesRepository: NotesRepository
-) : CoroutineWorker(appContext = appContext, params = workerParameters) {
-
-    override suspend fun doWork(): Result = try {
-        notesRepository.deleteAllNotesMarkedAsDeleted()
-        Result.success()
-    } catch (exception: Exception) {
-        if (exception is CancellationException) throw exception
-        Result.failure()
-    }
+class CleanupWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result = Result.success()
 }
 
-class CleanupWorkerFactory(private val notesRepository: NotesRepository) : WorkerFactory() {
-    override fun createWorker(
-        appContext: Context,
-        workerClassName: String,
-        workerParameters: WorkerParameters
-    ): ListenableWorker = CleanupWorker(
-        appContext = appContext,
-        workerParameters = workerParameters,
-        notesRepository = notesRepository
-    )
+class CleanupWorkerFactory : WorkerFactory() {
+    override fun createWorker(context: Context, className: String, params: WorkerParameters): ListenableWorker? = null
 }
