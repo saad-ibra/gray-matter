@@ -15,39 +15,6 @@ We believe that passive collection is the enemy of actual knowledge. Gray Matter
 
 ---
 
-## Features
-
-### 1. Fully Offline & Privacy-First Architecture
-*   **What it does:** Everything runs locally on your device. There are no cloud accounts, no telemetry, and no external AI dependencies.
-*   **Why it exists:** Your thoughts, research data, and personal libraries are profoundly private. An offline-only approach ensures absolute privacy, zero latency, and perpetual access regardless of your internet connection.
-*   **How it works:** All metadata, opinions, and topic structures are stored purely locally using SQLDelight (a multi-platform SQLite implementation).
-
-### 2. High-Performance PDF & Novel Reader
-*   **What it does:** A robust document viewer optimized specifically for deep reading of novels, textbooks, and research papers.
-*   **Why it exists:** To provide an uncompromised native reading experience where you can seamlessly transition between getting lost in a novel and actively reflecting on its themes without switching apps.
-*   **How it works:** The Android implementation utilizes native rendering pipelines (e.g., `PdfRenderer`) paired with modern Jetpack Compose. It includes a custom coordinate mapping engine to allow precise text selection and highlight creation directly over the rendered pages.
-*   **When to use:** When reading long-form PDFs, studying technical manuals, or enjoying a novel where you want to keep track of characters, key quotes, and chapter summaries.
-*   **Supported Formats:** `PDF`, `Markdown (.md)`, `Images`, and `Web Links`.
-
-
-### 3. In-Situ Annotation & Marginalia
-*   **What it does:** Allows you to highlight text snippets within your documents and attach your reflections directly to that specific passage.
-*   **Why it exists:** To anchor your thoughts to their exact source context, preventing the "why did I write this?" problem months later.
-*   **How it works:** Selected text is extracted and stored as a blockquote alongside your new "Opinion" record, permanently bound to the specific page number of the resource.
-
-
-### 4. Hierarchical Topic Synthesis
-*   **What it does:** Organizes diverse resources (a mix of PDFs, local notes, and web links) into cohesive "Topics," allowing you to write an overarching summary or thesis for the entire subject.
-*   **Why it exists:** To facilitate the transition from isolated reading to high-level understanding. Knowledge requires viewing multiple sources through the lens of a single thematic objective.
-*   **How it works:** A flexible relational database model allows you to organize items into topics, accompanied by a built-in markdown editor for your "Overall Opinion."
-
-### 5. Markdown Export Engine
-*   **What it does:** Generates clean, formatted Markdown reports containing your reflections, highlighted quotes, and topic summaries.
-*   **Why it exists:** To ensure you are never locked into the platform. Your knowledge can easily be exported to tools like Obsidian, Logseq, or directly published to the web.
-*   **How it works:** The internal `ExportService` templates your offline database objects and annotations into structured `.md` files, complete with source citations and timestamps.
-
----
-
 ## Technical Architecture
 
 Gray Matter is architected for stability, local performance, and cross-platform consistency.
