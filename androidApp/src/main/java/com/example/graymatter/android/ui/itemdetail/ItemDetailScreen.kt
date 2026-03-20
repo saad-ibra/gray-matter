@@ -29,6 +29,7 @@ import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.domain.ItemWithDetails
 import com.example.graymatter.domain.Opinion
 import com.example.graymatter.domain.Bookmark
+import com.example.graymatter.domain.CustomTemplate
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -41,6 +42,7 @@ import java.util.*
 fun ItemDetailScreen(
     itemDetails: ItemWithDetails?,
     readingProgress: com.example.graymatter.domain.ReadingProgress?,
+    templates: List<CustomTemplate> = emptyList(),
     onBackClick: () -> Unit,
     onOpenResource: () -> Unit,
     onOpenBookmark: (Bookmark) -> Unit,
@@ -56,6 +58,8 @@ fun ItemDetailScreen(
 ) {
     var isEditing by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var showTemplateDialog by remember { mutableStateOf(false) }
+    var selectedTemplateForNewEntry by remember { mutableStateOf<CustomTemplate?>(null) }
     var showRenameDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var description by remember(itemDetails?.item?.description) { mutableStateOf(itemDetails?.item?.description ?: "") }
@@ -67,20 +71,54 @@ fun ItemDetailScreen(
         containerColor = GrayMatterColors.BackgroundDark,
         floatingActionButton = {
             if (!isEditing) {
-                FloatingActionButton(
-                    onClick = { showAddDialog = true },
-                    containerColor = GrayMatterColors.TextPrimary,
-                    contentColor = GrayMatterColors.BackgroundDark,
-                    shape = RoundedCornerShape(18.dp),
-                    modifier = Modifier
-                        .navigationBarsPadding()
-                        .size(60.dp)
+                var fabExpanded by remember { mutableStateOf(false) }
+                
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.navigationBarsPadding()
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add Opinion",
-                        modifier = Modifier.size(32.dp)
-                    )
+                    if (fabExpanded) {
+                        // Choice: Normal Opinion
+                        SmallFloatingActionButton(
+                            onClick = { 
+                                fabExpanded = false
+                                showAddDialog = true 
+                            },
+                            containerColor = GrayMatterColors.Citrine,
+                            contentColor = Color.Black,
+                            shape = CircleShape
+                        ) {
+                            Icon(Icons.Default.QuestionAnswer, "Opinion")
+                        }
+                        
+                        // Choice: Use Template
+                        SmallFloatingActionButton(
+                            onClick = { 
+                                fabExpanded = false
+                                showTemplateDialog = true 
+                            },
+                            containerColor = GrayMatterColors.CustomizedAccent,
+                            contentColor = Color.White,
+                            shape = CircleShape
+                        ) {
+                            Icon(Icons.Default.DashboardCustomize, "Template")
+                        }
+                    }
+
+                    FloatingActionButton(
+                        onClick = { fabExpanded = !fabExpanded },
+                        containerColor = GrayMatterColors.TextPrimary,
+                        contentColor = GrayMatterColors.BackgroundDark,
+                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.size(60.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (fabExpanded) Icons.Default.Close else Icons.Default.Add,
+                            contentDescription = "Add",
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                 }
             }
         }
@@ -188,6 +226,7 @@ fun ItemDetailScreen(
                         opinions = sortedOpinions,
                         resourceId = itemDetails.resource.id,
                         isEditing = isEditing,
+                        templates = templates,
                         onUpdateOpinion = onUpdateOpinion,
                         onDeleteOpinion = onDeleteOpinion,
                         onJumpToPage = { resourceId, page ->
@@ -206,6 +245,28 @@ fun ItemDetailScreen(
                 onConfirm = { text, confidence ->
                     onAddOpinion(text, confidence)
                     showAddDialog = false
+                }
+            )
+        }
+
+        if (showTemplateDialog) {
+            TemplateSelectionDialog(
+                templates = templates,
+                onDismiss = { showTemplateDialog = false },
+                onTemplateSelect = { template ->
+                    selectedTemplateForNewEntry = template
+                    showTemplateDialog = false
+                }
+            )
+        }
+
+        if (selectedTemplateForNewEntry != null) {
+            CustomEntryAddDialog(
+                template = selectedTemplateForNewEntry!!,
+                onDismiss = { selectedTemplateForNewEntry = null },
+                onConfirm = { formattedText, confidence ->
+                    onAddOpinion(formattedText, confidence)
+                    selectedTemplateForNewEntry = null
                 }
             )
         }
@@ -241,6 +302,131 @@ fun ItemDetailScreen(
                     }
                 }
             )
+        }
+    }
+}
+
+@Composable
+private fun TemplateSelectionDialog(
+    templates: List<CustomTemplate>,
+    onDismiss: () -> Unit,
+    onTemplateSelect: (CustomTemplate) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = GrayMatterColors.SurfaceDark,
+        title = { Text("Select Template", color = Color.White) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (templates.isEmpty()) {
+                    Text("No templates found. Create one in Profile.", color = GrayMatterColors.Neutral500)
+                } else {
+                    templates.forEach { template ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(GrayMatterColors.Neutral900)
+                                .clickable { onTemplateSelect(template) }
+                                .padding(16.dp)
+                        ) {
+                            Text(template.name, color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = Color.White.copy(alpha = 0.6f))
+            }
+        }
+    )
+}
+
+@Composable
+private fun CustomEntryAddDialog(
+    template: CustomTemplate,
+    onDismiss: () -> Unit,
+    onConfirm: (String, Int) -> Unit
+) {
+    var fieldValues by remember { mutableStateOf(template.headings.associateWith { "" }) }
+    var confidence by remember { mutableFloatStateOf(0.7f) }
+    
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(GrayMatterColors.SurfaceDark)
+                .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(20.dp))
+                .padding(24.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    text = "New ${template.name}",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = GrayMatterColors.TextPrimary
+                )
+                
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 400.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    template.headings.forEach { heading ->
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = heading.uppercase(),
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                                color = GrayMatterColors.Neutral500
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
+                                    .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                                    .padding(12.dp)
+                            ) {
+                                BasicTextField(
+                                    value = fieldValues[heading] ?: "",
+                                    onValueChange = { newVal ->
+                                        fieldValues = fieldValues.toMutableMap().apply { put(heading, newVal) }
+                                    },
+                                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    cursorBrush = SolidColor(GrayMatterColors.CustomizedAccent)
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                Column {
+                    Text("Confidence: ${(confidence * 10).toInt()}/10", style = MaterialTheme.typography.labelMedium, color = GrayMatterColors.Neutral500)
+                    Slider(
+                        value = confidence, 
+                        onValueChange = { confidence = it }, 
+                        colors = SliderDefaults.colors(thumbColor = GrayMatterColors.CustomizedAccent, activeTrackColor = GrayMatterColors.CustomizedAccent)
+                    )
+                }
+                
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text("Cancel", color = GrayMatterColors.Neutral500) }
+                    Button(
+                        onClick = { 
+                            val formatted = formatTemplateContent(template, fieldValues)
+                            onConfirm(formatted, (confidence * 100).toInt()) 
+                        }, 
+                        enabled = fieldValues.values.any { it.isNotBlank() },
+                        colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.CustomizedAccent, contentColor = Color.White)
+                    ) { 
+                        Text("Save") 
+                    }
+                }
+            }
         }
     }
 }
@@ -469,6 +655,7 @@ private fun OpinionTimeline(
     opinions: List<Opinion>,
     resourceId: String,
     isEditing: Boolean,
+    templates: List<CustomTemplate>,
     onUpdateOpinion: (String, String, Int, Long) -> Unit,
     onDeleteOpinion: (String) -> Unit,
     onJumpToPage: (String, Int) -> Unit
@@ -481,6 +668,7 @@ private fun OpinionTimeline(
                 isFirst = index == 0,
                 isLast = index == opinions.lastIndex,
                 isEditing = isEditing,
+                templates = templates,
                 onUpdate = { text, confidence, date -> onUpdateOpinion(opinion.id, text, confidence, date) },
                 onDelete = { onDeleteOpinion(opinion.id) },
                 onJump = {
@@ -501,6 +689,7 @@ private fun OpinionTimelineItem(
     isFirst: Boolean,
     isLast: Boolean,
     isEditing: Boolean,
+    templates: List<CustomTemplate>,
     onUpdate: (String, Int, Long) -> Unit,
     onDelete: () -> Unit,
     onJump: () -> Unit
@@ -596,11 +785,13 @@ private fun OpinionTimelineItem(
                     Column {
                         val isAnnotation = opinion.text.startsWith("> ")
                         val isDictionary = opinion.text.startsWith("[DICT] ")
+                        val isCustomEntry = opinion.text.startsWith("[TEMPLATE:")
                         val hasPageNumber = opinion.pageNumber != null
                         
                         val (title, icon, color) = when {
                             isDictionary -> Triple("DICTIONARY", Icons.Default.Book, Color(0xFFC6280B))
                             isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.Gamboge)
+                            isCustomEntry -> Triple("CUSTOM ENTRY", Icons.Default.DashboardCustomize, GrayMatterColors.CustomizedAccent)
                             hasPageNumber -> Triple("BOOKMARK", Icons.Default.Bookmark, GrayMatterColors.Jonquil)
                             else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.Citrine)
                         }
@@ -640,6 +831,7 @@ private fun OpinionTimelineItem(
             
             val isAnnotation = text.startsWith("> ")
             val isDictionary = text.startsWith("[DICT] ")
+            val isCustomEntry = text.startsWith("[TEMPLATE:")
             val hasPageNumber = opinion.pageNumber != null
 
             if (hasPageNumber && !isEditing) {
@@ -666,23 +858,58 @@ private fun OpinionTimelineItem(
             
             // Opinion Content
             if (isEditing) {
-                OpinionEditor(
-                    text = text,
-                    confidence = confidence,
-                    onTextChange = { 
-                        text = it 
-                        onUpdate(it, (confidence * 100).toInt(), opinion.createdAt)
-                    },
-                    onConfidenceChange = { 
-                        confidence = it 
-                        onUpdate(text, (it * 100).toInt(), opinion.createdAt)
+                if (isCustomEntry) {
+                    // Try to parse and show dynamic form for custom entry editing
+                    val templateName = text.substringAfter("[TEMPLATE:").substringBefore("]")
+                    val template = templates.find { it.name == templateName }
+                    
+                    if (template != null) {
+                        val fieldValues = remember(text) { parseTemplateContent(text, template.headings) }
+                        DynamicEntryEditor(
+                            template = template,
+                            fieldValues = fieldValues,
+                            onFieldChange = { heading, newVal ->
+                                val newValues = fieldValues.toMutableMap().apply { put(heading, newVal) }
+                                val newText = formatTemplateContent(template, newValues)
+                                text = newText
+                                onUpdate(newText, (confidence * 100).toInt(), opinion.createdAt)
+                            },
+                            confidence = confidence,
+                            onConfidenceChange = {
+                                confidence = it
+                                onUpdate(text, (it * 100).toInt(), opinion.createdAt)
+                            }
+                        )
+                    } else {
+                        // Fallback to plain text editor if template not found
+                        OpinionEditor(
+                            text = text,
+                            confidence = confidence,
+                            onTextChange = { 
+                                text = it 
+                                onUpdate(it, (confidence * 100).toInt(), opinion.createdAt)
+                            },
+                            onConfidenceChange = { 
+                                confidence = it 
+                                onUpdate(text, (it * 100).toInt(), opinion.createdAt)
+                            }
+                        )
                     }
-                )
+                } else {
+                    OpinionEditor(
+                        text = text,
+                        confidence = confidence,
+                        onTextChange = { 
+                            text = it 
+                            onUpdate(it, (confidence * 100).toInt(), opinion.createdAt)
+                        },
+                        onConfidenceChange = { 
+                            confidence = it 
+                            onUpdate(text, (it * 100).toInt(), opinion.createdAt)
+                        }
+                    )
+                }
             } else {
-                val isAnnotation = text.startsWith("> ")
-                val isDictionary = text.startsWith("[DICT] ")
-                val isOldBookmark = text.startsWith("[Page ")
-                
                 if (isDictionary) {
                     val phrase = text.removePrefix("[DICT] ").trim()
                     Box(
@@ -738,9 +965,48 @@ private fun OpinionTimelineItem(
                             )
                         }
                     }
+                } else if (isCustomEntry) {
+                    val templateName = text.substringAfter("[TEMPLATE:").substringBefore("]")
+                    val content = text.substringAfter("]\n").trim()
+                    
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(GrayMatterColors.CustomizedAccent.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.CustomizedAccent.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = templateName.uppercase(),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                            color = GrayMatterColors.CustomizedAccent
+                        )
+                        
+                        // Parse markdown-ish structure
+                        val headings = content.split("### ").filter { it.isNotBlank() }
+                        headings.forEach { headingBlock ->
+                            val lines = headingBlock.split("\n", limit = 2)
+                            val heading = lines[0].trim()
+                            val response = lines.getOrNull(1)?.trim() ?: ""
+                            
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(
+                                    text = heading,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = GrayMatterColors.Neutral500
+                                )
+                                Text(
+                                    text = response,
+                                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
+                                    color = GrayMatterColors.TextPrimary
+                                )
+                            }
+                        }
+                    }
                 } else if (hasPageNumber) {
                     // Bookmark or old style page opinion
-                    val cleanText = if (isOldBookmark) text.replace(Regex("^\\[Page \\d+\\]\\s*"), "") else text
+                    val cleanText = if (text.startsWith("[Page ")) text.replace(Regex("^\\[Page \\d+\\]\\s*"), "") else text
                     
                     Box(
                         modifier = Modifier
@@ -791,6 +1057,72 @@ private fun OpinionTimelineItem(
             onConfirm = { onUpdate(text, (confidence * 100).toInt(), it) }
         )
     }
+}
+
+@Composable
+private fun DynamicEntryEditor(
+    template: CustomTemplate,
+    fieldValues: Map<String, String>,
+    onFieldChange: (String, String) -> Unit,
+    confidence: Float,
+    onConfidenceChange: (Float) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        template.headings.forEach { heading ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = heading.uppercase(),
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                    color = GrayMatterColors.Neutral500
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
+                        .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                ) {
+                    BasicTextField(
+                        value = fieldValues[heading] ?: "",
+                        onValueChange = { onFieldChange(heading, it) },
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary),
+                        modifier = Modifier.fillMaxWidth(),
+                        cursorBrush = SolidColor(GrayMatterColors.CustomizedAccent)
+                    )
+                }
+            }
+        }
+        Slider(value = confidence, onValueChange = onConfidenceChange, colors = SliderDefaults.colors(thumbColor = GrayMatterColors.CustomizedAccent, activeTrackColor = GrayMatterColors.CustomizedAccent))
+    }
+}
+
+private fun parseTemplateContent(content: String, headings: List<String>): Map<String, String> {
+    val result = mutableMapOf<String, String>()
+    val body = content.substringAfter("]\n").trim()
+    val parts = body.split("### ").filter { it.isNotBlank() }
+    parts.forEach { part ->
+        val lines = part.split("\n", limit = 2)
+        val heading = lines[0].trim()
+        val response = lines.getOrNull(1)?.trim() ?: ""
+        result[heading] = response
+    }
+    // Ensure all headings are present
+    headings.forEach { if (!result.containsKey(it)) result[it] = "" }
+    return result
+}
+
+private fun formatTemplateContent(template: CustomTemplate, values: Map<String, String>): String {
+    val sb = StringBuilder()
+    sb.appendLine("[TEMPLATE:${template.name}]")
+    template.headings.forEach { heading ->
+        val value = values[heading] ?: ""
+        if (value.isNotBlank()) {
+            sb.appendLine("### $heading")
+            sb.appendLine(value)
+            sb.appendLine()
+        }
+    }
+    return sb.toString().trim()
 }
 
 @Composable

@@ -32,6 +32,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
+import com.example.graymatter.android.ui.profile.ProfileScreen
 import com.example.graymatter.android.util.FileUtils
 import kotlinx.coroutines.launch
 
@@ -55,6 +56,7 @@ fun GrayMatterNavigation(
 
     val topics by viewModel.topicsStream.collectAsState(initial = emptyList())
     val items by viewModel.itemsStream.collectAsState(initial = emptyList())
+    val templates by viewModel.templates.collectAsState()
     var editingResource by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.example.graymatter.domain.Resource?>(null) }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -127,6 +129,11 @@ fun GrayMatterNavigation(
             )
         }
 
+        // Profile Screen
+        composable(NavigationDestination.Profile.route) {
+            ProfileScreen(viewModel = viewModel)
+        }
+
         // Topic Detail Screen (Synthesis)
         composable(
             route = NavigationDestination.TopicDetail.route,
@@ -181,6 +188,7 @@ fun GrayMatterNavigation(
             NewEntryScreen(
                 onBackClick = { navController.popBackStack() },
                 isSaving = isImporting,
+                templates = templates,
                 onSaveClick = { type, value, opinion, confidence, title, description, originalFileName ->
                     coroutineScope.launch {
                         val newItemId = when (type) {
@@ -248,6 +256,7 @@ fun GrayMatterNavigation(
             ItemDetailScreen(
                 itemDetails = itemDetails,
                 readingProgress = readingProgress,
+                templates = templates,
                 onBackClick = { navController.popBackStack() },
                 onOpenResource = {
                     itemDetails?.resource?.let { resource ->

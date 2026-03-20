@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.components.MarkdownEditor
+import com.example.graymatter.domain.CustomTemplate
 import java.util.Locale
 
 /**
@@ -42,6 +43,7 @@ import java.util.Locale
 fun NewEntryScreen(
     onBackClick: () -> Unit,
     onSaveClick: (type: EntryType, value: String, opinion: String, confidence: Int, title: String?, description: String?, originalFileName: String?) -> Unit,
+    templates: List<CustomTemplate> = emptyList(),
     isSaving: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -56,6 +58,10 @@ fun NewEntryScreen(
     var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
     var showDescription by remember { mutableStateOf(false) }
     var isNoteEditorOpen by remember { mutableStateOf(false) }
+    
+    // Custom Template State
+    var selectedTemplate by remember { mutableStateOf<CustomTemplate?>(null) }
+    var templateFieldValues by remember { mutableStateOf(mapOf<String, String>()) }
 
     val context = LocalContext.current
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -202,21 +208,42 @@ fun NewEntryScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(GrayMatterColors.AppleGreen.copy(alpha = 0.1f))
-                    .border(1.dp, GrayMatterColors.Citrine.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                    .background(
+                        if (selectedTemplate != null) GrayMatterColors.CustomizedAccent.copy(alpha = 0.1f)
+                        else GrayMatterColors.AppleGreen.copy(alpha = 0.1f)
+                    )
+                    .border(
+                        1.dp, 
+                        if (selectedTemplate != null) GrayMatterColors.CustomizedAccent.copy(alpha = 0.3f)
+                        else GrayMatterColors.Citrine.copy(alpha = 0.3f), 
+                        RoundedCornerShape(16.dp)
+                    )
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Opinion Section (Simple UI)
-                OpinionSection(
+                // Opinion Section
+                CustomizedOpinionSection(
                     opinionInput = opinionInput,
-                    onOpinionChange = { opinionInput = it }
+                    onOpinionChange = { opinionInput = it },
+                    templates = templates,
+                    selectedTemplate = selectedTemplate,
+                    onTemplateSelect = { 
+                        selectedTemplate = it
+                        if (it != null) {
+                            templateFieldValues = it.headings.associateWith { "" }
+                        }
+                    },
+                    templateFieldValues = templateFieldValues,
+                    onFieldValueChange = { heading, value ->
+                        templateFieldValues = templateFieldValues.toMutableMap().apply { put(heading, value) }
+                    }
                 )
 
                 // Confidence Level Section
                 ConfidenceLevelSection(
                     confidence = confidence,
-                    onConfidenceChange = { confidence = it }
+                    onConfidenceChange = { confidence = it },
+                    accentColor = if (selectedTemplate != null) GrayMatterColors.CustomizedAccent else GrayMatterColors.AppleGreen
                 )
             }
         }
@@ -225,19 +252,41 @@ fun NewEntryScreen(
         val isLinkValid = selectedTab == 0 && urlInput.isNotBlank()
         val isFileValid = selectedTab == 1 && selectedFileUri != null
         val isNoteValid = selectedTab == 2 && titleInput.isNotBlank()
-        val isOpinionValid = opinionInput.isNotBlank()
+        
+        val isOpinionValid = if (selectedTemplate != null) {
+            templateFieldValues.values.any { it.isNotBlank() }
+        } else {
+            opinionInput.isNotBlank()
+        }
         
         SaveButton(
             onClick = {
                 val finalDesc = descriptionInput.takeIf { it.isNotBlank() }
                 val finalTitle = titleInput.takeIf { it.isNotBlank() }
+                
+                val finalOpinion = if (selectedTemplate != null) {
+                    val sb = StringBuilder()
+                    sb.appendLine("[TEMPLATE:${selectedTemplate!!.name}]")
+                    selectedTemplate!!.headings.forEach { heading ->
+                        val value = templateFieldValues[heading] ?: ""
+                        if (value.isNotBlank()) {
+                            sb.appendLine("### $heading")
+                            sb.appendLine(value)
+                            sb.appendLine()
+                        }
+                    }
+                    sb.toString().trim()
+                } else {
+                    opinionInput
+                }
+
                 when (selectedTab) {
-                    0 -> onSaveClick(EntryType.LINK, urlInput, opinionInput, (confidence * 100).toInt(), finalTitle, finalDesc, null)
+                    0 -> onSaveClick(EntryType.LINK, urlInput, finalOpinion, (confidence * 100).toInt(), finalTitle, finalDesc, null)
                     1 -> selectedFileUri?.let { uri ->
-                        onSaveClick(EntryType.FILE, uri.toString(), opinionInput, (confidence * 100).toInt(), finalTitle, finalDesc, selectedFileName)
+                        onSaveClick(EntryType.FILE, uri.toString(), finalOpinion, (confidence * 100).toInt(), finalTitle, finalDesc, selectedFileName)
                     }
                     2 -> {
-                        onSaveClick(EntryType.NOTE, noteContent, opinionInput, (confidence * 100).toInt(), titleInput, finalDesc, null)
+                        onSaveClick(EntryType.NOTE, noteContent, finalOpinion, (confidence * 100).toInt(), titleInput, finalDesc, null)
                     }
                 }
             },
@@ -459,33 +508,164 @@ private fun TabButton(text: String, icon: androidx.compose.ui.graphics.vector.Im
 }
 
 @Composable
-private fun OpinionSection(opinionInput: String, onOpinionChange: (String) -> Unit) {
-    val greenBg = GrayMatterColors.AppleGreen.copy(alpha = 0.08f)
-    val greenBorder = GrayMatterColors.AppleGreen.copy(alpha = 0.2f)
+private fun CustomizedOpinionSection(
+    opinionInput: String,
+    onOpinionChange: (String) -> Unit,
+    templates: List<CustomTemplate>,
+    selectedTemplate: CustomTemplate?,
+    onTemplateSelect: (CustomTemplate?) -> Unit,
+    templateFieldValues: Map<String, String>,
+    onFieldValueChange: (String, String) -> Unit
+) {
+    val accentColor = if (selectedTemplate != null) GrayMatterColors.CustomizedAccent else GrayMatterColors.AppleGreen
+    val bgColor = accentColor.copy(alpha = 0.08f)
+    val borderColor = accentColor.copy(alpha = 0.2f)
     
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("OPINION", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterColors.TextSecondary)
-            Text("(Required)", style = MaterialTheme.typography.labelSmall, color = GrayMatterColors.AppleGreen.copy(alpha = 0.7f))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = if (selectedTemplate != null) "CUSTOM ENTRY" else "OPINION",
+                    style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold),
+                    color = GrayMatterColors.TextSecondary
+                )
+                Text("(Required)", style = MaterialTheme.typography.labelSmall, color = accentColor.copy(alpha = 0.7f))
+            }
+            
+            TemplateSelector(
+                templates = templates,
+                selectedTemplate = selectedTemplate,
+                onTemplateSelect = onTemplateSelect
+            )
         }
-        Box(modifier = Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(12.dp)).background(greenBg).border(1.dp, greenBorder, RoundedCornerShape(12.dp)).padding(16.dp)) {
-            BasicTextField(value = opinionInput, onValueChange = onOpinionChange, textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary, lineHeight = 24.sp), modifier = Modifier.fillMaxSize(), cursorBrush = SolidColor(GrayMatterColors.AppleGreen), decorationBox = { inner -> if (opinionInput.isEmpty()) Text("Type your understanding here...", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyLarge); inner() })
+
+        if (selectedTemplate != null) {
+            DynamicEntryForm(
+                template = selectedTemplate,
+                fieldValues = templateFieldValues,
+                onFieldValueChange = onFieldValueChange
+            )
+        } else {
+            Box(modifier = Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(12.dp)).background(bgColor).border(1.dp, borderColor, RoundedCornerShape(12.dp)).padding(16.dp)) {
+                BasicTextField(value = opinionInput, onValueChange = onOpinionChange, textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary, lineHeight = 24.sp), modifier = Modifier.fillMaxSize(), cursorBrush = SolidColor(GrayMatterColors.AppleGreen), decorationBox = { inner -> if (opinionInput.isEmpty()) Text("Type your understanding here...", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyLarge); inner() })
+            }
         }
     }
 }
 
 @Composable
-private fun ConfidenceLevelSection(confidence: Float, onConfidenceChange: (Float) -> Unit) {
-    val greenBg = GrayMatterColors.AppleGreen.copy(alpha = 0.08f)
-    val greenBorder = GrayMatterColors.AppleGreen.copy(alpha = 0.2f)
+private fun TemplateSelector(
+    templates: List<CustomTemplate>,
+    selectedTemplate: CustomTemplate?,
+    onTemplateSelect: (CustomTemplate?) -> Unit
+) {
+    var showMenu by remember { mutableStateOf(false) }
+
+    Box {
+        TextButton(
+            onClick = { showMenu = true },
+            colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.Neutral500)
+        ) {
+            Icon(Icons.Default.DashboardCustomize, null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = selectedTemplate?.name ?: "Use Template",
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+            )
+            Icon(Icons.Default.ArrowDropDown, null)
+        }
+
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+            modifier = Modifier.background(GrayMatterColors.SurfaceDark)
+        ) {
+            DropdownMenuItem(
+                text = { Text("None (Plain Opinion)", color = Color.White) },
+                onClick = {
+                    onTemplateSelect(null)
+                    showMenu = false
+                }
+            )
+            templates.forEach { template ->
+                DropdownMenuItem(
+                    text = { Text(template.name, color = Color.White) },
+                    onClick = {
+                        onTemplateSelect(template)
+                        showMenu = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun DynamicEntryForm(
+    template: CustomTemplate,
+    fieldValues: Map<String, String>,
+    onFieldValueChange: (String, String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        template.headings.forEach { heading ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = heading.uppercase(),
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                    color = GrayMatterColors.Neutral500
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(GrayMatterColors.Neutral900)
+                        .border(
+                            width = 1.dp,
+                            color = GrayMatterColors.Neutral800,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .padding(16.dp)
+                ) {
+                    BasicTextField(
+                        value = fieldValues[heading] ?: "",
+                        onValueChange = { onFieldValueChange(heading, it) },
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.White),
+                        modifier = Modifier.fillMaxWidth(),
+                        cursorBrush = SolidColor(GrayMatterColors.CustomizedAccent),
+                        decorationBox = { inner ->
+                            if ((fieldValues[heading] ?: "").isEmpty()) {
+                                Text("Enter $heading...", color = GrayMatterColors.Neutral700)
+                            }
+                            inner()
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConfidenceLevelSection(
+    confidence: Float, 
+    onConfidenceChange: (Float) -> Unit,
+    accentColor: Color = GrayMatterColors.AppleGreen
+) {
+    val bgColor = accentColor.copy(alpha = 0.08f)
+    val borderColor = accentColor.copy(alpha = 0.2f)
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("CONFIDENCE LEVEL", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterColors.TextSecondary)
             Text("${(confidence * 100).toInt()}%", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
         }
-        Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(greenBg).border(1.dp, greenBorder, RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Slider(value = confidence, onValueChange = onConfidenceChange, valueRange = 0f..1f, colors = SliderDefaults.colors(thumbColor = GrayMatterColors.AppleGreen, activeTrackColor = GrayMatterColors.AppleGreen, inactiveTrackColor = GrayMatterColors.Neutral800))
+        Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(bgColor).border(1.dp, borderColor, RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Slider(value = confidence, onValueChange = onConfidenceChange, valueRange = 0f..1f, colors = SliderDefaults.colors(thumbColor = accentColor, activeTrackColor = accentColor, inactiveTrackColor = GrayMatterColors.Neutral800))
         }
     }
 }

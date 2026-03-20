@@ -5,10 +5,12 @@ import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.example.graymatter.database.GrayMatterDatabase
 import com.example.graymatter.database.BookmarkEntity
+import com.example.graymatter.database.CustomTemplateEntity
 import com.example.graymatter.database.ReadingProgressEntity
 import com.example.graymatter.database.ReadingSettingsEntity
 import com.example.graymatter.database.ResourceEntity
 import com.example.graymatter.domain.Bookmark
+import com.example.graymatter.domain.CustomTemplate
 import com.example.graymatter.domain.ReadingProgress
 import com.example.graymatter.domain.ReadingSettings
 import com.example.graymatter.domain.Resource
@@ -167,6 +169,26 @@ class DefaultResourceRepository(
     override suspend fun deleteReadingSettings(resourceId: String) = withContext(dispatcher) {
         queries.deleteReadingSettings(resourceId)
     }
+
+    // -- Custom Templates --
+
+    override val templatesStream: Flow<List<CustomTemplate>> = queries
+        .getAllTemplates()
+        .asFlow()
+        .mapToList(dispatcher)
+        .map { entities -> entities.map { it.toCustomTemplate() } }
+
+    override suspend fun saveTemplate(template: CustomTemplate) = withContext(dispatcher) {
+        queries.insertTemplate(
+            id = template.id,
+            name = template.name,
+            headings = template.headings.joinToString("|") // Use | as delimiter
+        )
+    }
+
+    override suspend fun deleteTemplate(id: String) = withContext(dispatcher) {
+        queries.deleteTemplate(id)
+    }
 }
 
 // -- Entity to Domain mappers (Enhanced with safety) --
@@ -212,4 +234,10 @@ private fun ReadingSettingsEntity.toReadingSettings(): ReadingSettings = Reading
     brightness = brightness,
     keepScreenOn = keepScreenOn != 0L,
     textReflow = textReflow != 0L
+)
+
+private fun CustomTemplateEntity.toCustomTemplate(): CustomTemplate = CustomTemplate(
+    id = id,
+    name = name,
+    headings = headings.split("|").filter { it.isNotBlank() }
 )

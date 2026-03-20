@@ -128,4 +128,21 @@ interface ResourceRepository {
      * Delete per-document reading settings.
      */
     suspend fun deleteReadingSettings(resourceId: String)
+
+    // -- Custom Templates --
+
+    /**
+     * Stream of all custom templates.
+     */
+    val templatesStream: Flow<List<CustomTemplate>>
+
+    /**
+     * Save or update a custom template.
+     */
+    suspend fun saveTemplate(template: CustomTemplate)
+
+    /**
+     * Delete a custom template.
+     */
+    suspend fun deleteTemplate(id: String)
 }

@@ -9,6 +9,8 @@ sealed class NavigationDestination(val route: String) {
     
     object Library : NavigationDestination("library")
     
+    object Profile : NavigationDestination("profile")
+    
     object NewEntry : NavigationDestination("new_entry")
     
     object ItemDetail : NavigationDestination("item_detail/{itemId}") {

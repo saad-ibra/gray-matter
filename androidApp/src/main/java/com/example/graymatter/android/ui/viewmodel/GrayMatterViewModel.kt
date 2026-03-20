@@ -12,6 +12,7 @@ import com.example.graymatter.data.OpinionRepository
 import com.example.graymatter.data.ResourceRepository
 import com.example.graymatter.data.TopicRepository
 import com.example.graymatter.domain.Bookmark
+import com.example.graymatter.domain.CustomTemplate
 import com.example.graymatter.domain.Item
 import com.example.graymatter.domain.ItemWithDetails
 import com.example.graymatter.domain.Opinion
@@ -61,6 +62,10 @@ class GrayMatterViewModel(
 
     private val _isImporting = MutableStateFlow(false)
     val isImporting: StateFlow<Boolean> = _isImporting.asStateFlow()
+
+    // Templates
+    val templates: StateFlow<List<CustomTemplate>> = resourceRepository.templatesStream
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /**
      * Verifies the integrity of all resources on app start.
@@ -531,6 +536,20 @@ class GrayMatterViewModel(
         return sb.toString()
     }
     
+    // -- Custom Template Methods --
+
+    fun saveTemplate(template: CustomTemplate) {
+        viewModelScope.launch {
+            resourceRepository.saveTemplate(template)
+        }
+    }
+
+    fun deleteTemplate(id: String) {
+        viewModelScope.launch {
+            resourceRepository.deleteTemplate(id)
+        }
+    }
+
     /**
      * Determines the resource type from a file name's extension or path.
      */
@@ -589,7 +608,7 @@ class GrayMatterViewModel(
     /**
      * Generates a simple UUID.
      */
-    private fun generateUuid(): String {
+    fun generateUuid(): String {
         val chars = "abcdefghijklmnopqrstuvwxyz0123456789"
         return (1..32).map { chars[Random.nextInt(chars.length)] }.joinToString("")
     }

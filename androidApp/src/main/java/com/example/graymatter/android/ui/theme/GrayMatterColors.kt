@@ -27,6 +27,9 @@ object GrayMatterColors {
     val Primary = Color(0xFFFFFFFF)
     val OnPrimary = Color(0xFF000000)
     
+    // New Primary Accent Color
+    val CustomizedAccent = Color(0xFF7A3E6A)
+    
     // Custom Palette (New Design)
     val AppleGreen = Color(0xFF8EA208)
     val Citrine = Color(0xFFBDBF09)

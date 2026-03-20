@@ -84,6 +84,13 @@ CREATE TABLE readingSettingsEntity (
     FOREIGN KEY (resourceId) REFERENCES resourceEntity(id) ON DELETE CASCADE
 );
 
+-- 8. Custom Templates Table
+CREATE TABLE customTemplateEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    headings TEXT NOT NULL -- Stored as comma-separated or JSON string for simplicity in SQLDelight 2.0 without complex adapters
+);
+
 -- Resource queries
 insertResource:
 INSERT OR REPLACE INTO resourceEntity(id, type, url, filePath, extractedText, title, createdAt)
@@ -175,6 +182,20 @@ UPDATE topicEntity SET resourceCount = resourceCount - 1, updatedAt = ? WHERE id
 
 deleteTopic:
 DELETE FROM topicEntity WHERE id = ?;
+
+-- Custom Template queries
+insertTemplate:
+INSERT OR REPLACE INTO customTemplateEntity(id, name, headings)
+VALUES (?, ?, ?);
+
+getAllTemplates:
+SELECT * FROM customTemplateEntity ORDER BY name ASC;
+
+getTemplateById:
+SELECT * FROM customTemplateEntity WHERE id = ?;
+
+deleteTemplate:
+DELETE FROM customTemplateEntity WHERE id = ?;
 
 -- Search queries
 searchOpinions:

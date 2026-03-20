@@ -11,8 +11,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.List
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,7 +27,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.graymatter.android.ui.navigation.GrayMatterNavigation
-import com.example.graymatter.android.ui.navigation. NavigationDestination
+import com.example.graymatter.android.ui.navigation.NavigationDestination
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.di.AppModule
 
@@ -40,7 +42,8 @@ fun GrayMatterApp(
     // Top-level destinations that show the bottom bar
     val topLevelDestinations = listOf(
         NavigationDestination.Home.route,
-        NavigationDestination.Library.route
+        NavigationDestination.Library.route,
+        NavigationDestination.Profile.route
     )
     val showBottomBar = currentRoute in topLevelDestinations
 
@@ -63,6 +66,13 @@ fun GrayMatterApp(
                             launchSingleTop = true
                             restoreState = true
                         }
+                    },
+                    onNavigateToProfile = {
+                        navController.navigate(NavigationDestination.Profile.route) {
+                            popUpTo(NavigationDestination.Home.route) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 )
             }
@@ -80,7 +90,8 @@ fun GrayMatterApp(
 fun GrayMatterBottomBar(
     currentRoute: String?,
     onNavigateToHome: () -> Unit,
-    onNavigateToLibrary: () -> Unit
+    onNavigateToLibrary: () -> Unit,
+    onNavigateToProfile: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -115,6 +126,14 @@ fun GrayMatterBottomBar(
                 activeIcon = Icons.Filled.List,
                 inactiveIcon = Icons.Outlined.List,
                 onClick = onNavigateToLibrary,
+                modifier = Modifier.weight(1f)
+            )
+
+            NavBarItem(
+                selected = currentRoute == NavigationDestination.Profile.route,
+                activeIcon = Icons.Filled.Person,
+                inactiveIcon = Icons.Outlined.Person,
+                onClick = onNavigateToProfile,
                 modifier = Modifier.weight(1f)
             )
         }
