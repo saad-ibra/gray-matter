@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.graymatter.data.ResourceRepository
 import com.example.graymatter.data.OpinionRepository
 import com.example.graymatter.data.ItemRepository
+import com.example.graymatter.domain.CustomTemplate
 import com.example.graymatter.domain.Bookmark
 import com.example.graymatter.domain.ChapterOutline
 import com.example.graymatter.domain.ReadingProgress
@@ -53,6 +54,9 @@ class FileViewerViewModel(
     private val _opinions = MutableStateFlow<List<Opinion>>(emptyList())
     val opinions: StateFlow<List<Opinion>> = _opinions.asStateFlow()
 
+    private val _templates = MutableStateFlow<List<CustomTemplate>>(emptyList())
+    val templates: StateFlow<List<CustomTemplate>> = _templates.asStateFlow()
+
     private val _settings = MutableStateFlow(ReadingSettings(resourceId = ""))
     val settings: StateFlow<ReadingSettings> = _settings.asStateFlow()
 
@@ -74,6 +78,21 @@ class FileViewerViewModel(
         private set
     var selectedText by mutableStateOf<String?>(null)
         private set
+
+    // Add Entry state
+    var showAddEntrySheet by mutableStateOf(false)
+        private set
+    var showCustomOpinionDialog by mutableStateOf(false)
+        private set
+    var showTemplateSelectionDialog by mutableStateOf(false)
+        private set
+    var selectedTemplateForNewEntry by mutableStateOf<CustomTemplate?>(null)
+        private set
+
+    fun toggleAddEntrySheet() { showAddEntrySheet = !showAddEntrySheet }
+    fun toggleCustomOpinionDialog() { showCustomOpinionDialog = !showCustomOpinionDialog }
+    fun toggleTemplateSelectionDialog() { showTemplateSelectionDialog = !showTemplateSelectionDialog }
+    fun selectTemplateForNewEntry(template: CustomTemplate?) { selectedTemplateForNewEntry = template }
 
     // Search state
     var showSearchPanel by mutableStateOf(false)
@@ -119,6 +138,11 @@ class FileViewerViewModel(
                 viewModelScope.launch {
                     opinionRepository.getOpinionsByItemId(item.id).collect { list ->
                         _opinions.value = list
+                    }
+                }
+                viewModelScope.launch {
+                    resourceRepository.templatesStream.collect { list ->
+                        _templates.value = list
                     }
                 }
             }
@@ -448,6 +472,48 @@ class FileViewerViewModel(
     fun deleteAnnotation(id: String) {
         viewModelScope.launch {
             opinionRepository.deleteOpinion(id)
+        }
+    }
+
+    fun saveGeneralOpinion(content: String, confidence: Int) {
+        val res = _resource.value ?: return
+        viewModelScope.launch {
+            val now = Clock.System.now().toEpochMilliseconds()
+            val item = itemRepository.getItemByResourceId(res.id)
+            if (item != null) {
+                val opinion = Opinion(
+                    id = generateUuid(),
+                    itemId = item.id,
+                    text = content,
+                    confidenceScore = confidence,
+                    pageNumber = null,
+                    createdAt = now,
+                    updatedAt = now
+                )
+                opinionRepository.saveOpinion(opinion)
+                itemRepository.updateItemOpinionMetadata(item.id, now)
+            }
+        }
+    }
+
+    fun saveTemplateOpinion(formattedText: String, confidence: Int) {
+        val res = _resource.value ?: return
+        viewModelScope.launch {
+            val now = Clock.System.now().toEpochMilliseconds()
+            val item = itemRepository.getItemByResourceId(res.id)
+            if (item != null) {
+                val opinion = Opinion(
+                    id = generateUuid(),
+                    itemId = item.id,
+                    text = formattedText, // text is exactly formatted in UI
+                    confidenceScore = confidence,
+                    pageNumber = null,
+                    createdAt = now,
+                    updatedAt = now
+                )
+                opinionRepository.saveOpinion(opinion)
+                itemRepository.updateItemOpinionMetadata(item.id, now)
+            }
         }
     }
 

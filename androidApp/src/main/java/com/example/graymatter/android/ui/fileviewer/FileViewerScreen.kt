@@ -261,6 +261,7 @@ fun FileViewerScreen(
                 ReaderActionBar(
                     onSearchClick = { viewModel.toggleSearchPanel() },
                     onCustomiseClick = { viewModel.toggleSettingsSheet() },
+                    onAddClick = { viewModel.toggleAddEntrySheet() },
                     onBookmarksClick = { viewModel.toggleBookmarksSheet() },
                     onChaptersClick = { viewModel.toggleChaptersSheet() }
                 )
@@ -317,6 +318,248 @@ fun FileViewerScreen(
                 onChapterClick = { viewModel.jumpToChapter(it) },
                 onDismiss = { viewModel.toggleChaptersSheet() }
             )
+        }
+
+        if (viewModel.showAddEntrySheet) {
+            ModalBottomSheet(
+                onDismissRequest = { viewModel.toggleAddEntrySheet() },
+                containerColor = GrayMatterColors.SurfaceDark
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("Add Opinion", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                    
+                    ListItem(
+                        headlineContent = { Text("General Opinion", color = Color.White) },
+                        leadingContent = { Icon(Icons.Default.EditNote, null, tint = GrayMatterColors.Citrine) },
+                        modifier = Modifier.clickable { 
+                            viewModel.toggleAddEntrySheet()
+                            viewModel.toggleCustomOpinionDialog()
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
+                    
+                    ListItem(
+                        headlineContent = { Text("Template Entry", color = Color.White) },
+                        leadingContent = { Icon(Icons.Default.DashboardCustomize, null, tint = GrayMatterColors.CustomizedAccent) },
+                        modifier = Modifier.clickable { 
+                            viewModel.toggleAddEntrySheet()
+                            viewModel.toggleTemplateSelectionDialog()
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
+            }
+        }
+
+        if (viewModel.showTemplateSelectionDialog) {
+            val templates = viewModel.templates.collectAsState().value
+            AlertDialog(
+                onDismissRequest = { viewModel.toggleTemplateSelectionDialog() },
+                containerColor = GrayMatterColors.SurfaceDark,
+                title = { Text("Select Template", color = Color.White) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (templates.isEmpty()) {
+                            Text("No templates found. Create one in Profile.", color = GrayMatterColors.Neutral500)
+                        } else {
+                            templates.forEach { template ->
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(GrayMatterColors.Neutral900)
+                                        .clickable { 
+                                            viewModel.selectTemplateForNewEntry(template)
+                                            viewModel.toggleTemplateSelectionDialog()
+                                        }
+                                        .padding(16.dp)
+                                ) {
+                                    Text(template.name, color = Color.White, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { viewModel.toggleTemplateSelectionDialog() }) {
+                        Text("Cancel", color = Color.White.copy(alpha = 0.6f))
+                    }
+                }
+            )
+        }
+
+        if (viewModel.selectedTemplateForNewEntry != null) {
+            val template = viewModel.selectedTemplateForNewEntry!!
+            var fieldValues by remember { mutableStateOf(template.headings.associateWith { "" }) }
+            var confidence by remember { mutableFloatStateOf(0.7f) }
+            
+            Dialog(onDismissRequest = { viewModel.selectTemplateForNewEntry(null) }) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(GrayMatterColors.SurfaceDark)
+                        .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(20.dp))
+                        .padding(24.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(
+                            text = "New ${template.name}",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = GrayMatterColors.TextPrimary
+                        )
+                        
+                        Column(
+                            modifier = Modifier
+                                .heightIn(max = 400.dp)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            template.headings.forEach { heading ->
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(
+                                        text = heading.uppercase(),
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                                        color = GrayMatterColors.Neutral500
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
+                                            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                                            .padding(12.dp)
+                                    ) {
+                                        BasicTextField(
+                                            value = fieldValues[heading] ?: "",
+                                            onValueChange = { newVal ->
+                                                fieldValues = fieldValues.toMutableMap().apply { put(heading, newVal) }
+                                            },
+                                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary),
+                                            modifier = Modifier.fillMaxWidth(),
+                                            cursorBrush = SolidColor(GrayMatterColors.CustomizedAccent)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        
+                        Column {
+                            Text("Confidence: ${(confidence * 10).toInt()}/10", style = MaterialTheme.typography.labelMedium, color = GrayMatterColors.Neutral500)
+                            Slider(
+                                value = confidence, 
+                                onValueChange = { confidence = it }, 
+                                colors = SliderDefaults.colors(thumbColor = GrayMatterColors.CustomizedAccent, activeTrackColor = GrayMatterColors.CustomizedAccent)
+                            )
+                        }
+                        
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = { viewModel.selectTemplateForNewEntry(null) }) { Text("Cancel", color = GrayMatterColors.Neutral500) }
+                            Button(
+                                onClick = { 
+                                    // Assemble template format as expected in ItemDetailScreen / History
+                                    val formatted = buildString {
+                                        append("[TEMPLATE:${template.name}]\n")
+                                        template.headings.forEach { heading ->
+                                            append("### $heading\n")
+                                            append(fieldValues[heading] ?: "")
+                                            append("\n\n")
+                                        }
+                                    }.trim()
+                                    viewModel.saveTemplateOpinion(formatted, (confidence * 100).toInt()) 
+                                    viewModel.selectTemplateForNewEntry(null)
+                                },
+                                enabled = fieldValues.values.any { it.isNotBlank() },
+                                colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.CustomizedAccent, contentColor = Color.White)
+                            ) { 
+                                Text("Save") 
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (viewModel.showCustomOpinionDialog) {
+            var text by remember { mutableStateOf("") }
+            var confidence by remember { mutableFloatStateOf(0.7f) }
+            
+            Dialog(onDismissRequest = { viewModel.toggleCustomOpinionDialog() }) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(GrayMatterColors.SurfaceDark)
+                        .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(20.dp))
+                        .padding(24.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(
+                            "New General Opinion", 
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), 
+                            color = GrayMatterColors.TextPrimary
+                        )
+                        
+                        BasicTextField(
+                            value = text, 
+                            onValueChange = { text = it }, 
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary), 
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp)
+                                .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
+                                .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                                .padding(12.dp),
+                            cursorBrush = SolidColor(GrayMatterColors.Citrine),
+                            decorationBox = { inner ->
+                                if (text.isEmpty()) {
+                                    Text("Type your reflection here...", color = GrayMatterColors.Neutral600)
+                                }
+                                inner()
+                            }
+                        )
+        
+                        Column {
+                            Text(
+                                "Confidence: ${(confidence * 10).toInt()}/10",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = GrayMatterColors.Neutral500
+                            )
+                            Slider(
+                                value = confidence,
+                                onValueChange = { confidence = it },
+                                colors = SliderDefaults.colors(
+                                    thumbColor = GrayMatterColors.Citrine,
+                                    activeTrackColor = GrayMatterColors.Citrine
+                                )
+                            )
+                        }
+        
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = { viewModel.toggleCustomOpinionDialog() }) {
+                                Text("Cancel", color = GrayMatterColors.Neutral500)
+                            }
+                            Button(
+                                onClick = { 
+                                    viewModel.saveGeneralOpinion(content = text, confidence = (confidence * 100).toInt())
+                                    viewModel.toggleCustomOpinionDialog() 
+                                },
+                                enabled = text.isNotBlank(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = GrayMatterColors.Citrine,
+                                    contentColor = Color.Black
+                                )
+                            ) {
+                                Text("Save Opinion")
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         if (viewModel.showSelectionAnnotationDialog && viewModel.selectedText != null) {
@@ -491,6 +734,7 @@ fun ReaderBottomBar(
 fun ReaderActionBar(
     onSearchClick: () -> Unit,
     onCustomiseClick: () -> Unit,
+    onAddClick: () -> Unit,
     onBookmarksClick: () -> Unit,
     onChaptersClick: () -> Unit
 ) {
@@ -508,6 +752,7 @@ fun ReaderActionBar(
         ) {
             ActionBarIcon(Icons.Default.Search, "Search", onSearchClick)
             ActionBarIcon(Icons.Default.Palette, "Customise", onCustomiseClick)
+            ActionBarIcon(Icons.Default.Add, "Add Note", onAddClick)
             ActionBarIcon(Icons.Default.Menu, "TOC", onChaptersClick)
             ActionBarIcon(Icons.Default.Bookmarks, "Bookmarks", onBookmarksClick)
         }

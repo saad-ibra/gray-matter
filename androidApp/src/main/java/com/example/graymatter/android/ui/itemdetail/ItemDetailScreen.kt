@@ -898,7 +898,7 @@ private fun OpinionTimelineItem(
             val isCustomTitle = text.startsWith("[CUSTOM: ")
             val hasPageNumber = opinion.pageNumber != null
 
-            if (hasPageNumber && !isEditing) {
+            if (hasPageNumber && !isEditing && !isTemplate && !isCustomTitle) {
                 Spacer(modifier = Modifier.height(4.dp))
                 val tagColor = when {
                     isDictionary -> Color(0xFFC6280B)
@@ -1074,6 +1074,21 @@ private fun OpinionTimelineItem(
                             }
                         }
                     }
+                } else if (isCustomTitle) {
+                    val displayContent = text.substringAfter("]\n").trim()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(GrayMatterColors.Citrine.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.Citrine.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = displayContent,
+                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
+                            color = GrayMatterColors.TextPrimary
+                        )
+                    }
                 } else if (hasPageNumber) {
                     // Bookmark or old style page opinion
                     val cleanText = if (text.startsWith("[Page ")) text.replace(Regex("^\\[Page \\d+\\]\\s*"), "") else text
@@ -1093,7 +1108,6 @@ private fun OpinionTimelineItem(
                     }
                 } else {
                     // General Opinion (Citrine)
-                    val displayContent = if (isCustomTitle) text.substringAfter("]\n").trim() else text
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1102,14 +1116,14 @@ private fun OpinionTimelineItem(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = displayContent,
+                            text = text,
                             style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
                             color = GrayMatterColors.TextPrimary
                         )
                     }
                 }
                 
-                if (hasPageNumber && !isEditing) {
+                if (hasPageNumber && !isEditing && !isTemplate && !isCustomTitle) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Launch, null, tint = GrayMatterColors.Primary.copy(alpha = 0.6f), modifier = Modifier.size(12.dp))
