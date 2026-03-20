@@ -1092,6 +1092,36 @@ private fun DynamicEntryEditor(
                 }
             }
         }
+        
+        val legacyHeadings = fieldValues.keys - template.headings.toSet()
+        legacyHeadings.forEach { heading ->
+            val value = fieldValues[heading] ?: ""
+            if (value.isNotBlank()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "$heading (Legacy)".uppercase(),
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                        color = GrayMatterColors.Neutral500
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                            .padding(12.dp)
+                    ) {
+                        BasicTextField(
+                            value = value,
+                            onValueChange = { onFieldChange(heading, it) },
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary),
+                            modifier = Modifier.fillMaxWidth(),
+                            cursorBrush = SolidColor(GrayMatterColors.CustomizedAccent)
+                        )
+                    }
+                }
+            }
+        }
+        
         Slider(value = confidence, onValueChange = onConfidenceChange, colors = SliderDefaults.colors(thumbColor = GrayMatterColors.CustomizedAccent, activeTrackColor = GrayMatterColors.CustomizedAccent))
     }
 }
@@ -1114,6 +1144,8 @@ private fun parseTemplateContent(content: String, headings: List<String>): Map<S
 private fun formatTemplateContent(template: CustomTemplate, values: Map<String, String>): String {
     val sb = StringBuilder()
     sb.appendLine("[TEMPLATE:${template.name}]")
+    
+    // Write current headings
     template.headings.forEach { heading ->
         val value = values[heading] ?: ""
         if (value.isNotBlank()) {
@@ -1122,6 +1154,18 @@ private fun formatTemplateContent(template: CustomTemplate, values: Map<String, 
             sb.appendLine()
         }
     }
+    
+    // Write legacy headings to preserve them
+    val legacyHeadings = values.keys - template.headings.toSet()
+    legacyHeadings.forEach { heading ->
+        val value = values[heading] ?: ""
+        if (value.isNotBlank()) {
+            sb.appendLine("### $heading")
+            sb.appendLine(value)
+            sb.appendLine()
+        }
+    }
+    
     return sb.toString().trim()
 }
 

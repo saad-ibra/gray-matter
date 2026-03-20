@@ -160,8 +160,8 @@ private fun OverallOpinionSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(GrayMatterColors.Neutral900)
-                .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+                .background(if (hasOpinion) GrayMatterColors.Citrine.copy(alpha = 0.15f) else GrayMatterColors.SurfaceDark)
+                .border(1.dp, if (hasOpinion) GrayMatterColors.Citrine.copy(alpha = 0.4f) else GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
                 .clickable(onClick = onClick)
                 .padding(20.dp),
             contentAlignment = Alignment.Center
@@ -170,12 +170,12 @@ private fun OverallOpinionSection(
                 Icon(
                     imageVector = if (hasOpinion) Icons.Default.EditNote else Icons.Default.RateReview,
                     contentDescription = null,
-                    tint = GrayMatterColors.Primary
+                    tint = if (hasOpinion) GrayMatterColors.Citrine else GrayMatterColors.Primary
                 )
                 Text(
                     text = if (hasOpinion) "Edit Overall Opinion" else "Add Overall Opinion",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = GrayMatterColors.Primary
+                    color = if (hasOpinion) GrayMatterColors.Citrine else GrayMatterColors.Primary
                 )
             }
         }
@@ -247,11 +247,18 @@ private fun ResourceItem(
         else -> "Local File"
     }
 
-    Column(modifier = Modifier.clickable(onClick = onClick)) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(GrayMatterColors.SurfaceDark)
+            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(16.dp)
+    ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -259,7 +266,7 @@ private fun ResourceItem(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(GrayMatterColors.SurfaceDark)
+                    .background(GrayMatterColors.BackgroundDark)
                     .border(1.dp, GrayMatterColors.Neutral800, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -284,7 +291,7 @@ private fun ResourceItem(
                     maxLines = 1
                 )
             }
+            Icon(Icons.Default.ChevronRight, null, tint = GrayMatterColors.Neutral700)
         }
-        Divider(color = GrayMatterColors.Neutral800.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 24.dp))
     }
 }
