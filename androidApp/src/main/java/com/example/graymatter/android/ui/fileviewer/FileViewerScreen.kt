@@ -178,7 +178,7 @@ fun FileViewerScreen(
                                     when(action) {
                                         "annotate", "create" -> viewModel.onTextSelected("annotate", text)
                                         "dictionary" -> {
-                                            viewModel.saveDictionaryEntry(text)
+                                            viewModel.saveDictionaryEntry(text, id)
                                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=${Uri.encode(text)}"))
                                             context.startActivity(intent)
                                         }

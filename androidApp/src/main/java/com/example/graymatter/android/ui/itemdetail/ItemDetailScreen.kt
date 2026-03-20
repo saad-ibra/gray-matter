@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -143,9 +144,30 @@ fun ItemDetailScreen(
             )
 
             if (itemDetails != null) {
+                var selectedFilters by remember { mutableStateOf(setOf<String>()) }
+                
                 // Unified sorted list of Opinions
-                val sortedOpinions = remember(itemDetails.opinions) {
+                val sortedOpinions = remember(itemDetails.opinions, selectedFilters) {
                     itemDetails.opinions.sortedByDescending { it.createdAt }
+                        .filter { opinion ->
+                            if (selectedFilters.isEmpty()) return@filter true
+                            
+                            val isAnnotation = opinion.text.startsWith("> ")
+                            val isDictionary = opinion.text.startsWith("[DICT] ")
+                            val isTemplate = opinion.text.startsWith("[TEMPLATE:")
+                            val isCustomTitle = opinion.text.startsWith("[CUSTOM: ")
+                            val hasPageNumber = opinion.pageNumber != null
+                            
+                            val type = when {
+                                isDictionary -> "Dictionary"
+                                isAnnotation -> "Annotation"
+                                isTemplate || isCustomTitle -> "Custom"
+                                hasPageNumber -> "Bookmark"
+                                else -> "Opinion"
+                            }
+                            
+                            selectedFilters.contains(type)
+                        }
                 }
 
                 Column(
@@ -216,6 +238,39 @@ fun ItemDetailScreen(
                             Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Export History", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Filter Chips
+                    val availableFilters = listOf("Dictionary", "Annotation", "Custom", "Bookmark", "Opinion")
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        availableFilters.forEach { filter ->
+                            val isSelected = selectedFilters.contains(filter)
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    selectedFilters = if (isSelected) {
+                                        selectedFilters - filter
+                                    } else {
+                                        selectedFilters + filter
+                                    }
+                                },
+                                label = { Text(filter) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = GrayMatterColors.SurfaceDark,
+                                    labelColor = GrayMatterColors.Neutral500,
+                                    selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
+                                    selectedLabelColor = GrayMatterColors.Primary
+                                ),
+                                shape = RoundedCornerShape(16.dp)
+                            )
                         }
                     }
 
@@ -785,13 +840,21 @@ private fun OpinionTimelineItem(
                     Column {
                         val isAnnotation = opinion.text.startsWith("> ")
                         val isDictionary = opinion.text.startsWith("[DICT] ")
-                        val isCustomEntry = opinion.text.startsWith("[TEMPLATE:")
+                        val isTemplate = opinion.text.startsWith("[TEMPLATE:")
+                        val isCustomTitle = opinion.text.startsWith("[CUSTOM: ")
                         val hasPageNumber = opinion.pageNumber != null
+                        
+                        val dynamicTitle = when {
+                            isTemplate -> opinion.text.substringAfter("[TEMPLATE:").substringBefore("]")
+                            isCustomTitle -> opinion.text.substringAfter("[CUSTOM: ").substringBefore("]")
+                            else -> "CUSTOM ENTRY"
+                        }
                         
                         val (title, icon, color) = when {
                             isDictionary -> Triple("DICTIONARY", Icons.Default.Book, Color(0xFFC6280B))
                             isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.Gamboge)
-                            isCustomEntry -> Triple("CUSTOM ENTRY", Icons.Default.DashboardCustomize, GrayMatterColors.CustomizedAccent)
+                            isTemplate -> Triple(dynamicTitle.uppercase(), Icons.Default.DashboardCustomize, GrayMatterColors.CustomizedAccent)
+                            isCustomTitle -> Triple(dynamicTitle.uppercase(), Icons.Default.EditNote, GrayMatterColors.Citrine)
                             hasPageNumber -> Triple("BOOKMARK", Icons.Default.Bookmark, GrayMatterColors.Jonquil)
                             else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.Citrine)
                         }
@@ -831,7 +894,8 @@ private fun OpinionTimelineItem(
             
             val isAnnotation = text.startsWith("> ")
             val isDictionary = text.startsWith("[DICT] ")
-            val isCustomEntry = text.startsWith("[TEMPLATE:")
+            val isTemplate = text.startsWith("[TEMPLATE:")
+            val isCustomTitle = text.startsWith("[CUSTOM: ")
             val hasPageNumber = opinion.pageNumber != null
 
             if (hasPageNumber && !isEditing) {
@@ -858,7 +922,7 @@ private fun OpinionTimelineItem(
             
             // Opinion Content
             if (isEditing) {
-                if (isCustomEntry) {
+                if (isTemplate) {
                     // Try to parse and show dynamic form for custom entry editing
                     val templateName = text.substringAfter("[TEMPLATE:").substringBefore("]")
                     val template = templates.find { it.name == templateName }
@@ -897,11 +961,17 @@ private fun OpinionTimelineItem(
                     }
                 } else {
                     OpinionEditor(
-                        text = text,
+                        text = if (isCustomTitle) text.substringAfter("]\n").trim() else text,
                         confidence = confidence,
                         onTextChange = { 
-                            text = it 
-                            onUpdate(it, (confidence * 100).toInt(), opinion.createdAt)
+                            val newFullText = if (isCustomTitle) {
+                                val prefix = text.substringBefore("]\n") + "]\n"
+                                prefix + it
+                            } else {
+                                it
+                            }
+                            text = newFullText 
+                            onUpdate(newFullText, (confidence * 100).toInt(), opinion.createdAt)
                         },
                         onConfidenceChange = { 
                             confidence = it 
@@ -965,7 +1035,7 @@ private fun OpinionTimelineItem(
                             )
                         }
                     }
-                } else if (isCustomEntry) {
+                } else if (isTemplate) {
                     val templateName = text.substringAfter("[TEMPLATE:").substringBefore("]")
                     val content = text.substringAfter("]\n").trim()
                     
@@ -1023,6 +1093,7 @@ private fun OpinionTimelineItem(
                     }
                 } else {
                     // General Opinion (Citrine)
+                    val displayContent = if (isCustomTitle) text.substringAfter("]\n").trim() else text
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1031,7 +1102,7 @@ private fun OpinionTimelineItem(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = text,
+                            text = displayContent,
                             style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
                             color = GrayMatterColors.TextPrimary
                         )
