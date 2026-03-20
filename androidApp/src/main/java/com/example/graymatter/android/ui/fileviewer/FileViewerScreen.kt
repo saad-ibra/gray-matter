@@ -195,6 +195,14 @@ fun FileViewerScreen(
                                             // Handled in overlay via clipboardManager
                                         }
                                     }
+                                },
+                                onRequestPreviousPage = {
+                                    viewModel.previousPage()
+                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                },
+                                onRequestNextPage = {
+                                    viewModel.nextPage()
+                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                 }
                             )
                         }
@@ -248,9 +256,18 @@ fun FileViewerScreen(
                     totalPages = viewModel.totalPages,
                     isBookmarked = isCurrentPageBookmarked,
                     chapters = viewModel.chapters.collectAsState().value,
-                    onPageSlide = { viewModel.jumpToPage(it) },
-                    onPreviousPage = { viewModel.previousPage() },
-                    onNextPage = { viewModel.nextPage() },
+                    onPageSlide = { 
+                        viewModel.jumpToPage(it)
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    },
+                    onPreviousPage = { 
+                        viewModel.previousPage()
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    },
+                    onNextPage = { 
+                        viewModel.nextPage()
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    },
                     onBookmarkToggle = { 
                         if (!isCurrentPageBookmarked) {
                             viewModel.openBookmarkDialog() 
@@ -663,10 +680,6 @@ fun ReaderBottomBar(
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onPreviousPage, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.ChevronLeft, null, tint = Color.White)
-                }
-                
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Slider(
                         value = slidingValue,
@@ -704,11 +717,17 @@ fun ReaderBottomBar(
                     }
                 }
 
+                Spacer(modifier = Modifier.width(8.dp))
+
+                IconButton(onClick = onPreviousPage, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.ChevronLeft, null, tint = Color.White)
+                }
+
                 IconButton(onClick = onNextPage, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Default.ChevronRight, null, tint = Color.White)
                 }
                 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(4.dp))
                 
                 IconButton(onClick = onBookmarkToggle) {
                     Icon(

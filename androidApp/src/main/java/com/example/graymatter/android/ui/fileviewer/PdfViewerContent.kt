@@ -9,8 +9,11 @@ import android.util.Log
 import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +27,7 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -63,7 +67,9 @@ fun PdfViewerContent(
     onTotalPages: (Int) -> Unit,
     onChaptersFound: (List<com.example.graymatter.domain.ChapterOutline>) -> Unit = {},
     onEmptyTap: (Offset, Float) -> Unit = {_,_ -> },
-    onTextSelectionAction: (action: String, text: String, id: String?) -> Unit = { _, _, _ -> }
+    onTextSelectionAction: (action: String, text: String, id: String?) -> Unit = { _, _, _ -> },
+    onRequestPreviousPage: () -> Unit = {},
+    onRequestNextPage: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current.density
@@ -298,83 +304,140 @@ fun PdfViewerContent(
                     )
                 }
             } else {
-                bitmap?.let { b ->
-                    var imageLayoutSize by remember { mutableStateOf(IntSize.Zero) }
-                    
-                    var zoomScale by remember { mutableFloatStateOf(1f) }
-                    var panOffset by remember { mutableStateOf(Offset.Zero) }
-                    
-                    LaunchedEffect(currentPage) {
-                        zoomScale = 1f
-                        panOffset = Offset.Zero
-                    }
-                    
-                    Box(modifier = Modifier
-                        .fillMaxSize()
-                        .clipToBounds()
-                        .pointerInput(imageLayoutSize) {
-                            detectTransformGestures { centroid, pan, zoom, _ ->
-                                val targetScale = zoomScale * zoom
-                                val newScale = targetScale.coerceIn(1f, 5f)
-                                val actualZoom = if (zoomScale > 0f) newScale / zoomScale else 1f
-                                
-                                val center = Offset(imageLayoutSize.width / 2f, imageLayoutSize.height / 2f)
-                                val centroidOffset = centroid - center - panOffset
-                                val zoomPan = centroidOffset * (1f - actualZoom)
-                                
-                                val newPan = panOffset + pan + zoomPan
-                                
-                                val maxX = maxOf(0f, (imageLayoutSize.width * (newScale - 1)) / 2f)
-                                val maxY = maxOf(0f, (imageLayoutSize.height * (newScale - 1)) / 2f)
-                                
-                                val finalOffset = Offset(
-                                    newPan.x.coerceIn(-maxX, maxX),
-                                    newPan.y.coerceIn(-maxY, maxY)
-                                )
-                                zoomScale = newScale
-                                panOffset = if (newScale <= 1.01f) Offset.Zero else finalOffset
-                            }
-                        }
-                    ) {
-                        Image(
-                            bitmap = b.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .onSizeChanged { imageLayoutSize = it }
-                                .graphicsLayer {
-                                    scaleX = zoomScale
-                                    scaleY = zoomScale
-                                    translationX = panOffset.x
-                                    translationY = panOffset.y
-                                },
-                            contentScale = ContentScale.Fit,
-                            colorFilter = themeColorFilter
+                AnimatedContent(
+                    targetState = currentPage,
+                    transitionSpec = {
+                        val dir = if (targetState >= initialState) 1 else -1
+                        (slideInHorizontally(
+                            animationSpec = tween(durationMillis = 300),
+                            initialOffsetX = { fullWidth -> fullWidth * dir }
+                        ) + fadeIn(animationSpec = tween(durationMillis = 200)))
+                        .togetherWith(
+                            slideOutHorizontally(
+                                animationSpec = tween(durationMillis = 300),
+                                targetOffsetX = { fullWidth -> -fullWidth * dir }
+                            ) + fadeOut(animationSpec = tween(durationMillis = 200))
                         )
-                        
-                        // Text Selection Overlay
-                        if (extractedCharacters.isNotEmpty() && imageLayoutSize != IntSize.Zero) {
-                            TextSelectionOverlay(
-                                characters = extractedCharacters,
-                                imageSize = imageLayoutSize,
-                                bitmapSize = IntSize(b.width, b.height),
-                                density = density,
-                                autoCropRect = if (autoCrop) cropCache[currentPage] else null,
-                                cropPadding = if (autoCrop) (16 * density).toInt() else 0,
-                                opinions = opinions.filter { it.pageNumber == currentPage },
-                                zoomScale = zoomScale,
-                                panOffset = panOffset,
-                                renderScale = currentRenderScale,
-                                onEmptyTap = onEmptyTap,
-                                onActionCompleted = { action, text, id ->
-                                    if (text != null || id != null) {
-                                        onTextSelectionAction(action, text ?: "", id)
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                    label = "PdfPageTransition"
+                ) { targetPage ->
+                    // To avoid flicker, we use the bitmap for the current page if it matches targetPage
+                    val displayBitmap = if (targetPage == currentPage) bitmap else pageCache.get(targetPage)
+                    
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        displayBitmap?.let { b ->
+                            var imageLayoutSize by remember { mutableStateOf(IntSize.Zero) }
+                            var zoomScale by remember { mutableFloatStateOf(1f) }
+                            var panOffset by remember { mutableStateOf(Offset.Zero) }
+                            
+                            LaunchedEffect(targetPage) {
+                                zoomScale = 1f
+                                panOffset = Offset.Zero
+                            }
+                            
+                            Box(modifier = Modifier
+                                .fillMaxSize()
+                                .clipToBounds()
+                                // ── Swipe detection at Initial pass (non-consuming) ──
+                                .pointerInput(Unit) {
+                                    val swipeThreshold = 60.dp.toPx()
+                                    val velocityThreshold = 0.4f // px/ms
+                                    
+                                    awaitEachGesture {
+                                        val down = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull() ?: return@awaitEachGesture
+                                        val startTime = System.currentTimeMillis()
+                                        val startPos = down.position
+                                        var lastPos = startPos
+                                        
+                                        while (true) {
+                                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                            lastPos = change.position
+                                            if (!change.pressed) break
+                                        }
+                                        
+                                        val dt = (System.currentTimeMillis() - startTime).coerceAtLeast(1)
+                                        val dx = lastPos.x - startPos.x
+                                        val dy = lastPos.y - startPos.y
+                                        val velocity = Math.abs(dx) / dt
+                                        
+                                        // Condition: Zoomed out, mostly horizontal, fast or far enough
+                                        if (zoomScale <= 1.05f && Math.abs(dx) > Math.abs(dy) * 1.5f) {
+                                            if (Math.abs(dx) > swipeThreshold || velocity > velocityThreshold) {
+                                                if (dx < 0) onRequestNextPage() else onRequestPreviousPage()
+                                            }
+                                        }
                                     }
                                 }
-                            )
-                        }
+                                .pointerInput(imageLayoutSize) {
+                                    detectTransformGestures { centroid, pan, zoom, _ ->
+                                        val targetScale = zoomScale * zoom
+                                        val newScale = targetScale.coerceIn(1f, 5f)
+                                        val actualZoom = if (zoomScale > 0f) newScale / zoomScale else 1f
+                                        
+                                        val center = Offset(imageLayoutSize.width / 2f, imageLayoutSize.height / 2f)
+                                        val centroidOffset = centroid - center - panOffset
+                                        val zoomPan = centroidOffset * (1f - actualZoom)
+                                        
+                                        val newPan = panOffset + pan + zoomPan
+                                        
+                                        val maxX = maxOf(0f, (imageLayoutSize.width * (newScale - 1)) / 2f)
+                                        val maxY = maxOf(0f, (imageLayoutSize.height * (newScale - 1)) / 2f)
+                                        
+                                        val finalOffset = Offset(
+                                            newPan.x.coerceIn(-maxX, maxX),
+                                            newPan.y.coerceIn(-maxY, maxY)
+                                        )
+                                        zoomScale = newScale
+                                        panOffset = if (newScale <= 1.01f) Offset.Zero else finalOffset
+                                    }
+                                }
+                            ) {
+                                Image(
+                                    bitmap = b.asImageBitmap(),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .onSizeChanged { imageLayoutSize = it }
+                                        .graphicsLayer {
+                                            scaleX = zoomScale
+                                            scaleY = zoomScale
+                                            translationX = panOffset.x
+                                            translationY = panOffset.y
+                                        },
+                                    contentScale = ContentScale.Fit,
+                                    colorFilter = themeColorFilter
+                                )
+                                
+                                // Text Selection Overlay (only on active page)
+                                if (targetPage == currentPage && extractedCharacters.isNotEmpty() && imageLayoutSize != IntSize.Zero) {
+                                    TextSelectionOverlay(
+                                        characters = extractedCharacters,
+                                        imageSize = imageLayoutSize,
+                                        bitmapSize = IntSize(b.width, b.height),
+                                        density = density,
+                                        autoCropRect = if (autoCrop) cropCache[currentPage] else null,
+                                        cropPadding = if (autoCrop) (16 * density).toInt() else 0,
+                                        opinions = opinions.filter { it.pageNumber == currentPage },
+                                        zoomScale = zoomScale,
+                                        panOffset = panOffset,
+                                        renderScale = currentRenderScale,
+                                        onEmptyTap = onEmptyTap,
+                                        onActionCompleted = { action, text, id ->
+                                            if (text != null || id != null) {
+                                                onTextSelectionAction(action, text ?: "", id)
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        } ?: Text("Preparing page...", color = GrayMatterColors.TextSecondary)
                     }
-                } ?: Text("Preparing page...", color = GrayMatterColors.TextSecondary)
+                }
             }
         }
     }
