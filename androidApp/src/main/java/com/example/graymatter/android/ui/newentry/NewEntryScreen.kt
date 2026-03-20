@@ -183,7 +183,7 @@ fun NewEntryScreen(
                             .padding(12.dp)
                     ) {
                         BasicTextField(
-                            value = descriptionInput,
+                            descriptionInput,
                             onValueChange = { descriptionInput = it },
                             textStyle = MaterialTheme.typography.bodyMedium.copy(color = GrayMatterColors.TextPrimary),
                             modifier = Modifier.fillMaxSize(),
@@ -225,6 +225,7 @@ fun NewEntryScreen(
         val isLinkValid = selectedTab == 0 && urlInput.isNotBlank()
         val isFileValid = selectedTab == 1 && selectedFileUri != null
         val isNoteValid = selectedTab == 2 && titleInput.isNotBlank()
+        val isOpinionValid = opinionInput.isNotBlank()
         
         SaveButton(
             onClick = {
@@ -240,7 +241,7 @@ fun NewEntryScreen(
                     }
                 }
             },
-            enabled = (isLinkValid || isFileValid || isNoteValid) && !isSaving,
+            enabled = (isLinkValid || isFileValid || isNoteValid) && isOpinionValid && !isSaving,
             isLoading = isSaving,
             modifier = Modifier
                 .fillMaxWidth()
@@ -463,7 +464,10 @@ private fun OpinionSection(opinionInput: String, onOpinionChange: (String) -> Un
     val greenBorder = GrayMatterColors.AppleGreen.copy(alpha = 0.2f)
     
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("OPINION", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterColors.TextSecondary)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("OPINION", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterColors.TextSecondary)
+            Text("(Required)", style = MaterialTheme.typography.labelSmall, color = GrayMatterColors.AppleGreen.copy(alpha = 0.7f))
+        }
         Box(modifier = Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(12.dp)).background(greenBg).border(1.dp, greenBorder, RoundedCornerShape(12.dp)).padding(16.dp)) {
             BasicTextField(value = opinionInput, onValueChange = onOpinionChange, textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary, lineHeight = 24.sp), modifier = Modifier.fillMaxSize(), cursorBrush = SolidColor(GrayMatterColors.AppleGreen), decorationBox = { inner -> if (opinionInput.isEmpty()) Text("Type your understanding here...", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyLarge); inner() })
         }
