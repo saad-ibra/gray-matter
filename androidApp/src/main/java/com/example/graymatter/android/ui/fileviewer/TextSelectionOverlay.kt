@@ -210,7 +210,10 @@ fun TextSelectionOverlay(
                 if (parts.isNotEmpty()) {
                     quote = parts[0].substring(2).trim()
                 }
+            } else if (opinion.text.startsWith("[DICT] ")) {
+                quote = opinion.text.removePrefix("[DICT] ").trim()
             }
+
             if (quote.isNotEmpty()) {
                 val startIndex = pageText.indexOf(quote)
                 if (startIndex != -1) {
@@ -390,7 +393,10 @@ fun TextSelectionOverlay(
             val vPad = 5.dp.toPx() * zoomScale
             
             // Draw Persistent Highlights First
-            for ((_, chars) in persistentHighlights) {
+            for ((id, chars) in persistentHighlights) {
+                val isDictionary = opinions.find { it.id == id }?.text?.startsWith("[DICT] ") == true
+                val color = if (isDictionary) Color(0xFFC6280B).copy(alpha = 0.4f) else highlightColor
+                
                 val lineRects = groupCharactersIntoRects(chars)
                 for (rect in lineRects) {
                     val pScreen = pdfToScreen(rect.left, rect.top)
@@ -403,7 +409,7 @@ fun TextSelectionOverlay(
                     val paddedH = screenH + vPad * 2
                     
                     drawRect(
-                        color = highlightColor,
+                        color = color,
                         topLeft = Offset(paddedX, paddedY),
                         size = androidx.compose.ui.geometry.Size(paddedW, paddedH)
                     )
@@ -468,7 +474,7 @@ fun TextSelectionOverlay(
             val minY = selectedCharacters.value.minOf { pdfToScreen(it.x, it.y).y }
             val maxY = selectedCharacters.value.maxOf { pdfToScreen(it.x, it.y + it.height).y }
             
-            val bubbleWidth = 200f
+            val bubbleWidth = 320f
             val bubbleHeight = 140f
             
             val popupX = ((minX + maxX) / 2f - bubbleWidth / 2f).coerceIn(16f, (imageSize.width - bubbleWidth - 16f).coerceAtLeast(16f))
@@ -501,6 +507,15 @@ fun TextSelectionOverlay(
                         onActionCompleted("annotate", text, null)
                     }) {
                         Text("Annotate", color = Color.White)
+                    }
+                    TextButton(onClick = {
+                        val text = selectedCharacters.value.joinToString("") { it.unicode }
+                        dragStart = null
+                        dragEnd = null
+                        showPopup = false
+                        onActionCompleted("dictionary", text, null)
+                    }) {
+                        Text("Save & Search", color = Color(0xFFC6280B))
                     }
                 }
             }
@@ -542,15 +557,30 @@ fun TextSelectionOverlay(
                     }) {
                         Text("Copy", color = Color.White)
                     }
-                    TextButton(onClick = {
-                        val chars = persistentHighlights.find { it.first == pId }?.second ?: emptyList()
-                        val text = chars.joinToString("") { it.unicode }
-                        showAnnotationPopupId = null
-                        annotationPopupOffset = null
-                        onActionCompleted("edit", text, pId)
-                    }) {
-                        Text("Edit", color = Color.White)
+                    
+                    val isDictionary = opinions.find { it.id == pId }?.text?.startsWith("[DICT] ") == true
+                    if (!isDictionary) {
+                        TextButton(onClick = {
+                            val chars = persistentHighlights.find { it.first == pId }?.second ?: emptyList()
+                            val text = chars.joinToString("") { it.unicode }
+                            showAnnotationPopupId = null
+                            annotationPopupOffset = null
+                            onActionCompleted("edit", text, pId)
+                        }) {
+                            Text("Edit", color = Color.White)
+                        }
+                    } else {
+                        TextButton(onClick = {
+                            val chars = persistentHighlights.find { it.first == pId }?.second ?: emptyList()
+                            val text = chars.joinToString("") { it.unicode }
+                            showAnnotationPopupId = null
+                            annotationPopupOffset = null
+                            onActionCompleted("dictionary", text, pId)
+                        }) {
+                            Text("Search", color = Color(0xFFC6280B))
+                        }
                     }
+
                     TextButton(onClick = {
                         showAnnotationPopupId = null
                         annotationPopupOffset = null

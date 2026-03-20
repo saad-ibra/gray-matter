@@ -1,6 +1,7 @@
 package com.example.graymatter.android.ui.fileviewer
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -39,7 +40,6 @@ import androidx.compose.ui.window.Dialog
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.domain.ChapterOutline
 import com.example.graymatter.domain.ResourceType
-import androidx.core.net.toUri
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.type
 import com.example.graymatter.android.util.FileUtils
@@ -177,6 +177,11 @@ fun FileViewerScreen(
                                 onTextSelectionAction = { action, text, id -> 
                                     when(action) {
                                         "annotate", "create" -> viewModel.onTextSelected("annotate", text)
+                                        "dictionary" -> {
+                                            viewModel.saveDictionaryEntry(text)
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=${Uri.encode(text)}"))
+                                            context.startActivity(intent)
+                                        }
                                         "edit" -> {
                                             val op = opinions.find { it.id == id }
                                             if(op != null) {

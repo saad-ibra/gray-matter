@@ -394,6 +394,27 @@ class FileViewerViewModel(
         }
     }
 
+    fun saveDictionaryEntry(phrase: String) {
+        val res = _resource.value ?: return
+        viewModelScope.launch {
+            val now = Clock.System.now().toEpochMilliseconds()
+            val item = itemRepository.getItemByResourceId(res.id)
+            if (item != null) {
+                val opinion = Opinion(
+                    id = generateUuid(),
+                    itemId = item.id,
+                    text = "[DICT] $phrase",
+                    confidenceScore = 100, // Dictionary entries are high confidence by default
+                    pageNumber = currentPage,
+                    createdAt = now,
+                    updatedAt = now
+                )
+                opinionRepository.saveOpinion(opinion)
+                itemRepository.updateItemOpinionMetadata(item.id, now)
+            }
+        }
+    }
+
     fun updateAnnotation(id: String, text: String, confidence: Int) {
         viewModelScope.launch {
             val existing = opinionRepository.getOpinionById(id) ?: return@launch

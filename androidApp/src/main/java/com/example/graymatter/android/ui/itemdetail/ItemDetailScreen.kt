@@ -19,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontStyle
@@ -596,9 +595,11 @@ private fun OpinionTimelineItem(
 
                     Column {
                         val isAnnotation = opinion.text.startsWith("> ")
+                        val isDictionary = opinion.text.startsWith("[DICT] ")
                         val hasPageNumber = opinion.pageNumber != null
                         
                         val (title, icon, color) = when {
+                            isDictionary -> Triple("DICTIONARY", Icons.Default.Book, Color(0xFFC6280B))
                             isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.Gamboge)
                             hasPageNumber -> Triple("BOOKMARK", Icons.Default.Bookmark, GrayMatterColors.Jonquil)
                             else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.Citrine)
@@ -638,19 +639,25 @@ private fun OpinionTimelineItem(
             }
             
             val isAnnotation = text.startsWith("> ")
+            val isDictionary = text.startsWith("[DICT] ")
             val hasPageNumber = opinion.pageNumber != null
 
             if (hasPageNumber && !isEditing) {
                 Spacer(modifier = Modifier.height(4.dp))
+                val tagColor = when {
+                    isDictionary -> Color(0xFFC6280B)
+                    isAnnotation -> GrayMatterColors.Gamboge
+                    else -> GrayMatterColors.Jonquil
+                }
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
-                        .background(GrayMatterColors.Jonquil.copy(alpha = 0.1f))
+                        .background(tagColor.copy(alpha = 0.1f))
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(if (isAnnotation) Icons.Default.FormatQuote else Icons.Default.Bookmark, null, tint = if (isAnnotation) GrayMatterColors.Gamboge else GrayMatterColors.Jonquil, modifier = Modifier.size(10.dp))
-                        Text("PAGE ${opinion.pageNumber!! + 1}", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = if (isAnnotation) GrayMatterColors.Gamboge else GrayMatterColors.Jonquil, maxLines = 1, softWrap = false)
+                        Icon(if (isDictionary) Icons.Default.Book else if (isAnnotation) Icons.Default.FormatQuote else Icons.Default.Bookmark, null, tint = tagColor, modifier = Modifier.size(10.dp))
+                        Text("PAGE ${opinion.pageNumber!! + 1}", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = tagColor, maxLines = 1, softWrap = false)
                     }
                 }
             }
@@ -673,9 +680,25 @@ private fun OpinionTimelineItem(
                 )
             } else {
                 val isAnnotation = text.startsWith("> ")
+                val isDictionary = text.startsWith("[DICT] ")
                 val isOldBookmark = text.startsWith("[Page ")
                 
-                if (isAnnotation) {
+                if (isDictionary) {
+                    val phrase = text.removePrefix("[DICT] ").trim()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFC6280B).copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, Color(0xFFC6280B).copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = phrase,
+                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
+                            color = GrayMatterColors.TextPrimary
+                        )
+                    }
+                } else if (isAnnotation) {
                     // Split into quote and reflection
                     val parts = text.split("\n\n", limit = 2)
                     val quote = parts[0].removePrefix("> ").trim()

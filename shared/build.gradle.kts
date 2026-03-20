@@ -88,5 +88,9 @@ sqldelight {
             packageName.set("com.example.graymatter.database")
             srcDirs("src/commonMain/sqldelight-graymatter")
         }
+        create("NotesDatabase") {
+            packageName.set("com.example.notes.database")
+            srcDirs("sqldelight-notes")
+        }
     }
 }
