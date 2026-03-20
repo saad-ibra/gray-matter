@@ -36,54 +36,11 @@ fun GrayMatterApp(
     appModule: AppModule,
     navController: NavHostController = rememberNavController()
 ) {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-
-    // Top-level destinations that show the bottom bar
-    val topLevelDestinations = listOf(
-        NavigationDestination.Home.route,
-        NavigationDestination.Library.route,
-        NavigationDestination.Profile.route
+    GrayMatterNavigation(
+        appModule = appModule,
+        navController = navController,
+        modifier = Modifier.fillMaxSize()
     )
-    val showBottomBar = currentRoute in topLevelDestinations
-
-    Scaffold(
-        containerColor = GrayMatterColors.BackgroundDark,
-        bottomBar = {
-            if (showBottomBar) {
-                GrayMatterBottomBar(
-                    currentRoute = currentRoute,
-                    onNavigateToHome = {
-                        navController.navigate(NavigationDestination.Home.route) {
-                            popUpTo(NavigationDestination.Home.route) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    onNavigateToLibrary = {
-                        navController.navigate(NavigationDestination.Library.route) {
-                            popUpTo(NavigationDestination.Home.route) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    onNavigateToProfile = {
-                        navController.navigate(NavigationDestination.Profile.route) {
-                            popUpTo(NavigationDestination.Home.route) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                )
-            }
-        }
-    ) { innerPadding ->
-        GrayMatterNavigation(
-            appModule = appModule,
-            navController = navController,
-            modifier = Modifier.padding(innerPadding)
-        )
-    }
 }
 
 @Composable

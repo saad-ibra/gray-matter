@@ -67,7 +67,7 @@ fun HomeScreen(
             }
         }
 
-        // Removed Continue Reading Card from Home as requested
+
 
         // Recently Added Section (Limited to 4)
         if (recentItems.isNotEmpty()) {
@@ -235,5 +235,95 @@ private fun formatTime(timestamp: Long): String {
         mins < 60 -> "${mins}m ago"
         hours < 24 -> "${hours}h ago"
         else -> "more than a day ago"
+    }
+}
+
+@Composable
+private fun ContinueReadingCard(
+    title: String,
+    type: ResourceType,
+    progress: com.example.graymatter.domain.ReadingProgress?,
+    onClick: () -> Unit
+) {
+    val icon = when (type) {
+        ResourceType.WEB_LINK -> Icons.Default.Language
+        ResourceType.MARKDOWN -> Icons.Default.EditNote
+        ResourceType.PDF -> Icons.Default.PictureAsPdf
+        ResourceType.IMAGE -> Icons.Default.Image
+        else -> Icons.Default.Description
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(GrayMatterColors.SurfaceDark)
+            .border(1.5.dp, GrayMatterColors.Primary.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
+            .clickable(onClick = onClick)
+            .padding(24.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(GrayMatterColors.Primary.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = GrayMatterColors.Primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Icon(Icons.Default.OpenInNew, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+            }
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = GrayMatterColors.TextPrimary,
+                maxLines = 2
+            )
+
+            if (progress != null) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            "${(progress.percentComplete * 100).toInt()}% Read",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = GrayMatterColors.Primary
+                        )
+                        Text(
+                            "Page ${progress.currentPage + 1} of ${progress.totalPages}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = GrayMatterColors.Neutral500
+                        )
+                    }
+                    LinearProgressIndicator(
+                        progress = progress.percentComplete.toFloat(),
+                        modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
+                        color = GrayMatterColors.Primary,
+                        trackColor = GrayMatterColors.Neutral800
+                    )
+                }
+            } else {
+                Text(
+                    text = "Pick up where you left off",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = GrayMatterColors.Neutral500
+                )
+            }
+        }
     }
 }

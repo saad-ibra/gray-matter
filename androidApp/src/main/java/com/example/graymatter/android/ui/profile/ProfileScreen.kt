@@ -27,42 +27,128 @@ fun ProfileScreen(
     viewModel: GrayMatterViewModel,
     modifier: Modifier = Modifier
 ) {
+    var showTemplatesScreen by remember { mutableStateOf(false) }
+
+    if (showTemplatesScreen) {
+        TemplatesManagementScreen(
+            viewModel = viewModel,
+            onBackClick = { showTemplatesScreen = false }
+        )
+    } else {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(GrayMatterColors.BackgroundDark)
+        ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 32.dp)
+            ) {
+                item {
+                    ProfileHeader()
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    SettingsButton(
+                        icon = Icons.Default.ListAlt,
+                        title = "Manage Templates",
+                        onClick = { showTemplatesScreen = true }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsButton(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(GrayMatterColors.SurfaceDark)
+            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(20.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = GrayMatterColors.TextPrimary
+                )
+            }
+            Icon(Icons.Default.ChevronRight, null, tint = GrayMatterColors.Neutral700)
+        }
+    }
+}
+
+@Composable
+fun TemplatesManagementScreen(
+    viewModel: GrayMatterViewModel,
+    onBackClick: () -> Unit
+) {
     val templates by viewModel.templates.collectAsState()
     var editingTemplate by remember { mutableStateOf<CustomTemplate?>(null) }
     var showEditor by remember { mutableStateOf(false) }
 
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(GrayMatterColors.BackgroundDark)
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 32.dp)
-        ) {
-            item {
-                ProfileHeader()
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 24.dp)
+                    .statusBarsPadding(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBackClick) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = GrayMatterColors.TextPrimary)
+                }
+                Text(
+                    text = "Manage Templates",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = GrayMatterColors.TextPrimary,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
             }
 
-            item {
-                SectionHeader(title = "MANAGE TEMPLATES") {
-                    IconButton(onClick = {
-                        editingTemplate = CustomTemplate(viewModel.generateUuid(), "", listOf(""))
-                        showEditor = true
-                    }) {
-                        Icon(Icons.Default.Add, null, tint = GrayMatterColors.TextPrimary)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 32.dp)
+            ) {
+                item {
+                    SectionHeader(title = "YOUR TEMPLATES") {
+                        IconButton(onClick = {
+                            editingTemplate = CustomTemplate(viewModel.generateUuid(), "", listOf(""))
+                            showEditor = true
+                        }) {
+                            Icon(Icons.Default.Add, null, tint = GrayMatterColors.TextPrimary)
+                        }
                     }
                 }
-            }
 
-            items(templates) { template ->
-                TemplateItem(
-                    template = template,
-                    onClick = {
-                        editingTemplate = template
-                        showEditor = true
-                    }
-                )
+                items(templates) { template ->
+                    TemplateItem(
+                        template = template,
+                        onClick = {
+                            editingTemplate = template
+                            showEditor = true
+                        }
+                    )
+                }
             }
         }
 

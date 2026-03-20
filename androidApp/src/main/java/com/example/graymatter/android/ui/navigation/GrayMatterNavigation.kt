@@ -8,6 +8,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -39,7 +41,8 @@ import kotlinx.coroutines.launch
 /**
  * Main navigation graph for Gray Matter app.
  */
-@Composable
+@kotlin.OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@androidx.compose.runtime.Composable
 fun GrayMatterNavigation(
     appModule: AppModule,
     navController: NavHostController = rememberNavController(),
@@ -90,48 +93,69 @@ fun GrayMatterNavigation(
             )
         }
     ) {
-        // Home Screen
+        // Main Pager (Home, Library, Profile)
         composable(NavigationDestination.Home.route) {
-            val continueReadingItem by viewModel.continueReadingItem.collectAsState()
-            val lastOpenedProgress by viewModel.lastOpenedProgress.collectAsState()
-
-            HomeScreen(
-                viewModel = viewModel,
-                continueReadingItem = continueReadingItem,
-                continueReadingProgress = lastOpenedProgress,
-                onCreateNewEntryClick = {
-                    navController.navigate(NavigationDestination.NewEntry.route)
-                },
-                onNavigateToLibrary = {
-                    navController.navigate(NavigationDestination.Library.route)
-                },
-                onItemClick = { itemId ->
-                    navController.navigate(NavigationDestination.ItemDetail.buildRoute(itemId))
+            val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 3 })
+            
+            androidx.compose.material3.Scaffold(
+                bottomBar = {
+                    com.example.graymatter.android.ui.GrayMatterBottomBar(
+                        currentRoute = when (pagerState.currentPage) {
+                            0 -> NavigationDestination.Home.route
+                            1 -> NavigationDestination.Library.route
+                            2 -> NavigationDestination.Profile.route
+                            else -> NavigationDestination.Home.route
+                        },
+                        onNavigateToHome = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
+                        onNavigateToLibrary = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
+                        onNavigateToProfile = { coroutineScope.launch { pagerState.animateScrollToPage(2) } }
+                    )
                 }
-            )
-        }
+            ) { paddingValues ->
+                androidx.compose.foundation.pager.HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.padding(paddingValues).fillMaxSize()
+                ) { page ->
+                    when (page) {
+                        0 -> {
+                            val continueReadingItem by viewModel.continueReadingItem.collectAsState()
+                            val lastOpenedProgress by viewModel.lastOpenedProgress.collectAsState()
 
-        // Library Screen
-        composable(NavigationDestination.Library.route) {
-            LibraryScreen(
-                topics = topics,
-                onTopicClick = { topic ->
-                    navController.navigate(NavigationDestination.TopicDetail.buildRoute(topic.id))
-                },
-                onNavigateToHome = {
-                    navController.navigate(NavigationDestination.Home.route) {
-                        popUpTo(NavigationDestination.Home.route) { inclusive = true }
+                            HomeScreen(
+                                viewModel = viewModel,
+                                continueReadingItem = continueReadingItem,
+                                continueReadingProgress = lastOpenedProgress,
+                                onCreateNewEntryClick = {
+                                    navController.navigate(NavigationDestination.NewEntry.route)
+                                },
+                                onNavigateToLibrary = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(1) }
+                                },
+                                onItemClick = { itemId ->
+                                    navController.navigate(NavigationDestination.ItemDetail.buildRoute(itemId))
+                                }
+                            )
+                        }
+                        1 -> {
+                            LibraryScreen(
+                                topics = topics,
+                                onTopicClick = { topic ->
+                                    navController.navigate(NavigationDestination.TopicDetail.buildRoute(topic.id))
+                                },
+                                onNavigateToHome = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(0) }
+                                },
+                                onCreateClick = {
+                                    navController.navigate(NavigationDestination.NewEntry.route)
+                                }
+                            )
+                        }
+                        2 -> {
+                            ProfileScreen(viewModel = viewModel)
+                        }
                     }
-                },
-                onCreateClick = {
-                    navController.navigate(NavigationDestination.NewEntry.route)
                 }
-            )
-        }
-
-        // Profile Screen
-        composable(NavigationDestination.Profile.route) {
-            ProfileScreen(viewModel = viewModel)
+            }
         }
 
         // Topic Detail Screen (Synthesis)
@@ -356,7 +380,7 @@ fun GrayMatterNavigation(
                 onBackClick = { navController.popBackStack() },
                 onSelectTopic = { topic ->
                     itemId?.let { viewModel.assignTopicToItem(it, topic.id) }
-                    navController.navigate(NavigationDestination.Library.route) {
+                    navController.navigate(NavigationDestination.Home.route) {
                         popUpTo(NavigationDestination.Home.route)
                     }
                 },
@@ -364,7 +388,7 @@ fun GrayMatterNavigation(
                     coroutineScope.launch {
                         val newTopicId = viewModel.createTopic(topicName)
                         itemId?.let { viewModel.assignTopicToItem(it, newTopicId) }
-                        navController.navigate(NavigationDestination.Library.route) {
+                        navController.navigate(NavigationDestination.Home.route) {
                             popUpTo(NavigationDestination.Home.route)
                         }
                     }
@@ -379,7 +403,7 @@ fun GrayMatterNavigation(
                 continueReadingItem = null,
                 continueReadingProgress = null,
                 onCreateNewEntryClick = {},
-                onNavigateToLibrary = { navController.navigate(NavigationDestination.Library.route) },
+                onNavigateToLibrary = { navController.navigate(NavigationDestination.Home.route) },
                 onItemClick = {}
             )
         }
