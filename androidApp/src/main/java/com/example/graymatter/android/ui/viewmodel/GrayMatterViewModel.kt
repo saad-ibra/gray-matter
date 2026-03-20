@@ -278,7 +278,6 @@ class GrayMatterViewModel(
             id = topicId,
             name = name,
             notes = null,
-            classificationKeywords = extractKeywords(name),
             resourceCount = 0,
             updatedAt = now
         )
@@ -530,16 +529,6 @@ class GrayMatterViewModel(
         sb.appendLine("  \"opinionCount\": ${opinions.size}")
         sb.appendLine("}")
         return sb.toString()
-    }
-    
-    /**
-     * Simple keyword extraction from topic name.
-     */
-    private fun extractKeywords(text: String): String {
-        return text.lowercase()
-            .split(" ")
-            .filter { it.length > 3 }
-            .joinToString(",")
     }
     
     /**

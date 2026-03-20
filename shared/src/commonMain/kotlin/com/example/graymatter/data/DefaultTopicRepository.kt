@@ -37,7 +37,6 @@ class DefaultTopicRepository(
             id = topic.id,
             name = topic.name,
             notes = topic.notes,
-            classificationKeywords = topic.classificationKeywords,
             resourceCount = topic.resourceCount.toLong(),
             updatedAt = topic.updatedAt
         )
@@ -76,7 +75,6 @@ private fun TopicEntity.toTopic(): Topic = Topic(
     id = id,
     name = name,
     notes = notes,
-    classificationKeywords = classificationKeywords,
     resourceCount = resourceCount.toInt(),
     updatedAt = updatedAt
 )
