@@ -147,24 +147,58 @@ class FileViewerViewModel(
                 }
             }
 
-            // Trigger text extraction if missing
+            _pageTextMap.clear()
+            
+            // Trigger text extraction if missing or if PDF needs page map
             if (res.extractedText == null && res.filePath != null) {
                 extractResourceText(res)
             } else if (res.extractedText != null) {
-                // If we have aggregated text but no page map, for single-page types it's fine
-                _pageTextMap[0] = res.extractedText!!
+                if (res.type == ResourceType.PDF) {
+                    extractResourceText(res) // We need to rebuild the page map
+                } else {
+                    // If we have aggregated text but no page map, for single-page types it's fine
+                    _pageTextMap[0] = res.extractedText!!
+                }
             }
         }
     }
 
     private fun extractResourceText(res: Resource) {
-        viewModelScope.launch {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             val path = res.filePath ?: return@launch
             when (res.type) {
                 ResourceType.MARKDOWN -> {
                     val text = try { File(path).readText() } catch (e: Exception) { "" }
                     _pageTextMap[0] = text
                     resourceRepository.updateResourceText(res.id, text)
+                }
+                ResourceType.PDF -> {
+                    try {
+                        val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(File(path))
+                        val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
+                        
+                        val total = document.numberOfPages
+                        val fullTextBuilder = StringBuilder()
+                        for (i in 0 until total) {
+                            stripper.startPage = i + 1
+                            stripper.endPage = i + 1
+                            val text = stripper.getText(document) ?: ""
+                            _pageTextMap[i] = text
+                            if (res.extractedText == null) {
+                                fullTextBuilder.append(text).append("\n")
+                            }
+                        }
+                        
+                        if (res.extractedText == null) {
+                            val fullText = fullTextBuilder.toString()
+                            resourceRepository.updateResourceText(res.id, fullText)
+                            _resource.value = res.copy(extractedText = fullText)
+                        }
+                        
+                        document.close()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
                 else -> {}
             }
