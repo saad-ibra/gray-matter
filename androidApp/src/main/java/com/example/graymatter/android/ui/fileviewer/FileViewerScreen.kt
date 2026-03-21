@@ -64,6 +64,15 @@ fun FileViewerScreen(
     val opinions by viewModel.opinions.collectAsState()
     val context = LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    var lastHapticTime by remember { mutableLongStateOf(0L) }
+    
+    val performThrottledHaptic: () -> Unit = {
+        val now = System.currentTimeMillis()
+        if (now - lastHapticTime > 40) {
+            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+            lastHapticTime = now
+        }
+    }
     
     var editingOpinion by remember { mutableStateOf<com.example.graymatter.domain.Opinion?>(null) }
 
@@ -103,12 +112,12 @@ fun FileViewerScreen(
                     when (keyEvent.key) {
                         Key.VolumeUp -> {
                             viewModel.previousPage()
-                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                            performThrottledHaptic()
                             true
                         }
                         Key.VolumeDown -> {
                             viewModel.nextPage()
-                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                            performThrottledHaptic()
                             true
                         }
                         else -> false
@@ -142,10 +151,10 @@ fun FileViewerScreen(
                                 val width = size.width
                                 if (isPaged && offset.x < width * 0.15f) {
                                     viewModel.previousPage()
-                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                    performThrottledHaptic()
                                 } else if (isPaged && offset.x > width * 0.85f) {
                                     viewModel.nextPage()
-                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                    performThrottledHaptic()
                                 } else {
                                     viewModel.toggleBars()
                                 }
@@ -166,10 +175,10 @@ fun FileViewerScreen(
                                 onEmptyTap = { offset, width ->
                                     if (offset.x < width * 0.15f) {
                                         viewModel.previousPage()
-                                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                        performThrottledHaptic()
                                     } else if (offset.x > width * 0.85f) {
                                         viewModel.nextPage()
-                                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                        performThrottledHaptic()
                                     } else {
                                         viewModel.toggleBars()
                                     }
@@ -198,11 +207,11 @@ fun FileViewerScreen(
                                 },
                                 onRequestPreviousPage = {
                                     viewModel.previousPage()
-                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                    performThrottledHaptic()
                                 },
                                 onRequestNextPage = {
                                     viewModel.nextPage()
-                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                    performThrottledHaptic()
                                 }
                             )
                         }
@@ -258,15 +267,15 @@ fun FileViewerScreen(
                     chapters = viewModel.chapters.collectAsState().value,
                     onPageSlide = { 
                         viewModel.jumpToPage(it)
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        performThrottledHaptic()
                     },
                     onPreviousPage = { 
                         viewModel.previousPage()
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        performThrottledHaptic()
                     },
                     onNextPage = { 
                         viewModel.nextPage()
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        performThrottledHaptic()
                     },
                     onBookmarkToggle = { 
                         if (!isCurrentPageBookmarked) {
@@ -672,7 +681,14 @@ fun ReaderBottomBar(
     onNextPage: () -> Unit,
     onBookmarkToggle: () -> Unit
 ) {
-    var slidingValue by remember(currentPage) { mutableFloatStateOf(if (totalPages > 1) currentPage.toFloat() / (totalPages - 1) else 0f) }
+    var slidingValue by remember { mutableFloatStateOf(if (totalPages > 1) currentPage.toFloat() / (totalPages - 1) else 0f) }
+    var isDragging by remember { mutableStateOf(false) }
+
+    LaunchedEffect(currentPage, totalPages) {
+        if (!isDragging && totalPages > 1) {
+            slidingValue = currentPage.toFloat() / (totalPages - 1)
+        }
+    }
     
     Surface(
         color = Color.Black.copy(alpha = 0.85f),
@@ -683,10 +699,22 @@ fun ReaderBottomBar(
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Slider(
                         value = slidingValue,
-                        onValueChange = { slidingValue = it },
+                        onValueChange = { 
+                            isDragging = true
+                            slidingValue = it 
+                            if (totalPages > 1) {
+                                val newPage = (it * (totalPages - 1)).toInt().coerceIn(0, totalPages - 1)
+                                if (newPage != currentPage) {
+                                    onPageSlide(newPage)
+                                }
+                            }
+                        },
                         onValueChangeFinished = {
+                            isDragging = false
                             val newPage = (slidingValue * (totalPages - 1)).toInt().coerceIn(0, totalPages - 1)
-                            onPageSlide(newPage)
+                            if (newPage != currentPage) {
+                                onPageSlide(newPage)
+                            }
                         },
                         colors = SliderDefaults.colors(
                             thumbColor = Color.White,

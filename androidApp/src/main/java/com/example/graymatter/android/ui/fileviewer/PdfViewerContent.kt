@@ -309,14 +309,14 @@ fun PdfViewerContent(
                     transitionSpec = {
                         val dir = if (targetState >= initialState) 1 else -1
                         (slideInHorizontally(
-                            animationSpec = tween(durationMillis = 300),
+                            animationSpec = tween(durationMillis = 150),
                             initialOffsetX = { fullWidth -> fullWidth * dir }
-                        ) + fadeIn(animationSpec = tween(durationMillis = 200)))
+                        ) + fadeIn(animationSpec = tween(durationMillis = 100)))
                         .togetherWith(
                             slideOutHorizontally(
-                                animationSpec = tween(durationMillis = 300),
+                                animationSpec = tween(durationMillis = 150),
                                 targetOffsetX = { fullWidth -> -fullWidth * dir }
-                            ) + fadeOut(animationSpec = tween(durationMillis = 200))
+                            ) + fadeOut(animationSpec = tween(durationMillis = 100))
                         )
                     },
                     modifier = Modifier.fillMaxSize(),
