@@ -43,6 +43,7 @@ fun TextSelectionOverlay(
     panOffset: Offset = Offset.Zero,
     renderScale: Float = density * 1.5f,
     onEmptyTap: (Offset, Float) -> Unit = {_, _ -> },
+    onSelectionChange: (Boolean) -> Unit = {},
     onActionCompleted: (action: String, selectedText: String?, id: String?) -> Unit
 ) {
     val offsetSaver = Saver<Offset?, String>(
@@ -199,6 +200,11 @@ fun TextSelectionOverlay(
         val maxIdx = maxOf(startIdx, endIdx)
 
         characters.subList(minIdx, maxIdx + 1)
+    }
+
+    val isSelectionActive = selectedCharacters.value.isNotEmpty() || showAnnotationPopupId != null
+    LaunchedEffect(isSelectionActive) {
+        onSelectionChange(isSelectionActive)
     }
 
     // Identify characters mapped to existing annoted opinions

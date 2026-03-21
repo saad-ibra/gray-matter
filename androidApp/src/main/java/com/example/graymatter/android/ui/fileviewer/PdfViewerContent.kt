@@ -333,10 +333,12 @@ fun PdfViewerContent(
                             var imageLayoutSize by remember { mutableStateOf(IntSize.Zero) }
                             var zoomScale by remember { mutableFloatStateOf(1f) }
                             var panOffset by remember { mutableStateOf(Offset.Zero) }
+                            var isTextSelected by remember { mutableStateOf(false) }
                             
                             LaunchedEffect(targetPage) {
                                 zoomScale = 1f
                                 panOffset = Offset.Zero
+                                isTextSelected = false
                             }
                             
                             Box(modifier = Modifier
@@ -366,7 +368,7 @@ fun PdfViewerContent(
                                         val velocity = Math.abs(dx) / dt
                                         
                                         // Condition: Zoomed out, mostly horizontal, fast or far enough
-                                        if (zoomScale <= 1.05f && Math.abs(dx) > Math.abs(dy) * 1.5f) {
+                                        if (!isTextSelected && zoomScale <= 1.05f && Math.abs(dx) > Math.abs(dy) * 1.5f) {
                                             if (Math.abs(dx) > swipeThreshold || velocity > velocityThreshold) {
                                                 if (dx < 0) onRequestNextPage() else onRequestPreviousPage()
                                             }
@@ -427,6 +429,7 @@ fun PdfViewerContent(
                                         panOffset = panOffset,
                                         renderScale = currentRenderScale,
                                         onEmptyTap = onEmptyTap,
+                                        onSelectionChange = { isTextSelected = it },
                                         onActionCompleted = { action, text, id ->
                                             if (text != null || id != null) {
                                                 onTextSelectionAction(action, text ?: "", id)
