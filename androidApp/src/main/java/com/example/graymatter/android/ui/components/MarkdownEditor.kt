@@ -107,6 +107,7 @@ fun MarkdownEditor(
                 Box(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                     MarkdownText(
                         markdown = textFieldValue.text,
+                        color = Color.White,
                         modifier = Modifier.fillMaxSize().padding(bottom = 32.dp)
                     )
                 }

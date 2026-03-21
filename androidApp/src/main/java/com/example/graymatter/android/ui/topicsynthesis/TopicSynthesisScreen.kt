@@ -72,7 +72,8 @@ fun TopicSynthesisScreen(
                 TopicHeader(
                     topicName = topic.name,
                     onBackClick = onBackClick,
-                    onDeleteClick = { showDeleteConfirm = true }
+                    onDeleteClick = { showDeleteConfirm = true },
+                    onExportClick = onExport
                 )
                 
                 LazyColumn(
@@ -97,8 +98,7 @@ fun TopicSynthesisScreen(
                         Spacer(modifier = Modifier.height(24.dp))
                         OverallOpinionSection(
                             hasOpinion = !topic.notes.isNullOrBlank(),
-                            onClick = { showEditor = true },
-                            onExport = onExport
+                            onClick = { showEditor = true }
                         )
                     }
                 }
@@ -132,8 +132,7 @@ fun TopicSynthesisScreen(
 @Composable
 private fun OverallOpinionSection(
     hasOpinion: Boolean,
-    onClick: () -> Unit,
-    onExport: () -> Unit
+    onClick: () -> Unit
 ) {
     Column(modifier = Modifier.padding(horizontal = 24.dp)) {
         Row(
@@ -146,14 +145,6 @@ private fun OverallOpinionSection(
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                 color = GrayMatterColors.Neutral500
             )
-            
-            if (hasOpinion) {
-                TextButton(onClick = onExport) {
-                    Icon(Icons.Default.Share, null, modifier = Modifier.size(16.dp), tint = GrayMatterColors.Primary)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Export Summary", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Primary)
-                }
-            }
         }
         Spacer(modifier = Modifier.height(12.dp))
         Box(
@@ -186,7 +177,8 @@ private fun OverallOpinionSection(
 private fun TopicHeader(
     topicName: String,
     onBackClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    onExportClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -204,8 +196,13 @@ private fun TopicHeader(
             Text("TOPIC", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp), color = GrayMatterColors.Neutral500)
             Text(topicName, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = GrayMatterColors.TextPrimary)
         }
-        IconButton(onClick = onDeleteClick, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.Default.Delete, "Delete Topic", tint = GrayMatterColors.Error, modifier = Modifier.size(24.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onExportClick, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.Share, "Export Topic", tint = GrayMatterColors.Primary, modifier = Modifier.size(24.dp))
+            }
+            IconButton(onClick = onDeleteClick, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.Delete, "Delete Topic", tint = GrayMatterColors.Error, modifier = Modifier.size(24.dp))
+            }
         }
     }
 }

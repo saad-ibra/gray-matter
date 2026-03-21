@@ -198,7 +198,7 @@ fun GrayMatterNavigation(
                 },
                 onExport = {
                     topic?.let { t ->
-                        val markdown = ExportService.exportTopicSummary(t, resources)
+                        val markdown = ExportService.exportTopicSummary(t, topicItems)
                         shareText(context, markdown, "Topic Analysis: ${t.name}")
                     }
                 }
