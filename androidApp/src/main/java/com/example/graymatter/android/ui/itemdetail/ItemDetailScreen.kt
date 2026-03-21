@@ -54,7 +54,7 @@ fun ItemDetailScreen(
     onRenameResource: (String) -> Unit,
     onEditNote: () -> Unit,
     onDeleteItem: () -> Unit,
-    onExport: () -> Unit,
+    onExport: (List<com.example.graymatter.domain.Opinion>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isEditing by remember { mutableStateOf(false) }
@@ -144,14 +144,12 @@ fun ItemDetailScreen(
             )
 
             if (itemDetails != null) {
-                var selectedFilters by remember { mutableStateOf(setOf<String>()) }
+                var selectedFilters by remember { mutableStateOf(setOf("Dictionary", "Annotation", "Custom", "Bookmark", "Opinion")) }
                 
                 // Unified sorted list of Opinions
                 val sortedOpinions = remember(itemDetails.opinions, selectedFilters) {
                     itemDetails.opinions.sortedByDescending { it.createdAt }
                         .filter { opinion ->
-                            if (selectedFilters.isEmpty()) return@filter true
-                            
                             val isAnnotation = opinion.text.startsWith("> ")
                             val isDictionary = opinion.text.startsWith("[DICT] ")
                             val isTemplate = opinion.text.startsWith("[TEMPLATE:")
@@ -229,48 +227,90 @@ fun ItemDetailScreen(
                             color = GrayMatterColors.TextPrimary
                         )
                         
-                        // Export History Button
-                        TextButton(
-                            onClick = onExport,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.Primary)
-                        ) {
-                            Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Export History", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Filter Chips
-                    val availableFilters = listOf("Dictionary", "Annotation", "Custom", "Bookmark", "Opinion")
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        availableFilters.forEach { filter ->
-                            val isSelected = selectedFilters.contains(filter)
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = {
-                                    selectedFilters = if (isSelected) {
-                                        selectedFilters - filter
-                                    } else {
-                                        selectedFilters + filter
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            var expanded by remember { mutableStateOf(false) }
+                            Box {
+                                IconButton(onClick = { expanded = true }) {
+                                    Icon(
+                                        Icons.Default.FilterList, 
+                                        contentDescription = "Filter", 
+                                        tint = if (selectedFilters.isNotEmpty()) GrayMatterColors.Primary else GrayMatterColors.TextPrimary
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = expanded,
+                                    onDismissRequest = { expanded = false },
+                                    modifier = Modifier.background(GrayMatterColors.SurfaceDark)
+                                ) {
+                                    val availableFilters = listOf(
+                                        "Dictionary" to Icons.Default.MenuBook,
+                                        "Annotation" to Icons.Default.FormatQuote,
+                                        "Custom" to Icons.Default.DashboardCustomize,
+                                        "Bookmark" to Icons.Default.Bookmark,
+                                        "Opinion" to Icons.Default.QuestionAnswer
+                                    )
+                                    val filterNames = availableFilters.map { it.first }.toSet()
+                                    
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        TextButton(
+                                            onClick = { selectedFilters = filterNames },
+                                            contentPadding = PaddingValues(horizontal = 8.dp)
+                                        ) {
+                                            Text("Select All", color = GrayMatterColors.Primary, fontSize = 13.sp)
+                                        }
+                                        TextButton(
+                                            onClick = { selectedFilters = emptySet() },
+                                            contentPadding = PaddingValues(horizontal = 8.dp)
+                                        ) {
+                                            Text("Deselect All", color = GrayMatterColors.Primary, fontSize = 13.sp)
+                                        }
                                     }
-                                },
-                                label = { Text(filter) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    containerColor = GrayMatterColors.SurfaceDark,
-                                    labelColor = GrayMatterColors.Neutral500,
-                                    selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
-                                    selectedLabelColor = GrayMatterColors.Primary
-                                ),
-                                shape = RoundedCornerShape(16.dp)
-                            )
+                                    
+                                    Divider(color = GrayMatterColors.Neutral800)
+                                    
+                                    availableFilters.forEach { (filter, icon) ->
+                                        val isSelected = selectedFilters.contains(filter)
+                                        DropdownMenuItem(
+                                            text = {
+                                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                    Checkbox(
+                                                        checked = isSelected,
+                                                        onCheckedChange = null,
+                                                        colors = CheckboxDefaults.colors(
+                                                            checkedColor = GrayMatterColors.Primary,
+                                                            uncheckedColor = GrayMatterColors.Neutral500,
+                                                            checkmarkColor = Color.Black
+                                                        )
+                                                    )
+                                                    Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = if (isSelected) GrayMatterColors.Primary else GrayMatterColors.Neutral500)
+                                                    Text(filter, color = Color.White)
+                                                }
+                                            },
+                                            onClick = {
+                                                selectedFilters = if (isSelected) {
+                                                    selectedFilters - filter
+                                                } else {
+                                                    selectedFilters + filter
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Export History Button
+                            TextButton(
+                                onClick = { onExport(sortedOpinions) },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.Primary)
+                            ) {
+                                Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Export", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                            }
                         }
                     }
 

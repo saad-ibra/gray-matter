@@ -10,7 +10,7 @@ import com.example.graymatter.domain.Topic
  */
 object ExportService {
 
-    fun exportItemHistory(itemDetails: ItemWithDetails): String {
+    fun exportItemHistory(itemDetails: ItemWithDetails, filteredOpinions: List<Opinion>? = null): String {
         val sb = StringBuilder()
         val resource = itemDetails.resource
         
@@ -28,7 +28,9 @@ object ExportService {
         
         sb.append("--- \n\n")
 
-        itemDetails.opinions.sortedBy { it.createdAt }.forEachIndexed { index, opinion ->
+        val opinionsToExport = filteredOpinions?.sortedBy { it.createdAt } ?: itemDetails.opinions.sortedBy { it.createdAt }
+
+        opinionsToExport.forEachIndexed { index, opinion ->
             val pageInfo = if (opinion.pageNumber != null) " (Page ${opinion.pageNumber + 1})" else ""
             sb.append("### ${index + 1}. Reflection$pageInfo\n")
             

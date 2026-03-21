@@ -340,9 +340,9 @@ fun GrayMatterNavigation(
                 onEditNote = {
                     editingResource = itemDetails?.resource
                 },
-                onExport = {
+                onExport = { filteredOpinions ->
                     itemDetails?.let { details ->
-                        val markdown = ExportService.exportItemHistory(details)
+                        val markdown = ExportService.exportItemHistory(details, filteredOpinions)
                         shareText(context, markdown, "Opinion History: ${details.resource.title ?: "Untitled"}")
                     }
                 }
