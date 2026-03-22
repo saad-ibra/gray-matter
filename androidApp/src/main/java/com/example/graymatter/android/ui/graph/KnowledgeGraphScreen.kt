@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -21,6 +22,12 @@ import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.QuestionAnswer
 import androidx.compose.material.icons.filled.Topic
 import androidx.compose.material.icons.filled.DatasetLinked
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -59,9 +66,10 @@ fun KnowledgeGraphScreen(
     
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
+    var speedMultiplier by remember { mutableFloatStateOf(0.25f) }
+    var globalRotX by remember { mutableFloatStateOf(0f) }
+    var globalRotY by remember { mutableFloatStateOf(0f) }
     
-    val textMeasurer = rememberTextMeasurer()
-
     // Filters
     var showTopics by remember { mutableStateOf(true) }
     var showResources by remember { mutableStateOf(true) }
@@ -78,15 +86,6 @@ fun KnowledgeGraphScreen(
 
     // Selection
     var selectedNode by remember { mutableStateOf<GraphNode?>(null) }
-    
-    // Icons
-    val annotationIcon = rememberVectorPainter(Icons.Default.FormatQuote)
-    val bookmarkIcon = rememberVectorPainter(Icons.Default.Bookmark)
-    val dictIcon = rememberVectorPainter(Icons.Default.MenuBook)
-    val templateIcon = rememberVectorPainter(Icons.Default.DashboardCustomize)
-    val opinionIcon = rememberVectorPainter(Icons.Default.QuestionAnswer)
-    val topicIcon = rememberVectorPainter(Icons.Default.Topic)
-    val resourceIcon = rememberVectorPainter(Icons.Default.DatasetLinked)
 
     LaunchedEffect(Unit) {
         viewModel.loadGraphData()
@@ -112,7 +111,7 @@ fun KnowledgeGraphScreen(
             
             // Loop
             while (isActive) {
-                simulator.tick()
+                simulator.tick(speedMultiplier)
                 ticks++ // force redraw
                 delay(16) // ~60fps
             }
@@ -132,16 +131,36 @@ fun KnowledgeGraphScreen(
                     .pointerInput(Unit) {
                         detectTransformGestures { centroid, pan, zoom, _ ->
                             scale = (scale * zoom).coerceIn(0.1f, 5f)
-                            offset += pan
+                            // Spin the 3D space with horizontal/vertical panning
+                            globalRotY += pan.x * 0.01f
+                            globalRotX += pan.y * 0.01f
                         }
                     }
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onTap = { tapOffset ->
                                 // Find clicked node (taking scale and offset into account)
+                                val cosX = kotlin.math.cos(globalRotX)
+                                val sinX = kotlin.math.sin(globalRotX)
+                                val cosY = kotlin.math.cos(globalRotY)
+                                val sinY = kotlin.math.sin(globalRotY)
+                                
                                 val hitNode = simulator.nodes.findLast { node ->
-                                    val screenX = node.x * scale + offset.x
-                                    val screenY = node.y * scale + offset.y
+                                    val rx = (node.x - simulator.width / 2f)
+                                    val ry = (node.y - simulator.height / 2f)
+                                    val rz = node.z
+                                    
+                                    val x1 = rx * cosY - rz * sinY
+                                    val z1 = rz * cosY + rx * sinY
+                                    val y1 = ry
+                                    
+                                    val y2 = y1 * cosX - z1 * sinX
+                                    val z2 = z1 * cosX + y1 * sinX
+                                    
+                                    val zScale = (z2 + 400f).coerceIn(100f, 800f) / 400f
+                                    val screenX = x1 * scale * zScale + simulator.width / 2f * scale + offset.x
+                                    val screenY = y2 * scale * zScale + simulator.height / 2f * scale + offset.y
+                                    
                                     val dx = screenX - tapOffset.x
                                     val dy = screenY - tapOffset.y
                                     sqrt(dx * dx + dy * dy) <= node.radius * scale + 20f
@@ -149,9 +168,27 @@ fun KnowledgeGraphScreen(
                                 selectedNode = hitNode
                             },
                             onDoubleTap = { tapOffset ->
+                                val cosX = kotlin.math.cos(globalRotX)
+                                val sinX = kotlin.math.sin(globalRotX)
+                                val cosY = kotlin.math.cos(globalRotY)
+                                val sinY = kotlin.math.sin(globalRotY)
+                                
                                 val hitNode = simulator.nodes.findLast { node ->
-                                    val screenX = node.x * scale + offset.x
-                                    val screenY = node.y * scale + offset.y
+                                    val rx = (node.x - simulator.width / 2f)
+                                    val ry = (node.y - simulator.height / 2f)
+                                    val rz = node.z
+                                    
+                                    val x1 = rx * cosY - rz * sinY
+                                    val z1 = rz * cosY + rx * sinY
+                                    val y1 = ry
+                                    
+                                    val y2 = y1 * cosX - z1 * sinX
+                                    val z2 = z1 * cosX + y1 * sinX
+                                    
+                                    val zScale = (z2 + 400f).coerceIn(100f, 800f) / 400f
+                                    val screenX = x1 * scale * zScale + simulator.width / 2f * scale + offset.x
+                                    val screenY = y2 * scale * zScale + simulator.height / 2f * scale + offset.y
+                                    
                                     val dx = screenX - tapOffset.x
                                     val dy = screenY - tapOffset.y
                                     sqrt(dx * dx + dy * dy) <= node.radius * scale + 20f
@@ -161,6 +198,26 @@ fun KnowledgeGraphScreen(
                         )
                     }
             ) {
+                // Pre-calculate rotation matrices once per draw frame
+                val cosX = kotlin.math.cos(globalRotX)
+                val sinX = kotlin.math.sin(globalRotX)
+                val cosY = kotlin.math.cos(globalRotY)
+                val sinY = kotlin.math.sin(globalRotY)
+                
+                val project3D = { x: Float, y: Float, z: Float ->
+                    val rx = x - simulator.width / 2f
+                    val ry = y - simulator.height / 2f
+                    val rz = z
+                    
+                    val x1 = rx * cosY - rz * sinY
+                    val z1 = rz * cosY + rx * sinY
+                    
+                    val y2 = ry * cosX - z1 * sinX
+                    val z2 = z1 * cosX + ry * sinX
+                    
+                    floatArrayOf(x1, y2, z2)
+                }
+
                 // Access 'ticks' to observe state changes
                 val currentTicks = ticks
 
@@ -168,6 +225,8 @@ fun KnowledgeGraphScreen(
                 if (currentTicks == 1 && offset == Offset.Zero) {
                     offset = Offset(size.width / 2f - 400f, size.height / 2f - 400f)
                 }
+
+                // Axes removed as requested by user
 
                 // Draw Edges
                 simulator.edges.forEach { edge ->
@@ -193,48 +252,42 @@ fun KnowledgeGraphScreen(
                     }
 
                     if (srcVisible && tgtVisible) {
-                        // Determine Z-depth factor for Edges
-                        val midZ = (edge.source.z + edge.target.z) / 2f
-                        val zScaleSrc = (edge.source.z + 400f).coerceIn(100f, 800f) / 400f
-                        val zScaleTgt = (edge.target.z + 400f).coerceIn(100f, 800f) / 400f
-
+                        // Connect linear nodes directly mathematically solving projection detachment!
+                        val p1 = project3D(edge.source.x, edge.source.y, edge.source.z)
+                        val p2 = project3D(edge.target.x, edge.target.y, edge.target.z)
+                        
+                        val zScaleSrc = (p1[2] + 400f).coerceIn(100f, 800f) / 400f
+                        val zScaleTgt = (p2[2] + 400f).coerceIn(100f, 800f) / 400f
+                        
                         val start = Offset(
-                            (edge.source.x - simulator.width / 2f) * scale * zScaleSrc + simulator.width / 2f * scale + offset.x,
-                            (edge.source.y - simulator.height / 2f) * scale * zScaleSrc + simulator.height / 2f * scale + offset.y
+                            p1[0] * scale * zScaleSrc + simulator.width / 2f * scale + offset.x,
+                            p1[1] * scale * zScaleSrc + simulator.height / 2f * scale + offset.y
                         )
                         val end = Offset(
-                            (edge.target.x - simulator.width / 2f) * scale * zScaleTgt + simulator.width / 2f * scale + offset.x,
-                            (edge.target.y - simulator.height / 2f) * scale * zScaleTgt + simulator.height / 2f * scale + offset.y
+                            p2[0] * scale * zScaleTgt + simulator.width / 2f * scale + offset.x,
+                            p2[1] * scale * zScaleTgt + simulator.height / 2f * scale + offset.y
                         )
-                        
-                        // Bezier curve
-                        val path = Path().apply {
-                            moveTo(start.x, start.y)
-                            val midX = (start.x + end.x) / 2
-                            val midY = (start.y + end.y) / 2
-                            val cp1x = start.x
-                            val cp1y = midY
-                            val cp2x = end.x
-                            val cp2y = midY
-                            cubicTo(cp1x, cp1y, cp2x, cp2y, end.x, end.y)
-                        }
                         
                         val isHighlighted = selectedNode == edge.source || selectedNode == edge.target
                         
                         // Z-based opacity (farther = fainter)
+                        val midZ = (p1[2] + p2[2]) / 2f
                         val baseAlpha = (midZ + 400f).coerceIn(100f, 800f) / 800f
-                        val opacity = if (isHighlighted) 1.0f else (baseAlpha * 0.7f).coerceIn(0.1f, 0.9f)
+                        val opacity = if (isHighlighted) 1.0f else (baseAlpha * 0.4f).coerceIn(0.1f, 0.9f)
                         
                         val isExplicit = edge.id.endsWith("_ref")
                         val pathStyle = Stroke(
-                            width = if (isHighlighted) 4.5f * scale else 2.5f * scale,
+                            width = if (isHighlighted) 3.5f * scale else 1.5f * scale,
                             pathEffect = if (isExplicit) PathEffect.dashPathEffect(floatArrayOf(15f * scale, 10f * scale), 0f) else null
                         )
                         
-                        drawPath(
-                            path = path,
-                            color = if (isHighlighted) GrayMatterColors.Primary else GrayMatterColors.Neutral700.copy(alpha = opacity),
-                            style = pathStyle
+                        // Draw clean 3D straight line
+                        drawLine(
+                            start = start,
+                            end = end,
+                            color = if (isHighlighted) GrayMatterColors.Primary else Color(0xFF1E88E5).copy(alpha = opacity),
+                            strokeWidth = if (isHighlighted) 3.5f * scale else 1.5f * scale,
+                            pathEffect = if (isExplicit) PathEffect.dashPathEffect(floatArrayOf(15f * scale, 10f * scale), 0f) else null
                         )
                     }
                 }
@@ -267,11 +320,12 @@ fun KnowledgeGraphScreen(
                             NodeType.OPINION -> GrayMatterColors.Citrine
                         }
                         // 3D Perspective Scale & Position
-                        val zScale = (node.z + 400f).coerceIn(100f, 800f) / 400f // 0.25x to 2.0x based on depth
+                        val pNode = project3D(node.x, node.y, node.z)
+                        val zScale = (pNode[2] + 400f).coerceIn(100f, 800f) / 400f // depth scaling
                         
                         val screenCenter = Offset(
-                            (node.x - simulator.width / 2f) * scale * zScale + simulator.width / 2f * scale + offset.x,
-                            (node.y - simulator.height / 2f) * scale * zScale + simulator.height / 2f * scale + offset.y
+                            pNode[0] * scale * zScale + simulator.width / 2f * scale + offset.x,
+                            pNode[1] * scale * zScale + simulator.height / 2f * scale + offset.y
                         )
                         val scaledRadius = node.radius * scale * zScale
                         
@@ -285,85 +339,90 @@ fun KnowledgeGraphScreen(
                             )
                         }
 
-                        // Draw 3D Sphere using Radial Gradient Specular Highlights
-                        val lightCenter = Offset(screenCenter.x - scaledRadius * 0.3f, screenCenter.y - scaledRadius * 0.3f)
-                        val zDarken = 1f - ((node.z + 200f).coerceIn(0f, 400f) / 600f) // Darken nodes further back
-                        
-                        val highlightColor = nodeColor.copy(alpha = 1f)
-                        val coreColor = nodeColor.copy(
-                            red = nodeColor.red * 0.7f * zDarken,
-                            green = nodeColor.green * 0.7f * zDarken,
-                            blue = nodeColor.blue * 0.7f * zDarken
-                        )
-                        val shadowColor = nodeColor.copy(
-                            red = nodeColor.red * 0.3f * zDarken,
-                            green = nodeColor.green * 0.3f * zDarken,
-                            blue = nodeColor.blue * 0.3f * zDarken
-                        )
-
-                        val sphereBrush = Brush.radialGradient(
-                            colors = listOf(highlightColor, coreColor, shadowColor),
-                            center = lightCenter,
-                            radius = scaledRadius * 1.5f
-                        )
-
-                        // Outer ring for topics
-                        if (node.type == NodeType.TOPIC) {
-                            drawCircle(
-                                color = Color.LightGray.copy(alpha = 0.5f),
-                                radius = scaledRadius + 2f * scale * zScale,
-                                center = screenCenter
-                            )
-                        }
-                        
-                        drawCircle(
-                            brush = sphereBrush,
-                            radius = scaledRadius,
-                            center = screenCenter
-                        )
-                        
-                        // Draw corresponding Icon inside the node
-                        val painter = when (node.type) {
-                            NodeType.TOPIC -> topicIcon
-                            NodeType.RESOURCE -> resourceIcon
-                            NodeType.ANNOTATION -> annotationIcon
-                            NodeType.BOOKMARK -> bookmarkIcon
-                            NodeType.TEMPLATE, NodeType.CUSTOM -> templateIcon
-                            NodeType.DICTIONARY -> dictIcon
-                            else -> opinionIcon
-                        }
-                        
-                        // Capped at 1.0f to fit firmly inside the sphere with no glitchy overlapping borders
-                        val iconSize = scaledRadius * 1.0f
-                        translate(left = screenCenter.x - iconSize / 2f, top = screenCenter.y - iconSize / 2f) {
-                            with(painter) {
-                                draw(
-                                    size = androidx.compose.ui.geometry.Size(iconSize, iconSize),
-                                    colorFilter = ColorFilter.tint(if (node.type == NodeType.TOPIC) Color.Black else GrayMatterColors.BackgroundDark.copy(alpha=0.8f))
-                                )
+                        // Draw True 3D Shapes (Painter's Algorithm)
+                        val drawSolidFaces = { vertices: Array<FloatArray>, facesDef: Array<IntArray>, color: Color ->
+                            // Transform global projected vertices
+                            val projected = vertices.map { v ->
+                                project3D(node.x + v[0], node.y + v[1], node.z + v[2])
+                            }
+                            
+                            // Map to Screen Space and sort faces by Z (back to front)
+                            val faces = facesDef.map { faceIdx ->
+                                val pA = projected[faceIdx[0]]
+                                val pB = projected[faceIdx[1]]
+                                val pC = projected[faceIdx[2]]
+                                
+                                val avgZ = (pA[2] + pB[2] + pC[2]) / 3f
+                                
+                                val toScr = { g: FloatArray ->
+                                    val zS = (g[2] + 400f).coerceIn(100f, 800f) / 400f
+                                    Offset(
+                                        g[0] * scale * zS + simulator.width / 2f * scale + offset.x,
+                                        g[1] * scale * zS + simulator.height / 2f * scale + offset.y
+                                    )
+                                }
+                                val sA = toScr(pA)
+                                val sB = toScr(pB)
+                                val sC = toScr(pC)
+                                
+                                val path = Path().apply {
+                                    moveTo(sA.x, sA.y)
+                                    lineTo(sB.x, sB.y)
+                                    lineTo(sC.x, sC.y)
+                                    close()
+                                }
+                                
+                                // True transparent wireframes
+                                val faceColor = color.copy(alpha = 0f)
+                                
+                                Triple(avgZ, path, faceColor)
+                            }.sortedBy { -it.first } // sort descending Z (higher Z = further away)
+                            
+                            // Draw 
+                            faces.forEach { (_, path, _) ->
+                                // Glowing sci-fi neon edge wireframe (only outlined shapes)
+                                drawPath(path = path, color = color.copy(alpha=1f), style = Stroke(width = 1.5f * scale))
                             }
                         }
 
-                        // Draw Label Base With 10 Char Truncation
-                        if (scale * zScale > 0.4f) {
-                            val displayText = if (node.label.length > 10) node.label.take(10) + "..." else node.label
-                            
-                            val textLayoutResult = textMeasurer.measure(
-                                text = displayText,
-                                style = TextStyle(
-                                    color = Color.White.copy(alpha = if (node.z < -100f) 0.5f else 1.0f),
-                                    fontSize = (9f * scale * zScale).coerceIn(4f, 18f).sp, // Perspective sized
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                )
+                        if (node.type == NodeType.TOPIC) {
+                            val r = node.radius * 2f
+                            val vertices = arrayOf(
+                                floatArrayOf(0f, -r, 0f),  // 0: Top
+                                floatArrayOf(0f, r, 0f),   // 1: Bottom
+                                floatArrayOf(-r, 0f, 0f),  // 2: Left
+                                floatArrayOf(r, 0f, 0f),   // 3: Right
+                                floatArrayOf(0f, 0f, r),   // 4: Front
+                                floatArrayOf(0f, 0f, -r)   // 5: Back
                             )
-                            val textOffsetX = screenCenter.x - textLayoutResult.size.width / 2f
-                            val textOffsetY = screenCenter.y + scaledRadius + 4.dp.toPx()
-                            
-                            drawText(
-                                textLayoutResult = textLayoutResult,
-                                color = Color.White,
-                                topLeft = Offset(textOffsetX, textOffsetY)
+                            val facesDef = arrayOf(
+                                intArrayOf(0, 2, 4), intArrayOf(0, 4, 3), intArrayOf(0, 3, 5), intArrayOf(0, 5, 2),
+                                intArrayOf(1, 4, 2), intArrayOf(1, 3, 4), intArrayOf(1, 5, 3), intArrayOf(1, 2, 5)
                             )
+                            drawSolidFaces(vertices, facesDef, nodeColor)
+
+                        } else if (node.type == NodeType.RESOURCE) {
+                            val r = node.radius * 1.5f
+                            val vertices = arrayOf(
+                                floatArrayOf(0f, -r, 0f),  // 0: Top
+                                floatArrayOf(-r, r, r),    // 1: FrontLeft
+                                floatArrayOf(r, r, r),     // 2: FrontRight
+                                floatArrayOf(-r, r, -r),   // 3: BackLeft
+                                floatArrayOf(r, r, -r)     // 4: BackRight
+                            )
+                            val facesDef = arrayOf(
+                                intArrayOf(0, 3, 1), intArrayOf(0, 4, 3), intArrayOf(0, 2, 4), intArrayOf(0, 1, 2),
+                                intArrayOf(1, 3, 2), intArrayOf(3, 4, 2) // Base
+                            )
+                            drawSolidFaces(vertices, facesDef, nodeColor)
+                            
+                        } else {
+                            // Spherical leaf nodes
+                            drawCircle(color = nodeColor.copy(alpha=0.3f), radius = scaledRadius, center = screenCenter)
+                            // Glowing Ring Frame
+                            drawCircle(color = nodeColor.copy(alpha=1f), radius = scaledRadius, center = screenCenter, style = Stroke(width = 2f * scale))
+                            // Solid core dot
+                            drawCircle(color = nodeColor.copy(alpha=0.8f), radius = scaledRadius * 0.3f, center = screenCenter)
                         }
                     }
                 }
@@ -386,6 +445,57 @@ fun KnowledgeGraphScreen(
                 color = Color.White,
                 modifier = Modifier.padding(start = 8.dp)
             )
+        }
+        
+        // Controls Overlay (Navigation)
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .statusBarsPadding()
+                .padding(bottom = 140.dp, start = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            
+            // Zoom Controls
+            Surface(
+                color = GrayMatterColors.SurfaceDark.copy(alpha = 0.85f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(modifier = Modifier.padding(8.dp)) {
+                    IconButton(onClick = { scale = (scale / 1.25f).coerceIn(0.1f, 5f) }, modifier = Modifier.size(32.dp)) {
+                        Text("-", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    }
+                    IconButton(onClick = { scale = (scale * 1.25f).coerceIn(0.1f, 5f) }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Add, "Zoom In", tint = Color.White)
+                    }
+                }
+            }
+
+            // Navigation & Rotation Controls
+            Surface(
+                color = GrayMatterColors.SurfaceDark.copy(alpha = 0.85f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    IconButton(onClick = { globalRotX -= 0.15f }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.KeyboardArrowUp, "Rotate Up", tint = Color.White)
+                    }
+                    Row {
+                        IconButton(onClick = { globalRotY -= 0.15f }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Rotate Left", tint = Color.White)
+                        }
+                        IconButton(onClick = { offset = Offset.Zero; scale = 1f; globalRotX = 0f; globalRotY = 0f }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Refresh, "Reset", tint = Color.White)
+                        }
+                        IconButton(onClick = { globalRotY += 0.15f }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Rotate Right", tint = Color.White)
+                        }
+                    }
+                    IconButton(onClick = { globalRotX += 0.15f }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.KeyboardArrowDown, "Rotate Down", tint = Color.White)
+                    }
+                }
+            }
         }
 
         // Bottom Filters

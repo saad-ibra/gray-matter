@@ -72,7 +72,7 @@ class ForceSimulator(
         }
     }
 
-    fun tick() {
+    fun tick(speedMultiplier: Float = 1.0f) {
         // 1. Repulsion between all pairs of nodes
         for (i in 0 until nodes.size) {
             val n1 = nodes[i]
@@ -150,15 +150,40 @@ class ForceSimulator(
             val fy = ny * force
             val fz = nz * force
             
+            // Orbital tangential velocity for leaf nodes orbiting resources
+            var ox1 = 0f
+            var oy1 = 0f
+            var oz1 = 0f
+            
+            var ox2 = 0f
+            var oy2 = 0f
+            var oz2 = 0f
+            
+            val isN1Leaf = n1.type != NodeType.TOPIC && n1.type != NodeType.RESOURCE
+            val isN2Leaf = n2.type != NodeType.TOPIC && n2.type != NodeType.RESOURCE
+            val orbitSpeed = 2.5f * speedMultiplier
+            
+            if (n1.type == NodeType.RESOURCE && isN2Leaf) {
+                // n2 orbits n1. Tangent vector from (dx, dy, dz) x (0, 1, 0) = (dz, 0, -dx)
+                val len = sqrt(dz * dz + dx * dx + 0.1f)
+                ox2 = (dz / len) * orbitSpeed
+                oz2 = (-dx / len) * orbitSpeed
+            } else if (n2.type == NodeType.RESOURCE && isN1Leaf) {
+                // n1 orbits n2. Tangent vector from (-dx, -dy, -dz) x (0, 1, 0) = (-dz, 0, dx)
+                val len = sqrt(dz * dz + dx * dx + 0.1f)
+                ox1 = (-dz / len) * orbitSpeed
+                oz1 = (dx / len) * orbitSpeed
+            }
+            
             if (!n1.isPinned) {
-                n1.vx += fx
-                n1.vy += fy
-                n1.vz += fz
+                n1.vx += fx + ox1
+                n1.vy += fy + oy1
+                n1.vz += fz + oz1
             }
             if (!n2.isPinned) {
-                n2.vx -= fx
-                n2.vy -= fy
-                n2.vz -= fz
+                n2.vx -= fx - ox2
+                n2.vy -= fy - oy2
+                n2.vz -= fz - oz2
             }
         }
         
@@ -171,19 +196,22 @@ class ForceSimulator(
             // Gentle center attraction to keep things in view
             val dx = centerX - node.x
             val dz = 0f - node.z // Attract slightly to Z=0
-            node.vx += dx * (centerAttraction * 0.5f)
-            node.vz += dz * (centerAttraction * 0.5f)
             
-            // Cluster physics: Topics settle natively at a higher bounded Y instead of infinitely drifting
+            // Topics lock solidly to the absolute center
             if (node.type == NodeType.TOPIC) {
-                val targetY = height * 0.15f
-                node.vy += (targetY - node.y) * 0.05f 
+                node.vx += dx * 0.15f * speedMultiplier
+                node.vy += (height / 2f - node.y) * 0.15f * speedMultiplier
+                node.vz += dz * 0.15f * speedMultiplier
             } else if (node.type == NodeType.RESOURCE) {
-                // Mild gravity for resources so they sit under topics
-                node.vy += 0.5f
+                // Resources are pushed slightly OUT from the center to act like branching shells
+                node.vx -= dx * 0.02f * speedMultiplier
+                node.vy -= (height / 2f - node.y) * 0.02f * speedMultiplier
+                node.vz -= dz * 0.02f * speedMultiplier
             } else {
-                // Stronger gravity for leaf nodes (opinions, etc.) so they hang at the bottom of the cluster
-                node.vy += 0.8f
+                // Leaf nodes gently pull to center to avoid flinging into void, but mostly rely on spring
+                node.vx += dx * 0.005f * speedMultiplier
+                node.vy += (height / 2f - node.y) * 0.005f * speedMultiplier
+                node.vz += dz * 0.005f * speedMultiplier
             }
         }
         
@@ -196,9 +224,10 @@ class ForceSimulator(
                 continue
             }
             
-            node.x += node.vx
-            node.y += node.vy
-            node.z += node.vz
+            // Scale velocity by speedMultiplier
+            node.x += node.vx * speedMultiplier
+            node.y += node.vy * speedMultiplier
+            node.z += node.vz * speedMultiplier
             
             node.vx *= damping
             node.vy *= damping
@@ -211,7 +240,7 @@ class ForceSimulator(
      */
     fun converge(ticks: Int = 80) {
         repeat(ticks) {
-            tick()
+            tick(speedMultiplier = 1.0f)
         }
     }
 }
