@@ -36,4 +36,6 @@ sealed class NavigationDestination(val route: String) {
         fun buildRoute(resourceId: String, page: Int? = null) = 
             if (page != null) "file_viewer/$resourceId?page=$page" else "file_viewer/$resourceId"
     }
+
+    object KnowledgeGraph : NavigationDestination("knowledge_graph")
 }

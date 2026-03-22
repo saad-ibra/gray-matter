@@ -7,6 +7,7 @@ import com.example.graymatter.data.DefaultTopicRepository
 import com.example.graymatter.data.ItemRepository
 import com.example.graymatter.data.OpinionRepository
 import com.example.graymatter.data.ResourceRepository
+import com.example.graymatter.data.ReferenceLinkRepository
 import com.example.graymatter.data.TopicRepository
 import com.example.graymatter.data.local.DatabaseDriverFactory
 import com.example.graymatter.database.GrayMatterDatabase
@@ -49,6 +50,10 @@ class AppModule(
             topicRepository = topicRepository,
             dispatcher = defaultDispatcher
         )
+    }
+    
+    val referenceLinkRepository: ReferenceLinkRepository by lazy {
+        com.example.graymatter.data.DefaultReferenceLinkRepository(database, defaultDispatcher)
     }
 }
 

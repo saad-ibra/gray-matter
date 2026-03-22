@@ -36,9 +36,10 @@ fun TopicSynthesisScreen(
     onBackClick: () -> Unit,
     onAddResource: () -> Unit,
     onResourceClick: (Resource) -> Unit,
-    onSaveOverallOpinion: (String) -> Unit,
+    onSaveOverallOpinion: (String, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
     onDeleteTopic: () -> Unit,
     onExport: () -> Unit,
+    referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
     modifier: Modifier = Modifier
 ) {
     if (topic == null) return
@@ -46,17 +47,44 @@ fun TopicSynthesisScreen(
     var showEditor by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
+    var showReferenceSelector by remember { mutableStateOf(false) }
+    var selectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
+    var referenceToInsert by remember { mutableStateOf<String?>(null) }
+
     if (showEditor) {
         MarkdownEditor(
             title = topic.name,
             initialText = topic.notes ?: "",
             onBackClick = { showEditor = false },
             onSave = { content -> 
-                onSaveOverallOpinion(content)
+                onSaveOverallOpinion(content, selectedReferences)
                 showEditor = false
             },
-            initialPreviewMode = topic.notes?.isNotBlank() == true
+            initialPreviewMode = topic.notes?.isNotBlank() == true,
+            onShowReferenceSelector = { showReferenceSelector = true },
+            referenceToInsert = referenceToInsert,
+            onReferenceInserted = { referenceToInsert = null }
         )
+        
+        if (showReferenceSelector && referenceSelectorViewModel != null) {
+            com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
+                viewModel = referenceSelectorViewModel,
+                onDismissRequest = { showReferenceSelector = false },
+                onConfirm = { items ->
+                    showReferenceSelector = false
+                    if (items.isNotEmpty()) {
+                        selectedReferences = (selectedReferences + items).distinctBy { it.id }
+                        val item = items.first()
+                        val text = when (item) {
+                            is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> "Topic: ${item.name}"
+                            is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> "Resource: ${item.title}"
+                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> "Annotation: ${item.snippet.take(15)}..."
+                        }
+                        referenceToInsert = "[[$text]]"
+                    }
+                }
+            )
+        }
     } else {
         Scaffold(
             modifier = modifier

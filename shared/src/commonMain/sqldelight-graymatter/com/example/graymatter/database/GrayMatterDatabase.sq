@@ -197,6 +197,10 @@ SELECT * FROM customTemplateEntity WHERE id = ?;
 deleteTemplate:
 DELETE FROM customTemplateEntity WHERE id = ?;
 
+-- Opinion queries
+getAllOpinions:
+SELECT * FROM opinionEntity ORDER BY createdAt ASC;
+
 -- Search queries
 searchOpinions:
 SELECT * FROM opinionEntity WHERE text LIKE '%' || ? || '%' ORDER BY createdAt DESC;
@@ -258,3 +262,33 @@ SELECT * FROM readingSettingsEntity WHERE resourceId = ?;
 
 deleteReadingSettings:
 DELETE FROM readingSettingsEntity WHERE resourceId = ?;
+
+-- 9. Reference Link Table
+CREATE TABLE referenceLinkEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    sourceType TEXT NOT NULL,
+    sourceId TEXT NOT NULL,
+    targetType TEXT NOT NULL,
+    targetId TEXT NOT NULL,
+    createdAt INTEGER NOT NULL
+);
+
+-- Reference Link queries
+insertReferenceLink:
+INSERT OR REPLACE INTO referenceLinkEntity(id, sourceType, sourceId, targetType, targetId, createdAt)
+VALUES (?, ?, ?, ?, ?, ?);
+
+getBacklinksForTarget:
+SELECT * FROM referenceLinkEntity WHERE targetId = ? ORDER BY createdAt DESC;
+
+getReferenceLinksBySource:
+SELECT * FROM referenceLinkEntity WHERE sourceId = ? ORDER BY createdAt ASC;
+
+getAllReferenceLinks:
+SELECT * FROM referenceLinkEntity ORDER BY createdAt ASC;
+
+deleteReferenceLink:
+DELETE FROM referenceLinkEntity WHERE id = ?;
+
+deleteReferenceLinksBySource:
+DELETE FROM referenceLinkEntity WHERE sourceId = ?;

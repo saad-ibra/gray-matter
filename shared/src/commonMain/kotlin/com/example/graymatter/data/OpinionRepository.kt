@@ -19,6 +19,11 @@ interface OpinionRepository {
     suspend fun getOpinionById(id: String): Opinion?
     
     /**
+     * Get all opinions.
+     */
+    suspend fun getAllOpinions(): List<Opinion>
+    
+    /**
      * Save a new opinion.
      */
     suspend fun saveOpinion(opinion: Opinion)

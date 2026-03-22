@@ -11,6 +11,7 @@ import com.example.graymatter.data.ItemRepository
 import com.example.graymatter.data.OpinionRepository
 import com.example.graymatter.data.ResourceRepository
 import com.example.graymatter.data.TopicRepository
+import com.example.graymatter.data.ReferenceLinkRepository
 import com.example.graymatter.domain.Bookmark
 import com.example.graymatter.domain.CustomTemplate
 import com.example.graymatter.domain.Item
@@ -34,7 +35,8 @@ class GrayMatterViewModel(
     private val itemRepository: ItemRepository,
     private val resourceRepository: ResourceRepository,
     private val opinionRepository: OpinionRepository,
-    private val topicRepository: TopicRepository
+    private val topicRepository: TopicRepository,
+    private val referenceLinkRepository: ReferenceLinkRepository
 ) : ViewModel() {
     
     val topicsStream: StateFlow<List<Topic>> = topicRepository.topicsStream
@@ -90,7 +92,7 @@ class GrayMatterViewModel(
      * Creates a new item with resource and first opinion.
      * Returns the created itemId.
      */
-    suspend fun createNewItem(url: String, opinionText: String, confidence: Int, title: String? = null, description: String? = null): String {
+    suspend fun createNewItem(url: String, opinionText: String, confidence: Int, title: String? = null, description: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
         val itemId = generateUuid()
@@ -111,13 +113,15 @@ class GrayMatterViewModel(
             now = now
         )
         
+        saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+        
         return itemId
     }
 
     /**
      * Creates a new Note item. Saved with Markdown content in internal storage.
      */
-    suspend fun createNewNote(context: Context, title: String, content: String, opinionText: String, confidence: Int, description: String? = null): String {
+    suspend fun createNewNote(context: Context, title: String, content: String, opinionText: String, confidence: Int, description: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
         val itemId = generateUuid()
@@ -144,6 +148,8 @@ class GrayMatterViewModel(
             now = now
         )
         
+        saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+        
         return itemId
     }
     
@@ -159,7 +165,8 @@ class GrayMatterViewModel(
         opinionText: String,
         confidence: Int,
         title: String? = null,
-        description: String? = null
+        description: String? = null,
+        referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()
     ): String? {
         _isImporting.value = true
         return try {
@@ -194,6 +201,8 @@ class GrayMatterViewModel(
                 now = now
             )
             
+            saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+
             _isImporting.value = false
             itemId
         } catch (e: Exception) {
@@ -206,7 +215,7 @@ class GrayMatterViewModel(
     /**
      * Adds a new opinion to an existing item.
      */
-    fun addOpinion(itemId: String, opinionText: String, confidence: Int, createdAt: Long? = null) {
+    fun addOpinion(itemId: String, opinionText: String, confidence: Int, createdAt: Long? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         viewModelScope.launch {
             val now = Clock.System.now().toEpochMilliseconds()
             val finalCreatedAt = createdAt ?: now
@@ -221,6 +230,8 @@ class GrayMatterViewModel(
             )
             opinionRepository.saveOpinion(opinion)
             
+            saveReferenceLinksInternal(opinion.id, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+            
             // Update item metadata
             itemRepository.updateItemOpinionMetadata(itemId, finalCreatedAt)
         }
@@ -229,16 +240,18 @@ class GrayMatterViewModel(
     /**
      * Updates an existing opinion.
      */
-    fun updateOpinion(opinionId: String, text: String, confidence: Int, createdAt: Long) {
+    fun updateOpinion(opinionId: String, text: String, confidence: Int, createdAt: Long, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         viewModelScope.launch {
+            val now = Clock.System.now().toEpochMilliseconds()
             val existing = opinionRepository.getOpinionById(opinionId) ?: return@launch
             val updated = existing.copy(
                 text = text,
                 confidenceScore = confidence,
                 createdAt = createdAt,
-                updatedAt = Clock.System.now().toEpochMilliseconds()
+                updatedAt = now
             )
             opinionRepository.updateOpinion(updated)
+            saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
         }
     }
 
@@ -346,9 +359,10 @@ class GrayMatterViewModel(
     /**
      * Updates topic notes (synthesis text).
      */
-    fun updateTopicNotes(topicId: String, notes: String) {
+    fun updateTopicNotes(topicId: String, notes: String, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         viewModelScope.launch {
             topicRepository.updateTopicNotes(topicId, notes)
+            saveReferenceLinksInternal(topicId, com.example.graymatter.domain.ReferenceType.TOPIC, referenceLinks)
         }
     }
 
@@ -467,10 +481,11 @@ class GrayMatterViewModel(
     /**
      * Saves a bookmark.
      */
-    fun saveBookmark(resourceId: String, page: Int, totalPages: Int, title: String? = null) {
+    fun saveBookmark(resourceId: String, page: Int, totalPages: Int, title: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         viewModelScope.launch {
+            val bookmarkId = generateUuid()
             val bookmark = Bookmark(
-                id = generateUuid(),
+                id = bookmarkId,
                 resourceId = resourceId,
                 page = page,
                 percentPosition = if (totalPages > 0) (page + 1).toDouble() / totalPages else 0.0,
@@ -478,6 +493,7 @@ class GrayMatterViewModel(
                 createdAt = Clock.System.now().toEpochMilliseconds()
             )
             resourceRepository.saveBookmark(bookmark)
+            saveReferenceLinksInternal(bookmarkId, com.example.graymatter.domain.ReferenceType.BOOKMARK, referenceLinks)
         }
     }
 
@@ -611,5 +627,87 @@ class GrayMatterViewModel(
     fun generateUuid(): String {
         val chars = "abcdefghijklmnopqrstuvwxyz0123456789"
         return (1..32).map { chars[Random.nextInt(chars.length)] }.joinToString("")
+    }
+
+    private suspend fun saveReferenceLinksInternal(sourceId: String, sourceType: com.example.graymatter.domain.ReferenceType, links: List<com.example.graymatter.domain.ReferenceSelectorItem>) {
+        if (links.isEmpty()) return
+        val now = Clock.System.now().toEpochMilliseconds()
+        links.forEach { linkItem ->
+            val targetType = when (linkItem) {
+                is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> com.example.graymatter.domain.ReferenceType.TOPIC
+                is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> com.example.graymatter.domain.ReferenceType.RESOURCE
+                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> com.example.graymatter.domain.ReferenceType.OPINION
+            }
+            val newLink = com.example.graymatter.domain.ReferenceLink(
+                id = generateUuid(),
+                sourceType = sourceType,
+                sourceId = sourceId,
+                targetType = targetType,
+                targetId = linkItem.id,
+                createdAt = now
+            )
+            referenceLinkRepository.insertReferenceLink(newLink)
+        }
+    }
+
+    /**
+     * Retrieves reference links for an opinion.
+     */
+    fun getLinksForOpinion(opinionId: String): Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>> {
+        return referenceLinkRepository.getReferenceLinksBySource(opinionId).map { links ->
+            links.mapNotNull { link ->
+                when (link.targetType) {
+                    com.example.graymatter.domain.ReferenceType.TOPIC -> {
+                        val topic = topicRepository.getTopicById(link.targetId)
+                        if (topic != null) com.example.graymatter.domain.ReferenceSelectorItem.TopicItem(id = topic.id, name = topic.name, isExpanded = false, isChecked = true) else null
+                    }
+                    com.example.graymatter.domain.ReferenceType.RESOURCE -> {
+                        val resource = resourceRepository.getResourceById(link.targetId)
+                        if (resource != null) com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem(id = resource.id, title = resource.title ?: "Untitled", type = resource.type.name, parentTopicId = null, isExpanded = false, isChecked = true) else null
+                    }
+                    com.example.graymatter.domain.ReferenceType.OPINION -> {
+                        val op = opinionRepository.getOpinionById(link.targetId)
+                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = op.text, parentResourceId = op.itemId, isAnnotation = true, isExpanded = false, isChecked = false) else null
+                    }
+                    com.example.graymatter.domain.ReferenceType.BOOKMARK -> {
+                        val bookmark = resourceRepository.getBookmarkById(link.targetId)
+                        if (bookmark != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = bookmark.id, snippet = bookmark.title ?: "Untitled", parentResourceId = bookmark.resourceId, isAnnotation = false, isExpanded = false, isChecked = false) else null
+                    }
+                    com.example.graymatter.domain.ReferenceType.ANNOTATION -> {
+                        val op = opinionRepository.getOpinionById(link.targetId)
+                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = op.text, parentResourceId = op.itemId, isAnnotation = true, isExpanded = false, isChecked = false) else null
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Retrieves backlinks for a resource or topic.
+     * Backlinks are opinions that link to this target.
+     */
+    fun getResolvedBacklinksForTarget(targetId: String): Flow<List<com.example.graymatter.android.ui.components.BacklinkUiModel>> {
+        return referenceLinkRepository.getBacklinksForTarget(targetId).map { links ->
+            links.mapNotNull { link ->
+                // The source is what points TO the target.
+                // In our app, links are created from Opinions.
+                if (link.sourceType == com.example.graymatter.domain.ReferenceType.OPINION) {
+                    val opinion = opinionRepository.getOpinionById(link.sourceId)
+                    if (opinion != null) {
+                        val item = itemRepository.getItemByResourceId(opinion.itemId) ?: itemRepository.getItemWithDetails(opinion.itemId)?.item
+                        // We need the resource title of the item that the opinion belongs to
+                        val resourceDetails = item?.let { itemRepository.getItemWithDetails(it.id) }
+                        val resourceTitle = resourceDetails?.resource?.title ?: "Unknown Source"
+                        
+                        com.example.graymatter.android.ui.components.BacklinkUiModel(
+                            id = link.sourceId, // ID of the opinion
+                            title = "Linked from $resourceTitle",
+                            subtitle = opinion.text.take(150),
+                            sourceType = link.sourceType
+                        )
+                    } else null
+                } else null // Support other types if needed in future
+            }
+        }
     }
 }

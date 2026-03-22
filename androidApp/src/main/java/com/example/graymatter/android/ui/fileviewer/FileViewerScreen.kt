@@ -44,6 +44,13 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.type
 import com.example.graymatter.android.util.FileUtils
 import com.example.graymatter.android.ui.components.MarkdownEditor
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Tag
+import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.filled.QuestionAnswer
 
 /**
  * Main file viewer screen.
@@ -55,7 +62,10 @@ fun FileViewerScreen(
     viewModel: FileViewerViewModel,
     resourceId: String,
     initialPage: Int? = null,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onLoadBacklinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.android.ui.components.BacklinkUiModel>>,
+    onViewInGraph: (String) -> Unit,
+    referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null
 ) {
     val resource by viewModel.resource.collectAsState()
     val settings by viewModel.settings.collectAsState()
@@ -260,6 +270,19 @@ fun FileViewerScreen(
             Column {
                 val isCurrentPageBookmarked = bookmarks.any { it.page == viewModel.currentPage }
                 
+                val backlinks by onLoadBacklinks(resourceId).collectAsState(initial = emptyList())
+                if (backlinks.isNotEmpty()) {
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        com.example.graymatter.android.ui.components.BacklinkPanel(
+                            backlinks = backlinks,
+                            onBacklinkClick = { backlink ->
+                                // Navigation to source opinion not implemented yet
+                            },
+                            onViewInGraphClick = { onViewInGraph(resourceId) }
+                        )
+                    }
+                }
+                
                 ReaderBottomBar(
                     currentPage = viewModel.currentPage,
                     totalPages = viewModel.totalPages,
@@ -331,9 +354,10 @@ fun FileViewerScreen(
 
         if (viewModel.showBookmarkDialog) {
             BookmarkOpinionDialog(
+                viewModel = referenceSelectorViewModel,
                 onDismiss = { viewModel.closeBookmarkDialog() },
-                onConfirm = { opinion, confidence ->
-                    viewModel.saveBookmarkAndOpinion(opinion, confidence)
+                onConfirm = { opinion, confidence, referenceLinks ->
+                    viewModel.saveBookmarkAndOpinion(opinion, confidence, referenceLinks)
                 }
             )
         }
@@ -423,6 +447,8 @@ fun FileViewerScreen(
             val template = viewModel.selectedTemplateForNewEntry!!
             var fieldValues by remember { mutableStateOf(template.headings.associateWith { "" }) }
             var confidence by remember { mutableFloatStateOf(0.7f) }
+            var selectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
+            var showReferenceSelector by remember { mutableStateOf(false) }
             
             Dialog(onDismissRequest = { viewModel.selectTemplateForNewEntry(null) }) {
                 Box(
@@ -446,6 +472,47 @@ fun FileViewerScreen(
                                 .verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
+                            // Knowledge Connections
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
+                                    IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
+                                        Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                    }
+                                }
+                                
+                                if (selectedReferences.isNotEmpty()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        selectedReferences.forEach { ref ->
+                                            val refText = when (ref) {
+                                                is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                                                is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                                                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                                            }
+                                            InputChip(
+                                                selected = true,
+                                                onClick = { selectedReferences = selectedReferences.filter { it.id != ref.id } },
+                                                label = { Text(refText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                                trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
+                                                colors = InputChipDefaults.inputChipColors(
+                                                    containerColor = GrayMatterColors.SurfaceInput,
+                                                    labelColor = Color.White,
+                                                    trailingIconColor = GrayMatterColors.Neutral500
+                                                ),
+                                                border = null
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
                             template.headings.forEach { heading ->
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Text(
@@ -496,7 +563,7 @@ fun FileViewerScreen(
                                             append("\n\n")
                                         }
                                     }.trim()
-                                    viewModel.saveTemplateOpinion(formatted, (confidence * 100).toInt()) 
+                                    viewModel.saveTemplateOpinion(formatted, (confidence * 100).toInt(), selectedReferences) 
                                     viewModel.selectTemplateForNewEntry(null)
                                 },
                                 enabled = fieldValues.values.any { it.isNotBlank() },
@@ -508,11 +575,24 @@ fun FileViewerScreen(
                     }
                 }
             }
+
+            if (showReferenceSelector && referenceSelectorViewModel != null) {
+                com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
+                    viewModel = referenceSelectorViewModel,
+                    onDismissRequest = { showReferenceSelector = false },
+                    onConfirm = { items ->
+                        showReferenceSelector = false
+                        selectedReferences = (selectedReferences + items).distinctBy { it.id }
+                    }
+                )
+            }
         }
 
         if (viewModel.showCustomOpinionDialog) {
             var text by remember { mutableStateOf("") }
             var confidence by remember { mutableFloatStateOf(0.7f) }
+            var selectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
+            var showReferenceSelector by remember { mutableStateOf(false) }
             
             Dialog(onDismissRequest = { viewModel.toggleCustomOpinionDialog() }) {
                 Box(
@@ -529,6 +609,47 @@ fun FileViewerScreen(
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), 
                             color = GrayMatterColors.TextPrimary
                         )
+
+                        // Knowledge Connections
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
+                                IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
+                                    Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                }
+                            }
+                            
+                            if (selectedReferences.isNotEmpty()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    selectedReferences.forEach { ref ->
+                                        val refText = when (ref) {
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                                        }
+                                        InputChip(
+                                            selected = true,
+                                            onClick = { selectedReferences = selectedReferences.filter { it.id != ref.id } },
+                                            label = { Text(refText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                            trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
+                                            colors = InputChipDefaults.inputChipColors(
+                                                containerColor = GrayMatterColors.SurfaceInput,
+                                                labelColor = Color.White,
+                                                trailingIconColor = GrayMatterColors.Neutral500
+                                            ),
+                                            border = null
+                                        )
+                                    }
+                                }
+                            }
+                        }
                         
                         BasicTextField(
                             value = text, 
@@ -571,7 +692,7 @@ fun FileViewerScreen(
                             }
                             Button(
                                 onClick = { 
-                                    viewModel.saveGeneralOpinion(content = text, confidence = (confidence * 100).toInt())
+                                    viewModel.saveGeneralOpinion(content = text, confidence = (confidence * 100).toInt(), referenceLinks = selectedReferences)
                                     viewModel.toggleCustomOpinionDialog() 
                                 },
                                 enabled = text.isNotBlank(),
@@ -586,14 +707,26 @@ fun FileViewerScreen(
                     }
                 }
             }
+
+            if (showReferenceSelector && referenceSelectorViewModel != null) {
+                com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
+                    viewModel = referenceSelectorViewModel,
+                    onDismissRequest = { showReferenceSelector = false },
+                    onConfirm = { items ->
+                        showReferenceSelector = false
+                        selectedReferences = (selectedReferences + items).distinctBy { it.id }
+                    }
+                )
+            }
         }
 
         if (viewModel.showSelectionAnnotationDialog && viewModel.selectedText != null) {
             SelectionAnnotationDialog(
                 selectedText = viewModel.selectedText!!,
+                viewModel = referenceSelectorViewModel,
                 onDismiss = { viewModel.closeSelectionAnnotationDialog() },
-                onConfirm = { opinion, score ->
-                    viewModel.saveAnnotation(opinion, score)
+                onConfirm = { opinion, score, selectedRefs ->
+                    viewModel.saveAnnotation(opinion, score, selectedRefs)
                 }
             )
         }
@@ -614,10 +747,11 @@ fun FileViewerScreen(
                 selectedText = quote,
                 initialOpinion = userText,
                 initialConfidence = op.confidenceScore / 10f,
+                viewModel = referenceSelectorViewModel,
                 onDismiss = { editingOpinion = null },
-                onConfirm = { updatedOpinion, score ->
+                onConfirm = { updatedOpinion, score, selectedRefs ->
                     val fullOpinion = "> $quote\n\n$updatedOpinion"
-                    viewModel.updateAnnotation(op.id, fullOpinion, score)
+                    viewModel.updateAnnotation(op.id, fullOpinion, score, selectedRefs)
                     editingOpinion = null
                 }
             )
@@ -820,9 +954,15 @@ fun ActionBarIcon(
 }
 
 @Composable
-fun BookmarkOpinionDialog(onDismiss: () -> Unit, onConfirm: (String, Int) -> Unit) {
+fun BookmarkOpinionDialog(
+    viewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
+    onDismiss: () -> Unit, 
+    onConfirm: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit
+) {
     var text by remember { mutableStateOf("") }
     var confidence by remember { mutableFloatStateOf(0.7f) }
+    var selectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
+    var showReferenceSelector by remember { mutableStateOf(false) }
     
     Dialog(onDismissRequest = onDismiss) {
         Box(
@@ -839,6 +979,47 @@ fun BookmarkOpinionDialog(onDismiss: () -> Unit, onConfirm: (String, Int) -> Uni
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), 
                     color = GrayMatterColors.TextPrimary
                 )
+
+                // Knowledge Connections
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
+                        IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
+                            Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    
+                    if (selectedReferences.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            selectedReferences.forEach { ref ->
+                                val refText = when (ref) {
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                                }
+                                InputChip(
+                                    selected = true,
+                                    onClick = { selectedReferences = selectedReferences.filter { it.id != ref.id } },
+                                    label = { Text(refText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                    trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
+                                    colors = InputChipDefaults.inputChipColors(
+                                        containerColor = GrayMatterColors.SurfaceInput,
+                                        labelColor = Color.White,
+                                        trailingIconColor = GrayMatterColors.Neutral500
+                                    ),
+                                    border = null
+                                )
+                            }
+                        }
+                    }
+                }
                 
                 BasicTextField(
                     value = text, 
@@ -880,7 +1061,7 @@ fun BookmarkOpinionDialog(onDismiss: () -> Unit, onConfirm: (String, Int) -> Uni
                         Text("Cancel", color = GrayMatterColors.Neutral500)
                     }
                     Button(
-                        onClick = { onConfirm(text, (confidence * 100).toInt()) },
+                        onClick = { onConfirm(text, (confidence * 100).toInt(), selectedReferences) },
                         enabled = text.isNotBlank(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = GrayMatterColors.Primary,
@@ -893,6 +1074,17 @@ fun BookmarkOpinionDialog(onDismiss: () -> Unit, onConfirm: (String, Int) -> Uni
             }
         }
     }
+
+    if (showReferenceSelector && viewModel != null) {
+        com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
+            viewModel = viewModel,
+            onDismissRequest = { showReferenceSelector = false },
+            onConfirm = { items ->
+                showReferenceSelector = false
+                selectedReferences = (selectedReferences + items).distinctBy { it.id }
+            }
+        )
+    }
 }
 
 @Composable
@@ -900,11 +1092,14 @@ fun SelectionAnnotationDialog(
     selectedText: String,
     initialOpinion: String = "",
     initialConfidence: Float = 0.7f,
+    viewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
     onDismiss: () -> Unit,
-    onConfirm: (String, Int) -> Unit
+    onConfirm: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit
 ) {
     var opinion by remember { mutableStateOf(initialOpinion) }
     var confidence by remember { mutableFloatStateOf(initialConfidence) }
+    var selectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
+    var showReferenceSelector by remember { mutableStateOf(false) }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Box(
@@ -936,6 +1131,47 @@ fun SelectionAnnotationDialog(
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis
                     )
+                }
+
+                // Knowledge Connections
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
+                        IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
+                            Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    
+                    if (selectedReferences.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            selectedReferences.forEach { ref ->
+                                val refText = when (ref) {
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                                }
+                                InputChip(
+                                    selected = true,
+                                    onClick = { selectedReferences = selectedReferences.filter { it.id != ref.id } },
+                                    label = { Text(refText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                    trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
+                                    colors = InputChipDefaults.inputChipColors(
+                                        containerColor = GrayMatterColors.SurfaceInput,
+                                        labelColor = Color.White,
+                                        trailingIconColor = GrayMatterColors.Neutral500
+                                    ),
+                                    border = null
+                                )
+                            }
+                        }
+                    }
                 }
 
                 BasicTextField(
@@ -976,7 +1212,7 @@ fun SelectionAnnotationDialog(
                         Text("Cancel", color = GrayMatterColors.Neutral500)
                     }
                     Button(
-                        onClick = { onConfirm(opinion, (confidence * 100).toInt()) },
+                        onClick = { onConfirm(opinion, (confidence * 100).toInt(), selectedReferences) },
                         enabled = opinion.isNotBlank(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = GrayMatterColors.Primary,
@@ -988,6 +1224,17 @@ fun SelectionAnnotationDialog(
                 }
             }
         }
+    }
+
+    if (showReferenceSelector && viewModel != null) {
+        com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
+            viewModel = viewModel,
+            onDismissRequest = { showReferenceSelector = false },
+            onConfirm = { items ->
+                showReferenceSelector = false
+                selectedReferences = (selectedReferences + items).distinctBy { it.id }
+            }
+        )
     }
 }
 

@@ -52,6 +52,7 @@ fun LibraryScreen(
     onTopicClick: (Topic) -> Unit,
     onNavigateToHome: () -> Unit,
     onCreateClick: () -> Unit,
+    onNavigateToGraph: () -> Unit,
     modifier: Modifier = Modifier,
     paddingValues: PaddingValues = PaddingValues(0.dp)
 ) {

@@ -32,7 +32,8 @@ import kotlin.random.Random
 class FileViewerViewModel(
     private val resourceRepository: ResourceRepository,
     private val opinionRepository: OpinionRepository,
-    private val itemRepository: ItemRepository
+    private val itemRepository: ItemRepository,
+    private val referenceLinkRepository: com.example.graymatter.data.ReferenceLinkRepository
 ) : ViewModel() {
 
     private val _resource = MutableStateFlow<Resource?>(null)
@@ -386,13 +387,14 @@ class FileViewerViewModel(
     }
 
     // -- Bookmarks & Opinions --
-    fun saveBookmarkAndOpinion(opinionText: String, confidence: Int) {
+    fun saveBookmarkAndOpinion(opinionText: String, confidence: Int, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         val res = _resource.value ?: return
         viewModelScope.launch {
             val now = Clock.System.now().toEpochMilliseconds()
+            val bookmarkId = generateUuid()
             
             val bookmark = Bookmark(
-                id = generateUuid(),
+                id = bookmarkId,
                 resourceId = res.id,
                 page = currentPage,
                 percentPosition = if (totalPages > 0) (currentPage + 1).toDouble() / totalPages else 0.0,
@@ -402,11 +404,13 @@ class FileViewerViewModel(
                 createdAt = now
             )
             resourceRepository.saveBookmark(bookmark)
+            saveReferenceLinksInternal(bookmarkId, com.example.graymatter.domain.ReferenceType.BOOKMARK, referenceLinks)
             
             val item = itemRepository.getItemByResourceId(res.id)
             if (item != null) {
+                val opinionId = generateUuid()
                 val opinion = Opinion(
-                    id = generateUuid(),
+                    id = opinionId,
                     itemId = item.id,
                     text = "[Page ${currentPage + 1}] $opinionText",
                     confidenceScore = confidence,
@@ -415,6 +419,7 @@ class FileViewerViewModel(
                     updatedAt = now
                 )
                 opinionRepository.saveOpinion(opinion)
+                saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
                 itemRepository.updateItemOpinionMetadata(item.id, now)
             }
             
@@ -423,7 +428,7 @@ class FileViewerViewModel(
         }
     }
 
-    fun saveAnnotation(opinionText: String, confidence: Int) {
+    fun saveAnnotation(opinionText: String, confidence: Int, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         val res = _resource.value ?: return
         val textSnippet = selectedText ?: return
 
@@ -434,9 +439,10 @@ class FileViewerViewModel(
             if (item != null) {
                 // Add the snippet inline as a blockquote
                 val fullOpinion = "> $textSnippet\n\n$opinionText"
+                val opinionId = generateUuid()
                 
                 val opinion = Opinion(
-                    id = generateUuid(),
+                    id = opinionId,
                     itemId = item.id,
                     text = fullOpinion,
                     confidenceScore = confidence,
@@ -445,6 +451,7 @@ class FileViewerViewModel(
                     updatedAt = now
                 )
                 opinionRepository.saveOpinion(opinion)
+                saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
                 itemRepository.updateItemOpinionMetadata(item.id, now)
             }
             showSelectionAnnotationDialog = false
@@ -490,16 +497,18 @@ class FileViewerViewModel(
         }
     }
 
-    fun updateAnnotation(id: String, text: String, confidence: Int) {
+    fun updateAnnotation(id: String, text: String, confidence: Int, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         viewModelScope.launch {
+            val now = Clock.System.now().toEpochMilliseconds()
             val existing = opinionRepository.getOpinionById(id) ?: return@launch
             opinionRepository.updateOpinion(
                 existing.copy(
                     text = text,
                     confidenceScore = confidence,
-                    updatedAt = Clock.System.now().toEpochMilliseconds()
+                    updatedAt = now
                 )
             )
+            saveReferenceLinksInternal(id, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
         }
     }
 
@@ -509,14 +518,15 @@ class FileViewerViewModel(
         }
     }
 
-    fun saveGeneralOpinion(content: String, confidence: Int) {
+    fun saveGeneralOpinion(content: String, confidence: Int, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         val res = _resource.value ?: return
         viewModelScope.launch {
             val now = Clock.System.now().toEpochMilliseconds()
             val item = itemRepository.getItemByResourceId(res.id)
             if (item != null) {
+                val opinionId = generateUuid()
                 val opinion = Opinion(
-                    id = generateUuid(),
+                    id = opinionId,
                     itemId = item.id,
                     text = content,
                     confidenceScore = confidence,
@@ -525,19 +535,21 @@ class FileViewerViewModel(
                     updatedAt = now
                 )
                 opinionRepository.saveOpinion(opinion)
+                saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
                 itemRepository.updateItemOpinionMetadata(item.id, now)
             }
         }
     }
 
-    fun saveTemplateOpinion(formattedText: String, confidence: Int) {
+    fun saveTemplateOpinion(formattedText: String, confidence: Int, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         val res = _resource.value ?: return
         viewModelScope.launch {
             val now = Clock.System.now().toEpochMilliseconds()
             val item = itemRepository.getItemByResourceId(res.id)
             if (item != null) {
+                val opinionId = generateUuid()
                 val opinion = Opinion(
-                    id = generateUuid(),
+                    id = opinionId,
                     itemId = item.id,
                     text = formattedText, // text is exactly formatted in UI
                     confidenceScore = confidence,
@@ -546,6 +558,7 @@ class FileViewerViewModel(
                     updatedAt = now
                 )
                 opinionRepository.saveOpinion(opinion)
+                saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
                 itemRepository.updateItemOpinionMetadata(item.id, now)
             }
         }
@@ -608,6 +621,27 @@ class FileViewerViewModel(
 
     fun saveProgressOnExit() {
         saveProgress()
+    }
+
+    private suspend fun saveReferenceLinksInternal(sourceId: String, sourceType: com.example.graymatter.domain.ReferenceType, links: List<com.example.graymatter.domain.ReferenceSelectorItem>) {
+        if (links.isEmpty()) return
+        val now = Clock.System.now().toEpochMilliseconds()
+        links.forEach { linkItem ->
+            val targetType = when (linkItem) {
+                is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> com.example.graymatter.domain.ReferenceType.TOPIC
+                is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> com.example.graymatter.domain.ReferenceType.RESOURCE
+                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> com.example.graymatter.domain.ReferenceType.OPINION
+            }
+            val newLink = com.example.graymatter.domain.ReferenceLink(
+                id = generateUuid(),
+                sourceType = sourceType,
+                sourceId = sourceId,
+                targetType = targetType,
+                targetId = linkItem.id,
+                createdAt = now
+            )
+            referenceLinkRepository.insertReferenceLink(newLink)
+        }
     }
 
     private fun generateUuid(): String {

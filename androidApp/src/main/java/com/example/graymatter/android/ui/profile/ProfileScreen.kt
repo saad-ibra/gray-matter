@@ -29,6 +29,7 @@ import com.example.graymatter.domain.CustomTemplate
 @Composable
 fun ProfileScreen(
     viewModel: GrayMatterViewModel,
+    onNavigateToGraph: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showTemplatesScreen by remember { mutableStateOf(false) }
@@ -55,8 +56,13 @@ fun ProfileScreen(
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                     SettingsButton(
+                        icon = Icons.Default.Hub,
+                        title = "Rela-trix",
+                        onClick = onNavigateToGraph
+                    )
+                    SettingsButton(
                         icon = Icons.Default.ListAlt,
-                        title = "Manage Templates",
+                        title = "Templates Management",
                         onClick = { showTemplatesScreen = true }
                     )
                 }
@@ -122,7 +128,7 @@ fun TemplatesManagementScreen(
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = GrayMatterColors.TextPrimary)
                 }
                 Text(
-                    text = "Manage Templates",
+                    text = "Templates Management",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = GrayMatterColors.TextPrimary,
                     modifier = Modifier.padding(start = 8.dp)
@@ -185,11 +191,6 @@ private fun ProfileHeader() {
             text = "Profile",
             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
             color = GrayMatterColors.TextPrimary
-        )
-        Text(
-            text = "Settings & Customization",
-            style = MaterialTheme.typography.bodyMedium,
-            color = GrayMatterColors.TextSecondary
         )
     }
 }
@@ -256,6 +257,7 @@ private fun TemplateEditorDialog(
 ) {
     var name by remember { mutableStateOf(template.name) }
     var headings by remember { mutableStateOf(template.headings) }
+
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -307,7 +309,10 @@ private fun TemplateEditorDialog(
                 shape = RoundedCornerShape(16.dp)
             )
 
+            Spacer(modifier = Modifier.height(16.dp))
+
             Spacer(modifier = Modifier.height(24.dp))
+
 
             Text(
                 text = "HEADINGS",

@@ -27,6 +27,10 @@ class DefaultOpinionRepository(
         queries.getOpinionById(id).executeAsOneOrNull()?.toOpinion()
     }
     
+    override suspend fun getAllOpinions(): List<Opinion> = withContext(dispatcher) {
+        queries.getAllOpinions().executeAsList().map { it.toOpinion() }
+    }
+    
     override suspend fun saveOpinion(opinion: Opinion) = withContext(dispatcher) {
         queries.insertOpinion(
             id = opinion.id,

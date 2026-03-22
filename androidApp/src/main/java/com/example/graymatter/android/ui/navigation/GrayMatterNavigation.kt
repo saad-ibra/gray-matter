@@ -6,6 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.padding
@@ -53,16 +55,27 @@ fun GrayMatterNavigation(
             itemRepository = appModule.itemRepository,
             resourceRepository = appModule.resourceRepository,
             opinionRepository = appModule.opinionRepository,
-            topicRepository = appModule.topicRepository
+            topicRepository = appModule.topicRepository,
+            referenceLinkRepository = appModule.referenceLinkRepository
         )
     }
 
     val topics by viewModel.topicsStream.collectAsState(initial = emptyList())
     val items by viewModel.itemsStream.collectAsState(initial = emptyList())
     val templates by viewModel.templates.collectAsState()
-    var editingResource by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.example.graymatter.domain.Resource?>(null) }
+    var editingResource by remember { mutableStateOf<com.example.graymatter.domain.Resource?>(null) }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    val referenceSelectorViewModel = remember {
+        com.example.graymatter.viewmodel.ReferenceSelectorViewModel(
+            topicRepository = appModule.topicRepository,
+            resourceRepository = appModule.resourceRepository,
+            opinionRepository = appModule.opinionRepository,
+            coroutineScope = null,
+            defaultDispatcher = kotlinx.coroutines.Dispatchers.Default
+        )
+    }
 
     NavHost(
         navController = navController,
@@ -147,11 +160,19 @@ fun GrayMatterNavigation(
                                 },
                                 onCreateClick = {
                                     navController.navigate(NavigationDestination.NewEntry.route)
+                                },
+                                onNavigateToGraph = {
+                                    navController.navigate(NavigationDestination.KnowledgeGraph.route)
                                 }
                             )
                         }
                         2 -> {
-                            ProfileScreen(viewModel = viewModel)
+                            ProfileScreen(
+                                viewModel = viewModel,
+                                onNavigateToGraph = {
+                                    navController.navigate(NavigationDestination.KnowledgeGraph.route)
+                                }
+                            )
                         }
                     }
                 }
@@ -177,6 +198,7 @@ fun GrayMatterNavigation(
             TopicSynthesisScreen(
                 topic = topic,
                 resources = resources,
+                referenceSelectorViewModel = referenceSelectorViewModel,
                 onBackClick = { navController.popBackStack() },
                 onAddResource = {
                     navController.navigate(NavigationDestination.NewEntry.route)
@@ -187,8 +209,8 @@ fun GrayMatterNavigation(
                         navController.navigate(NavigationDestination.ItemDetail.buildRoute(it.id))
                     }
                 },
-                onSaveOverallOpinion = { notes ->
-                    topic?.id?.let { viewModel.updateTopicNotes(it, notes) }
+                onSaveOverallOpinion = { notes, selectedReferences ->
+                    topic?.id?.let { viewModel.updateTopicNotes(it, notes, selectedReferences) }
                 },
                 onDeleteTopic = {
                     topicId?.let { 
@@ -213,7 +235,8 @@ fun GrayMatterNavigation(
                 onBackClick = { navController.popBackStack() },
                 isSaving = isImporting,
                 templates = templates,
-                onSaveClick = { type, value, opinion, confidence, title, description, originalFileName ->
+                referenceSelectorViewModel = referenceSelectorViewModel,
+                onSaveClick = { type, value, opinion, confidence, title, description, originalFileName, selectedLinks ->
                     coroutineScope.launch {
                         val newItemId = when (type) {
                             EntryType.LINK -> viewModel.createNewItem(
@@ -221,7 +244,8 @@ fun GrayMatterNavigation(
                                 opinionText = opinion, 
                                 confidence = confidence, 
                                 title = title, 
-                                description = description
+                                description = description,
+                                referenceLinks = selectedLinks
                             )
                             EntryType.FILE -> {
                                 // If title lacks extension, append original extension
@@ -237,7 +261,8 @@ fun GrayMatterNavigation(
                                     opinionText = opinion,
                                     confidence = confidence,
                                     title = finalTitle,
-                                    description = description
+                                    description = description,
+                                    referenceLinks = selectedLinks
                                 )
                             }
                             EntryType.NOTE -> {
@@ -249,7 +274,8 @@ fun GrayMatterNavigation(
                                     content = value,
                                     opinionText = opinion,
                                     confidence = confidence,
-                                    description = description
+                                    description = description,
+                                    referenceLinks = selectedLinks
                                 )
                             }
                         }
@@ -281,6 +307,7 @@ fun GrayMatterNavigation(
                 itemDetails = itemDetails,
                 readingProgress = readingProgress,
                 templates = templates,
+                referenceSelectorViewModel = referenceSelectorViewModel,
                 onBackClick = { navController.popBackStack() },
                 onOpenResource = {
                     itemDetails?.resource?.let { resource ->
@@ -313,11 +340,11 @@ fun GrayMatterNavigation(
                 onUpdateDescription = { desc ->
                     itemId.let { viewModel.updateItemDescription(it, desc) }
                 },
-                onAddOpinion = { text, confidence ->
-                    itemId.let { viewModel.addOpinion(it, text, confidence) }
+                onAddOpinion = { text, confidence, selectedLinks ->
+                    itemId.let { viewModel.addOpinion(it, text, confidence, referenceLinks = selectedLinks) }
                 },
-                onUpdateOpinion = { opinionId, text, confidence, date ->
-                    viewModel.updateOpinion(opinionId, text, confidence, date)
+                onUpdateOpinion = { opinionId, text, confidence, date, selectedLinks ->
+                    viewModel.updateOpinion(opinionId, text, confidence, date, selectedLinks)
                 },
                 onDeleteOpinion = { opinionId ->
                     viewModel.deleteOpinion(opinionId)
@@ -345,6 +372,11 @@ fun GrayMatterNavigation(
                         val markdown = ExportService.exportItemHistory(details, filteredOpinions)
                         shareText(context, markdown, "Opinion History: ${details.resource.title ?: "Untitled"}")
                     }
+                },
+                onLoadLinks = { opinionId -> viewModel.getLinksForOpinion(opinionId) },
+                onLoadBacklinks = { resourceId -> viewModel.getResolvedBacklinksForTarget(resourceId) },
+                onViewInGraphClick = { resourceId -> 
+                    navController.navigate(NavigationDestination.KnowledgeGraph.route) 
                 }
             )
 
@@ -426,15 +458,59 @@ fun GrayMatterNavigation(
                 com.example.graymatter.android.ui.fileviewer.FileViewerViewModel(
                     resourceRepository = appModule.resourceRepository,
                     opinionRepository = appModule.opinionRepository,
-                    itemRepository = appModule.itemRepository
+                    itemRepository = appModule.itemRepository,
+                    referenceLinkRepository = appModule.referenceLinkRepository
                 )
             }
 
             com.example.graymatter.android.ui.fileviewer.FileViewerScreen(
                 viewModel = fileViewerViewModel,
+                referenceSelectorViewModel = referenceSelectorViewModel,
                 resourceId = resourceId,
                 initialPage = if (initialPage >= 0) initialPage else null,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onLoadBacklinks = { resId -> viewModel.getResolvedBacklinksForTarget(resId) },
+                onViewInGraph = { resId -> 
+                    navController.navigate(NavigationDestination.KnowledgeGraph.route) 
+                }
+            )
+        }
+
+        // Rela-trix (Knowledge Graph) Screen
+        composable(NavigationDestination.KnowledgeGraph.route) {
+            val graphViewModel: com.example.graymatter.android.ui.graph.KnowledgeGraphViewModel = viewModel {
+                com.example.graymatter.android.ui.graph.KnowledgeGraphViewModel(
+                    topicRepository = appModule.topicRepository,
+                    itemRepository = appModule.itemRepository,
+                    resourceRepository = appModule.resourceRepository,
+                    opinionRepository = appModule.opinionRepository,
+                    referenceLinkRepository = appModule.referenceLinkRepository
+                )
+            }
+            com.example.graymatter.android.ui.graph.KnowledgeGraphScreen(
+                viewModel = graphViewModel,
+                onBackClick = { navController.popBackStack() },
+                onNodeDoubleTap = { node ->
+                    when (node.type) {
+                        com.example.graymatter.android.ui.graph.NodeType.TOPIC -> {
+                            navController.navigate(NavigationDestination.TopicDetail.buildRoute(node.id))
+                        }
+                        com.example.graymatter.android.ui.graph.NodeType.RESOURCE -> {
+                            // Find corresponding item mapped to this resource
+                            val item = viewModel.itemsStream.value.find { it.resourceId == node.id }
+                            if (item != null) navController.navigate(NavigationDestination.ItemDetail.buildRoute(item.id))
+                        }
+                        else -> {
+                            // Opinions open the ItemDetail for their parent item
+                            coroutineScope.launch {
+                                val opinion = appModule.opinionRepository.getOpinionById(node.id)
+                                if (opinion != null) {
+                                    navController.navigate(NavigationDestination.ItemDetail.buildRoute(opinion.itemId))
+                                }
+                            }
+                        }
+                    }
+                }
             )
         }
     }

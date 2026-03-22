@@ -48,13 +48,17 @@ fun ItemDetailScreen(
     onOpenResource: () -> Unit,
     onOpenBookmark: (Bookmark) -> Unit,
     onUpdateDescription: (String?) -> Unit,
-    onAddOpinion: (text: String, confidence: Int) -> Unit,
-    onUpdateOpinion: (id: String, text: String, confidence: Int, createdAt: Long) -> Unit,
+    onAddOpinion: (text: String, confidence: Int, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
+    onUpdateOpinion: (id: String, text: String, confidence: Int, createdAt: Long, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
     onDeleteOpinion: (id: String) -> Unit,
     onRenameResource: (String) -> Unit,
     onEditNote: () -> Unit,
     onDeleteItem: () -> Unit,
     onExport: (List<com.example.graymatter.domain.Opinion>) -> Unit,
+    onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
+    onLoadBacklinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.android.ui.components.BacklinkUiModel>>,
+    onViewInGraphClick: (String) -> Unit,
+    referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
     modifier: Modifier = Modifier
 ) {
     var isEditing by remember { mutableStateOf(false) }
@@ -322,12 +326,27 @@ fun ItemDetailScreen(
                         resourceId = itemDetails.resource.id,
                         isEditing = isEditing,
                         templates = templates,
+                        referenceSelectorViewModel = referenceSelectorViewModel,
                         onUpdateOpinion = onUpdateOpinion,
                         onDeleteOpinion = onDeleteOpinion,
                         onJumpToPage = { resourceId, page ->
                             onOpenBookmark(Bookmark(id="", resourceId=resourceId, page=page, createdAt=0L))
-                        }
+                        },
+                        onLoadLinks = onLoadLinks
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    val backlinks by onLoadBacklinks(itemDetails.resource.id).collectAsState(initial = emptyList())
+                    if (backlinks.isNotEmpty()) {
+                        com.example.graymatter.android.ui.components.BacklinkPanel(
+                            backlinks = backlinks,
+                            onBacklinkClick = { backlink ->
+                                // Implementation to navigate to the source based on backlink.sourceType and ID
+                            },
+                            onViewInGraphClick = { onViewInGraphClick(itemDetails.resource.id) }
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(100.dp))
                 }
@@ -336,9 +355,10 @@ fun ItemDetailScreen(
 
         if (showAddDialog) {
             OpinionEditDialog(
+                viewModel = referenceSelectorViewModel,
                 onDismiss = { showAddDialog = false },
-                onConfirm = { text, confidence ->
-                    onAddOpinion(text, confidence)
+                onConfirm = { text, confidence, referenceLinks ->
+                    onAddOpinion(text, confidence, referenceLinks)
                     showAddDialog = false
                 }
             )
@@ -358,9 +378,10 @@ fun ItemDetailScreen(
         if (selectedTemplateForNewEntry != null) {
             CustomEntryAddDialog(
                 template = selectedTemplateForNewEntry!!,
+                viewModel = referenceSelectorViewModel,
                 onDismiss = { selectedTemplateForNewEntry = null },
-                onConfirm = { formattedText, confidence ->
-                    onAddOpinion(formattedText, confidence)
+                onConfirm = { formattedText, confidence, referenceLinks ->
+                    onAddOpinion(formattedText, confidence, referenceLinks)
                     selectedTemplateForNewEntry = null
                 }
             )
@@ -443,12 +464,15 @@ private fun TemplateSelectionDialog(
 @Composable
 private fun CustomEntryAddDialog(
     template: CustomTemplate,
+    viewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
     onDismiss: () -> Unit,
-    onConfirm: (String, Int) -> Unit
+    onConfirm: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit
 ) {
     var fieldValues by remember { mutableStateOf(template.headings.associateWith { "" }) }
     var confidence by remember { mutableFloatStateOf(0.7f) }
-    
+    var selectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
+    var showReferenceSelector by remember { mutableStateOf(false) }
+
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier
@@ -471,6 +495,47 @@ private fun CustomEntryAddDialog(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Knowledge Connections Trigger
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
+                            IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
+                                Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                            }
+                        }
+                        
+                        if (selectedReferences.isNotEmpty()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                selectedReferences.forEach { ref ->
+                                    val refText = when (ref) {
+                                        is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                                        is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                                        is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                                    }
+                                    InputChip(
+                                        selected = true,
+                                        onClick = { selectedReferences = selectedReferences.filter { it.id != ref.id } },
+                                        label = { Text(refText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                        trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
+                                        colors = InputChipDefaults.inputChipColors(
+                                            containerColor = GrayMatterColors.SurfaceInput,
+                                            labelColor = Color.White,
+                                            trailingIconColor = GrayMatterColors.Neutral500
+                                        ),
+                                        border = null
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     template.headings.forEach { heading ->
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
@@ -513,7 +578,7 @@ private fun CustomEntryAddDialog(
                     Button(
                         onClick = { 
                             val formatted = formatTemplateContent(template, fieldValues)
-                            onConfirm(formatted, (confidence * 100).toInt()) 
+                            onConfirm(formatted, (confidence * 100).toInt(), selectedReferences) 
                         }, 
                         enabled = fieldValues.values.any { it.isNotBlank() },
                         colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.CustomizedAccent, contentColor = Color.White)
@@ -523,6 +588,17 @@ private fun CustomEntryAddDialog(
                 }
             }
         }
+    }
+
+    if (showReferenceSelector && viewModel != null) {
+        com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
+            viewModel = viewModel,
+            onDismissRequest = { showReferenceSelector = false },
+            onConfirm = { items ->
+                showReferenceSelector = false
+                selectedReferences = (selectedReferences + items).distinctBy { it.id }
+            }
+        )
     }
 }
 
@@ -751,9 +827,11 @@ private fun OpinionTimeline(
     resourceId: String,
     isEditing: Boolean,
     templates: List<CustomTemplate>,
-    onUpdateOpinion: (String, String, Int, Long) -> Unit,
+    referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel?,
+    onUpdateOpinion: (String, String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
     onDeleteOpinion: (String) -> Unit,
-    onJumpToPage: (String, Int) -> Unit
+    onJumpToPage: (String, Int) -> Unit,
+    onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>
 ) {
     Column {
         opinions.forEachIndexed { index, opinion ->
@@ -764,13 +842,15 @@ private fun OpinionTimeline(
                 isLast = index == opinions.lastIndex,
                 isEditing = isEditing,
                 templates = templates,
-                onUpdate = { text, confidence, date -> onUpdateOpinion(opinion.id, text, confidence, date) },
+                referenceSelectorViewModel = referenceSelectorViewModel,
+                onUpdate = { text, confidence, date, links -> onUpdateOpinion(opinion.id, text, confidence, date, links) },
                 onDelete = { onDeleteOpinion(opinion.id) },
                 onJump = {
                     opinion.pageNumber?.let { page ->
                         onJumpToPage(resourceId, page)
                     }
-                }
+                },
+                onLoadLinks = onLoadLinks
             )
         }
     }
@@ -785,13 +865,20 @@ private fun OpinionTimelineItem(
     isLast: Boolean,
     isEditing: Boolean,
     templates: List<CustomTemplate>,
-    onUpdate: (String, Int, Long) -> Unit,
+    referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel?,
+    onUpdate: (String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
     onDelete: () -> Unit,
-    onJump: () -> Unit
+    onJump: () -> Unit,
+    onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>
 ) {
     var text by remember(opinion.text) { mutableStateOf(opinion.text) }
     var confidence by remember(opinion.confidenceScore) { mutableStateOf(opinion.confidenceScore.toFloat() / 100f) }
     var showDateTimePicker by remember { mutableStateOf(false) }
+    
+    // Load initial reference links to pre-populate selection
+    val flowLinks by onLoadLinks(opinion.id).collectAsState(initial = emptyList())
+    var selectedReferences by remember(flowLinks) { mutableStateOf(flowLinks) }
+    var showReferenceSelector by remember { mutableStateOf(false) }
     
     val hasPageNumber = opinion.pageNumber != null
 
@@ -962,62 +1049,94 @@ private fun OpinionTimelineItem(
             
             // Opinion Content
             if (isEditing) {
-                if (isTemplate) {
-                    // Try to parse and show dynamic form for custom entry editing
-                    val templateName = text.substringAfter("[TEMPLATE:").substringBefore("]")
-                    val template = templates.find { it.name == templateName }
-                    
-                    if (template != null) {
-                        val fieldValues = remember(text) { parseTemplateContent(text, template.headings) }
-                        DynamicEntryEditor(
-                            template = template,
-                            fieldValues = fieldValues,
-                            onFieldChange = { heading, newVal ->
-                                val newValues = fieldValues.toMutableMap().apply { put(heading, newVal) }
-                                val newText = formatTemplateContent(template, newValues)
-                                text = newText
-                                onUpdate(newText, (confidence * 100).toInt(), opinion.createdAt)
-                            },
-                            confidence = confidence,
-                            onConfidenceChange = {
-                                confidence = it
-                                onUpdate(text, (it * 100).toInt(), opinion.createdAt)
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Knowledge Connections in Edit Mode
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text("KNOWLEDGE LINKS", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = GrayMatterColors.Neutral500)
+                        TextButton(onClick = { showReferenceSelector = true }, contentPadding = PaddingValues(0.dp)) {
+                            Icon(Icons.Default.AddLink, null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Add")
+                        }
+                    }
+                    if (selectedReferences.isNotEmpty()) {
+                        Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            selectedReferences.forEach { ref ->
+                                val refText = when (ref) {
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                                }
+                                InputChip(
+                                    selected = true,
+                                    onClick = { 
+                                        selectedReferences = selectedReferences.filter { it.id != ref.id }
+                                        onUpdate(text, (confidence * 100).toInt(), opinion.createdAt, selectedReferences)
+                                    },
+                                    label = { Text(refText, maxLines = 1) },
+                                    trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) }
+                                )
                             }
-                        )
+                        }
+                    }
+
+                    if (isTemplate) {
+                        // Try to parse and show dynamic form for custom entry editing
+                        val templateName = text.substringAfter("[TEMPLATE:").substringBefore("]")
+                        val template = templates.find { it.name == templateName }
+                        
+                        if (template != null) {
+                            val fieldValues = remember(text) { parseTemplateContent(text, template.headings) }
+                            DynamicEntryEditor(
+                                template = template,
+                                fieldValues = fieldValues,
+                                onFieldChange = { heading, newVal ->
+                                    val newValues = fieldValues.toMutableMap().apply { put(heading, newVal) }
+                                    val newText = formatTemplateContent(template, newValues)
+                                    text = newText
+                                    onUpdate(newText, (confidence * 100).toInt(), opinion.createdAt, selectedReferences)
+                                },
+                                confidence = confidence,
+                                onConfidenceChange = {
+                                    confidence = it
+                                    onUpdate(text, (it * 100).toInt(), opinion.createdAt, selectedReferences)
+                                }
+                            )
+                        } else {
+                            // Fallback to plain text editor if template not found
+                            OpinionEditor(
+                                text = text,
+                                confidence = confidence,
+                                onTextChange = { 
+                                    text = it 
+                                    onUpdate(it, (confidence * 100).toInt(), opinion.createdAt, selectedReferences)
+                                },
+                                onConfidenceChange = { 
+                                    confidence = it 
+                                    onUpdate(text, (it * 100).toInt(), opinion.createdAt, selectedReferences)
+                                }
+                            )
+                        }
                     } else {
-                        // Fallback to plain text editor if template not found
                         OpinionEditor(
-                            text = text,
+                            text = if (isCustomTitle) text.substringAfter("]\n").trim() else text,
                             confidence = confidence,
                             onTextChange = { 
-                                text = it 
-                                onUpdate(it, (confidence * 100).toInt(), opinion.createdAt)
+                                val newFullText = if (isCustomTitle) {
+                                    val prefix = text.substringBefore("]\n") + "]\n"
+                                    prefix + it
+                                } else {
+                                    it
+                                }
+                                text = newFullText 
+                                onUpdate(newFullText, (confidence * 100).toInt(), opinion.createdAt, selectedReferences)
                             },
                             onConfidenceChange = { 
                                 confidence = it 
-                                onUpdate(text, (it * 100).toInt(), opinion.createdAt)
+                                onUpdate(text, (it * 100).toInt(), opinion.createdAt, selectedReferences)
                             }
                         )
                     }
-                } else {
-                    OpinionEditor(
-                        text = if (isCustomTitle) text.substringAfter("]\n").trim() else text,
-                        confidence = confidence,
-                        onTextChange = { 
-                            val newFullText = if (isCustomTitle) {
-                                val prefix = text.substringBefore("]\n") + "]\n"
-                                prefix + it
-                            } else {
-                                it
-                            }
-                            text = newFullText 
-                            onUpdate(newFullText, (confidence * 100).toInt(), opinion.createdAt)
-                        },
-                        onConfidenceChange = { 
-                            confidence = it 
-                            onUpdate(text, (it * 100).toInt(), opinion.createdAt)
-                        }
-                    )
                 }
             } else {
                 if (isDictionary) {
@@ -1163,6 +1282,43 @@ private fun OpinionTimelineItem(
                     }
                 }
                 
+                // Reference Links Chips are rendered below via onLoadLinks flow
+
+
+                // Reference Links Chips
+                val links by onLoadLinks(opinion.id).collectAsState(initial = emptyList())
+                if (links.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        links.forEach { link ->
+                            val linkText = when (link) {
+                                is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> link.name
+                                is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> link.title
+                                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> link.snippet
+                            }
+                            val icon = when (link) {
+                                is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> Icons.Default.Tag
+                                is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> Icons.Default.Article
+                                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> Icons.Default.QuestionAnswer
+                            }
+                            AssistChip(
+                                onClick = { /* Future: navigate to link */ },
+                                label = { Text(linkText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                leadingIcon = { Icon(icon, null, modifier = Modifier.size(16.dp)) },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = GrayMatterColors.SurfaceDark,
+                                    labelColor = GrayMatterColors.Primary,
+                                    leadingIconContentColor = GrayMatterColors.Primary
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, GrayMatterColors.Neutral700)
+                            )
+                        }
+                    }
+                }
+                
                 if (hasPageNumber && !isEditing && !isTemplate && !isCustomTitle) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1179,7 +1335,19 @@ private fun OpinionTimelineItem(
         DateTimePicker(
             initialTimestamp = opinion.createdAt,
             onDismiss = { showDateTimePicker = false },
-            onConfirm = { onUpdate(text, (confidence * 100).toInt(), it) }
+            onConfirm = { onUpdate(text, (confidence * 100).toInt(), it, selectedReferences) }
+        )
+    }
+
+    if (showReferenceSelector && referenceSelectorViewModel != null) {
+        com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
+            viewModel = referenceSelectorViewModel,
+            onDismissRequest = { showReferenceSelector = false },
+            onConfirm = { items ->
+                showReferenceSelector = false
+                selectedReferences = (selectedReferences + items).distinctBy { it.id }
+                onUpdate(text, (confidence * 100).toInt(), opinion.createdAt, selectedReferences)
+            }
         )
     }
 }
@@ -1383,24 +1551,85 @@ private fun DateTimePicker(initialTimestamp: Long, onDismiss: () -> Unit, onConf
 }
 
 @Composable
-private fun OpinionEditDialog(onDismiss: () -> Unit, onConfirm: (String, Int) -> Unit) {
+private fun OpinionEditDialog(
+    viewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
+    onDismiss: () -> Unit, 
+    onConfirm: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit
+) {
     var text by remember { mutableStateOf("") }
     var confidence by remember { mutableFloatStateOf(0.7f) }
+    var selectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
+    var showReferenceSelector by remember { mutableStateOf(false) }
+    
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(GrayMatterColors.SurfaceDark).border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(20.dp)).padding(24.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text("Add New Opinion", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
+                
+                // Knowledge Connections
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
+                        IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
+                            Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    
+                    if (selectedReferences.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            selectedReferences.forEach { ref ->
+                                val refText = when (ref) {
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                                }
+                                InputChip(
+                                    selected = true,
+                                    onClick = { selectedReferences = selectedReferences.filter { it.id != ref.id } },
+                                    label = { Text(refText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                    trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
+                                    colors = InputChipDefaults.inputChipColors(
+                                        containerColor = GrayMatterColors.SurfaceInput,
+                                        labelColor = Color.White,
+                                        trailingIconColor = GrayMatterColors.Neutral500
+                                    ),
+                                    border = null
+                                )
+                            }
+                        }
+                    }
+                }
+
                 BasicTextField(value = text, onValueChange = { text = it }, textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary), modifier = Modifier.fillMaxWidth().height(120.dp).background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp)).border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp)).padding(16.dp), cursorBrush = SolidColor(GrayMatterColors.Primary), decorationBox = { inner -> if (text.isEmpty()) Text("Type your opinion here...", color = GrayMatterColors.Neutral600); inner() })
+                
                 Column {
                     Text("Confidence: ${(confidence * 10).toInt()}/10", style = MaterialTheme.typography.labelMedium, color = GrayMatterColors.Neutral500)
                     Slider(value = confidence, onValueChange = { confidence = it }, colors = SliderDefaults.colors(thumbColor = GrayMatterColors.Primary, activeTrackColor = GrayMatterColors.Primary))
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) { Text("Cancel", color = GrayMatterColors.Neutral500) }
-                    Button(onClick = { onConfirm(text, (confidence * 100).toInt()) }, enabled = text.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary, contentColor = GrayMatterColors.OnPrimary)) { Text("Save") }
+                    Button(onClick = { onConfirm(text, (confidence * 100).toInt(), selectedReferences) }, enabled = text.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary, contentColor = GrayMatterColors.OnPrimary)) { Text("Save") }
                 }
             }
         }
+    }
+
+    if (showReferenceSelector && viewModel != null) {
+        com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
+            viewModel = viewModel,
+            onDismissRequest = { showReferenceSelector = false },
+            onConfirm = { items ->
+                showReferenceSelector = false
+                selectedReferences = (selectedReferences + items).distinctBy { it.id }
+            }
+        )
     }
 }
 

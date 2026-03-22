@@ -31,6 +31,9 @@ fun MarkdownEditor(
     onBackClick: () -> Unit,
     onSave: (String) -> Unit,
     initialPreviewMode: Boolean = false,
+    onShowReferenceSelector: (() -> Unit)? = null,
+    referenceToInsert: String? = null,
+    onReferenceInserted: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var textFieldValue by remember {
@@ -38,6 +41,22 @@ fun MarkdownEditor(
     }
     var isPreviewMode by remember { mutableStateOf(initialPreviewMode) }
     var showDiscardConfirm by remember { mutableStateOf(false) }
+
+    LaunchedEffect(referenceToInsert, textFieldValue.selection) {
+        if (referenceToInsert != null) {
+            val txt = textFieldValue.text
+            val cursor = textFieldValue.selection.start
+            
+            val hasBracket = cursor >= 2 && txt.substring(cursor - 2, cursor) == "[["
+            val hasAt = cursor >= 1 && txt.substring(cursor - 1, cursor) == "@"
+            
+            val replaceLen = if (hasBracket) 2 else if (hasAt) 1 else 0
+            val newText = txt.substring(0, cursor - replaceLen) + referenceToInsert + txt.substring(cursor)
+            
+            textFieldValue = TextFieldValue(newText, TextRange(cursor - replaceLen + referenceToInsert.length))
+            onReferenceInserted()
+        }
+    }
 
     Column(
         modifier = modifier
@@ -115,7 +134,20 @@ fun MarkdownEditor(
                 Box(modifier = Modifier.weight(1f)) {
                     BasicTextField(
                         value = textFieldValue,
-                        onValueChange = { textFieldValue = it },
+                        onValueChange = { newValue -> 
+                            val oldTxt = textFieldValue.text
+                            val newTxt = newValue.text
+                            val cursor = newValue.selection.start
+                            
+                            if (newTxt.length > oldTxt.length) {
+                                if (cursor >= 2 && newTxt.substring(cursor-2, cursor) == "[[") {
+                                    onShowReferenceSelector?.invoke()
+                                } else if (cursor >= 1 && newTxt.substring(cursor-1, cursor) == "@") {
+                                    onShowReferenceSelector?.invoke()
+                                }
+                            }
+                            textFieldValue = newValue 
+                        },
                         textStyle = MaterialTheme.typography.bodyLarge.copy(
                             color = GrayMatterColors.TextPrimary,
                             lineHeight = 28.sp
@@ -154,6 +186,17 @@ fun MarkdownEditor(
                         MarkdownToolbarAction(Icons.Default.FormatQuote) { textFieldValue = toggleLineStart(textFieldValue, "> ") }
                         MarkdownToolbarAction(Icons.Default.Code) { textFieldValue = wrapSelection(textFieldValue, "`") }
                         MarkdownToolbarAction(Icons.Default.Link) { textFieldValue = wrapSelection(textFieldValue, "[", "](url)") }
+                        if (onShowReferenceSelector != null) {
+                            MarkdownToolbarAction(Icons.Default.AddLink) {
+                                val txt = textFieldValue.text
+                                val cursor = textFieldValue.selection.start
+                                textFieldValue = TextFieldValue(
+                                    txt.substring(0, cursor) + "[[" + txt.substring(cursor),
+                                    TextRange(cursor + 2)
+                                )
+                                onShowReferenceSelector()
+                            }
+                        }
                     }
                 }
             }

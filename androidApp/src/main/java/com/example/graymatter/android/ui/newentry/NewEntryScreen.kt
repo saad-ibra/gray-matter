@@ -11,6 +11,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,12 +24,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.components.MarkdownEditor
 import com.example.graymatter.domain.CustomTemplate
@@ -42,9 +43,10 @@ import java.util.Locale
 @Composable
 fun NewEntryScreen(
     onBackClick: () -> Unit,
-    onSaveClick: (type: EntryType, value: String, opinion: String, confidence: Int, title: String?, description: String?, originalFileName: String?) -> Unit,
+    onSaveClick: (type: EntryType, value: String, opinion: String, confidence: Int, title: String?, description: String?, originalFileName: String?, selectedLinks: List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
     templates: List<CustomTemplate> = emptyList(),
     isSaving: Boolean = false,
+    referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableIntStateOf(0) } // 0 = Link, 1 = File, 2 = Note
@@ -53,7 +55,8 @@ fun NewEntryScreen(
     var opinionInput by remember { mutableStateOf("") }
     var noteContent by remember { mutableStateOf("") }
     var descriptionInput by remember { mutableStateOf("") }
-    var confidence by remember { mutableFloatStateOf(0.75f) }
+    var confidence by remember { mutableFloatStateOf(0.7f) }
+
     var selectedFileName by remember { mutableStateOf<String?>(null) }
     var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
     var showDescription by remember { mutableStateOf(false) }
@@ -62,6 +65,11 @@ fun NewEntryScreen(
     // Custom Template State
     var selectedTemplate by remember { mutableStateOf<CustomTemplate?>(null) }
     var templateFieldValues by remember { mutableStateOf(mapOf<String, String>()) }
+
+    // Reference Selector State
+    var showReferenceSelector by remember { mutableStateOf(false) }
+    var selectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
+    var referenceToInsert by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -113,8 +121,33 @@ fun NewEntryScreen(
             onSave = { content ->
                 noteContent = content
                 isNoteEditorOpen = false
-            }
+            },
+            onShowReferenceSelector = { showReferenceSelector = true },
+            referenceToInsert = referenceToInsert,
+            onReferenceInserted = { referenceToInsert = null }
         )
+
+        if (showReferenceSelector && referenceSelectorViewModel != null) {
+            com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
+                viewModel = referenceSelectorViewModel,
+                onDismissRequest = { showReferenceSelector = false },
+                onConfirm = { items ->
+                    showReferenceSelector = false
+                    if (items.isNotEmpty()) {
+                        val item = items.first()
+                        val text = when (item) {
+                            is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> "Topic: ${item.name}"
+                            is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> "Resource: ${item.title}"
+                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> "Annotation: ${item.snippet.take(15)}..."
+                        }
+                        referenceToInsert = "[[$text]]"
+                        // Also add to the global selected references for this entry
+                        selectedReferences = (selectedReferences + items).distinctBy { it.id }
+                    }
+                }
+            )
+        }
+
         return
     }
     
@@ -150,6 +183,7 @@ fun NewEntryScreen(
                 onAddNoteContent = { isNoteEditorOpen = true },
                 hasNoteContent = noteContent.isNotBlank()
             )
+
 
             // Optional Description Dropdown
             Column {
@@ -229,8 +263,10 @@ fun NewEntryScreen(
                     selectedTemplate = selectedTemplate,
                     onTemplateSelect = { 
                         selectedTemplate = it
-                        if (it != null) {
-                            templateFieldValues = it.headings.associateWith { "" }
+                        it?.let { template ->
+                            templateFieldValues = template.headings.associateWith { "" }
+                            // template.relatedTo ignored
+
                         }
                     },
                     templateFieldValues = templateFieldValues,
@@ -238,6 +274,38 @@ fun NewEntryScreen(
                         templateFieldValues = templateFieldValues.toMutableMap().apply { put(heading, value) }
                     }
                 )
+
+                // Knowledge Connections Section
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text("KNOWLEDGE LINKS", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterColors.TextSecondary)
+                        TextButton(onClick = { showReferenceSelector = true }, contentPadding = PaddingValues(0.dp)) {
+                            Icon(Icons.Default.AddLink, null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Add connection")
+                        }
+                    }
+                    if (selectedReferences.isNotEmpty()) {
+                        Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                            selectedReferences.forEach { ref ->
+                                val text = when (ref) {
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                                }
+                                InputChip(
+                                    selected = true,
+                                    onClick = { selectedReferences = selectedReferences.filter { it.id != ref.id } },
+                                    label = { Text(text, maxLines = 1) },
+                                    trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                            }
+                        }
+                    } else {
+                        Text("No specific links added.", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
 
                 // Confidence Level Section
                 ConfidenceLevelSection(
@@ -281,12 +349,12 @@ fun NewEntryScreen(
                 }
 
                 when (selectedTab) {
-                    0 -> onSaveClick(EntryType.LINK, urlInput, finalOpinion, (confidence * 100).toInt(), finalTitle, finalDesc, null)
+                    0 -> onSaveClick(EntryType.LINK, urlInput, finalOpinion, (confidence * 100).toInt(), finalTitle, finalDesc, null, selectedReferences)
                     1 -> selectedFileUri?.let { uri ->
-                        onSaveClick(EntryType.FILE, uri.toString(), finalOpinion, (confidence * 100).toInt(), finalTitle, finalDesc, selectedFileName)
+                        onSaveClick(EntryType.FILE, uri.toString(), finalOpinion, (confidence * 100).toInt(), finalTitle, finalDesc, selectedFileName, selectedReferences)
                     }
                     2 -> {
-                        onSaveClick(EntryType.NOTE, noteContent, finalOpinion, (confidence * 100).toInt(), titleInput, finalDesc, null)
+                        onSaveClick(EntryType.NOTE, noteContent, finalOpinion, (confidence * 100).toInt(), finalTitle, finalDesc, null, selectedReferences)
                     }
                 }
             },
@@ -297,6 +365,17 @@ fun NewEntryScreen(
                 .navigationBarsPadding()
                 .imePadding()
                 .padding(16.dp)
+        )
+    }
+
+    if (showReferenceSelector && referenceSelectorViewModel != null) {
+        com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
+            viewModel = referenceSelectorViewModel,
+            onDismissRequest = { showReferenceSelector = false },
+            onConfirm = { items ->
+                showReferenceSelector = false
+                selectedReferences = (selectedReferences + items).distinctBy { it.id }
+            }
         )
     }
 }
