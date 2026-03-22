@@ -6,8 +6,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -252,9 +256,13 @@ private fun TemplateEditorDialog(
 ) {
     var name by remember { mutableStateOf(template.name) }
     var headings by remember { mutableStateOf(template.headings) }
+    val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState,
         containerColor = GrayMatterColors.SurfaceDark,
         dragHandle = { BottomSheetDefaults.DragHandle(color = GrayMatterColors.Neutral700) }
     ) {
@@ -263,6 +271,8 @@ private fun TemplateEditorDialog(
                 .fillMaxWidth()
                 .padding(24.dp)
                 .navigationBarsPadding()
+                .imePadding()
+                .verticalScroll(scrollState)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -342,7 +352,13 @@ private fun TemplateEditorDialog(
             }
 
             TextButton(
-                onClick = { headings = headings + "" },
+                onClick = {
+                    headings = headings + ""
+                    scope.launch {
+                        delay(100)
+                        scrollState.animateScrollTo(scrollState.maxValue)
+                    }
+                },
                 modifier = Modifier.padding(top = 8.dp)
             ) {
                 Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
