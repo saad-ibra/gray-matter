@@ -91,15 +91,25 @@ class ForceSimulator(
                 // Expand repulsion between topic nodes to separate clusters
                 var currentRepulsion = repulsionStrength
                 
+                val isTopicVsResource = (n1.type == NodeType.TOPIC && n2.type == NodeType.RESOURCE) || 
+                                       (n1.type == NodeType.RESOURCE && n2.type == NodeType.TOPIC)
+
                 // Stronger repulsion for Topics
                 if (n1.type == NodeType.TOPIC && n2.type == NodeType.TOPIC) {
                     currentRepulsion *= 25f
+                } else if (isTopicVsResource) {
+                    // Increase repulsion to help maintain the 2x distance between octahedrons and pyramids
+                    currentRepulsion *= 8f
                 } else if (n1.type != NodeType.TOPIC && n1.type != NodeType.RESOURCE) {
                     currentRepulsion *= 4f
                 }
                 
                 // Emergency collision padding (decreased slightly so clusters can pack efficiently)
-                val minDistance = n1.radius + n2.radius + 45f 
+                var minDistance = n1.radius + n2.radius + 45f 
+                if (isTopicVsResource) {
+                    minDistance *= 2f // Double padding for these specific types
+                }
+
                 if (distSq < minDistance * minDistance) {
                     currentRepulsion *= 4f // Softened repel to prevent dancing
                 }
@@ -139,7 +149,12 @@ class ForceSimulator(
             val dz = n2.z - n1.z
             val dist = max(sqrt(dx * dx + dy * dy + dz * dz), 1f)
             
-            val displacement = dist - springLength
+            val isTopicVsResource = (n1.type == NodeType.TOPIC && n2.type == NodeType.RESOURCE) || 
+                                   (n1.type == NodeType.RESOURCE && n2.type == NodeType.TOPIC)
+            
+            val effectiveSpringLength = if (isTopicVsResource) springLength * 2f else springLength
+            
+            val displacement = dist - effectiveSpringLength
             val force = displacement * springStrength * edge.weight
             
             val nx = dx / dist
