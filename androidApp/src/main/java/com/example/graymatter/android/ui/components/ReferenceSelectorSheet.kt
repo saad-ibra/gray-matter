@@ -36,7 +36,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -54,20 +57,33 @@ fun ReferenceSelectorSheet(
     onDismissRequest: () -> Unit,
     onConfirm: (List<ReferenceSelectorItem>) -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val uiState by viewModel.uiState.collectAsState()
 
-    ModalBottomSheet(
+    Dialog(
         onDismissRequest = onDismissRequest,
-        sheetState = sheetState
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.85f)
-                .padding(horizontal = 16.dp)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
         ) {
-            Text(
+            // Invisible touch scrim for dismissal
+            Box(modifier = Modifier.fillMaxSize().clickable(onClick = onDismissRequest))
+            
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = false, onClick = {}),
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.85f)
+                        .padding(horizontal = 16.dp, vertical = 16.dp)
+                ) {
+                    Text(
                 text = "Select References",
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -178,6 +194,8 @@ fun ReferenceSelectorSheet(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Confirm Selection (${uiState.selectedItems.size})")
             }
+            }
         }
     }
+}
 }

@@ -6,7 +6,9 @@ import com.example.graymatter.data.TopicRepository
 import com.example.graymatter.domain.Opinion
 import com.example.graymatter.domain.ReferenceSelectorItem
 import com.example.graymatter.domain.Resource
+import com.example.graymatter.domain.Item
 import com.example.graymatter.domain.Topic
+import com.example.graymatter.data.ItemRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
@@ -14,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -29,6 +32,7 @@ class ReferenceSelectorViewModel(
     private val topicRepository: TopicRepository,
     private val resourceRepository: ResourceRepository,
     private val opinionRepository: OpinionRepository,
+    private val itemRepository: ItemRepository,
     coroutineScope: CoroutineScope?,
     private val defaultDispatcher: CoroutineDispatcher
 ) {
@@ -74,12 +78,13 @@ class ReferenceSelectorViewModel(
         if (isExpanded && item is ReferenceSelectorItem.ResourceItem && !expandedAnnotations.containsKey(item.id)) {
             // Lazily load annotations for this resource
             viewModelScope.launch(defaultDispatcher) {
-                // Assuming items mapping: Opinions relate to Items, which relate to Resources
-                // Note: The UI requested annotations/bookmarks lazily on expand.
-                // We'll search opinions by itemId. However, we need to map resource to item.
-                // For simplicity in this demo, if the OpinionRepository requires an Item, we'd need ItemRepository.
-                // This is a placeholder since the exact Opinion <-> Resource linkage in UI is via Item.
-                // Let's just rebuild items for now.
+                val dbItem = itemRepository.getItemByResourceId(item.id)
+                if (dbItem != null) {
+                    val opinions = opinionRepository.getOpinionsByItemId(dbItem.id).first()
+                    expandedAnnotations[item.id] = opinions
+                } else {
+                    expandedAnnotations[item.id] = emptyList()
+                }
                 rebuildItems()
             }
         } else {

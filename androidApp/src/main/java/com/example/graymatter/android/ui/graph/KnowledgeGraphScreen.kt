@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
@@ -192,15 +193,25 @@ fun KnowledgeGraphScreen(
                     }
 
                     if (srcVisible && tgtVisible) {
-                        val start = Offset(edge.source.x * scale + offset.x, edge.source.y * scale + offset.y)
-                        val end = Offset(edge.target.x * scale + offset.x, edge.target.y * scale + offset.y)
+                        // Determine Z-depth factor for Edges
+                        val midZ = (edge.source.z + edge.target.z) / 2f
+                        val zScaleSrc = (edge.source.z + 400f).coerceIn(100f, 800f) / 400f
+                        val zScaleTgt = (edge.target.z + 400f).coerceIn(100f, 800f) / 400f
+
+                        val start = Offset(
+                            (edge.source.x - simulator.width / 2f) * scale * zScaleSrc + simulator.width / 2f * scale + offset.x,
+                            (edge.source.y - simulator.height / 2f) * scale * zScaleSrc + simulator.height / 2f * scale + offset.y
+                        )
+                        val end = Offset(
+                            (edge.target.x - simulator.width / 2f) * scale * zScaleTgt + simulator.width / 2f * scale + offset.x,
+                            (edge.target.y - simulator.height / 2f) * scale * zScaleTgt + simulator.height / 2f * scale + offset.y
+                        )
                         
                         // Bezier curve
                         val path = Path().apply {
                             moveTo(start.x, start.y)
                             val midX = (start.x + end.x) / 2
                             val midY = (start.y + end.y) / 2
-                            // Control points
                             val cp1x = start.x
                             val cp1y = midY
                             val cp2x = end.x
@@ -210,24 +221,29 @@ fun KnowledgeGraphScreen(
                         
                         val isHighlighted = selectedNode == edge.source || selectedNode == edge.target
                         
-                        // Explicit connections end with "_ref", visually differentiate with PathEffect
+                        // Z-based opacity (farther = fainter)
+                        val baseAlpha = (midZ + 400f).coerceIn(100f, 800f) / 800f
+                        val opacity = if (isHighlighted) 1.0f else (baseAlpha * 0.7f).coerceIn(0.1f, 0.9f)
+                        
                         val isExplicit = edge.id.endsWith("_ref")
                         val pathStyle = Stroke(
-                            width = if (isHighlighted) 4.5f * scale else 3f * scale,
+                            width = if (isHighlighted) 4.5f * scale else 2.5f * scale,
                             pathEffect = if (isExplicit) PathEffect.dashPathEffect(floatArrayOf(15f * scale, 10f * scale), 0f) else null
                         )
                         
-                        // Fix for faint lines: Increase alpha and stroke width
                         drawPath(
                             path = path,
-                            color = if (isHighlighted) GrayMatterColors.Primary.copy(alpha = 1.0f) else GrayMatterColors.Neutral700.copy(alpha = 0.8f),
+                            color = if (isHighlighted) GrayMatterColors.Primary else GrayMatterColors.Neutral700.copy(alpha = opacity),
                             style = pathStyle
                         )
                     }
                 }
 
+                // Sort nodes by Z-axis to draw back-to-front (true 3D layering)
+                val sortedNodes = simulator.nodes.sortedBy { it.z }
+
                 // Draw Nodes
-                simulator.nodes.forEach { node ->
+                sortedNodes.forEach { node ->
                     val isVisible = when (node.type) {
                         NodeType.TOPIC -> showTopics
                         NodeType.RESOURCE -> showResources
@@ -241,8 +257,8 @@ fun KnowledgeGraphScreen(
 
                     if (isVisible) {
                         val nodeColor = when (node.type) {
-                            NodeType.TOPIC -> Color.Black
-                            NodeType.RESOURCE -> Color.Gray
+                            NodeType.TOPIC -> Color.White
+                            NodeType.RESOURCE -> Color.LightGray
                             NodeType.ANNOTATION -> GrayMatterColors.Gamboge
                             NodeType.BOOKMARK -> GrayMatterColors.Jonquil
                             NodeType.TEMPLATE -> GrayMatterColors.CustomizedAccent
@@ -250,30 +266,58 @@ fun KnowledgeGraphScreen(
                             NodeType.DICTIONARY -> Color(0xFFC6280B)
                             NodeType.OPINION -> GrayMatterColors.Citrine
                         }
+                        // 3D Perspective Scale & Position
+                        val zScale = (node.z + 400f).coerceIn(100f, 800f) / 400f // 0.25x to 2.0x based on depth
                         
-                        val screenCenter = Offset(node.x * scale + offset.x, node.y * scale + offset.y)
-                        val scaledRadius = node.radius * scale
+                        val screenCenter = Offset(
+                            (node.x - simulator.width / 2f) * scale * zScale + simulator.width / 2f * scale + offset.x,
+                            (node.y - simulator.height / 2f) * scale * zScale + simulator.height / 2f * scale + offset.y
+                        )
+                        val scaledRadius = node.radius * scale * zScale
                         
                         val isSelected = selectedNode == node
 
                         if (isSelected) {
                             drawCircle(
                                 color = nodeColor.copy(alpha = 0.4f),
-                                radius = scaledRadius + 15f * scale,
+                                radius = scaledRadius + 15f * scale * zScale,
                                 center = screenCenter
                             )
                         }
 
-                        // Draw Circle Base for all nodes (with a white border for visibility if it's black)
+                        // Draw 3D Sphere using Radial Gradient Specular Highlights
+                        val lightCenter = Offset(screenCenter.x - scaledRadius * 0.3f, screenCenter.y - scaledRadius * 0.3f)
+                        val zDarken = 1f - ((node.z + 200f).coerceIn(0f, 400f) / 600f) // Darken nodes further back
+                        
+                        val highlightColor = nodeColor.copy(alpha = 1f)
+                        val coreColor = nodeColor.copy(
+                            red = nodeColor.red * 0.7f * zDarken,
+                            green = nodeColor.green * 0.7f * zDarken,
+                            blue = nodeColor.blue * 0.7f * zDarken
+                        )
+                        val shadowColor = nodeColor.copy(
+                            red = nodeColor.red * 0.3f * zDarken,
+                            green = nodeColor.green * 0.3f * zDarken,
+                            blue = nodeColor.blue * 0.3f * zDarken
+                        )
+
+                        val sphereBrush = Brush.radialGradient(
+                            colors = listOf(highlightColor, coreColor, shadowColor),
+                            center = lightCenter,
+                            radius = scaledRadius * 1.5f
+                        )
+
+                        // Outer ring for topics
                         if (node.type == NodeType.TOPIC) {
                             drawCircle(
-                                color = Color.White,
-                                radius = scaledRadius + 1f * scale,
+                                color = Color.LightGray.copy(alpha = 0.5f),
+                                radius = scaledRadius + 2f * scale * zScale,
                                 center = screenCenter
                             )
                         }
+                        
                         drawCircle(
-                            color = nodeColor,
+                            brush = sphereBrush,
                             radius = scaledRadius,
                             center = screenCenter
                         )
@@ -289,23 +333,26 @@ fun KnowledgeGraphScreen(
                             else -> opinionIcon
                         }
                         
-                        val iconSize = scaledRadius * 1.5f
+                        // Capped at 1.0f to fit firmly inside the sphere with no glitchy overlapping borders
+                        val iconSize = scaledRadius * 1.0f
                         translate(left = screenCenter.x - iconSize / 2f, top = screenCenter.y - iconSize / 2f) {
                             with(painter) {
                                 draw(
                                     size = androidx.compose.ui.geometry.Size(iconSize, iconSize),
-                                    colorFilter = ColorFilter.tint(if (node.type == NodeType.TOPIC) Color.White else GrayMatterColors.BackgroundDark)
+                                    colorFilter = ColorFilter.tint(if (node.type == NodeType.TOPIC) Color.Black else GrayMatterColors.BackgroundDark.copy(alpha=0.8f))
                                 )
                             }
                         }
 
-                        // Draw Label
-                        if (scale > 0.5f) {
+                        // Draw Label Base With 10 Char Truncation
+                        if (scale * zScale > 0.4f) {
+                            val displayText = if (node.label.length > 10) node.label.take(10) + "..." else node.label
+                            
                             val textLayoutResult = textMeasurer.measure(
-                                text = node.label,
+                                text = displayText,
                                 style = TextStyle(
-                                    color = Color.White,
-                                    fontSize = (9f * scale).coerceIn(6f, 16f).sp, // Scaled down for precise futuristic look relative to larger nodes
+                                    color = Color.White.copy(alpha = if (node.z < -100f) 0.5f else 1.0f),
+                                    fontSize = (9f * scale * zScale).coerceIn(4f, 18f).sp, // Perspective sized
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                 )
                             )
@@ -314,6 +361,7 @@ fun KnowledgeGraphScreen(
                             
                             drawText(
                                 textLayoutResult = textLayoutResult,
+                                color = Color.White,
                                 topLeft = Offset(textOffsetX, textOffsetY)
                             )
                         }
@@ -382,11 +430,11 @@ fun KnowledgeGraphScreen(
                                     "Dict" -> showDictionary = !showDictionary
                                 }
                             },
-                            label = { Text(name, color = if (name == "Topics" && isSelected) Color.White else Color.Unspecified) },
+                            label = { Text(name, color = if ((name == "Topics" || name == "Resources") && isSelected) Color.Black else Color.Unspecified) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = when(name) {
-                                    "Topics" -> Color.Black
-                                    "Resources" -> Color.Gray.copy(alpha = 0.5f)
+                                    "Topics" -> Color.White
+                                    "Resources" -> Color.LightGray
                                     "Annotations" -> GrayMatterColors.Gamboge.copy(alpha = 0.3f)
                                     "Bookmarks" -> GrayMatterColors.Jonquil.copy(alpha = 0.3f)
                                     "Templates" -> GrayMatterColors.CustomizedAccent.copy(alpha = 0.3f)
@@ -394,8 +442,8 @@ fun KnowledgeGraphScreen(
                                     else -> GrayMatterColors.Citrine.copy(alpha = 0.3f)
                                 },
                                 selectedLabelColor = when(name) {
-                                    "Topics" -> Color.White
-                                    "Resources" -> Color.LightGray
+                                    "Topics" -> Color.Black
+                                    "Resources" -> Color.Black
                                     "Annotations" -> GrayMatterColors.Gamboge
                                     "Bookmarks" -> GrayMatterColors.Jonquil
                                     "Templates" -> GrayMatterColors.CustomizedAccent

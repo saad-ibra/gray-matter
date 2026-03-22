@@ -14,8 +14,10 @@ data class GraphNode(
     val label: String,
     var x: Float = 0f,
     var y: Float = 0f,
+    var z: Float = 0f,
     var vx: Float = 0f,
     var vy: Float = 0f,
+    var vz: Float = 0f,
     var radius: Float = 20f,
     var isPinned: Boolean = false // e.g. when being dragged
 ) {
@@ -38,11 +40,11 @@ class ForceSimulator(
     val nodes: MutableList<GraphNode> = mutableListOf(),
     val edges: MutableList<GraphEdge> = mutableListOf()
 ) {
-    var repulsionStrength = 3500f
-    var springStrength = 0.15f // Increased to pull clusters tight
-    var springLength = 90f // Decreased to keep children close to parents
+    var repulsionStrength = 2000f
+    var springStrength = 0.08f // Softened to reduce harsh jiggling
+    var springLength = 100f 
     var centerAttraction = 0.02f
-    var damping = 0.85f
+    var damping = 0.8f // Increased friction to stabilize nodes faster
     
     // Bounds for initial random placement
     var width = 1000f
@@ -54,9 +56,10 @@ class ForceSimulator(
     }
 
     fun addNode(node: GraphNode) {
-        if (node.x == 0f && node.y == 0f) {
+        if (node.x == 0f && node.y == 0f && node.z == 0f) {
             node.x = (Math.random() * width).toFloat()
             node.y = (Math.random() * height).toFloat()
+            node.z = (Math.random() * 400f - 200f).toFloat() // Spawn in 3D volume
         }
         nodes.add(node)
     }
@@ -77,7 +80,8 @@ class ForceSimulator(
                 val n2 = nodes[j]
                 val dx = n2.x - n1.x
                 val dy = n2.y - n1.y
-                var distSq = dx * dx * 0.4f + dy * dy * 1.2f // Elliptical distance: repels horizontally more to prevent text overlap
+                val dz = n2.z - n1.z
+                var distSq = dx * dx * 0.4f + dy * dy * 1.2f + dz * dz * 0.8f // Elliptical 3D distance
                 
                 // Prevent division by zero and extreme forces
                 if (distSq < 100f) {
@@ -89,34 +93,38 @@ class ForceSimulator(
                 
                 // Stronger repulsion for Topics
                 if (n1.type == NodeType.TOPIC && n2.type == NodeType.TOPIC) {
-                    currentRepulsion *= 35f
+                    currentRepulsion *= 25f
                 } else if (n1.type != NodeType.TOPIC && n1.type != NodeType.RESOURCE) {
-                    currentRepulsion *= 5f
+                    currentRepulsion *= 4f
                 }
                 
-                // Emergency collision padding (increased to accommodate larger radii and text)
-                val minDistance = n1.radius + n2.radius + 60f 
+                // Emergency collision padding (decreased slightly so clusters can pack efficiently)
+                val minDistance = n1.radius + n2.radius + 45f 
                 if (distSq < minDistance * minDistance) {
-                    currentRepulsion *= 8f
+                    currentRepulsion *= 4f // Softened repel to prevent dancing
                 }
 
                 val force = currentRepulsion / distSq
-                val dist = sqrt(dx * dx + dy * dy + 0.1f) // True distance for vector normalization
+                val dist = sqrt(dx * dx + dy * dy + dz * dz + 0.1f) // True 3D distance for vector normalization
                 
                 // Direction vector normalized
                 val nx = dx / dist
                 val ny = dy / dist
+                val nz = dz / dist
                 
                 val fx = nx * force
                 val fy = ny * force
+                val fz = nz * force
                 
                 if (!n1.isPinned) {
                     n1.vx -= fx
                     n1.vy -= fy
+                    n1.vz -= fz
                 }
                 if (!n2.isPinned) {
                     n2.vx += fx
                     n2.vy += fy
+                    n2.vz += fz
                 }
             }
         }
@@ -128,24 +136,29 @@ class ForceSimulator(
             
             val dx = n2.x - n1.x
             val dy = n2.y - n1.y
-            val dist = max(sqrt(dx * dx + dy * dy), 1f)
+            val dz = n2.z - n1.z
+            val dist = max(sqrt(dx * dx + dy * dy + dz * dz), 1f)
             
             val displacement = dist - springLength
             val force = displacement * springStrength * edge.weight
             
             val nx = dx / dist
             val ny = dy / dist
+            val nz = dz / dist
             
             val fx = nx * force
             val fy = ny * force
+            val fz = nz * force
             
             if (!n1.isPinned) {
                 n1.vx += fx
                 n1.vy += fy
+                n1.vz += fz
             }
             if (!n2.isPinned) {
                 n2.vx -= fx
                 n2.vy -= fy
+                n2.vz -= fz
             }
         }
         
@@ -157,19 +170,20 @@ class ForceSimulator(
             
             // Gentle center attraction to keep things in view
             val dx = centerX - node.x
-            node.vx += dx * (centerAttraction * 0.3f)
+            val dz = 0f - node.z // Attract slightly to Z=0
+            node.vx += dx * (centerAttraction * 0.5f)
+            node.vz += dz * (centerAttraction * 0.5f)
             
-            // Cluster physics: Topics float up (buoyancy), children pull down (gravity)
-            // Combined with spring tension, this naturally forms tree-like clusters hanging from topics!
+            // Cluster physics: Topics settle natively at a higher bounded Y instead of infinitely drifting
             if (node.type == NodeType.TOPIC) {
-                // Buoyancy pulling cluster anchors to the top
-                node.vy -= 1.8f
+                val targetY = height * 0.15f
+                node.vy += (targetY - node.y) * 0.05f 
             } else if (node.type == NodeType.RESOURCE) {
                 // Mild gravity for resources so they sit under topics
-                node.vy += 0.8f
+                node.vy += 0.5f
             } else {
                 // Stronger gravity for leaf nodes (opinions, etc.) so they hang at the bottom of the cluster
-                node.vy += 1.2f
+                node.vy += 0.8f
             }
         }
         
@@ -178,14 +192,17 @@ class ForceSimulator(
             if (node.isPinned) {
                 node.vx = 0f
                 node.vy = 0f
+                node.vz = 0f
                 continue
             }
             
             node.x += node.vx
             node.y += node.vy
+            node.z += node.vz
             
             node.vx *= damping
             node.vy *= damping
+            node.vz *= damping
         }
     }
     

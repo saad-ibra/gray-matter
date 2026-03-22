@@ -112,8 +112,8 @@ class KnowledgeGraphViewModel(
                         type = nodeType,
                         label = displayLabel,
                         radius = when (nodeType) {
-                            NodeType.TOPIC -> 32f
-                            NodeType.RESOURCE -> 24f
+                            NodeType.TOPIC -> 44f
+                            NodeType.RESOURCE -> 30f
                             else -> 18f
                         }
                     )

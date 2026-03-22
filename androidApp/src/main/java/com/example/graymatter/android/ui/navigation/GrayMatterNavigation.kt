@@ -72,6 +72,7 @@ fun GrayMatterNavigation(
             topicRepository = appModule.topicRepository,
             resourceRepository = appModule.resourceRepository,
             opinionRepository = appModule.opinionRepository,
+            itemRepository = appModule.itemRepository,
             coroutineScope = null,
             defaultDispatcher = kotlinx.coroutines.Dispatchers.Default
         )
