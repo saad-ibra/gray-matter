@@ -273,21 +273,19 @@ fun KnowledgeGraphScreen(
                         // Z-based opacity (farther = fainter)
                         val midZ = (p1[2] + p2[2]) / 2f
                         val baseAlpha = (midZ + 400f).coerceIn(100f, 800f) / 800f
-                        val opacity = if (isHighlighted) 1.0f else (baseAlpha * 0.4f).coerceIn(0.1f, 0.9f)
+                        val opacity = if (isHighlighted) 1.0f else (baseAlpha * 0.7f).coerceIn(0.25f, 0.95f)
                         
                         val isExplicit = edge.id.endsWith("_ref")
-                        val pathStyle = Stroke(
-                            width = if (isHighlighted) 3.5f * scale else 1.5f * scale,
-                            pathEffect = if (isExplicit) PathEffect.dashPathEffect(floatArrayOf(15f * scale, 10f * scale), 0f) else null
-                        )
+                        // Animate dashed lines: dash phase moves towards the referencing (source) node
+                        val dashPhase = if (isExplicit) (ticks * 2f) else 0f
                         
                         // Draw clean 3D straight line
                         drawLine(
                             start = start,
                             end = end,
-                            color = if (isHighlighted) GrayMatterColors.Primary else Color(0xFF1E88E5).copy(alpha = opacity),
-                            strokeWidth = if (isHighlighted) 3.5f * scale else 1.5f * scale,
-                            pathEffect = if (isExplicit) PathEffect.dashPathEffect(floatArrayOf(15f * scale, 10f * scale), 0f) else null
+                            color = if (isHighlighted) GrayMatterColors.Primary else Color(0xFF42A5F5).copy(alpha = opacity),
+                            strokeWidth = if (isHighlighted) 4.5f * scale else 2.2f * scale,
+                            pathEffect = if (isExplicit) PathEffect.dashPathEffect(floatArrayOf(20f * scale, 15f * scale), dashPhase) else null
                         )
                     }
                 }
@@ -386,7 +384,7 @@ fun KnowledgeGraphScreen(
                         }
 
                         if (node.type == NodeType.TOPIC) {
-                            val r = node.radius * 2.2f
+                            val r = node.radius * 1.7f
                             val phi = (1f + sqrt(5f)) / 2f
                             val v = r / sqrt(3f)
                             val a = v
