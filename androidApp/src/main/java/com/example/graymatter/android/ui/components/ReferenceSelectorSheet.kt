@@ -45,10 +45,27 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.domain.ReferenceSelectorItem
 import com.example.graymatter.viewmodel.ReferenceSelectorViewModel
+import com.example.graymatter.viewmodel.ReferenceTab
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FormatQuote
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.CheckboxDefaults
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -84,118 +101,219 @@ fun ReferenceSelectorSheet(
                         .padding(horizontal = 16.dp, vertical = 16.dp)
                 ) {
                     Text(
-                text = "Select References",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+                        text = "Select References",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
 
-            // Selected Chips (Horizontally Scrolling)
-            AnimatedVisibility(
-                visible = uiState.selectedItems.isNotEmpty(),
-                enter = expandVertically(),
-                exit = shrinkVertically()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(bottom = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    uiState.selectedItems.forEach { item ->
-                        val text = when (item) {
-                            is ReferenceSelectorItem.TopicItem -> item.name
-                            is ReferenceSelectorItem.ResourceItem -> item.title
-                            is ReferenceSelectorItem.DetailItem -> item.snippet
-                        }
-                        InputChip(
-                            selected = true,
-                            onClick = { viewModel.removeSelected(item) },
-                            label = { Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                            trailingIcon = {
-                                Icon(Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.size(16.dp))
-                            },
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                    }
-                }
-            }
-
-            // Search Bar
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = { viewModel.search(it) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                placeholder = { Text("Search topics, resources, annotations...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                singleLine = true
-            )
-
-            // Tree List
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                items(uiState.items, key = { it.id }) { item ->
-                    val paddingStart = (item.indentLevel * 20).dp
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .animateItemPlacement()
-                            .clickable { viewModel.toggleExpand(item) }
-                            .padding(start = paddingStart, top = 8.dp, bottom = 8.dp, end = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    // Selected Chips (Horizontally Scrolling)
+                    AnimatedVisibility(
+                        visible = uiState.selectedItems.isNotEmpty(),
+                        enter = expandVertically(),
+                        exit = shrinkVertically()
                     ) {
-                        Checkbox(
-                            checked = item.isChecked,
-                            onCheckedChange = { viewModel.toggleCheck(item) }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        
-                        Column(modifier = Modifier.weight(1f)) {
-                            when (item) {
-                                is ReferenceSelectorItem.TopicItem -> {
-                                    Text(item.name, style = MaterialTheme.typography.bodyLarge)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                                .padding(bottom = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            uiState.selectedItems.forEach { item ->
+                                val text = when (item) {
+                                    is ReferenceSelectorItem.TopicItem -> item.name
+                                    is ReferenceSelectorItem.ResourceItem -> item.title
+                                    is ReferenceSelectorItem.DetailItem -> item.snippet
                                 }
-                                is ReferenceSelectorItem.ResourceItem -> {
-                                    Text(item.title, style = MaterialTheme.typography.bodyMedium)
-                                    Text(item.type, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                is ReferenceSelectorItem.DetailItem -> {
-                                    Text(item.snippet, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                }
-                            }
-                        }
-
-                        if (item !is ReferenceSelectorItem.DetailItem) {
-                            IconButton(onClick = { viewModel.toggleExpand(item) }) {
-                                Icon(
-                                    imageVector = if (item.isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                    contentDescription = "Expand/Collapse"
+                                InputChip(
+                                    selected = true,
+                                    onClick = { viewModel.removeSelected(item) },
+                                    label = { Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                    trailingIcon = {
+                                        Icon(Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.size(16.dp))
+                                    },
+                                    modifier = Modifier.padding(end = 8.dp)
                                 )
                             }
                         }
                     }
-                }
-            }
 
-            // Confirm Button
-            Button(
-                onClick = { onConfirm(uiState.selectedItems) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                enabled = uiState.selectedItems.isNotEmpty()
-            ) {
-                Icon(Icons.Default.Check, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Confirm Selection (${uiState.selectedItems.size})")
-            }
+                    // Search Bar
+                    OutlinedTextField(
+                        value = uiState.searchQuery,
+                        onValueChange = { viewModel.search(it) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        placeholder = { Text("Search everything...", color = GrayMatterColors.Neutral500) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = GrayMatterColors.Primary) },
+                        trailingIcon = if (uiState.searchQuery.isNotEmpty()) {
+                            {
+                                IconButton(onClick = { viewModel.search("") }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Clear", tint = GrayMatterColors.Neutral500)
+                                }
+                            }
+                        } else null,
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = GrayMatterColors.Primary,
+                            unfocusedBorderColor = GrayMatterColors.Neutral700,
+                            focusedContainerColor = GrayMatterColors.SurfaceDark,
+                            unfocusedContainerColor = GrayMatterColors.SurfaceDark
+                        )
+                    )
+
+                    // Tabs
+                    TabRow(
+                        selectedTabIndex = uiState.activeTab.ordinal,
+                        containerColor = Color.Transparent,
+                        contentColor = GrayMatterColors.Primary,
+                        indicator = { tabPositions ->
+                            TabRowDefaults.SecondaryIndicator(
+                                Modifier.tabIndicatorOffset(tabPositions[uiState.activeTab.ordinal]),
+                                color = GrayMatterColors.Primary
+                            )
+                        },
+                        divider = {},
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    ) {
+                        ReferenceTab.values().forEach { tab ->
+                            Tab(
+                                selected = uiState.activeTab == tab,
+                                onClick = { viewModel.setTab(tab) },
+                                text = { 
+                                    Text(
+                                        text = tab.name.lowercase().capitalize(),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = if (uiState.activeTab == tab) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+                            )
+                        }
+                    }
+
+                    // Tree/Search List
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    ) {
+                        items(uiState.items, key = { it.id }) { item ->
+                            val paddingStart = (item.indentLevel * 16).dp
+                            val isSearch = uiState.searchQuery.isNotEmpty()
+                            
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .animateItemPlacement()
+                                    .clickable { 
+                                        if (item is ReferenceSelectorItem.DetailItem) {
+                                            viewModel.toggleCheck(item)
+                                        } else {
+                                            viewModel.toggleExpand(item)
+                                        }
+                                    }
+                                    .padding(start = paddingStart, top = 4.dp, bottom = 4.dp, end = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = item.isChecked,
+                                    onCheckedChange = { viewModel.toggleCheck(item) },
+                                    colors = CheckboxDefaults.colors(checkedColor = GrayMatterColors.Primary)
+                                )
+                                
+                                val icon = when (item) {
+                                    is ReferenceSelectorItem.TopicItem -> Icons.Default.Folder
+                                    is ReferenceSelectorItem.ResourceItem -> {
+                                        if (item.type == "WEB_LINK") Icons.Default.Link else Icons.Default.Description
+                                    }
+                                    is ReferenceSelectorItem.DetailItem -> {
+                                        if (item.typeLabel == "Bookmark") Icons.Default.Bookmark else Icons.Default.FormatQuote
+                                    }
+                                }
+                                
+                                val iconColor = when (item) {
+                                    is ReferenceSelectorItem.TopicItem -> GrayMatterColors.Jonquil
+                                    is ReferenceSelectorItem.ResourceItem -> GrayMatterColors.Primary
+                                    is ReferenceSelectorItem.DetailItem -> GrayMatterColors.Citrine
+                                }
+
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp).padding(horizontal = 4.dp),
+                                    tint = iconColor.copy(alpha = 0.8f)
+                                )
+                                
+                                Spacer(modifier = Modifier.width(8.dp))
+                                
+                                Column(modifier = Modifier.weight(1f)) {
+                                    val titleText = when (item) {
+                                        is ReferenceSelectorItem.TopicItem -> item.name
+                                        is ReferenceSelectorItem.ResourceItem -> item.title
+                                        is ReferenceSelectorItem.DetailItem -> item.snippet
+                                    }
+                                    
+                                    Text(
+                                        text = titleText,
+                                        style = if (item is ReferenceSelectorItem.TopicItem) MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold) else MaterialTheme.typography.bodyMedium,
+                                        maxLines = if (item is ReferenceSelectorItem.DetailItem) 3 else 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = GrayMatterColors.TextPrimary
+                                    )
+                                    
+                                    if (isSearch && item.parentContext != null) {
+                                        Text(
+                                            text = "in ${item.parentContext}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = GrayMatterColors.Neutral500
+                                        )
+                                    } else if (item is ReferenceSelectorItem.ResourceItem) {
+                                        Text(
+                                            text = item.type.lowercase().capitalize(),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = GrayMatterColors.Neutral600
+                                        )
+                                    } else if (item is ReferenceSelectorItem.DetailItem) {
+                                        val label = item.typeLabel
+                                        if (label != null) {
+                                            Text(
+                                                text = label,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = GrayMatterColors.Citrine.copy(alpha = 0.7f)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                if (item !is ReferenceSelectorItem.DetailItem && !isSearch) {
+                                    IconButton(onClick = { viewModel.toggleExpand(item) }) {
+                                        Icon(
+                                            imageVector = if (item.isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            contentDescription = "Expand/Collapse",
+                                            tint = GrayMatterColors.Neutral500
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Confirm Button
+                    Button(
+                        onClick = { onConfirm(uiState.selectedItems) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        enabled = uiState.selectedItems.isNotEmpty()
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Confirm Selection (${uiState.selectedItems.size})")
+                    }
+                }
             }
         }
     }
-}
 }

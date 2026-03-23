@@ -164,7 +164,10 @@ fun GrayMatterNavigation(
                                 },
                                 onNavigateToGraph = {
                                     navController.navigate(NavigationDestination.KnowledgeGraph.route)
-                                }
+                                },
+                                onDeleteTopics = { ids -> viewModel.deleteTopics(ids) },
+                                onRenameTopic = { id, name -> viewModel.renameTopic(id, name) },
+                                onUpdateOrder = { ids -> viewModel.updateTopicOrder(ids) }
                             )
                         }
                         2 -> {
@@ -202,7 +205,7 @@ fun GrayMatterNavigation(
                 referenceSelectorViewModel = referenceSelectorViewModel,
                 onBackClick = { navController.popBackStack() },
                 onAddResource = {
-                    navController.navigate(NavigationDestination.NewEntry.route)
+                    navController.navigate(NavigationDestination.NewEntry.route + "?topicId=$topicId")
                 },
                 onResourceClick = { resource ->
                     val item = topicItems.find { it.resource.id == resource.id }?.item
@@ -219,6 +222,9 @@ fun GrayMatterNavigation(
                         navController.popBackStack()
                     }
                 },
+                onRenameTopic = { newName ->
+                    topicId?.let { viewModel.renameTopic(it, newName) }
+                },
                 onExport = {
                     topic?.let { t ->
                         val markdown = ExportService.exportTopicSummary(t, topicItems)
@@ -229,64 +235,29 @@ fun GrayMatterNavigation(
         }
 
         // New Entry Screen
-        composable(NavigationDestination.NewEntry.route) {
-            val isImporting by viewModel.isImporting.collectAsState()
-
+        composable(
+            route = NavigationDestination.NewEntry.route + "?topicId={topicId}",
+            arguments = listOf(
+                navArgument("topicId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val topicId = backStackEntry.arguments?.getString("topicId")
             NewEntryScreen(
-                onBackClick = { navController.popBackStack() },
-                isSaving = isImporting,
-                templates = templates,
+                viewModel = viewModel,
                 referenceSelectorViewModel = referenceSelectorViewModel,
-                onSaveClick = { type, value, opinion, confidence, title, description, originalFileName, selectedLinks ->
-                    coroutineScope.launch {
-                        val newItemId = when (type) {
-                            EntryType.LINK -> viewModel.createNewItem(
-                                url = value, 
-                                opinionText = opinion, 
-                                confidence = confidence, 
-                                title = title, 
-                                description = description,
-                                referenceLinks = selectedLinks
-                            )
-                            EntryType.FILE -> {
-                                // If title lacks extension, append original extension
-                                val finalTitle = if (title != null && originalFileName != null && !title.contains(".")) {
-                                    val ext = originalFileName.substringAfterLast('.', "")
-                                    if (ext.isNotEmpty()) "$title.$ext" else title
-                                } else title ?: originalFileName ?: "Unknown"
-
-                                viewModel.createNewItemFromFile(
-                                    context = context,
-                                    fileName = originalFileName ?: "Unknown",
-                                    uri = Uri.parse(value),
-                                    opinionText = opinion,
-                                    confidence = confidence,
-                                    title = finalTitle,
-                                    description = description,
-                                    referenceLinks = selectedLinks
-                                )
-                            }
-                            EntryType.NOTE -> {
-                                // Ensure .md extension for notes
-                                val finalTitle = if (title != null && !title.endsWith(".md")) "$title.md" else (title ?: "Untitled.md")
-                                viewModel.createNewNote(
-                                    context = context,
-                                    title = finalTitle,
-                                    content = value,
-                                    opinionText = opinion,
-                                    confidence = confidence,
-                                    description = description,
-                                    referenceLinks = selectedLinks
-                                )
-                            }
-                        }
-                        
-                        if (newItemId != null) {
-                            navController.navigate(NavigationDestination.AddToTopic.buildRoute(newItemId)) {
-                                popUpTo(NavigationDestination.Home.route) { saveState = true }
-                            }
-                        }
+                preSelectedTopicId = topicId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToHome = {
+                    navController.navigate(NavigationDestination.Home.route) {
+                        popUpTo(NavigationDestination.Home.route) { inclusive = true }
                     }
+                },
+                onNavigateToAddToTopic = { itemId ->
+                    navController.navigate("add_to_topic/$itemId")
                 }
             )
         }
@@ -383,17 +354,45 @@ fun GrayMatterNavigation(
 
             // Overlay the editor if we are editing a note
             if (editingResource != null) {
+                var showEditReferenceSelector by remember { mutableStateOf(false) }
+                var editReferenceToInsert by remember { mutableStateOf<String?>(null) }
+                var editSelectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
+
                 MarkdownEditor(
                     title = "Edit Note: ${editingResource?.title ?: "Untitled"}",
                     initialText = editingResource?.extractedText ?: "",
                     onBackClick = { editingResource = null },
                     onSave = { newText: String ->
                         editingResource?.let { res ->
-                            viewModel.updateResourceText(res.id, newText)
+                            viewModel.updateResourceText(res.id, newText, editSelectedReferences)
                         }
                         editingResource = null
-                    }
+                    },
+                    onShowReferenceSelector = { showEditReferenceSelector = true },
+                    referenceToInsert = editReferenceToInsert,
+                    onReferenceInserted = { editReferenceToInsert = null }
                 )
+                
+                if (showEditReferenceSelector) {
+                    com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
+                        viewModel = referenceSelectorViewModel,
+                        onDismissRequest = { showEditReferenceSelector = false },
+                        onConfirm = { items ->
+                            showEditReferenceSelector = false
+                            editSelectedReferences = (editSelectedReferences + items).distinctBy { it.id }
+                            
+                            if (items.isNotEmpty()) {
+                                val item = items.first()
+                                val refText = when (item) {
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> item.name
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> item.title
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> item.snippet
+                                }
+                                editReferenceToInsert = "[[$refText]]"
+                            }
+                        }
+                    )
+                }
             }
         }
 

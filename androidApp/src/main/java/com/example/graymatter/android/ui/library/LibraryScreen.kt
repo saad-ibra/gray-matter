@@ -1,51 +1,50 @@
 package com.example.graymatter.android.ui.library
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.theme.PlayfairDisplayFontFamily
 import com.example.graymatter.domain.Topic
+import kotlin.math.roundToInt
 
 /**
  * Library Screen matching the "Topics & Synthesis" design mockup.
  * Shows topics in a 2-column grid with Roman numeral icons.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LibraryScreen(
     topics: List<Topic>,
@@ -53,25 +52,40 @@ fun LibraryScreen(
     onNavigateToHome: () -> Unit,
     onCreateClick: () -> Unit,
     onNavigateToGraph: () -> Unit,
-    modifier: Modifier = Modifier,
-    paddingValues: PaddingValues = PaddingValues(0.dp)
+    onDeleteTopics: (List<String>) -> Unit,
+    onRenameTopic: (String, String) -> Unit,
+    onUpdateOrder: (List<String>) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
+    var selectedTopics by remember { mutableStateOf<Set<String>>(emptySet()) }
+    
+    val selectionMode = selectedTopics.isNotEmpty()
+    val haptic = LocalHapticFeedback.current
 
-    if (topics.isEmpty()) {
-        EmptyLibraryState(onCreateClick = onCreateClick)
-    } else {
+    // Revamped Drag and Drop state
+    var draggedTopicId by remember { mutableStateOf<String?>(null) }
+    var dragOffset by remember { mutableStateOf(Offset.Zero) }
+    var isOverTrash by remember { mutableStateOf(false) }
+    
+    // Layout tracking
+    val itemBoundsMap = remember { mutableStateMapOf<String, Rect>() }
+    var trashZoneBounds by remember { mutableStateOf(Rect.Zero) }
+
+    val baseTopics = if (searchQuery.isBlank()) topics else topics.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    var filteredTopics by remember(baseTopics) { mutableStateOf(baseTopics) }
+
+    Box(modifier = modifier
+        .fillMaxSize()
+        .background(GrayMatterColors.BackgroundDark)
+    ) {
         Column(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxSize()
-                .background(GrayMatterColors.BackgroundDark)
-                .padding(paddingValues)
                 .statusBarsPadding()
         ) {
-            // Header removed
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Search bar
             SearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
@@ -82,92 +96,199 @@ fun LibraryScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Recent Topics section
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Recent Topics",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = GrayMatterColors.TextPrimary
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Topics grid
-            val filteredTopics = if (searchQuery.isBlank()) {
-                topics
-            } else {
-                topics.filter { it.name.contains(searchQuery, ignoreCase = true) }
-            }
-
+            val gridState = rememberLazyGridState()
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+                state = gridState,
+                contentPadding = PaddingValues(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxSize()
             ) {
-                items(filteredTopics) { topic ->
+                items(
+                    items = filteredTopics,
+                    key = { it.id }
+                ) { topic ->
+                    val isSelected = selectedTopics.contains(topic.id)
+                    val isDragged = draggedTopicId == topic.id
+                    var hasMoved by remember { mutableStateOf(false) }
+                    
+                    Box(
+                        modifier = Modifier
+                            .animateItemPlacement()
+                            .onGloballyPositioned { coords ->
+                                if (!isDragged) {
+                                    itemBoundsMap[topic.id] = coords.boundsInRoot()
+                                }
+                            }
+                            .graphicsLayer { alpha = if (isDragged) 0f else 1f }
+                            .pointerInput(topic.id, selectionMode) {
+                                if (selectionMode) return@pointerInput
+                                
+                                detectDragGesturesAfterLongPress(
+                                    onDragStart = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        draggedTopicId = topic.id
+                                        dragOffset = Offset.Zero
+                                        isOverTrash = false
+                                        hasMoved = false
+                                    },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        dragOffset += dragAmount
+                                        hasMoved = true
+                                        
+                                        val initialTopLeft = itemBoundsMap[topic.id]?.topLeft ?: Offset.Zero
+                                        val touchPoint = initialTopLeft + change.position
+                                        isOverTrash = trashZoneBounds.contains(touchPoint)
+                                        
+                                        if (!isOverTrash) {
+                                            val targetTopicId = itemBoundsMap.entries.find { (id, rect) ->
+                                                id != draggedTopicId && rect.contains(touchPoint)
+                                            }?.key
+                                            
+                                            if (targetTopicId != null) {
+                                                val fromIndex = filteredTopics.indexOfFirst { it.id == draggedTopicId }
+                                                val toIndex = filteredTopics.indexOfFirst { it.id == targetTopicId }
+                                                if (fromIndex != -1 && toIndex != -1) {
+                                                    val newList = filteredTopics.toMutableList()
+                                                    val item = newList.removeAt(fromIndex)
+                                                    newList.add(toIndex, item)
+                                                    filteredTopics = newList
+                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                }
+                                            }
+                                        }
+                                    },
+                                    onDragEnd = {
+                                        if (isOverTrash && draggedTopicId != null) {
+                                            onDeleteTopics(listOf(draggedTopicId!!))
+                                        } else if (draggedTopicId != null) {
+                                            if (!hasMoved) {
+                                                selectedTopics = setOf(draggedTopicId!!)
+                                            } else {
+                                                onUpdateOrder(filteredTopics.map { it.id })
+                                            }
+                                        }
+                                        draggedTopicId = null
+                                        dragOffset = Offset.Zero
+                                        isOverTrash = false
+                                    },
+                                    onDragCancel = {
+                                        draggedTopicId = null
+                                        dragOffset = Offset.Zero
+                                        isOverTrash = false
+                                        filteredTopics = baseTopics
+                                    }
+                                )
+                            }
+                    ) {
+                        TopicCard(
+                            topic = topic,
+                            romanNumeral = toRomanNumeral(filteredTopics.indexOf(topic) + 1),
+                            isSelected = selectedTopics.contains(topic.id),
+                            onClick = {
+                                if (selectionMode) {
+                                    selectedTopics = if (selectedTopics.contains(topic.id)) {
+                                        selectedTopics - topic.id
+                                    } else {
+                                        selectedTopics + topic.id
+                                    }
+                                } else if (draggedTopicId == null) {
+                                    onTopicClick(topic)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+
+            if (selectionMode) {
+                SelectionActionBar(
+                    count = selectedTopics.size,
+                    onDelete = {
+                        onDeleteTopics(selectedTopics.toList())
+                        selectedTopics = emptySet()
+                    },
+                    onClear = { selectedTopics = emptySet() }
+                )
+            }
+        }
+
+        // Floating Trash Zone
+        AnimatedVisibility(
+            visible = draggedTopicId != null,
+            enter = fadeIn() + scaleIn(),
+            exit = fadeOut() + scaleOut(),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 48.dp)
+                .zIndex(10f)
+        ) {
+            val scale by animateFloatAsState(if (isOverTrash) 1.2f else 1f, label = "trashScale")
+            val containerColor by animateColorAsState(
+                if (isOverTrash) GrayMatterColors.Error else GrayMatterColors.SurfaceDark,
+                label = "trashColor"
+            )
+            
+            Box(
+                modifier = Modifier
+                    .size(84.dp)
+                    .scale(scale)
+                    .clip(CircleShape)
+                    .background(containerColor)
+                    .border(2.dp, GrayMatterColors.Error.copy(alpha = 0.5f), CircleShape)
+                    .onGloballyPositioned { coords ->
+                        trashZoneBounds = coords.boundsInRoot()
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Drop to Delete",
+                    tint = if (isOverTrash) Color.White else GrayMatterColors.Error,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        }
+
+        // Dragged Item Replica
+        if (draggedTopicId != null) {
+            val topic = filteredTopics.find { it.id == draggedTopicId }
+            val initialBounds = itemBoundsMap[draggedTopicId]
+            if (topic != null && initialBounds != null) {
+                val density = LocalDensity.current
+                Box(
+                    modifier = Modifier
+                        .offset { 
+                            IntOffset(
+                                (initialBounds.left + dragOffset.x).roundToInt(),
+                                (initialBounds.top + dragOffset.y).roundToInt()
+                            )
+                        }
+                        .size(
+                            width = with(density) { initialBounds.width.toDp() },
+                            height = with(density) { initialBounds.height.toDp() }
+                        )
+                        .scale(1.05f)
+                        .alpha(0.9f)
+                        .zIndex(20f)
+                ) {
                     TopicCard(
                         topic = topic,
                         romanNumeral = toRomanNumeral(filteredTopics.indexOf(topic) + 1),
-                        onClick = { onTopicClick(topic) }
+                        isSelected = false,
+                        onClick = {}
                     )
                 }
-                
-                // Bottom padding for the footer
-                item { Spacer(modifier = Modifier.height(80.dp)) }
-                item { Spacer(modifier = Modifier.height(80.dp)) }
             }
         }
     }
-}
-
-@Composable
-private fun EmptyLibraryState(
-    onCreateClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Your Library is Empty",
-            style = MaterialTheme.typography.headlineMedium,
-            color = GrayMatterColors.TextPrimary
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Start by creating your first entry to build your knowledge base.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = GrayMatterColors.Neutral500,
-            modifier = Modifier.padding(horizontal = 32.dp)
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .background(GrayMatterColors.TextPrimary)
-                .clickable(onClick = onCreateClick)
-                .padding(horizontal = 24.dp, vertical = 12.dp)
-        ) {
-            Text(
-                text = "Create New Resource",
-                style = MaterialTheme.typography.labelLarge,
-                color = GrayMatterColors.BackgroundDark
-            )
+    
+    DisposableEffect(Unit) {
+        onDispose {
+            draggedTopicId = null
+            isOverTrash = false
         }
     }
 }
@@ -227,6 +348,7 @@ private fun SearchBar(
 private fun TopicCard(
     topic: Topic,
     romanNumeral: String,
+    isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -234,8 +356,12 @@ private fun TopicCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(GrayMatterColors.SurfaceDark)
-            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+            .background(if (isSelected) GrayMatterColors.Primary.copy(alpha = 0.2f) else GrayMatterColors.SurfaceDark)
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = if (isSelected) GrayMatterColors.Primary else GrayMatterColors.Neutral800,
+                shape = RoundedCornerShape(16.dp)
+            )
             .clickable(onClick = onClick)
             .padding(20.dp)
     ) {
@@ -266,15 +392,9 @@ private fun TopicCard(
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp
                     ),
-                    color = GrayMatterColors.TextPrimary
-                )
-                
-                Text(
-                    text = "${topic.resourceCount} resources",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
-                    color = GrayMatterColors.Neutral500
+                    color = GrayMatterColors.TextPrimary,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
             }
             
@@ -283,6 +403,43 @@ private fun TopicCard(
                 style = MaterialTheme.typography.labelSmall,
                 color = GrayMatterColors.Neutral600
             )
+        }
+    }
+}
+
+@Composable
+private fun SelectionActionBar(
+    count: Int,
+    onDelete: () -> Unit,
+    onClear: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .navigationBarsPadding(),
+        shape = RoundedCornerShape(16.dp),
+        color = GrayMatterColors.SurfaceDark,
+        tonalElevation = 8.dp,
+        shadowElevation = 8.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                IconButton(onClick = onClear) {
+                    Icon(Icons.Default.Close, null, tint = GrayMatterColors.TextPrimary)
+                }
+                Text("$count selected", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary)
+            }
+            
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, "Delete", tint = GrayMatterColors.Error)
+                }
+            }
         }
     }
 }

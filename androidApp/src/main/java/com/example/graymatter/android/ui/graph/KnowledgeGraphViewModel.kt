@@ -56,12 +56,15 @@ class KnowledgeGraphViewModel(
             }
 
             // 2. Fetch Resources and Items (Resources act as hubs)
-            val items = itemRepository.itemsStream.first()
-            val opinions = opinionRepository.getAllOpinions()
-            val referenceLinks = referenceLinkRepository.getAllReferenceLinks().first()
+            val allItems = itemRepository.itemsStream.first()
+            val allOpinions = opinionRepository.getAllOpinions().first()
+            val allReferenceLinks = referenceLinkRepository.getAllReferenceLinks().first()
 
-            items.forEach { item ->
-                val resource = resourceRepository.getResourceById(item.resourceId)
+            val resourceMap = resourceRepository.resourcesStream.first().associateBy { it.id }
+            val itemMap = allItems.associateBy { it.id }
+
+            allItems.forEach { item ->
+                val resource = resourceMap[item.resourceId]
                 if (resource != null) {
                     nodes.add(
                         GraphNode(
@@ -86,8 +89,8 @@ class KnowledgeGraphViewModel(
                 }
             }
 
-            // 3. Fetch Opinions
-            opinions.forEach { opinion ->
+            // 3. Process Opinions
+            allOpinions.forEach { opinion ->
                 val nodeType = when {
                     opinion.text.startsWith("[DICT]") -> NodeType.DICTIONARY
                     opinion.text.startsWith("[TEMPLATE:") -> NodeType.TEMPLATE
@@ -120,7 +123,7 @@ class KnowledgeGraphViewModel(
                 )
 
                 // Edge: Resource -> Opinion
-                val item = itemRepository.getItemById(opinion.itemId)
+                val item = itemMap[opinion.itemId]
                 if (item != null) {
                     val resourceNode = nodes.find { it.id == item.resourceId }
                     if (resourceNode != null) {
@@ -137,7 +140,7 @@ class KnowledgeGraphViewModel(
             }
 
             // 4. Setup Reference Links
-            referenceLinks.forEach { link ->
+            allReferenceLinks.forEach { link ->
                 // Links are created from Opinions to other Types
                 val sourceNode = nodes.find { it.id == link.sourceId }
                 

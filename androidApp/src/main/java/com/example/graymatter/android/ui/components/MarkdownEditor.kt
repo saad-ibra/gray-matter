@@ -42,7 +42,7 @@ fun MarkdownEditor(
     var isPreviewMode by remember { mutableStateOf(initialPreviewMode) }
     var showDiscardConfirm by remember { mutableStateOf(false) }
 
-    LaunchedEffect(referenceToInsert, textFieldValue.selection) {
+    LaunchedEffect(referenceToInsert) {
         if (referenceToInsert != null) {
             val txt = textFieldValue.text
             val cursor = textFieldValue.selection.start
@@ -124,8 +124,12 @@ fun MarkdownEditor(
 
             if (isPreviewMode) {
                 Box(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    val processedMarkdown = textFieldValue.text.replace(
+                        Regex("\\[\\[(.*?)\\]\\]"), 
+                        "**<u>$1</u>**"
+                    )
                     MarkdownText(
-                        markdown = textFieldValue.text,
+                        markdown = processedMarkdown,
                         color = Color.White,
                         modifier = Modifier.fillMaxSize().padding(bottom = 32.dp)
                     )

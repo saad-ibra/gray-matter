@@ -38,6 +38,7 @@ class DefaultTopicRepository(
             name = topic.name,
             notes = topic.notes,
             resourceCount = topic.resourceCount.toLong(),
+            sortOrder = topic.sortOrder.toLong(),
             updatedAt = topic.updatedAt
         )
     }
@@ -69,6 +70,19 @@ class DefaultTopicRepository(
         // SQLDelight generates multiple parameters if :query is used multiple times
         queries.searchTopics(query, query).executeAsList().map { it.toTopic() }
     }
+
+    override suspend fun renameTopic(id: String, newName: String) = withContext(dispatcher) {
+        queries.renameTopic(newName, Clock.System.now().toEpochMilliseconds(), id)
+    }
+
+    override suspend fun updateTopicOrder(topicIds: List<String>) = withContext(dispatcher) {
+        queries.transaction {
+            val now = Clock.System.now().toEpochMilliseconds()
+            topicIds.forEachIndexed { index, id ->
+                queries.updateTopicOrder(index.toLong(), now, id)
+            }
+        }
+    }
 }
 
 private fun TopicEntity.toTopic(): Topic = Topic(
@@ -76,5 +90,6 @@ private fun TopicEntity.toTopic(): Topic = Topic(
     name = name,
     notes = notes,
     resourceCount = resourceCount.toInt(),
+    sortOrder = sortOrder.toInt(),
     updatedAt = updatedAt
 )

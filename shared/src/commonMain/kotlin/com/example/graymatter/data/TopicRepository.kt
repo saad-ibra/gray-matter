@@ -52,4 +52,14 @@ interface TopicRepository {
      * Search topics by query text.
      */
     suspend fun searchTopics(query: String): List<Topic>
+
+    /**
+     * Rename a topic.
+     */
+    suspend fun renameTopic(id: String, newName: String)
+
+    /**
+     * Update the order of topics.
+     */
+    suspend fun updateTopicOrder(topicIds: List<String>)
 }

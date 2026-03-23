@@ -19,9 +19,9 @@ interface OpinionRepository {
     suspend fun getOpinionById(id: String): Opinion?
     
     /**
-     * Get all opinions.
+     * Get all opinions as a Flow.
      */
-    suspend fun getAllOpinions(): List<Opinion>
+    fun getAllOpinions(): Flow<List<Opinion>>
     
     /**
      * Save a new opinion.

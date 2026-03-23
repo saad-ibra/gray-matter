@@ -17,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
@@ -38,6 +40,7 @@ fun TopicSynthesisScreen(
     onResourceClick: (Resource) -> Unit,
     onSaveOverallOpinion: (String, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
     onDeleteTopic: () -> Unit,
+    onRenameTopic: (String) -> Unit,
     onExport: () -> Unit,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
     modifier: Modifier = Modifier
@@ -50,6 +53,9 @@ fun TopicSynthesisScreen(
     var showReferenceSelector by remember { mutableStateOf(false) }
     var selectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
     var referenceToInsert by remember { mutableStateOf<String?>(null) }
+    
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var newTopicName by remember { mutableStateOf(topic.name) }
 
     if (showEditor) {
         MarkdownEditor(
@@ -100,6 +106,7 @@ fun TopicSynthesisScreen(
                 TopicHeader(
                     topicName = topic.name,
                     onBackClick = onBackClick,
+                    onRenameClick = { showRenameDialog = true },
                     onDeleteClick = { showDeleteConfirm = true },
                     onExportClick = onExport
                 )
@@ -155,6 +162,41 @@ fun TopicSynthesisScreen(
             }
         )
     }
+
+    if (showRenameDialog) {
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("Rename Topic", color = Color.White) },
+            text = {
+                OutlinedTextField(
+                    value = newTopicName,
+                    onValueChange = { newTopicName = it },
+                    label = { Text("Topic Name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = GrayMatterColors.Primary
+                    )
+                )
+            },
+            containerColor = Color(0xFF1A1A1E),
+            confirmButton = {
+                TextButton(onClick = {
+                    onRenameTopic(newTopicName)
+                    showRenameDialog = false
+                }) {
+                    Text("Rename", color = GrayMatterColors.Primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameDialog = false }) {
+                    Text("Cancel", color = Color.White)
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -205,6 +247,7 @@ private fun OverallOpinionSection(
 private fun TopicHeader(
     topicName: String,
     onBackClick: () -> Unit,
+    onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onExportClick: () -> Unit
 ) {
@@ -214,22 +257,72 @@ private fun TopicHeader(
             .background(GrayMatterColors.BackgroundDark)
             .statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBackClick, modifier = Modifier.size(48.dp)) {
             Icon(Icons.Default.KeyboardArrowLeft, "Back", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(28.dp))
         }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("TOPIC", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp), color = GrayMatterColors.Neutral500)
-            Text(topicName, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = GrayMatterColors.TextPrimary)
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onExportClick, modifier = Modifier.size(48.dp)) {
-                Icon(Icons.Default.Share, "Export Topic", tint = GrayMatterColors.Primary, modifier = Modifier.size(24.dp))
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClick = onRenameClick)
+                .padding(horizontal = 8.dp)
+        ) {
+            Text(
+                text = "TOPIC", 
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp), 
+                color = GrayMatterColors.Neutral500,
+                textAlign = TextAlign.Center
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = topicName, 
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), 
+                    color = GrayMatterColors.TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(Icons.Default.Edit, null, tint = GrayMatterColors.Neutral600, modifier = Modifier.size(14.dp))
             }
-            IconButton(onClick = onDeleteClick, modifier = Modifier.size(48.dp)) {
-                Icon(Icons.Default.Delete, "Delete Topic", tint = GrayMatterColors.Error, modifier = Modifier.size(24.dp))
+        }
+        
+        var showMenu by remember { mutableStateOf(false) }
+        
+        Box {
+            IconButton(onClick = { showMenu = true }, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.MoreVert, "Menu", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(24.dp))
+            }
+            
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false },
+                modifier = Modifier.background(GrayMatterColors.SurfaceDark)
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Export Topic", color = GrayMatterColors.TextPrimary) },
+                    onClick = {
+                        showMenu = false
+                        onExportClick()
+                    },
+                    leadingIcon = { Icon(Icons.Default.Share, null, tint = GrayMatterColors.Primary) }
+                )
+                
+                Divider(color = GrayMatterColors.Neutral800)
+                
+                DropdownMenuItem(
+                    text = { Text("Delete Topic", color = GrayMatterColors.Error) },
+                    onClick = {
+                        showMenu = false
+                        onDeleteClick()
+                    },
+                    leadingIcon = { Icon(Icons.Default.Delete, null, tint = GrayMatterColors.Error) }
+                )
             }
         }
     }

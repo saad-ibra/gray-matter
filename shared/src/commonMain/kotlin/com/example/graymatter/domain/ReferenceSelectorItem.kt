@@ -8,12 +8,14 @@ sealed class ReferenceSelectorItem {
     abstract val isExpanded: Boolean
     abstract val isChecked: Boolean
     abstract val indentLevel: Int
+    abstract val parentContext: String?
 
     data class TopicItem(
         override val id: String,
         val name: String,
         override val isExpanded: Boolean = false,
-        override val isChecked: Boolean = false
+        override val isChecked: Boolean = false,
+        override val parentContext: String? = null
     ) : ReferenceSelectorItem() {
         override val indentLevel = 0
     }
@@ -24,19 +26,19 @@ sealed class ReferenceSelectorItem {
         val type: String,
         val parentTopicId: String?,
         override val isExpanded: Boolean = false,
-        override val isChecked: Boolean = false
-    ) : ReferenceSelectorItem() {
-        override val indentLevel = 1
-    }
+        override val isChecked: Boolean = false,
+        override val indentLevel: Int = 1,
+        override val parentContext: String? = null
+    ) : ReferenceSelectorItem()
 
     data class DetailItem(
         override val id: String,
         val snippet: String,
-        val parentResourceId: String,
-        val isAnnotation: Boolean = false,
-        override val isExpanded: Boolean = false, // Usually always false
-        override val isChecked: Boolean = false
-    ) : ReferenceSelectorItem() {
-        override val indentLevel = 2
-    }
+        val resourceId: String,
+        val typeLabel: String? = null,
+        override val isExpanded: Boolean = false,
+        override val isChecked: Boolean = false,
+        override val indentLevel: Int = 2,
+        override val parentContext: String? = null
+    ) : ReferenceSelectorItem()
 }

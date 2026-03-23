@@ -8,5 +8,6 @@ data class Topic(
     val name: String,
     val notes: String? = null,
     val resourceCount: Int = 0,
+    val sortOrder: Int = 0,
     val updatedAt: Long
 )

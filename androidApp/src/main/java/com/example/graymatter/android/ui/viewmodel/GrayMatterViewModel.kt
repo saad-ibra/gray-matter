@@ -92,7 +92,7 @@ class GrayMatterViewModel(
      * Creates a new item with resource and first opinion.
      * Returns the created itemId.
      */
-    suspend fun createNewItem(url: String, opinionText: String, confidence: Int, title: String? = null, description: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()): String {
+    suspend fun createNewItem(url: String, opinionText: String, confidence: Int, title: String? = null, description: String? = null, topicId: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
         val itemId = generateUuid()
@@ -113,6 +113,10 @@ class GrayMatterViewModel(
             now = now
         )
         
+        if (topicId != null) {
+            itemRepository.updateItemTopic(itemId, topicId)
+        }
+        
         saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
         
         return itemId
@@ -121,7 +125,7 @@ class GrayMatterViewModel(
     /**
      * Creates a new Note item. Saved with Markdown content in internal storage.
      */
-    suspend fun createNewNote(context: Context, title: String, content: String, opinionText: String, confidence: Int, description: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()): String {
+    suspend fun createNewNote(context: Context, title: String, content: String, opinionText: String, confidence: Int, description: String? = null, topicId: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
         val itemId = generateUuid()
@@ -148,7 +152,11 @@ class GrayMatterViewModel(
             now = now
         )
         
-        saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+        if (topicId != null) {
+            itemRepository.updateItemTopic(itemId, topicId)
+        }
+        
+        saveReferenceLinksInternal(resourceId, com.example.graymatter.domain.ReferenceType.RESOURCE, referenceLinks)
         
         return itemId
     }
@@ -166,6 +174,7 @@ class GrayMatterViewModel(
         confidence: Int,
         title: String? = null,
         description: String? = null,
+        topicId: String? = null,
         referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()
     ): String? {
         _isImporting.value = true
@@ -200,6 +209,10 @@ class GrayMatterViewModel(
                 confidence = confidence,
                 now = now
             )
+            
+            if (topicId != null) {
+                itemRepository.updateItemTopic(itemId, topicId)
+            }
             
             saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
 
@@ -312,6 +325,33 @@ class GrayMatterViewModel(
             topicRepository.deleteTopic(topicId)
         }
     }
+
+    /**
+     * Deletes multiple topics.
+     */
+    fun deleteTopics(topicIds: List<String>) {
+        viewModelScope.launch {
+            topicIds.forEach { topicRepository.deleteTopic(it) }
+        }
+    }
+
+    /**
+     * Renames a topic.
+     */
+    fun renameTopic(topicId: String, newName: String) {
+        viewModelScope.launch {
+            topicRepository.renameTopic(topicId, newName)
+        }
+    }
+
+    /**
+     * Updates topic order.
+     */
+    fun updateTopicOrder(topicIds: List<String>) {
+        viewModelScope.launch {
+            topicRepository.updateTopicOrder(topicIds)
+        }
+    }
     
     /**
      * Assigns a topic to an item.
@@ -378,18 +418,27 @@ class GrayMatterViewModel(
     /**
      * Updates a resource's text content (for editing notes).
      */
-    fun updateResourceText(resourceId: String, newText: String) {
+    fun updateResourceText(resourceId: String, newText: String, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         viewModelScope.launch {
             resourceRepository.updateResourceText(resourceId, newText)
             
             // If it's a file-based note, update the physical file too
             val resource = resourceRepository.getResourceById(resourceId)
-            if (resource?.type == ResourceType.MARKDOWN && resource.filePath != null) {
+            val filePath = resource?.filePath
+            if (resource?.type == ResourceType.MARKDOWN && filePath != null) {
                 try {
-                    java.io.File(resource.filePath).writeText(newText)
+                    java.io.File(filePath).writeText(newText)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
+            }
+            
+            if (referenceLinks.isNotEmpty()) {
+                // We add to existing links for the resource, or we can just append.
+                // Since this is an edit, we might want to just append them to the existing links.
+                // The current saveReferenceLinksInternal doesn't delete existing links for that source, it just adds them if they are new (or rather creates new IDs).
+                // Let's use it to append new links.
+                saveReferenceLinksInternal(resourceId, com.example.graymatter.domain.ReferenceType.RESOURCE, referenceLinks)
             }
         }
     }
@@ -667,15 +716,15 @@ class GrayMatterViewModel(
                     }
                     com.example.graymatter.domain.ReferenceType.OPINION -> {
                         val op = opinionRepository.getOpinionById(link.targetId)
-                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = op.text, parentResourceId = op.itemId, isAnnotation = true, isExpanded = false, isChecked = false) else null
+                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = op.text, resourceId = op.itemId, typeLabel = "Opinion", isExpanded = false, isChecked = true) else null
                     }
                     com.example.graymatter.domain.ReferenceType.BOOKMARK -> {
                         val bookmark = resourceRepository.getBookmarkById(link.targetId)
-                        if (bookmark != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = bookmark.id, snippet = bookmark.title ?: "Untitled", parentResourceId = bookmark.resourceId, isAnnotation = false, isExpanded = false, isChecked = false) else null
+                        if (bookmark != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = bookmark.id, snippet = bookmark.title ?: "Untitled", resourceId = bookmark.resourceId, typeLabel = "Bookmark", isExpanded = false, isChecked = true) else null
                     }
                     com.example.graymatter.domain.ReferenceType.ANNOTATION -> {
                         val op = opinionRepository.getOpinionById(link.targetId)
-                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = op.text, parentResourceId = op.itemId, isAnnotation = true, isExpanded = false, isChecked = false) else null
+                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = op.text, resourceId = op.itemId, typeLabel = "Annotation", isExpanded = false, isChecked = true) else null
                     }
                 }
             }

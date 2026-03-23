@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,23 +43,29 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewEntryScreen(
-    onBackClick: () -> Unit,
-    onSaveClick: (type: EntryType, value: String, opinion: String, confidence: Int, title: String?, description: String?, originalFileName: String?, selectedLinks: List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
-    templates: List<CustomTemplate> = emptyList(),
-    isSaving: Boolean = false,
-    referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
-    modifier: Modifier = Modifier
+    viewModel: com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel,
+    referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel,
+    preSelectedTopicId: String? = null,
+    onNavigateBack: () -> Unit,
+    onNavigateToHome: () -> Unit,
+    onNavigateToAddToTopic: (String) -> Unit
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) } // 0 = Link, 1 = File, 2 = Note
-    var titleInput by remember { mutableStateOf("") }
-    var urlInput by remember { mutableStateOf("") }
-    var opinionInput by remember { mutableStateOf("") }
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    
+    val isSaving by viewModel.isImporting.collectAsState()
+    val templates by viewModel.templates.collectAsState()
+    
+    var entryType by remember { mutableStateOf(EntryType.LINK) } // 0 = Link, 1 = File, 2 = Note
+    var title by remember { mutableStateOf("") }
+    var urlValue by remember { mutableStateOf("") }
+    var opinionText by remember { mutableStateOf("") }
     var noteContent by remember { mutableStateOf("") }
-    var descriptionInput by remember { mutableStateOf("") }
-    var confidence by remember { mutableFloatStateOf(0.7f) }
+    var description by remember { mutableStateOf("") }
+    var confidenceScore by remember { mutableFloatStateOf(0.7f) }
 
-    var selectedFileName by remember { mutableStateOf<String?>(null) }
-    var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
+    var originalFileName by remember { mutableStateOf<String?>(null) }
+    var fileUri by remember { mutableStateOf<Uri?>(null) }
     var showDescription by remember { mutableStateOf(false) }
     var isNoteEditorOpen by remember { mutableStateOf(false) }
     
@@ -71,7 +78,6 @@ fun NewEntryScreen(
     var selectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
     var referenceToInsert by remember { mutableStateOf<String?>(null) }
 
-    val context = LocalContext.current
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
@@ -85,37 +91,37 @@ fun NewEntryScreen(
                 Log.e("NewEntryScreen", "Failed to take persistable URI permission", e)
             }
 
-            selectedFileUri = it
+            fileUri = it
             val cursor = context.contentResolver.query(it, null, null, null, null)
             cursor?.use { c ->
                 if (c.moveToFirst()) {
                     val nameIndex = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
                     if (nameIndex >= 0) {
-                        selectedFileName = c.getString(nameIndex)
+                        originalFileName = c.getString(nameIndex)
                     }
                 }
             }
-            if (selectedFileName == null) {
-                selectedFileName = it.lastPathSegment ?: "Unknown file"
+            if (originalFileName == null) {
+                originalFileName = it.lastPathSegment ?: "Unknown file"
             }
             
             // Auto-fill title from filename if blank
-            if (titleInput.isBlank()) {
-                titleInput = selectedFileName?.substringBeforeLast('.') ?: ""
+            if (title.isBlank()) {
+                title = originalFileName?.substringBeforeLast('.') ?: ""
             }
         }
     }
 
     // Auto-fill title from URL if blank
-    LaunchedEffect(urlInput) {
-        if (selectedTab == 0 && urlInput.isNotBlank() && titleInput.isBlank()) {
-            titleInput = inferTitleFromUrl(urlInput)
+    LaunchedEffect(urlValue) {
+        if (entryType == EntryType.LINK && urlValue.isNotBlank() && title.isBlank()) {
+            title = inferTitleFromUrl(urlValue)
         }
     }
 
     if (isNoteEditorOpen) {
         MarkdownEditor(
-            title = if (titleInput.isBlank()) "New Note" else titleInput,
+            title = if (title.isBlank()) "New Note" else title,
             initialText = noteContent,
             onBackClick = { isNoteEditorOpen = false },
             onSave = { content ->
@@ -127,7 +133,7 @@ fun NewEntryScreen(
             onReferenceInserted = { referenceToInsert = null }
         )
 
-        if (showReferenceSelector && referenceSelectorViewModel != null) {
+        if (showReferenceSelector) {
             com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
                 viewModel = referenceSelectorViewModel,
                 onDismissRequest = { showReferenceSelector = false },
@@ -152,12 +158,12 @@ fun NewEntryScreen(
     }
     
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(GrayMatterColors.BackgroundDark)
     ) {
         // Header
-        NewEntryHeader(onBackClick = onBackClick, modifier = Modifier.statusBarsPadding())
+        NewEntryHeader(onBackClick = onNavigateBack, modifier = Modifier.statusBarsPadding())
         
         // Content
         Column(
@@ -170,15 +176,15 @@ fun NewEntryScreen(
         ) {
             // Source Material Section
             SourceMaterialSection(
-                selectedTab = selectedTab,
+                selectedTab = entryType.ordinal,
                 onTabChange = { 
-                    selectedTab = it 
+                    entryType = EntryType.entries[it]
                 },
-                titleInput = titleInput,
-                onTitleChange = { titleInput = it },
-                urlInput = urlInput,
-                onUrlChange = { urlInput = it },
-                selectedFileName = selectedFileName,
+                titleInput = title,
+                onTitleChange = { title = it },
+                urlInput = urlValue,
+                onUrlChange = { urlValue = it },
+                selectedFileName = originalFileName,
                 onPickFile = { filePickerLauncher.launch(arrayOf("*/*")) },
                 onAddNoteContent = { isNoteEditorOpen = true },
                 hasNoteContent = noteContent.isNotBlank()
@@ -223,13 +229,13 @@ fun NewEntryScreen(
                             .padding(12.dp)
                     ) {
                         BasicTextField(
-                            descriptionInput,
-                            onValueChange = { descriptionInput = it },
+                            description,
+                            onValueChange = { description = it },
                             textStyle = MaterialTheme.typography.bodyMedium.copy(color = GrayMatterColors.TextPrimary),
                             modifier = Modifier.fillMaxSize(),
                             cursorBrush = SolidColor(GrayMatterColors.Primary),
                             decorationBox = { inner ->
-                                if (descriptionInput.isEmpty()) Text("Add context about this source...", color = GrayMatterColors.Neutral700, style = MaterialTheme.typography.bodyMedium)
+                                if (description.isEmpty()) Text("Add context about this source...", color = GrayMatterColors.Neutral700, style = MaterialTheme.typography.bodyMedium)
                                 inner()
                             }
                         )
@@ -257,8 +263,8 @@ fun NewEntryScreen(
             ) {
                 // Opinion Section
                 CustomizedOpinionSection(
-                    opinionInput = opinionInput,
-                    onOpinionChange = { opinionInput = it },
+                    opinionInput = opinionText,
+                    onOpinionChange = { opinionText = it },
                     templates = templates,
                     selectedTemplate = selectedTemplate,
                     onTemplateSelect = { 
@@ -309,52 +315,94 @@ fun NewEntryScreen(
 
                 // Confidence Level Section
                 ConfidenceLevelSection(
-                    confidence = confidence,
-                    onConfidenceChange = { confidence = it },
+                    confidence = confidenceScore,
+                    onConfidenceChange = { confidenceScore = it },
                     accentColor = if (selectedTemplate != null) GrayMatterColors.CustomizedAccent else GrayMatterColors.AppleGreen
                 )
             }
         }
         
         // Save Button logic
-        val isLinkValid = selectedTab == 0 && urlInput.isNotBlank()
-        val isFileValid = selectedTab == 1 && selectedFileUri != null
-        val isNoteValid = selectedTab == 2 && titleInput.isNotBlank()
+        val isLinkValid = entryType == EntryType.LINK && urlValue.isNotBlank()
+        val isFileValid = entryType == EntryType.FILE && fileUri != null
+        val isNoteValid = entryType == EntryType.NOTE && title.isNotBlank()
         
         val isOpinionValid = if (selectedTemplate != null) {
             templateFieldValues.values.any { it.isNotBlank() }
         } else {
-            opinionInput.isNotBlank()
+            opinionText.isNotBlank()
         }
         
         SaveButton(
             onClick = {
-                val finalDesc = descriptionInput.takeIf { it.isNotBlank() }
-                val finalTitle = titleInput.takeIf { it.isNotBlank() }
-                
-                val finalOpinion = if (selectedTemplate != null) {
-                    val sb = StringBuilder()
-                    sb.appendLine("[TEMPLATE:${selectedTemplate!!.name}]")
-                    selectedTemplate!!.headings.forEach { heading ->
-                        val value = templateFieldValues[heading] ?: ""
-                        if (value.isNotBlank()) {
-                            sb.appendLine("### $heading")
-                            sb.appendLine(value)
-                            sb.appendLine()
+                coroutineScope.launch {
+                    val finalDesc = description.takeIf { it.isNotBlank() }
+                    
+                    val finalOpinion = if (selectedTemplate != null) {
+                        val sb = StringBuilder()
+                        sb.appendLine("[TEMPLATE:${selectedTemplate!!.name}]")
+                        selectedTemplate!!.headings.forEach { heading ->
+                            val value = templateFieldValues[heading] ?: ""
+                            if (value.isNotBlank()) {
+                                sb.appendLine("### $heading")
+                                sb.appendLine(value)
+                                sb.appendLine()
+                            }
+                        }
+                        sb.toString().trim()
+                    } else {
+                        opinionText
+                    }
+
+                    val newItemId = when (entryType) {
+                        EntryType.LINK -> viewModel.createNewItem(
+                            url = urlValue,
+                            opinionText = finalOpinion,
+                            confidence = (confidenceScore * 10).toInt(),
+                            title = title.ifBlank { null },
+                            description = finalDesc,
+                            topicId = preSelectedTopicId,
+                            referenceLinks = selectedReferences
+                        )
+                        EntryType.FILE -> {
+                            val finalTitle = if (title.isNotBlank() && originalFileName != null && !title.contains(".")) {
+                                val ext = originalFileName!!.substringAfterLast('.', "")
+                                if (ext.isNotEmpty()) "$title.$ext" else title
+                            } else if (title.isNotBlank()) title else originalFileName ?: "Unknown"
+
+                            viewModel.createNewItemFromFile(
+                                context = context,
+                                fileName = originalFileName ?: "Unknown",
+                                uri = fileUri ?: Uri.EMPTY,
+                                opinionText = finalOpinion,
+                                confidence = (confidenceScore * 10).toInt(),
+                                title = finalTitle,
+                                description = finalDesc,
+                                topicId = preSelectedTopicId,
+                                referenceLinks = selectedReferences
+                            )
+                        }
+                        EntryType.NOTE -> {
+                            val finalTitle = if (title.isNotBlank() && !title.endsWith(".md")) "$title.md" else (title.ifBlank { "Untitled.md" })
+                            viewModel.createNewNote(
+                                context = context,
+                                title = finalTitle,
+                                content = noteContent,
+                                opinionText = finalOpinion,
+                                confidence = (confidenceScore * 10).toInt(),
+                                description = finalDesc,
+                                topicId = preSelectedTopicId,
+                                referenceLinks = selectedReferences
+                            )
                         }
                     }
-                    sb.toString().trim()
-                } else {
-                    opinionInput
-                }
 
-                when (selectedTab) {
-                    0 -> onSaveClick(EntryType.LINK, urlInput, finalOpinion, (confidence * 100).toInt(), finalTitle, finalDesc, null, selectedReferences)
-                    1 -> selectedFileUri?.let { uri ->
-                        onSaveClick(EntryType.FILE, uri.toString(), finalOpinion, (confidence * 100).toInt(), finalTitle, finalDesc, selectedFileName, selectedReferences)
-                    }
-                    2 -> {
-                        onSaveClick(EntryType.NOTE, noteContent, finalOpinion, (confidence * 100).toInt(), finalTitle, finalDesc, null, selectedReferences)
+                    if (newItemId != null) {
+                        if (preSelectedTopicId != null) {
+                            onNavigateToHome()
+                        } else {
+                            onNavigateToAddToTopic(newItemId)
+                        }
                     }
                 }
             },
@@ -368,7 +416,7 @@ fun NewEntryScreen(
         )
     }
 
-    if (showReferenceSelector && referenceSelectorViewModel != null) {
+    if (showReferenceSelector) {
         com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
             viewModel = referenceSelectorViewModel,
             onDismissRequest = { showReferenceSelector = false },
