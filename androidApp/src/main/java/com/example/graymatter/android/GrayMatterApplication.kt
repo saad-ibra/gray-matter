@@ -12,16 +12,17 @@ import com.example.graymatter.di.AppModule
  */
 class GrayMatterApplication : Application(), Configuration.Provider {
     
-    lateinit var appModule: AppModule
-        private set
+    val appModule: AppModule by lazy {
+        AppModule(
+            databaseDriverFactory = DatabaseDriverFactory(this)
+        )
+    }
     
     override fun onCreate() {
         super.onCreate()
         
-        appModule = AppModule(
-            databaseDriverFactory = DatabaseDriverFactory(this)
-        )
-        
+        // Initialize WorkManager early if needed, 
+        // but here we just ensure setupCleanupWorker is called
         setupCleanupWorker(this)
     }
 

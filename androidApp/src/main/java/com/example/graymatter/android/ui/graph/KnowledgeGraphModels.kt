@@ -98,7 +98,7 @@ class ForceSimulator(
                 if (n1.type == NodeType.TOPIC && n2.type == NodeType.TOPIC) {
                     currentRepulsion *= 25f
                 } else if (isTopicVsResource) {
-                    // Increase repulsion to help maintain the 2x distance between octahedrons and pyramids
+                    // Increase repulsion to help maintain the 2x distance between dodecahedrons and pyramids
                     currentRepulsion *= 8f
                 } else if (n1.type != NodeType.TOPIC && n1.type != NodeType.RESOURCE) {
                     currentRepulsion *= 4f
