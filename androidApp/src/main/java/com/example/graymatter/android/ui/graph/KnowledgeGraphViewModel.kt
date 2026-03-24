@@ -41,18 +41,23 @@ class KnowledgeGraphViewModel(
 
             val nodes = mutableListOf<GraphNode>()
             val edges = mutableListOf<GraphEdge>()
+            val existingEdgePairs = mutableSetOf<Pair<String, String>>()
+            val oldNodesMap = _graphState.value.nodes.associateBy { it.id }
 
             // 1. Fetch Topics
             val topics = topicRepository.getAllTopics()
             topics.forEach { topic ->
-                nodes.add(
-                    GraphNode(
-                        id = topic.id,
-                        type = NodeType.TOPIC,
-                        label = topic.name,
-                        radius = 30f + (topic.resourceCount * 5f).coerceAtMost(30f) // Scale by connections
-                    )
+                val node = GraphNode(
+                    id = topic.id,
+                    type = NodeType.TOPIC,
+                    label = topic.name,
+                    radius = 30f + (topic.resourceCount * 5f).coerceAtMost(30f) // Scale by connections
                 )
+                oldNodesMap[node.id]?.let { old ->
+                    node.x = old.x; node.y = old.y; node.z = old.z
+                    node.vx = old.vx; node.vy = old.vy; node.vz = old.vz
+                }
+                nodes.add(node)
             }
 
             // 2. Fetch Resources and Items (Resources act as hubs)
@@ -66,25 +71,31 @@ class KnowledgeGraphViewModel(
             allItems.forEach { item ->
                 val resource = resourceMap[item.resourceId]
                 if (resource != null) {
-                    nodes.add(
-                        GraphNode(
-                            id = resource.id,
-                            type = NodeType.RESOURCE,
-                            label = resource.title ?: "Untitled",
-                            radius = 20f
-                        )
+                    val resourceNode = GraphNode(
+                        id = resource.id,
+                        type = NodeType.RESOURCE,
+                        label = resource.title ?: "Untitled",
+                        radius = 20f
                     )
+                    oldNodesMap[resourceNode.id]?.let { old ->
+                        resourceNode.x = old.x; resourceNode.y = old.y; resourceNode.z = old.z
+                        resourceNode.vx = old.vx; resourceNode.vy = old.vy; resourceNode.vz = old.vz
+                    }
+                    nodes.add(resourceNode)
 
                     // Edge: Topic -> Resource
                     if (item.topicId != null) {
-                        edges.add(
-                            GraphEdge(
-                                id = "${item.topicId}_${resource.id}",
-                                source = nodes.find { it.id == item.topicId } ?: return@forEach,
-                                target = nodes.last(),
-                                weight = 1.5f
+                        val topicNode = nodes.find { it.id == item.topicId }
+                        if (topicNode != null && existingEdgePairs.add(topicNode.id to resourceNode.id)) {
+                            edges.add(
+                                GraphEdge(
+                                    id = "${item.topicId}_${resource.id}",
+                                    source = topicNode,
+                                    target = resourceNode,
+                                    weight = 1.5f
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
@@ -109,29 +120,32 @@ class KnowledgeGraphViewModel(
                     else -> opinion.text.take(20) + "..."
                 }
 
-                nodes.add(
-                    GraphNode(
-                        id = opinion.id,
-                        type = nodeType,
-                        label = displayLabel,
-                        radius = when (nodeType) {
-                            NodeType.TOPIC -> 44f
-                            NodeType.RESOURCE -> 30f
-                            else -> 18f
-                        }
-                    )
+                val opinionNode = GraphNode(
+                    id = opinion.id,
+                    type = nodeType,
+                    label = displayLabel,
+                    radius = when (nodeType) {
+                        NodeType.TOPIC -> 44f
+                        NodeType.RESOURCE -> 30f
+                        else -> 18f
+                    }
                 )
+                oldNodesMap[opinionNode.id]?.let { old ->
+                    opinionNode.x = old.x; opinionNode.y = old.y; opinionNode.z = old.z
+                    opinionNode.vx = old.vx; opinionNode.vy = old.vy; opinionNode.vz = old.vz
+                }
+                nodes.add(opinionNode)
 
                 // Edge: Resource -> Opinion
                 val item = itemMap[opinion.itemId]
                 if (item != null) {
                     val resourceNode = nodes.find { it.id == item.resourceId }
-                    if (resourceNode != null) {
+                    if (resourceNode != null && existingEdgePairs.add(resourceNode.id to opinionNode.id)) {
                         edges.add(
                             GraphEdge(
                                 id = "${resourceNode.id}_${opinion.id}",
                                 source = resourceNode,
-                                target = nodes.last(),
+                                target = opinionNode,
                                 weight = 0.8f
                             )
                         )
@@ -154,7 +168,7 @@ class KnowledgeGraphViewModel(
                 
                 val targetNode = nodes.find { it.id == targetNodeId }
 
-                if (sourceNode != null && targetNode != null) {
+                if (sourceNode != null && targetNode != null && existingEdgePairs.add(sourceNode.id to targetNode.id)) {
                     edges.add(
                         GraphEdge(
                             id = "${sourceNode.id}_${targetNode.id}_ref",
@@ -171,6 +185,41 @@ class KnowledgeGraphViewModel(
                 edges = edges,
                 isLoading = false
             )
+        }
+    }
+
+    fun deleteNodeById(node: GraphNode) {
+        viewModelScope.launch {
+            when (node.type) {
+                NodeType.TOPIC -> topicRepository.deleteTopic(node.id)
+                NodeType.RESOURCE -> {
+                    val item = itemRepository.getItemByResourceId(node.id)
+                    if (item != null) {
+                        itemRepository.deleteItem(item.id)
+                        
+                        // Delete physical file if it's a markdown resource in our private dir
+                        val resource = resourceRepository.getResourceById(node.id)
+                        val filePath = resource?.filePath
+                        if (filePath != null && filePath.contains("/files/resources/")) {
+                            val file = java.io.File(filePath)
+                            if (file.exists()) {
+                                file.delete()
+                            }
+                        }
+                        resourceRepository.deleteResource(node.id)
+                    }
+                }
+                NodeType.OPINION,
+                NodeType.ANNOTATION,
+                NodeType.BOOKMARK,
+                NodeType.DICTIONARY,
+                NodeType.TEMPLATE,
+                NodeType.CUSTOM -> {
+                    opinionRepository.deleteOpinion(node.id)
+                    referenceLinkRepository.deleteReferenceLinksBySource(node.id)
+                }
+            }
+            loadGraphData()
         }
     }
 }

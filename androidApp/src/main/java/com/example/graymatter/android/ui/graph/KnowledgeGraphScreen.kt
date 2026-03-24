@@ -86,9 +86,12 @@ fun KnowledgeGraphScreen(
 
     // Selection
     var selectedNode by remember { mutableStateOf<GraphNode?>(null) }
+    var showDeleteDialog by remember { mutableStateOf<GraphNode?>(null) }
 
     LaunchedEffect(Unit) {
-        viewModel.loadGraphData()
+        if (graphState.nodes.isEmpty()) {
+            viewModel.loadGraphData()
+        }
     }
 
     LaunchedEffect(graphState.nodes, graphState.edges) {
@@ -124,6 +127,32 @@ fun KnowledgeGraphScreen(
                 modifier = Modifier.align(Alignment.Center),
                 color = GrayMatterColors.Primary
             )
+        } else if (graphState.nodes.isEmpty()) {
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DatasetLinked,
+                    contentDescription = null,
+                    tint = GrayMatterColors.Neutral600,
+                    modifier = Modifier.size(64.dp)
+                )
+                Text(
+                    text = "No connections yet. Start by adding an opinion to a resource.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = GrayMatterColors.Neutral500,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 48.dp)
+                )
+                Button(
+                    onClick = onBackClick,
+                    colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary)
+                ) {
+                    Text("Explore Library", color = Color.Black)
+                }
+            }
         } else {
             Canvas(
                 modifier = Modifier
@@ -632,21 +661,58 @@ fun KnowledgeGraphScreen(
                             color = Color.White
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { onNodeDoubleTap(node) },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = GrayMatterColors.Primary.copy(alpha = 0.15f),
-                                contentColor = GrayMatterColors.Primary
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Go to Details")
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { onNodeDoubleTap(node) },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = GrayMatterColors.Primary.copy(alpha = 0.15f),
+                                    contentColor = GrayMatterColors.Primary
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("Go to Details")
+                            }
+                            
+                            Button(
+                                onClick = { showDeleteDialog = node },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = GrayMatterColors.Error.copy(alpha = 0.15f),
+                                    contentColor = GrayMatterColors.Error
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("Delete", color = GrayMatterColors.Error)
+                            }
                         }
                     }
                 }
             }
         }
-    }
+
+        showDeleteDialog?.let { nodeToDelete ->
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = null },
+                containerColor = GrayMatterColors.SurfaceDark,
+                title = { Text("Delete ${nodeToDelete.type.name}?", color = Color.White) },
+                text = { Text("This will also delete all its connections and instances. This action cannot be undone.", color = GrayMatterColors.Neutral500) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.deleteNodeById(nodeToDelete)
+                        showDeleteDialog = null
+                        selectedNode = null
+                    }) {
+                        Text("Delete", color = GrayMatterColors.Error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = null }) {
+                        Text("Cancel", color = GrayMatterColors.TextPrimary)
+                    }
+                }
+            )
+        }
+        }
     }
 }

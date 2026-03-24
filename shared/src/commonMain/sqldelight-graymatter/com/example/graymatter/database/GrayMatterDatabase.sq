@@ -280,6 +280,8 @@ CREATE TABLE referenceLinkEntity (
     createdAt INTEGER NOT NULL
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reflink_unique ON referenceLinkEntity(sourceId, targetId);
+
 -- Reference Link queries
 insertReferenceLink:
 INSERT OR REPLACE INTO referenceLinkEntity(id, sourceType, sourceId, targetType, targetId, createdAt)

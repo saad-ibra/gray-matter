@@ -338,7 +338,7 @@ fun ItemDetailScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     val backlinks by onLoadBacklinks(itemDetails.resource.id).collectAsState(initial = emptyList())
-                    if (backlinks.isNotEmpty()) {
+                    if (backlinks.isNotEmpty() || isEditing) {
                         com.example.graymatter.android.ui.components.BacklinkPanel(
                             backlinks = backlinks,
                             onBacklinkClick = { backlink ->

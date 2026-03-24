@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
@@ -43,6 +44,7 @@ import kotlin.math.roundToInt
 /**
  * Library Screen matching the "Topics & Synthesis" design mockup.
  * Shows topics in a 2-column grid with Roman numeral icons.
+ * Features: Long-press to rearrange, Drag to trash to delete, Multi-select.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -63,21 +65,31 @@ fun LibraryScreen(
     val selectionMode = selectedTopics.isNotEmpty()
     val haptic = LocalHapticFeedback.current
 
-    // Revamped Drag and Drop state
+    // Drag and Drop State
     var draggedTopicId by remember { mutableStateOf<String?>(null) }
-    var dragOffset by remember { mutableStateOf(Offset.Zero) }
-    var isOverTrash by remember { mutableStateOf(false) }
+    var touchPointInRoot by remember { mutableStateOf(Offset.Zero) }
+    var touchAnchorOffset by remember { mutableStateOf(Offset.Zero) }
+    var draggedItemSize by remember { mutableStateOf(Size.Zero) }
     
-    // Layout tracking
+    var gridPositionInRoot by remember { mutableStateOf(Offset.Zero) }
+    var screenPositionInRoot by remember { mutableStateOf(Offset.Zero) }
     val itemBoundsMap = remember { mutableStateMapOf<String, Rect>() }
-    var trashZoneBounds by remember { mutableStateOf(Rect.Zero) }
+    var trashZoneBoundsInRoot by remember { mutableStateOf(Rect.Zero) }
+    var isOverTrash by remember { mutableStateOf(false) }
 
-    val baseTopics = if (searchQuery.isBlank()) topics else topics.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    val baseTopics = if (searchQuery.isBlank()) {
+        topics
+    } else {
+        topics.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    }
+    
+    // Maintain a local copy of topics for fluid rearrangement during drag
     var filteredTopics by remember(baseTopics) { mutableStateOf(baseTopics) }
 
     Box(modifier = modifier
         .fillMaxSize()
         .background(GrayMatterColors.BackgroundDark)
+        .onGloballyPositioned { screenPositionInRoot = it.positionInRoot() }
     ) {
         Column(
             modifier = Modifier
@@ -97,108 +109,107 @@ fun LibraryScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             val gridState = rememberLazyGridState()
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                state = gridState,
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(
-                    items = filteredTopics,
-                    key = { it.id }
-                ) { topic ->
-                    val isSelected = selectedTopics.contains(topic.id)
-                    val isDragged = draggedTopicId == topic.id
-                    var hasMoved by remember { mutableStateOf(false) }
-                    
-                    Box(
-                        modifier = Modifier
-                            .animateItemPlacement()
-                            .onGloballyPositioned { coords ->
-                                if (!isDragged) {
+            
+            Box(modifier = Modifier.weight(1f)) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    state = gridState,
+                    contentPadding = PaddingValues(start = 24.dp, top = 16.dp, end = 24.dp, bottom = 100.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .onGloballyPositioned { gridPositionInRoot = it.positionInRoot() }
+                        .pointerInput(selectionMode, filteredTopics) {
+                            if (selectionMode) return@pointerInput
+                            
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = { offset ->
+                                    val rootOffset = gridPositionInRoot + offset
+                                    val hit = itemBoundsMap.entries.find { it.value.contains(rootOffset) }
+                                    if (hit != null) {
+                                        draggedTopicId = hit.key
+                                        touchPointInRoot = rootOffset
+                                        touchAnchorOffset = rootOffset - hit.value.topLeft
+                                        draggedItemSize = hit.value.size
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    }
+                                },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    touchPointInRoot += dragAmount
+                                    
+                                    // Check intersection with trash
+                                    isOverTrash = trashZoneBoundsInRoot.contains(touchPointInRoot)
+                                    
+                                    if (!isOverTrash) {
+                                        val target = itemBoundsMap.entries.find { 
+                                            it.key != draggedTopicId && it.value.contains(touchPointInRoot) 
+                                        }
+                                        if (target != null) {
+                                            val fromIndex = filteredTopics.indexOfFirst { it.id == draggedTopicId }
+                                            val toIndex = filteredTopics.indexOfFirst { it.id == target.key }
+                                            if (fromIndex != -1 && toIndex != -1 && fromIndex != toIndex) {
+                                                val newList = filteredTopics.toMutableList()
+                                                val item = newList.removeAt(fromIndex)
+                                                newList.add(toIndex, item)
+                                                filteredTopics = newList
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            }
+                                        }
+                                    }
+                                },
+                                onDragEnd = {
+                                    if (isOverTrash && draggedTopicId != null) {
+                                        onDeleteTopics(listOf(draggedTopicId!!))
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    } else if (draggedTopicId != null) {
+                                        onUpdateOrder(filteredTopics.map { it.id })
+                                    }
+                                    draggedTopicId = null
+                                    isOverTrash = false
+                                },
+                                onDragCancel = {
+                                    draggedTopicId = null
+                                    isOverTrash = false
+                                    filteredTopics = baseTopics
+                                }
+                            )
+                        }
+                ) {
+                    items(
+                        items = filteredTopics,
+                        key = { it.id }
+                    ) { topic ->
+                        Box(
+                            modifier = Modifier
+                                .animateItemPlacement()
+                                .onGloballyPositioned { coords ->
+                                    // Update tracked bounds for hit detection
                                     itemBoundsMap[topic.id] = coords.boundsInRoot()
                                 }
-                            }
-                            .graphicsLayer { alpha = if (isDragged) 0f else 1f }
-                            .pointerInput(topic.id, selectionMode) {
-                                if (selectionMode) return@pointerInput
-                                
-                                detectDragGesturesAfterLongPress(
-                                    onDragStart = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        draggedTopicId = topic.id
-                                        dragOffset = Offset.Zero
-                                        isOverTrash = false
-                                        hasMoved = false
-                                    },
-                                    onDrag = { change, dragAmount ->
-                                        change.consume()
-                                        dragOffset += dragAmount
-                                        hasMoved = true
-                                        
-                                        val initialTopLeft = itemBoundsMap[topic.id]?.topLeft ?: Offset.Zero
-                                        val touchPoint = initialTopLeft + change.position
-                                        isOverTrash = trashZoneBounds.contains(touchPoint)
-                                        
-                                        if (!isOverTrash) {
-                                            val targetTopicId = itemBoundsMap.entries.find { (id, rect) ->
-                                                id != draggedTopicId && rect.contains(touchPoint)
-                                            }?.key
-                                            
-                                            if (targetTopicId != null) {
-                                                val fromIndex = filteredTopics.indexOfFirst { it.id == draggedTopicId }
-                                                val toIndex = filteredTopics.indexOfFirst { it.id == targetTopicId }
-                                                if (fromIndex != -1 && toIndex != -1) {
-                                                    val newList = filteredTopics.toMutableList()
-                                                    val item = newList.removeAt(fromIndex)
-                                                    newList.add(toIndex, item)
-                                                    filteredTopics = newList
-                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                }
-                                            }
-                                        }
-                                    },
-                                    onDragEnd = {
-                                        if (isOverTrash && draggedTopicId != null) {
-                                            onDeleteTopics(listOf(draggedTopicId!!))
-                                        } else if (draggedTopicId != null) {
-                                            if (!hasMoved) {
-                                                selectedTopics = setOf(draggedTopicId!!)
-                                            } else {
-                                                onUpdateOrder(filteredTopics.map { it.id })
-                                            }
-                                        }
-                                        draggedTopicId = null
-                                        dragOffset = Offset.Zero
-                                        isOverTrash = false
-                                    },
-                                    onDragCancel = {
-                                        draggedTopicId = null
-                                        dragOffset = Offset.Zero
-                                        isOverTrash = false
-                                        filteredTopics = baseTopics
-                                    }
-                                )
-                            }
-                    ) {
-                        TopicCard(
-                            topic = topic,
-                            romanNumeral = toRomanNumeral(filteredTopics.indexOf(topic) + 1),
-                            isSelected = selectedTopics.contains(topic.id),
-                            onClick = {
-                                if (selectionMode) {
-                                    selectedTopics = if (selectedTopics.contains(topic.id)) {
-                                        selectedTopics - topic.id
-                                    } else {
-                                        selectedTopics + topic.id
-                                    }
-                                } else if (draggedTopicId == null) {
-                                    onTopicClick(topic)
+                                .graphicsLayer {
+                                    // Hide original item during drag
+                                    alpha = if (draggedTopicId == topic.id) 0f else 1f
                                 }
-                            }
-                        )
+                        ) {
+                            TopicCard(
+                                topic = topic,
+                                romanNumeral = toRomanNumeral(filteredTopics.indexOf(topic) + 1),
+                                isSelected = selectedTopics.contains(topic.id),
+                                onClick = {
+                                    if (selectionMode) {
+                                        selectedTopics = if (selectedTopics.contains(topic.id)) {
+                                            selectedTopics - topic.id
+                                        } else {
+                                            selectedTopics + topic.id
+                                        }
+                                    } else if (draggedTopicId == null) {
+                                        onTopicClick(topic)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -227,7 +238,7 @@ fun LibraryScreen(
         ) {
             val scale by animateFloatAsState(if (isOverTrash) 1.2f else 1f, label = "trashScale")
             val containerColor by animateColorAsState(
-                if (isOverTrash) GrayMatterColors.Error else GrayMatterColors.SurfaceDark,
+                targetValue = if (isOverTrash) GrayMatterColors.Error else GrayMatterColors.SurfaceDark,
                 label = "trashColor"
             )
             
@@ -239,7 +250,7 @@ fun LibraryScreen(
                     .background(containerColor)
                     .border(2.dp, GrayMatterColors.Error.copy(alpha = 0.5f), CircleShape)
                     .onGloballyPositioned { coords ->
-                        trashZoneBounds = coords.boundsInRoot()
+                        trashZoneBoundsInRoot = coords.boundsInRoot()
                     },
                 contentAlignment = Alignment.Center
             ) {
@@ -252,26 +263,28 @@ fun LibraryScreen(
             }
         }
 
-        // Dragged Item Replica
+        // Dragged Item Replica (anchored to root coordinates for jitter-free movement)
         if (draggedTopicId != null) {
             val topic = filteredTopics.find { it.id == draggedTopicId }
-            val initialBounds = itemBoundsMap[draggedTopicId]
-            if (topic != null && initialBounds != null) {
+            if (topic != null) {
                 val density = LocalDensity.current
+                // Calculate position relative to this container's top-left
+                val localOffset = touchPointInRoot - screenPositionInRoot - touchAnchorOffset
+                
                 Box(
                     modifier = Modifier
                         .offset { 
                             IntOffset(
-                                (initialBounds.left + dragOffset.x).roundToInt(),
-                                (initialBounds.top + dragOffset.y).roundToInt()
+                                localOffset.x.roundToInt(),
+                                localOffset.y.roundToInt()
                             )
                         }
                         .size(
-                            width = with(density) { initialBounds.width.toDp() },
-                            height = with(density) { initialBounds.height.toDp() }
+                            width = with(density) { draggedItemSize.width.toDp() },
+                            height = with(density) { draggedItemSize.height.toDp() }
                         )
                         .scale(1.05f)
-                        .alpha(0.9f)
+                        .alpha(0.85f)
                         .zIndex(20f)
                 ) {
                     TopicCard(
@@ -285,6 +298,7 @@ fun LibraryScreen(
         }
     }
     
+    // Safety cleanup
     DisposableEffect(Unit) {
         onDispose {
             draggedTopicId = null
@@ -395,6 +409,14 @@ private fun TopicCard(
                     color = GrayMatterColors.TextPrimary,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                
+                Text(
+                    text = "${topic.resourceCount} resources",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = GrayMatterColors.Neutral500
                 )
             }
             

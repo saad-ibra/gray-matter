@@ -156,7 +156,7 @@ class GrayMatterViewModel(
             itemRepository.updateItemTopic(itemId, topicId)
         }
         
-        saveReferenceLinksInternal(resourceId, com.example.graymatter.domain.ReferenceType.RESOURCE, referenceLinks)
+        saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
         
         return itemId
     }
@@ -243,6 +243,7 @@ class GrayMatterViewModel(
             )
             opinionRepository.saveOpinion(opinion)
             
+            referenceLinkRepository.deleteReferenceLinksBySource(opinion.id)
             saveReferenceLinksInternal(opinion.id, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
             
             // Update item metadata
@@ -264,6 +265,7 @@ class GrayMatterViewModel(
                 updatedAt = now
             )
             opinionRepository.updateOpinion(updated)
+            referenceLinkRepository.deleteReferenceLinksBySource(opinionId)
             saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
         }
     }
