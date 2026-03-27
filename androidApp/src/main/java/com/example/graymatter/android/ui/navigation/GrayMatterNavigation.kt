@@ -109,7 +109,31 @@ fun GrayMatterNavigation(
         }
     ) {
         // Main Pager (Home, Library, Profile)
-        composable(NavigationDestination.Home.route) {
+        composable(
+            route = NavigationDestination.Home.route,
+            enterTransition = {
+                if (initialState.destination.route == NavigationDestination.KnowledgeGraph.route) {
+                    // Special case: Slide in from left (towards right/end) from Relatrix
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.End,
+                        animationSpec = tween(300)
+                    )
+                } else {
+                    // Default forward behavior: Slide in from right (towards start)
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                        animationSpec = tween(300)
+                    )
+                }
+            },
+            popEnterTransition = {
+                // Default back behavior: Slide in from left (towards right/end)
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = tween(300)
+                )
+            }
+        ) {
             val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 3 })
             
             androidx.compose.material3.Scaffold(
