@@ -106,23 +106,26 @@ fun NewEntryScreen(
                 originalFileName = it.lastPathSegment ?: "Unknown file"
             }
             
-            // Auto-fill title from filename if blank
-            if (title.isBlank()) {
-                title = originalFileName?.substringBeforeLast('.') ?: ""
+            // Always update title from filename when a new file is picked
+            val extractedTitle = originalFileName?.substringBeforeLast('.') ?: ""
+            if (extractedTitle.isNotBlank()) {
+                title = extractedTitle
             }
         }
     }
 
-    // Auto-fill title from URL if blank
+    // Removed: Auto-fill title from URL (now manual via "Load" button)
+    /*
     LaunchedEffect(urlValue) {
         if (entryType == EntryType.LINK && urlValue.isNotBlank() && title.isBlank()) {
             title = inferTitleFromUrl(urlValue)
         }
     }
+    */
 
     if (isNoteEditorOpen) {
         MarkdownEditor(
-            title = if (title.isBlank()) "New Note" else title,
+            title = title, // Pass the current title (will show placeholder if empty)
             initialText = noteContent,
             onBackClick = { isNoteEditorOpen = false },
             onSave = { content ->
@@ -208,6 +211,13 @@ fun NewEntryScreen(
                 onTitleChange = { title = it },
                 urlInput = urlValue,
                 onUrlChange = { urlValue = it },
+                onLoadTitle = { 
+                    title = inferTitleFromUrl(urlValue)
+                },
+                onClearUrl = {
+                    urlValue = ""
+                    title = ""
+                },
                 selectedFileName = originalFileName,
                 onPickFile = { filePickerLauncher.launch(arrayOf("*/*")) },
                 onAddNoteContent = { isNoteEditorOpen = true },
@@ -270,9 +280,22 @@ fun NewEntryScreen(
             // KNOWLEDGE LINKS display section — for notes, shown between source material and opinion
             if (entryType == EntryType.NOTE) {
                 // Auto-extract [[...]] references from noteContent
-                val autoExtractedRefs = remember(noteContent) {
+                val autoExtractedRefs = remember(noteContent, noteSelectedReferences) {
                     val regex = Regex("\\[\\[(.*?)\\]\\]")
-                    regex.findAll(noteContent).map { it.groupValues[1] }.toList()
+                    val rawHits = regex.findAll(noteContent).map { it.groupValues[1] }.toList()
+                    
+                    // Filter out hits that are already in noteSelectedReferences to avoid duplicates
+                    val manualRefTexts = noteSelectedReferences.map { ref ->
+                        when (ref) {
+                            is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                            is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                        }
+                    }.toSet()
+                    
+                    rawHits.filter { hit ->
+                        manualRefTexts.none { it == hit || hit.endsWith(it) }
+                    }.distinct()
                 }
 
                 if (autoExtractedRefs.isNotEmpty() || noteSelectedReferences.isNotEmpty()) {
@@ -347,13 +370,13 @@ fun NewEntryScreen(
                         }
 
                         // Manually added references within the note
-                    if (noteSelectedReferences.isNotEmpty()) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
+                        if (noteSelectedReferences.isNotEmpty()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
                             noteSelectedReferences.forEach { ref ->
                                 val text = when (ref) {
                                     is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
@@ -674,6 +697,8 @@ private fun SourceMaterialSection(
     onTitleChange: (String) -> Unit,
     urlInput: String,
     onUrlChange: (String) -> Unit,
+    onLoadTitle: () -> Unit,
+    onClearUrl: () -> Unit,
     selectedFileName: String?,
     onPickFile: () -> Unit,
     onAddNoteContent: () -> Unit,
@@ -699,7 +724,44 @@ private fun SourceMaterialSection(
         when (selectedTab) {
             0 -> {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    InputField(urlInput, onUrlChange, "https://example.com", Icons.Default.Public)
+                    InputField(
+                        value = urlInput, 
+                        onValueChange = { 
+                            onUrlChange(it)
+                            // Clear title if URL is edited to force re-load/verification
+                            if (titleInput.isNotEmpty()) onTitleChange("") 
+                        }, 
+                        placeholder = "https://example.com", 
+                        leadingIcon = Icons.Default.Public,
+                        trailingContent = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (urlInput.isNotBlank()) {
+                                    IconButton(
+                                        onClick = onLoadTitle,
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ArrowForward, 
+                                            "Load Title", 
+                                            tint = GrayMatterColors.Primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = onClearUrl,
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Close, 
+                                            "Clear", 
+                                            tint = GrayMatterColors.Neutral600,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    )
                     if (urlInput.isNotBlank()) {
                         InputField(titleInput, onTitleChange, "Resource Title", Icons.Default.Title)
                     }
@@ -750,11 +812,30 @@ private fun AddNoteContentButton(onClick: () -> Unit, hasContent: Boolean) {
 }
 
 @Composable
-private fun InputField(value: String, onValueChange: (String) -> Unit, placeholder: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(GrayMatterColors.SurfaceInput).border(1.dp, GrayMatterColors.SurfaceBorder, RoundedCornerShape(12.dp)).padding(16.dp)) {
+private fun InputField(
+    value: String, 
+    onValueChange: (String) -> Unit, 
+    placeholder: String, 
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    trailingContent: (@Composable () -> Unit)? = null
+) {
+    Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(GrayMatterColors.SurfaceInput).border(1.dp, GrayMatterColors.SurfaceBorder, RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Icon(icon, null, tint = GrayMatterColors.Neutral500, modifier = Modifier.size(20.dp))
-            BasicTextField(value = value, onValueChange = onValueChange, textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary), modifier = Modifier.weight(1f), cursorBrush = SolidColor(GrayMatterColors.Primary), decorationBox = { inner -> if (value.isEmpty()) Text(placeholder, color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyLarge); inner() })
+            Icon(leadingIcon, null, tint = GrayMatterColors.Neutral500, modifier = Modifier.size(20.dp))
+            BasicTextField(
+                value = value, 
+                onValueChange = onValueChange, 
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary), 
+                modifier = Modifier.weight(1f), 
+                cursorBrush = SolidColor(GrayMatterColors.Primary), 
+                decorationBox = { inner -> 
+                    if (value.isEmpty()) Text(placeholder, color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyLarge)
+                    inner() 
+                }
+            )
+            if (trailingContent != null) {
+                trailingContent()
+            }
         }
     }
 }

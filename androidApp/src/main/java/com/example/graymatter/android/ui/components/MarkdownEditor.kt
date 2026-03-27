@@ -80,13 +80,8 @@ fun MarkdownEditor(
         regex.findAll(textFieldValue.text).map { it.groupValues[1] }.toList()
     }
 
-    // Word count & reading time
     val wordCount = remember(textFieldValue.text) {
         textFieldValue.text.split(Regex("\\s+")).count { it.isNotBlank() }
-    }
-    val readingTimeMin = remember(wordCount) { 
-        val mins = wordCount / 200 // average reading speed
-        if (mins < 1 && wordCount > 0) "< 1 min" else "$mins min read"
     }
 
     Column(
@@ -123,7 +118,7 @@ fun MarkdownEditor(
                 )
                 if (!isPreviewMode && wordCount > 0) {
                     Text(
-                        text = "$wordCount words · $readingTimeMin",
+                        text = "$wordCount words",
                         style = MaterialTheme.typography.labelSmall,
                         color = GrayMatterColors.Neutral600
                     )
@@ -160,7 +155,10 @@ fun MarkdownEditor(
             if (onTitleChange != null) {
                 BasicTextField(
                     value = editableTitle,
-                    onValueChange = { editableTitle = it },
+                    onValueChange = {
+                        editableTitle = it
+                        onTitleChange(it)
+                    },
                     textStyle = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = GrayMatterColors.TextPrimary
@@ -173,9 +171,11 @@ fun MarkdownEditor(
                     decorationBox = { inner ->
                         if (editableTitle.isEmpty()) {
                             Text(
-                                "Untitled Note",
-                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                                color = GrayMatterColors.Neutral600
+                                "Note Title",
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = GrayMatterColors.Neutral800
+                                )
                             )
                         }
                         inner()
@@ -218,6 +218,11 @@ fun MarkdownEditor(
                                     onShowReferenceSelector?.invoke()
                                 }
                             }
+                            
+                            if (newTxt != oldTxt) {
+                                onTextChange(newTxt)
+                            }
+                            
                             textFieldValue = newValue 
                         },
                         textStyle = MaterialTheme.typography.bodyLarge.copy(
