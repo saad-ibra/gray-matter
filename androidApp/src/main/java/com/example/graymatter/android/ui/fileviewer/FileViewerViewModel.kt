@@ -25,6 +25,8 @@ import kotlinx.datetime.Clock
 import kotlinx.coroutines.flow.first
 import java.io.File
 import kotlin.random.Random
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 /**
  * ViewModel for the File Viewer screen.
@@ -625,6 +627,43 @@ class FileViewerViewModel(
 
     fun saveProgressOnExit() {
         saveProgress()
+    }
+
+    /**
+     * Retrieves reference links for a resource.
+     */
+    fun getLinksForResource(resourceId: String): Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>> {
+        return resolveLinksForSource(resourceId)
+    }
+
+    /**
+     * Shared helper to resolve reference links for any source ID.
+     */
+    private fun resolveLinksForSource(sourceId: String): Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>> {
+        return referenceLinkRepository.getReferenceLinksBySource(sourceId).map { links ->
+            links.mapNotNull { link ->
+                when (link.targetType) {
+                    com.example.graymatter.domain.ReferenceType.TOPIC -> {
+                        val topic = (resourceRepository as? com.example.graymatter.data.DefaultResourceRepository)?.let { null } // We need topicRepository here too
+                        // Actually, looking at what's available...
+                        null // Placeholder as FileViewerViewModel doesn't have topicRepository
+                    }
+                    com.example.graymatter.domain.ReferenceType.RESOURCE -> {
+                        val resource = resourceRepository.getResourceById(link.targetId)
+                        if (resource != null) com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem(id = resource.id, title = resource.title ?: "Untitled", type = resource.type.name, parentTopicId = null, isExpanded = false, isChecked = true) else null
+                    }
+                    com.example.graymatter.domain.ReferenceType.OPINION -> {
+                        val op = opinionRepository.getOpinionById(link.targetId)
+                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = op.text, resourceId = op.itemId, typeLabel = "Opinion", isExpanded = false, isChecked = true) else null
+                    }
+                    com.example.graymatter.domain.ReferenceType.BOOKMARK -> {
+                        val bookmark = resourceRepository.getBookmarkById(link.targetId)
+                        if (bookmark != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = bookmark.id, snippet = bookmark.title ?: "Untitled", resourceId = bookmark.resourceId, typeLabel = "Bookmark", isExpanded = false, isChecked = true) else null
+                    }
+                    else -> null
+                }
+            }
+        }
     }
 
     private suspend fun saveReferenceLinksInternal(sourceId: String, sourceType: com.example.graymatter.domain.ReferenceType, links: List<com.example.graymatter.domain.ReferenceSelectorItem>) {

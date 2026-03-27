@@ -729,6 +729,13 @@ class GrayMatterViewModel(
     }
 
     /**
+     * Retrieves reference links for a topic.
+     */
+    fun getLinksForTopic(topicId: String): Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>> {
+        return resolveLinksForSource(topicId)
+    }
+
+    /**
      * Shared helper to resolve reference links for any source ID.
      */
     private fun resolveLinksForSource(sourceId: String): Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>> {

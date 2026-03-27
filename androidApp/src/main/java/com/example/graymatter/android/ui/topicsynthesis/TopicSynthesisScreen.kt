@@ -42,6 +42,7 @@ fun TopicSynthesisScreen(
     onDeleteTopic: () -> Unit,
     onRenameTopic: (String) -> Unit,
     onExport: () -> Unit,
+    onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
     modifier: Modifier = Modifier
 ) {
@@ -55,7 +56,16 @@ fun TopicSynthesisScreen(
     var referenceToInsert by remember { mutableStateOf<String?>(null) }
     var currentEditorText by remember { mutableStateOf(topic.notes ?: "") }
 
-    // Auto-sync reference selection with text content
+    // Load existing references on startup
+    LaunchedEffect(topic.id) {
+        if (referenceSelectorViewModel != null) {
+            onLoadLinks(topic.id).collect { links ->
+                selectedReferences = links
+            }
+        }
+    }
+
+    // Robust reference synchronizer (matches NewEntryScreen)
     LaunchedEffect(currentEditorText) {
         val regex = Regex("\\[\\[(.*?)\\]\\]")
         val foundTexts = regex.findAll(currentEditorText).map { it.groupValues[1] }.toSet()
@@ -67,7 +77,7 @@ fun TopicSynthesisScreen(
                 is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
             }
             foundTexts.contains(refText) || foundTexts.any { it.endsWith(refText) }
-        }
+        }.distinctBy { it.id }
     }
     
     var showRenameDialog by remember { mutableStateOf(false) }
@@ -84,7 +94,10 @@ fun TopicSynthesisScreen(
             },
             onTextChange = { currentEditorText = it },
             initialPreviewMode = topic.notes?.isNotBlank() == true,
-            onShowReferenceSelector = { showReferenceSelector = true },
+            onShowReferenceSelector = { 
+                referenceSelectorViewModel?.clearSelection()
+                showReferenceSelector = true 
+            },
             referenceToInsert = referenceToInsert,
             onReferenceInserted = { referenceToInsert = null }
         )

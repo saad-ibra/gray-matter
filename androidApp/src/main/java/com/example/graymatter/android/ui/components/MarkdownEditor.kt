@@ -125,8 +125,15 @@ fun MarkdownEditor(
                 }
             }
 
-            TextButton(onClick = { onSave(textFieldValue.text) }) {
-                Text("Save", color = GrayMatterColors.Primary, fontWeight = FontWeight.Bold)
+            TextButton(
+                onClick = { onSave(textFieldValue.text) },
+                enabled = editableTitle.isNotBlank()
+            ) {
+                Text(
+                    "Save", 
+                    color = if (editableTitle.isNotBlank()) GrayMatterColors.Primary else GrayMatterColors.Neutral700,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
@@ -347,7 +354,6 @@ fun MarkdownEditor(
                                             tint = GrayMatterColors.Primary,
                                             modifier = Modifier.size(16.dp)
                                         )
-                                        Spacer(Modifier.width(6.dp))
                                         Text(
                                             "Reference",
                                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),

@@ -95,7 +95,16 @@ fun FileViewerScreen(
     var editSelectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
     var currentEditorText by remember { mutableStateOf(resource?.extractedText ?: "") }
 
-    // Auto-sync reference selection with text content
+    // Load existing references on startup if not already loaded
+    LaunchedEffect(resourceId) {
+        if (referenceSelectorViewModel != null) {
+            viewModel.getLinksForResource(resourceId).collect { links ->
+                editSelectedReferences = links
+            }
+        }
+    }
+
+    // Robust reference synchronizer (matches NewEntryScreen)
     LaunchedEffect(currentEditorText) {
         val regex = Regex("\\[\\[(.*?)\\]\\]")
         val foundTexts = regex.findAll(currentEditorText).map { it.groupValues[1] }.toSet()
@@ -107,7 +116,7 @@ fun FileViewerScreen(
                 is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
             }
             foundTexts.contains(refText) || foundTexts.any { it.endsWith(refText) }
-        }
+        }.distinctBy { it.id }
     }
 
     // Auto-trigger external viewer for unsupported internal types
@@ -254,7 +263,10 @@ fun FileViewerScreen(
                                 onTitleChange = { newTitle -> viewModel.resource.value?.let { appModule_res -> /* Normally we'd rename here, but we'll focus on text for now */ } },
                                 onSave = { content -> viewModel.updateResourceText(content, editSelectedReferences) },
                                 initialPreviewMode = true,
-                                onShowReferenceSelector = { showEditReferenceSelector = true },
+                                onShowReferenceSelector = { 
+                                    referenceSelectorViewModel?.clearSelection()
+                                    showEditReferenceSelector = true 
+                                },
                                 referenceToInsert = editReferenceToInsert,
                                 onReferenceInserted = { editReferenceToInsert = null },
                                 modifier = Modifier.fillMaxSize()

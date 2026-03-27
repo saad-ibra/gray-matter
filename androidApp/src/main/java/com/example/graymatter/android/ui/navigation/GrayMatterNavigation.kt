@@ -231,7 +231,8 @@ fun GrayMatterNavigation(
                         val markdown = ExportService.exportTopicSummary(t, topicItems)
                         shareText(context, markdown, "Topic Analysis: ${t.name}")
                     }
-                }
+                },
+                onLoadLinks = { topicId -> viewModel.getLinksForTopic(topicId) }
             )
         }
 
@@ -361,7 +362,16 @@ fun GrayMatterNavigation(
                 var editSelectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
                 var currentEditorText by remember { mutableStateOf(editingResource?.extractedText ?: "") }
 
-                // Auto-sync reference selection with text content
+                // Load existing references on startup
+                LaunchedEffect(editingResource?.id) {
+                    editingResource?.id?.let { resId ->
+                        viewModel.getLinksForResource(resId).collect { links ->
+                            editSelectedReferences = links
+                        }
+                    }
+                }
+
+                // Robust reference synchronizer (matches NewEntryScreen)
                 LaunchedEffect(currentEditorText) {
                     val regex = Regex("\\[\\[(.*?)\\]\\]")
                     val foundTexts = regex.findAll(currentEditorText).map { it.groupValues[1] }.toSet()
@@ -373,7 +383,7 @@ fun GrayMatterNavigation(
                             is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
                         }
                         foundTexts.contains(refText) || foundTexts.any { it.endsWith(refText) }
-                    }
+                    }.distinctBy { it.id }
                 }
 
                 val coroutineScope = rememberCoroutineScope()
@@ -393,7 +403,10 @@ fun GrayMatterNavigation(
                         }
                         editingResource = null
                     },
-                    onShowReferenceSelector = { showEditReferenceSelector = true },
+                    onShowReferenceSelector = { 
+                        referenceSelectorViewModel.clearSelection()
+                        showEditReferenceSelector = true 
+                    },
                     referenceToInsert = editReferenceToInsert,
                     onReferenceInserted = { editReferenceToInsert = null }
                 )
