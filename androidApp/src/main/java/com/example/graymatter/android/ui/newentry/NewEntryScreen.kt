@@ -123,6 +123,11 @@ fun NewEntryScreen(
     }
     */
 
+    val onShowReferenceSelector = {
+        referenceSelectorViewModel.clearSelection()
+        showReferenceSelector = true
+    }
+    
     if (isNoteEditorOpen) {
         MarkdownEditor(
             title = title, // Pass the current title (will show placeholder if empty)
@@ -137,7 +142,9 @@ fun NewEntryScreen(
                 noteContent = content
             },
             onTitleChange = { title = it },
-            onShowReferenceSelector = { showReferenceSelector = true },
+            onShowReferenceSelector = {
+                onShowReferenceSelector()
+            },
             referenceToInsert = referenceToInsert,
             onReferenceInserted = { referenceToInsert = null }
         )
@@ -167,7 +174,11 @@ fun NewEntryScreen(
     }
 
     // Auto-sync note selected references with content: remove if [[text]] is deleted
-    androidx.compose.runtime.LaunchedEffect(noteContent) {
+    // Improved Sync & Re-hydration logic
+    androidx.compose.runtime.LaunchedEffect(noteContent, isNoteEditorOpen) {
+        // Only run synchronization when the editor is NOT open or just closed
+        if (isNoteEditorOpen) return@LaunchedEffect
+        
         val regex = Regex("\\[\\[(.*?)\\]\\]")
         val foundTexts = regex.findAll(noteContent).map { it.groupValues[1] }.toSet()
         

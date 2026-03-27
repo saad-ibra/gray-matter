@@ -111,6 +111,12 @@ class ReferenceSelectorViewModel(
         rebuildItems()
     }
 
+    fun clearSelection() {
+        checkedStateMap.clear()
+        _uiState.update { it.copy(selectedItems = emptyList()) }
+        rebuildItems()
+    }
+
     private fun ReferenceSelectorItem.copyItem(isChecked: Boolean? = null, isExpanded: Boolean? = null): ReferenceSelectorItem {
         val c = isChecked ?: this.isChecked
         val e = isExpanded ?: this.isExpanded

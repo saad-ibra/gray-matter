@@ -240,99 +240,120 @@ fun MarkdownEditor(
                     )
                 }
 
-                // Live Reference Chips
-                if (liveReferences.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Link,
-                            contentDescription = null,
-                            tint = GrayMatterColors.Primary.copy(alpha = 0.7f),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        liveReferences.forEach { ref ->
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = GrayMatterColors.Primary.copy(alpha = 0.12f),
-                                modifier = Modifier.border(
-                                    0.5.dp,
-                                    GrayMatterColors.Primary.copy(alpha = 0.3f),
-                                    RoundedCornerShape(8.dp)
-                                )
-                            ) {
-                                Text(
-                                    text = ref,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = GrayMatterColors.Primary,
-                                    maxLines = 1,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Formatting Toolbar
+                // Unified Footer Tooling (Glassmorphic Bar)
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(16.dp)),
-                    color = GrayMatterColors.SurfaceDark
+                        .padding(horizontal = 16.dp, vertical = 20.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .border(
+                            1.dp, 
+                            GrayMatterColors.Neutral800.copy(alpha = 0.5f), 
+                            RoundedCornerShape(20.dp)
+                        ),
+                    color = GrayMatterColors.SurfaceDark.copy(alpha = 0.92f),
+                    tonalElevation = 6.dp
                 ) {
-                    ScrollableTabRow(
-                        selectedTabIndex = 0,
-                        edgePadding = 8.dp,
-                        containerColor = Color.Transparent,
-                        indicator = {},
-                        divider = {}
-                    ) {
-                        MarkdownToolbarAction(Icons.Default.FormatBold) { textFieldValue = wrapSelection(textFieldValue, "**") }
-                        MarkdownToolbarAction(Icons.Default.FormatItalic) { textFieldValue = wrapSelection(textFieldValue, "_") }
-                        MarkdownToolbarAction(Icons.Default.Title) { textFieldValue = toggleLineStart(textFieldValue, "### ") }
-                        MarkdownToolbarAction(Icons.Default.FormatListBulleted) { textFieldValue = toggleLineStart(textFieldValue, "- ") }
-                        MarkdownToolbarAction(Icons.Default.FormatQuote) { textFieldValue = toggleLineStart(textFieldValue, "> ") }
-                        MarkdownToolbarAction(Icons.Default.Code) { textFieldValue = wrapSelection(textFieldValue, "`") }
-                        MarkdownToolbarAction(Icons.Default.Link) { textFieldValue = wrapSelection(textFieldValue, "[", "](url)") }
-                        if (onShowReferenceSelector != null) {
-                            // Reference button with label for better discoverability
-                            Surface(
-                                onClick = {
-                                    val txt = textFieldValue.text
-                                    val cursor = textFieldValue.selection.start
-                                    textFieldValue = TextFieldValue(
-                                        txt.substring(0, cursor) + "[[" + txt.substring(cursor),
-                                        TextRange(cursor + 2)
-                                    )
-                                    onShowReferenceSelector()
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                color = GrayMatterColors.Primary.copy(alpha = 0.15f),
-                                modifier = Modifier.padding(horizontal = 4.dp)
+                    Column {
+                        // Live Reference Chips (Top Section)
+                        if (liveReferences.isNotEmpty()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                                Icon(
+                                    Icons.Default.Link,
+                                    contentDescription = null,
+                                    tint = GrayMatterColors.Jonquil.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                liveReferences.forEach { ref ->
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = GrayMatterColors.Jonquil.copy(alpha = 0.12f),
+                                        modifier = Modifier.border(
+                                            0.5.dp,
+                                            GrayMatterColors.Jonquil.copy(alpha = 0.3f),
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                    ) {
+                                        Text(
+                                            text = ref,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = GrayMatterColors.Jonquil,
+                                            maxLines = 1,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(GrayMatterColors.Neutral800.copy(alpha = 0.5f))
+                            )
+                        }
+
+                        // Formatting Toolbar (Bottom Section)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .horizontalScroll(rememberScrollState()),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            MarkdownToolbarAction(Icons.Default.FormatBold) { textFieldValue = wrapSelection(textFieldValue, "**") }
+                            MarkdownToolbarAction(Icons.Default.FormatItalic) { textFieldValue = wrapSelection(textFieldValue, "_") }
+                            MarkdownToolbarAction(Icons.Default.Title) { textFieldValue = toggleLineStart(textFieldValue, "### ") }
+                            MarkdownToolbarAction(Icons.Default.FormatListBulleted) { textFieldValue = toggleLineStart(textFieldValue, "- ") }
+                            MarkdownToolbarAction(Icons.Default.FormatQuote) { textFieldValue = toggleLineStart(textFieldValue, "> ") }
+                            MarkdownToolbarAction(Icons.Default.Code) { textFieldValue = wrapSelection(textFieldValue, "`") }
+                            MarkdownToolbarAction(Icons.Default.Link) { textFieldValue = wrapSelection(textFieldValue, "[", "](url)") }
+                            
+                            if (onShowReferenceSelector != null) {
+                                VerticalDivider(
+                                    modifier = Modifier.height(24.dp).padding(horizontal = 8.dp),
+                                    color = GrayMatterColors.Neutral800
+                                )
+                                
+                                // Enhanced Reference button
+                                Surface(
+                                    onClick = { 
+                                        val txt = textFieldValue.text
+                                        val cursor = textFieldValue.selection.start
+                                        textFieldValue = TextFieldValue(
+                                            txt.substring(0, cursor) + "[[" + txt.substring(cursor),
+                                            TextRange(cursor + 2)
+                                        )
+                                        onShowReferenceSelector()
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = GrayMatterColors.Primary.copy(alpha = 0.15f),
+                                    modifier = Modifier.padding(horizontal = 4.dp)
                                 ) {
-                                    Icon(
-                                        Icons.Default.Attachment,
-                                        null,
-                                        tint = GrayMatterColors.Primary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        "Ref",
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                        color = GrayMatterColors.Primary
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Attachment,
+                                            null,
+                                            tint = GrayMatterColors.Primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            "Reference",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = GrayMatterColors.Primary
+                                        )
+                                    }
                                 }
                             }
                         }
