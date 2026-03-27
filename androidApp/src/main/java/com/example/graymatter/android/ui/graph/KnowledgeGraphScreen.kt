@@ -60,6 +60,7 @@ import kotlin.math.sqrt
 fun KnowledgeGraphScreen(
     viewModel: KnowledgeGraphViewModel,
     onBackClick: () -> Unit,
+    onNavigateHome: () -> Unit,
     onNodeDoubleTap: (GraphNode) -> Unit
 ) {
     val graphState by viewModel.graphState.collectAsState()
@@ -79,7 +80,7 @@ fun KnowledgeGraphScreen(
     var showTemplates by remember { mutableStateOf(true) }
     var showCustom by remember { mutableStateOf(true) }
     var showDictionary by remember { mutableStateOf(true) }
-
+    
     // Simulation
     val simulator = remember { ForceSimulator() }
     var ticks by remember { mutableIntStateOf(0) } // trigger redraws
@@ -147,10 +148,10 @@ fun KnowledgeGraphScreen(
                     modifier = Modifier.padding(horizontal = 48.dp)
                 )
                 Button(
-                    onClick = onBackClick,
+                    onClick = onNavigateHome,
                     colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary)
                 ) {
-                    Text("Explore Library", color = Color.Black)
+                    Text("Go Home", color = Color.Black)
                 }
             }
         } else {

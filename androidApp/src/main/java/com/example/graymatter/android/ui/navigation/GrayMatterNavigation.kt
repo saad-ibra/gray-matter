@@ -528,6 +528,11 @@ fun GrayMatterNavigation(
             com.example.graymatter.android.ui.graph.KnowledgeGraphScreen(
                 viewModel = graphViewModel,
                 onBackClick = { navController.popBackStack() },
+                onNavigateHome = {
+                    navController.navigate(NavigationDestination.Home.route) {
+                        popUpTo(NavigationDestination.Home.route) { inclusive = true }
+                    }
+                },
                 onNodeDoubleTap = { node ->
                     when (node.type) {
                         com.example.graymatter.android.ui.graph.NodeType.TOPIC -> {

@@ -116,140 +116,170 @@ fun LibraryScreen(
             val gridState = rememberLazyGridState()
             
             Box(modifier = Modifier.weight(1f)) {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    state = gridState,
-                    // Fix: Disable grid scrolling during drag to prevent gesture interruption
-                    userScrollEnabled = draggedTopicId.value == null,
-                    contentPadding = PaddingValues(start = 24.dp, top = 16.dp, end = 24.dp, bottom = 100.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .onGloballyPositioned { gridPositionInRoot.value = it.positionInRoot() }
-                        .pointerInput(selectionMode) {
-                            if (selectionMode) return@pointerInput
-                            
-                            // Fix: Loop to keep detector alive across multiple gestures (Fixes "One-and-Done")
-                            while (true) {
-                                detectDragGesturesAfterLongPress(
-                                    onDragStart = { offset ->
-                                        val items = gridState.layoutInfo.visibleItemsInfo
-                                        val item = items.find { 
-                                            Rect(
-                                                it.offset.x.toFloat(), 
-                                                it.offset.y.toFloat(), 
-                                                (it.offset.x + it.size.width).toFloat(), 
-                                                (it.offset.y + it.size.height).toFloat()
-                                            ).contains(offset)
-                                        }
-                                        if (item != null) {
-                                            val topic = filteredTopicsState.value.getOrNull(item.index)
-                                            if (topic != null) {
-                                                draggedTopicId.value = topic.id
-                                                val rootTouchStart = gridPositionInRoot.value + offset
-                                                touchPointInRoot.value = rootTouchStart
-                                                
-                                                val itemRootTopLeft = gridPositionInRoot.value + Offset(item.offset.x.toFloat(), item.offset.y.toFloat())
-                                                touchAnchorOffset.value = rootTouchStart - itemRootTopLeft
-                                                draggedItemSize.value = Size(item.size.width.toFloat(), item.size.height.toFloat())
-                                                lastSwappedId.value = null
-                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            }
-                                        }
-                                    },
-                                    onDrag = { change, dragAmount ->
-                                        val currentDraggedId = draggedTopicId.value ?: return@detectDragGesturesAfterLongPress
-                                        change.consume()
-                                        touchPointInRoot.value += dragAmount
-                                        
-                                        // 1. Check intersection with trash in root space
-                                        isOverTrash.value = trashZoneBoundsInRoot.value.contains(touchPointInRoot.value)
-                                        
-                                        if (!isOverTrash.value) {
-                                            // 2. Search for swap target relative to grid
-                                            val relativeTouchPoint = touchPointInRoot.value - gridPositionInRoot.value
+                if (filteredTopics.isEmpty() && searchQuery.isEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MenuBook,
+                            contentDescription = null,
+                            tint = GrayMatterColors.Neutral600,
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No resources yet. Start by adding a new entry.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = GrayMatterColors.Neutral500,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = onNavigateToHome,
+                            colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary)
+                        ) {
+                            Text("Go Home", color = Color.Black)
+                        }
+                    }
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        state = gridState,
+                        // Fix: Disable grid scrolling during drag to prevent gesture interruption
+                        userScrollEnabled = draggedTopicId.value == null,
+                        contentPadding = PaddingValues(start = 24.dp, top = 16.dp, end = 24.dp, bottom = 100.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .onGloballyPositioned { gridPositionInRoot.value = it.positionInRoot() }
+                            .pointerInput(selectionMode) {
+                                if (selectionMode) return@pointerInput
+                                
+                                // Fix: Loop to keep detector alive across multiple gestures (Fixes "One-and-Done")
+                                while (true) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = { offset ->
                                             val items = gridState.layoutInfo.visibleItemsInfo
-                                            
-                                            val target = items.find { item ->
+                                            val item = items.find { 
                                                 Rect(
-                                                    item.offset.x.toFloat(), 
-                                                    item.offset.y.toFloat(), 
-                                                    (item.offset.x + item.size.width).toFloat(), 
-                                                    (item.offset.y + item.size.height).toFloat()
-                                                ).contains(relativeTouchPoint)
+                                                    it.offset.x.toFloat(), 
+                                                    it.offset.y.toFloat(), 
+                                                    (it.offset.x + it.size.width).toFloat(), 
+                                                    (it.offset.y + it.size.height).toFloat()
+                                                ).contains(offset)
                                             }
-
-                                            if (target != null && target.key != currentDraggedId && target.key != lastSwappedId.value) {
-                                                val currentList = filteredTopicsState.value
-                                                val fromIndex = currentList.indexOfFirst { it.id == currentDraggedId }
-                                                val toIndex = currentList.indexOfFirst { it.id == target.key }
-                                                
-                                                if (fromIndex != -1 && toIndex != -1) {
-                                                    val newList = currentList.toMutableList()
-                                                    val itemToMove = newList.removeAt(fromIndex)
-                                                    newList.add(toIndex, itemToMove)
-                                                    filteredTopicsState.value = newList
-                                                    lastSwappedId.value = target.key as? String
-                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            if (item != null) {
+                                                val topic = filteredTopicsState.value.getOrNull(item.index)
+                                                if (topic != null) {
+                                                    draggedTopicId.value = topic.id
+                                                    val rootTouchStart = gridPositionInRoot.value + offset
+                                                    touchPointInRoot.value = rootTouchStart
+                                                    
+                                                    val itemRootTopLeft = gridPositionInRoot.value + Offset(item.offset.x.toFloat(), item.offset.y.toFloat())
+                                                    touchAnchorOffset.value = rootTouchStart - itemRootTopLeft
+                                                    draggedItemSize.value = Size(item.size.width.toFloat(), item.size.height.toFloat())
+                                                    lastSwappedId.value = null
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                 }
-                                            } else if (target == null) {
-                                                lastSwappedId.value = null
                                             }
+                                        },
+                                        onDrag = { change, dragAmount ->
+                                            val currentDraggedId = draggedTopicId.value ?: return@detectDragGesturesAfterLongPress
+                                            change.consume()
+                                            touchPointInRoot.value += dragAmount
+                                            
+                                            // 1. Check intersection with trash in root space
+                                            isOverTrash.value = trashZoneBoundsInRoot.value.contains(touchPointInRoot.value)
+                                            
+                                            if (!isOverTrash.value) {
+                                                // 2. Search for swap target relative to grid
+                                                val relativeTouchPoint = touchPointInRoot.value - gridPositionInRoot.value
+                                                val items = gridState.layoutInfo.visibleItemsInfo
+                                                
+                                                val target = items.find { item ->
+                                                    Rect(
+                                                        item.offset.x.toFloat(), 
+                                                        item.offset.y.toFloat(), 
+                                                        (item.offset.x + item.size.width).toFloat(), 
+                                                        (item.offset.y + item.size.height).toFloat()
+                                                    ).contains(relativeTouchPoint)
+                                                }
+
+                                                if (target != null && target.key != currentDraggedId && target.key != lastSwappedId.value) {
+                                                    val currentList = filteredTopicsState.value
+                                                    val fromIndex = currentList.indexOfFirst { it.id == currentDraggedId }
+                                                    val toIndex = currentList.indexOfFirst { it.id == target.key }
+                                                    
+                                                    if (fromIndex != -1 && toIndex != -1) {
+                                                        val newList = currentList.toMutableList()
+                                                        val itemToMove = newList.removeAt(fromIndex)
+                                                        newList.add(toIndex, itemToMove)
+                                                        filteredTopicsState.value = newList
+                                                        lastSwappedId.value = target.key as? String
+                                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    }
+                                                } else if (target == null) {
+                                                    lastSwappedId.value = null
+                                                }
+                                            }
+                                        },
+                                        onDragEnd = {
+                                            val draggedId = draggedTopicId.value
+                                            if (draggedId != null) {
+                                                if (isOverTrash.value) {
+                                                    currentOnDeleteTopics(listOf(draggedId))
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                } else {
+                                                    currentOnUpdateOrder(filteredTopicsState.value.map { it.id })
+                                                }
+                                            }
+                                            draggedTopicId.value = null
+                                            isOverTrash.value = false
+                                            lastSwappedId.value = null
+                                        },
+                                        onDragCancel = {
+                                            draggedTopicId.value = null
+                                            isOverTrash.value = false
+                                            lastSwappedId.value = null
+                                            filteredTopicsState.value = currentBaseTopics
                                         }
-                                    },
-                                    onDragEnd = {
-                                        val draggedId = draggedTopicId.value
-                                        if (draggedId != null) {
-                                            if (isOverTrash.value) {
-                                                currentOnDeleteTopics(listOf(draggedId))
-                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    )
+                                }
+                            }
+                    ) {
+                        items(
+                            items = filteredTopics,
+                            key = { it.id }
+                        ) { topic ->
+                            Box(
+                                modifier = Modifier
+                                    .animateItemPlacement()
+                                    .graphicsLayer {
+                                        // Hide the source item while its replica is being dragged
+                                        alpha = if (draggedTopicId.value == topic.id) 0f else 1f
+                                    }
+                            ) {
+                                TopicCard(
+                                    topic = topic,
+                                    romanNumeral = toRomanNumeral(filteredTopics.indexOf(topic) + 1),
+                                    isSelected = selectedTopics.contains(topic.id),
+                                    onClick = {
+                                        if (selectionMode) {
+                                            selectedTopics = if (selectedTopics.contains(topic.id)) {
+                                                selectedTopics - topic.id
                                             } else {
-                                                currentOnUpdateOrder(filteredTopicsState.value.map { it.id })
+                                                selectedTopics + topic.id
                                             }
+                                        } else if (draggedTopicId.value == null) {
+                                            onTopicClick(topic)
                                         }
-                                        draggedTopicId.value = null
-                                        isOverTrash.value = false
-                                        lastSwappedId.value = null
-                                    },
-                                    onDragCancel = {
-                                        draggedTopicId.value = null
-                                        isOverTrash.value = false
-                                        lastSwappedId.value = null
-                                        filteredTopicsState.value = currentBaseTopics
                                     }
                                 )
                             }
-                        }
-                ) {
-                    items(
-                        items = filteredTopics,
-                        key = { it.id }
-                    ) { topic ->
-                        Box(
-                            modifier = Modifier
-                                .animateItemPlacement()
-                                .graphicsLayer {
-                                    // Hide the source item while its replica is being dragged
-                                    alpha = if (draggedTopicId.value == topic.id) 0f else 1f
-                                }
-                        ) {
-                            TopicCard(
-                                topic = topic,
-                                romanNumeral = toRomanNumeral(filteredTopics.indexOf(topic) + 1),
-                                isSelected = selectedTopics.contains(topic.id),
-                                onClick = {
-                                    if (selectionMode) {
-                                        selectedTopics = if (selectedTopics.contains(topic.id)) {
-                                            selectedTopics - topic.id
-                                        } else {
-                                            selectedTopics + topic.id
-                                        }
-                                    } else if (draggedTopicId.value == null) {
-                                        onTopicClick(topic)
-                                    }
-                                }
-                            )
                         }
                     }
                 }
