@@ -56,6 +56,7 @@ fun ItemDetailScreen(
     onDeleteItem: () -> Unit,
     onExport: (List<com.example.graymatter.domain.Opinion>) -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
+    onLoadResourceLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     onLoadBacklinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.android.ui.components.BacklinkUiModel>>,
     onViewInGraphClick: (String) -> Unit,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
@@ -217,6 +218,92 @@ fun ItemDetailScreen(
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
+
+                    // RESOURCE LINKS section — for notes (MARKDOWN) only
+                    if (itemDetails.resource.type == com.example.graymatter.domain.ResourceType.MARKDOWN) {
+                        val resourceLinks by onLoadResourceLinks(itemDetails.resource.id).collectAsState(initial = emptyList())
+                        if (resourceLinks.isNotEmpty()) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(GrayMatterColors.Primary.copy(alpha = 0.06f))
+                                    .border(1.dp, GrayMatterColors.Primary.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Link,
+                                        null,
+                                        tint = GrayMatterColors.Primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        "RESOURCE LINKS",
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            letterSpacing = 1.5.sp,
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        color = GrayMatterColors.TextSecondary
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    resourceLinks.forEach { link ->
+                                        val linkText = when (link) {
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> link.name
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> link.title
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> link.snippet.take(30)
+                                        }
+                                        val linkIcon = when (link) {
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> Icons.Default.Folder
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> Icons.Default.Article
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> Icons.Default.FormatQuote
+                                        }
+                                        Surface(
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = GrayMatterColors.Primary.copy(alpha = 0.10f),
+                                            modifier = Modifier.border(
+                                                0.5.dp,
+                                                GrayMatterColors.Primary.copy(alpha = 0.25f),
+                                                RoundedCornerShape(10.dp)
+                                            )
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                            ) {
+                                                Icon(
+                                                    linkIcon,
+                                                    null,
+                                                    tint = GrayMatterColors.Primary.copy(alpha = 0.7f),
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                                Spacer(Modifier.width(6.dp))
+                                                Text(
+                                                    linkText,
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                                    color = GrayMatterColors.Primary,
+                                                    maxLines = 1
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(32.dp))
+                        }
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),

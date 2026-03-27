@@ -2,6 +2,7 @@ package com.example.graymatter.android.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,9 +32,11 @@ fun MarkdownEditor(
     onBackClick: () -> Unit,
     onSave: (String) -> Unit,
     initialPreviewMode: Boolean = false,
+    onTitleChange: ((String) -> Unit)? = null,
     onShowReferenceSelector: (() -> Unit)? = null,
     referenceToInsert: String? = null,
     onReferenceInserted: () -> Unit = {},
+    onTextChange: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var textFieldValue by remember {
@@ -41,6 +44,19 @@ fun MarkdownEditor(
     }
     var isPreviewMode by remember { mutableStateOf(initialPreviewMode) }
     var showDiscardConfirm by remember { mutableStateOf(false) }
+    var editableTitle by remember { mutableStateOf(title) }
+
+    // Sync text state upstream
+    LaunchedEffect(textFieldValue.text) {
+        onTextChange(textFieldValue.text)
+    }
+
+    // Sync title state upstream when editable
+    LaunchedEffect(editableTitle) {
+        if (onTitleChange != null && editableTitle != title) {
+            onTitleChange(editableTitle)
+        }
+    }
 
     LaunchedEffect(referenceToInsert) {
         if (referenceToInsert != null) {
@@ -56,6 +72,21 @@ fun MarkdownEditor(
             textFieldValue = TextFieldValue(newText, TextRange(cursor - replaceLen + referenceToInsert.length))
             onReferenceInserted()
         }
+    }
+
+    // Live-extracted [[references]] from note content
+    val liveReferences = remember(textFieldValue.text) {
+        val regex = Regex("\\[\\[(.*?)\\]\\]")
+        regex.findAll(textFieldValue.text).map { it.groupValues[1] }.toList()
+    }
+
+    // Word count & reading time
+    val wordCount = remember(textFieldValue.text) {
+        textFieldValue.text.split(Regex("\\s+")).count { it.isNotBlank() }
+    }
+    val readingTimeMin = remember(wordCount) { 
+        val mins = wordCount / 200 // average reading speed
+        if (mins < 1 && wordCount > 0) "< 1 min" else "$mins min read"
     }
 
     Column(
@@ -74,7 +105,7 @@ fun MarkdownEditor(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = {
-                if (textFieldValue.text != initialText) {
+                if (textFieldValue.text != initialText || editableTitle != title) {
                     showDiscardConfirm = true
                 } else {
                     onBackClick()
@@ -83,11 +114,21 @@ fun MarkdownEditor(
                 Icon(Icons.Default.Close, "Close", tint = GrayMatterColors.TextPrimary)
             }
             
-            Text(
-                text = if (isPreviewMode) "PREVIEW" else "EDITOR",
-                style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 2.sp),
-                color = GrayMatterColors.Neutral500
-            )
+            // Word count & mode label
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = if (isPreviewMode) "PREVIEW" else "EDITOR",
+                    style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 2.sp),
+                    color = GrayMatterColors.Neutral500
+                )
+                if (!isPreviewMode && wordCount > 0) {
+                    Text(
+                        text = "$wordCount words · $readingTimeMin",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = GrayMatterColors.Neutral600
+                    )
+                }
+            }
 
             TextButton(onClick = { onSave(textFieldValue.text) }) {
                 Text("Save", color = GrayMatterColors.Primary, fontWeight = FontWeight.Bold)
@@ -115,12 +156,39 @@ fun MarkdownEditor(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = GrayMatterColors.TextPrimary,
-                modifier = Modifier.padding(vertical = 16.dp)
-            )
+            // Inline Editable Title
+            if (onTitleChange != null) {
+                BasicTextField(
+                    value = editableTitle,
+                    onValueChange = { editableTitle = it },
+                    textStyle = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = GrayMatterColors.TextPrimary
+                    ),
+                    cursorBrush = SolidColor(GrayMatterColors.Primary),
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    decorationBox = { inner ->
+                        if (editableTitle.isEmpty()) {
+                            Text(
+                                "Untitled Note",
+                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                                color = GrayMatterColors.Neutral600
+                            )
+                        }
+                        inner()
+                    }
+                )
+            } else {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                    color = GrayMatterColors.TextPrimary,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+            }
 
             if (isPreviewMode) {
                 Box(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -160,11 +228,49 @@ fun MarkdownEditor(
                         modifier = Modifier.fillMaxSize(),
                         decorationBox = { inner ->
                             if (textFieldValue.text.isEmpty()) {
-                                Text("Type in Markdown here...", color = GrayMatterColors.Neutral700)
+                                Text("Start writing your thoughts...", color = GrayMatterColors.Neutral700)
                             }
                             inner()
                         }
                     )
+                }
+
+                // Live Reference Chips
+                if (liveReferences.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Link,
+                            contentDescription = null,
+                            tint = GrayMatterColors.Primary.copy(alpha = 0.7f),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        liveReferences.forEach { ref ->
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = GrayMatterColors.Primary.copy(alpha = 0.12f),
+                                modifier = Modifier.border(
+                                    0.5.dp,
+                                    GrayMatterColors.Primary.copy(alpha = 0.3f),
+                                    RoundedCornerShape(8.dp)
+                                )
+                            ) {
+                                Text(
+                                    text = ref,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = GrayMatterColors.Primary,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
                 }
 
                 // Formatting Toolbar
@@ -191,14 +297,38 @@ fun MarkdownEditor(
                         MarkdownToolbarAction(Icons.Default.Code) { textFieldValue = wrapSelection(textFieldValue, "`") }
                         MarkdownToolbarAction(Icons.Default.Link) { textFieldValue = wrapSelection(textFieldValue, "[", "](url)") }
                         if (onShowReferenceSelector != null) {
-                            MarkdownToolbarAction(Icons.Default.AddLink) {
-                                val txt = textFieldValue.text
-                                val cursor = textFieldValue.selection.start
-                                textFieldValue = TextFieldValue(
-                                    txt.substring(0, cursor) + "[[" + txt.substring(cursor),
-                                    TextRange(cursor + 2)
-                                )
-                                onShowReferenceSelector()
+                            // Reference button with label for better discoverability
+                            Surface(
+                                onClick = {
+                                    val txt = textFieldValue.text
+                                    val cursor = textFieldValue.selection.start
+                                    textFieldValue = TextFieldValue(
+                                        txt.substring(0, cursor) + "[[" + txt.substring(cursor),
+                                        TextRange(cursor + 2)
+                                    )
+                                    onShowReferenceSelector()
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                color = GrayMatterColors.Primary.copy(alpha = 0.15f),
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Attachment,
+                                        null,
+                                        tint = GrayMatterColors.Primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        "Ref",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = GrayMatterColors.Primary
+                                    )
+                                }
                             }
                         }
                     }

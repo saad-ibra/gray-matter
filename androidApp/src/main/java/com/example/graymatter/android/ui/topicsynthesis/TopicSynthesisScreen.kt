@@ -53,6 +53,22 @@ fun TopicSynthesisScreen(
     var showReferenceSelector by remember { mutableStateOf(false) }
     var selectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
     var referenceToInsert by remember { mutableStateOf<String?>(null) }
+    var currentEditorText by remember { mutableStateOf(topic.notes ?: "") }
+
+    // Auto-sync reference selection with text content
+    LaunchedEffect(currentEditorText) {
+        val regex = Regex("\\[\\[(.*?)\\]\\]")
+        val foundTexts = regex.findAll(currentEditorText).map { it.groupValues[1] }.toSet()
+        
+        selectedReferences = selectedReferences.filter { ref ->
+            val refText = when (ref) {
+                is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+            }
+            foundTexts.contains(refText) || foundTexts.any { it.endsWith(refText) }
+        }
+    }
     
     var showRenameDialog by remember { mutableStateOf(false) }
     var newTopicName by remember { mutableStateOf(topic.name) }
@@ -66,6 +82,7 @@ fun TopicSynthesisScreen(
                 onSaveOverallOpinion(content, selectedReferences)
                 showEditor = false
             },
+            onTextChange = { currentEditorText = it },
             initialPreviewMode = topic.notes?.isNotBlank() == true,
             onShowReferenceSelector = { showReferenceSelector = true },
             referenceToInsert = referenceToInsert,

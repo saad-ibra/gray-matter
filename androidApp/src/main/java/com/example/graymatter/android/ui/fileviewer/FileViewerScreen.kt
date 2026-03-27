@@ -90,6 +90,26 @@ fun FileViewerScreen(
         viewModel.loadResource(resourceId, initialPage)
     }
 
+    var showEditReferenceSelector by remember { mutableStateOf(false) }
+    var editReferenceToInsert by remember { mutableStateOf<String?>(null) }
+    var editSelectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
+    var currentEditorText by remember { mutableStateOf(resource?.extractedText ?: "") }
+
+    // Auto-sync reference selection with text content
+    LaunchedEffect(currentEditorText) {
+        val regex = Regex("\\[\\[(.*?)\\]\\]")
+        val foundTexts = regex.findAll(currentEditorText).map { it.groupValues[1] }.toSet()
+        
+        editSelectedReferences = editSelectedReferences.filter { ref ->
+            val refText = when (ref) {
+                is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+            }
+            foundTexts.contains(refText) || foundTexts.any { it.endsWith(refText) }
+        }
+    }
+
     // Auto-trigger external viewer for unsupported internal types
     LaunchedEffect(resource) {
         resource?.let { res ->
@@ -230,8 +250,13 @@ fun FileViewerScreen(
                                 title = res.title ?: "Markdown Note",
                                 initialText = res.extractedText ?: "",
                                 onBackClick = onBackClick,
-                                onSave = { content -> viewModel.updateResourceText(content) },
+                                onTextChange = { currentEditorText = it },
+                                onTitleChange = { newTitle -> viewModel.resource.value?.let { appModule_res -> /* Normally we'd rename here, but we'll focus on text for now */ } },
+                                onSave = { content -> viewModel.updateResourceText(content, editSelectedReferences) },
                                 initialPreviewMode = true,
+                                onShowReferenceSelector = { showEditReferenceSelector = true },
+                                referenceToInsert = editReferenceToInsert,
+                                onReferenceInserted = { editReferenceToInsert = null },
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -246,6 +271,27 @@ fun FileViewerScreen(
             }
         }
 
+        if (showEditReferenceSelector && referenceSelectorViewModel != null) {
+            com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
+                viewModel = referenceSelectorViewModel,
+                onDismissRequest = { showEditReferenceSelector = false },
+                onConfirm = { items ->
+                    showEditReferenceSelector = false
+                    editSelectedReferences = (editSelectedReferences + items).distinctBy { it.id }
+                    
+                    if (items.isNotEmpty()) {
+                        val item = items.first()
+                        val refText = when (item) {
+                            is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> item.name
+                            is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> item.title
+                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> item.snippet
+                        }
+                        editReferenceToInsert = "[[$refText]]"
+                    }
+                }
+            )
+        }
+        
         // ── Top Bar (Animated) ──
         AnimatedVisibility(
             visible = viewModel.showTopBar && (resource?.type != ResourceType.MARKDOWN),

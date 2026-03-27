@@ -125,7 +125,17 @@ class GrayMatterViewModel(
     /**
      * Creates a new Note item. Saved with Markdown content in internal storage.
      */
-    suspend fun createNewNote(context: Context, title: String, content: String, opinionText: String, confidence: Int, description: String? = null, topicId: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()): String {
+    suspend fun createNewNote(
+        context: Context, 
+        title: String, 
+        content: String, 
+        opinionText: String, 
+        confidence: Int, 
+        description: String? = null, 
+        topicId: String? = null, 
+        referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
+        opinionReferenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList() // NEW
+    ): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
         val itemId = generateUuid()
@@ -156,7 +166,10 @@ class GrayMatterViewModel(
             itemRepository.updateItemTopic(itemId, topicId)
         }
         
-        saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+        // Save note-level links as RESOURCE type
+        saveReferenceLinksInternal(resourceId, com.example.graymatter.domain.ReferenceType.RESOURCE, referenceLinks)
+        // Save opinion-level links as OPINION type
+        saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, opinionReferenceLinks)
         
         return itemId
     }
@@ -705,7 +718,21 @@ class GrayMatterViewModel(
      * Retrieves reference links for an opinion.
      */
     fun getLinksForOpinion(opinionId: String): Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>> {
-        return referenceLinkRepository.getReferenceLinksBySource(opinionId).map { links ->
+        return resolveLinksForSource(opinionId)
+    }
+
+    /**
+     * Retrieves reference links for a resource (e.g. links added from within a note).
+     */
+    fun getLinksForResource(resourceId: String): Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>> {
+        return resolveLinksForSource(resourceId)
+    }
+
+    /**
+     * Shared helper to resolve reference links for any source ID.
+     */
+    private fun resolveLinksForSource(sourceId: String): Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>> {
+        return referenceLinkRepository.getReferenceLinksBySource(sourceId).map { links ->
             links.mapNotNull { link ->
                 when (link.targetType) {
                     com.example.graymatter.domain.ReferenceType.TOPIC -> {
@@ -735,29 +762,41 @@ class GrayMatterViewModel(
 
     /**
      * Retrieves backlinks for a resource or topic.
-     * Backlinks are opinions that link to this target.
+     * Backlinks are links that point TO this target from opinions or resources (notes).
      */
     fun getResolvedBacklinksForTarget(targetId: String): Flow<List<com.example.graymatter.android.ui.components.BacklinkUiModel>> {
         return referenceLinkRepository.getBacklinksForTarget(targetId).map { links ->
             links.mapNotNull { link ->
-                // The source is what points TO the target.
-                // In our app, links are created from Opinions.
-                if (link.sourceType == com.example.graymatter.domain.ReferenceType.OPINION) {
-                    val opinion = opinionRepository.getOpinionById(link.sourceId)
-                    if (opinion != null) {
-                        val item = itemRepository.getItemByResourceId(opinion.itemId) ?: itemRepository.getItemWithDetails(opinion.itemId)?.item
-                        // We need the resource title of the item that the opinion belongs to
-                        val resourceDetails = item?.let { itemRepository.getItemWithDetails(it.id) }
-                        val resourceTitle = resourceDetails?.resource?.title ?: "Unknown Source"
-                        
-                        com.example.graymatter.android.ui.components.BacklinkUiModel(
-                            id = link.sourceId, // ID of the opinion
-                            title = "Linked from $resourceTitle",
-                            subtitle = opinion.text.take(150),
-                            sourceType = link.sourceType
-                        )
-                    } else null
-                } else null // Support other types if needed in future
+                when (link.sourceType) {
+                    com.example.graymatter.domain.ReferenceType.OPINION -> {
+                        val opinion = opinionRepository.getOpinionById(link.sourceId)
+                        if (opinion != null) {
+                            val item = itemRepository.getItemByResourceId(opinion.itemId) ?: itemRepository.getItemWithDetails(opinion.itemId)?.item
+                            val resourceDetails = item?.let { itemRepository.getItemWithDetails(it.id) }
+                            val resourceTitle = resourceDetails?.resource?.title ?: "Unknown Source"
+                            
+                            com.example.graymatter.android.ui.components.BacklinkUiModel(
+                                id = link.sourceId,
+                                title = "Linked from $resourceTitle",
+                                subtitle = opinion.text.take(150),
+                                sourceType = link.sourceType
+                            )
+                        } else null
+                    }
+                    com.example.graymatter.domain.ReferenceType.RESOURCE -> {
+                        // A resource (note) links to this target
+                        val resource = resourceRepository.getResourceById(link.sourceId)
+                        if (resource != null) {
+                            com.example.graymatter.android.ui.components.BacklinkUiModel(
+                                id = link.sourceId,
+                                title = "Referenced in ${resource.title ?: "Untitled Note"}",
+                                subtitle = resource.extractedText?.take(150) ?: "",
+                                sourceType = link.sourceType
+                            )
+                        } else null
+                    }
+                    else -> null
+                }
             }
         }
     }

@@ -209,12 +209,16 @@ class FileViewerViewModel(
     /**
      * Updates the content of a resource (Markdown).
      */
-    fun updateResourceText(newText: String) {
+    fun updateResourceText(newText: String, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         val res = _resource.value ?: return
         viewModelScope.launch {
             resourceRepository.updateResourceText(res.id, newText)
             _resource.value = res.copy(extractedText = newText)
             _pageTextMap[0] = newText
+            
+            if (referenceLinks.isNotEmpty()) {
+                saveReferenceLinksInternal(res.id, com.example.graymatter.domain.ReferenceType.RESOURCE, referenceLinks)
+            }
         }
     }
 

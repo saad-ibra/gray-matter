@@ -75,7 +75,8 @@ fun NewEntryScreen(
 
     // Reference Selector State
     var showReferenceSelector by remember { mutableStateOf(false) }
-    var selectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
+    var noteSelectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
+    var opinionSelectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
     var referenceToInsert by remember { mutableStateOf<String?>(null) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -128,6 +129,11 @@ fun NewEntryScreen(
                 noteContent = content
                 isNoteEditorOpen = false
             },
+            onTextChange = { content ->
+                // Live sync for background display and pruning
+                noteContent = content
+            },
+            onTitleChange = { title = it },
             onShowReferenceSelector = { showReferenceSelector = true },
             referenceToInsert = referenceToInsert,
             onReferenceInserted = { referenceToInsert = null }
@@ -147,14 +153,32 @@ fun NewEntryScreen(
                             is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> "Annotation: ${item.snippet.take(15)}..."
                         }
                         referenceToInsert = "[[$text]]"
-                        // Also add to the global selected references for this entry
-                        selectedReferences = (selectedReferences + items).distinctBy { it.id }
+                        // Also add to the note references
+                        noteSelectedReferences = (noteSelectedReferences + items).distinctBy { it.id }
                     }
                 }
             )
         }
 
         return
+    }
+
+    // Auto-sync note selected references with content: remove if [[text]] is deleted
+    androidx.compose.runtime.LaunchedEffect(noteContent) {
+        val regex = Regex("\\[\\[(.*?)\\]\\]")
+        val foundTexts = regex.findAll(noteContent).map { it.groupValues[1] }.toSet()
+        
+        noteSelectedReferences = noteSelectedReferences.filter { ref ->
+            val refText = when (ref) {
+                is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+            }
+            // Some refs might have prefixes like "Topic: " or "Resource: " from previous insertion logic
+            // We check both the raw text and the prefixed version
+            foundTexts.contains(refText) || 
+            foundTexts.any { it.endsWith(refText) }
+        }
     }
     
     Column(
@@ -242,6 +266,129 @@ fun NewEntryScreen(
                     }
                 }
             }
+
+            // KNOWLEDGE LINKS display section — for notes, shown between source material and opinion
+            if (entryType == EntryType.NOTE) {
+                // Auto-extract [[...]] references from noteContent
+                val autoExtractedRefs = remember(noteContent) {
+                    val regex = Regex("\\[\\[(.*?)\\]\\]")
+                    regex.findAll(noteContent).map { it.groupValues[1] }.toList()
+                }
+
+                if (autoExtractedRefs.isNotEmpty() || noteSelectedReferences.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(GrayMatterColors.Primary.copy(alpha = 0.06f))
+                            .border(1.dp, GrayMatterColors.Primary.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Link,
+                                null,
+                                tint = GrayMatterColors.Primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                "KNOWLEDGE LINKS",
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    letterSpacing = 1.5.sp,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = GrayMatterColors.TextSecondary
+                            )
+                        }
+
+                        // Auto-extracted [[...]] references from note content
+                        if (autoExtractedRefs.isNotEmpty()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                autoExtractedRefs.forEach { ref ->
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = GrayMatterColors.Primary.copy(alpha = 0.12f),
+                                        modifier = Modifier.border(
+                                            0.5.dp,
+                                            GrayMatterColors.Primary.copy(alpha = 0.3f),
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Tag,
+                                                null,
+                                                tint = GrayMatterColors.Primary.copy(alpha = 0.7f),
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                            Spacer(Modifier.width(4.dp))
+                                            Text(
+                                                ref,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = GrayMatterColors.Primary,
+                                                maxLines = 1
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Manually added references within the note
+                    if (noteSelectedReferences.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            noteSelectedReferences.forEach { ref ->
+                                val text = when (ref) {
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                                    is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = GrayMatterColors.Gamboge.copy(alpha = 0.12f),
+                                    modifier = Modifier.border(
+                                        0.5.dp,
+                                        GrayMatterColors.Gamboge.copy(alpha = 0.3f),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                ) {
+                                    Text(
+                                        text,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = GrayMatterColors.Gamboge,
+                                        maxLines = 1,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                        Text(
+                            "Links are extracted from note content. Edit within the note.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = GrayMatterColors.Neutral600
+                        )
+                    }
+                }
+            }
             
             // Grouped Opinion and Confidence Container
             Column(
@@ -291,9 +438,9 @@ fun NewEntryScreen(
                             Text("Add connection")
                         }
                     }
-                    if (selectedReferences.isNotEmpty()) {
+                    if (opinionSelectedReferences.isNotEmpty()) {
                         Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
-                            selectedReferences.forEach { ref ->
+                            opinionSelectedReferences.forEach { ref ->
                                 val text = when (ref) {
                                     is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
                                     is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
@@ -301,7 +448,7 @@ fun NewEntryScreen(
                                 }
                                 InputChip(
                                     selected = true,
-                                    onClick = { selectedReferences = selectedReferences.filter { it.id != ref.id } },
+                                    onClick = { opinionSelectedReferences = opinionSelectedReferences.filter { it.id != ref.id } },
                                     label = { Text(text, maxLines = 1) },
                                     trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
                                     modifier = Modifier.padding(end = 8.dp)
@@ -362,7 +509,7 @@ fun NewEntryScreen(
                             title = title.ifBlank { null },
                             description = finalDesc,
                             topicId = preSelectedTopicId,
-                            referenceLinks = selectedReferences
+                            referenceLinks = opinionSelectedReferences
                         )
                         EntryType.FILE -> {
                             val finalTitle = if (title.isNotBlank() && originalFileName != null && !title.contains(".")) {
@@ -379,7 +526,7 @@ fun NewEntryScreen(
                                 title = finalTitle,
                                 description = finalDesc,
                                 topicId = preSelectedTopicId,
-                                referenceLinks = selectedReferences
+                                referenceLinks = opinionSelectedReferences
                             )
                         }
                         EntryType.NOTE -> {
@@ -392,7 +539,8 @@ fun NewEntryScreen(
                                 confidence = (confidenceScore * 10).toInt(),
                                 description = finalDesc,
                                 topicId = preSelectedTopicId,
-                                referenceLinks = selectedReferences
+                                referenceLinks = noteSelectedReferences,
+                                opinionReferenceLinks = opinionSelectedReferences
                             )
                         }
                     }
@@ -422,7 +570,7 @@ fun NewEntryScreen(
             onDismissRequest = { showReferenceSelector = false },
             onConfirm = { items ->
                 showReferenceSelector = false
-                selectedReferences = (selectedReferences + items).distinctBy { it.id }
+                opinionSelectedReferences = (opinionSelectedReferences + items).distinctBy { it.id }
             }
         )
     }
@@ -568,9 +716,6 @@ private fun SourceMaterialSection(
             2 -> {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     AddNoteContentButton(onClick = onAddNoteContent, hasContent = hasNoteContent)
-                    if (hasNoteContent) {
-                        InputField(titleInput, onTitleChange, "Note Title", Icons.Default.Title)
-                    }
                 }
             }
         }

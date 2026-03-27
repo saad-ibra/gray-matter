@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -346,6 +347,7 @@ fun GrayMatterNavigation(
                     }
                 },
                 onLoadLinks = { opinionId -> viewModel.getLinksForOpinion(opinionId) },
+                onLoadResourceLinks = { resourceId -> viewModel.getLinksForResource(resourceId) },
                 onLoadBacklinks = { resourceId -> viewModel.getResolvedBacklinksForTarget(resourceId) },
                 onViewInGraphClick = { resourceId -> 
                     navController.navigate(NavigationDestination.KnowledgeGraph.route) 
@@ -357,11 +359,34 @@ fun GrayMatterNavigation(
                 var showEditReferenceSelector by remember { mutableStateOf(false) }
                 var editReferenceToInsert by remember { mutableStateOf<String?>(null) }
                 var editSelectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
+                var currentEditorText by remember { mutableStateOf(editingResource?.extractedText ?: "") }
 
+                // Auto-sync reference selection with text content
+                LaunchedEffect(currentEditorText) {
+                    val regex = Regex("\\[\\[(.*?)\\]\\]")
+                    val foundTexts = regex.findAll(currentEditorText).map { it.groupValues[1] }.toSet()
+                    
+                    editSelectedReferences = editSelectedReferences.filter { ref ->
+                        val refText = when (ref) {
+                            is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                            is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                        }
+                        foundTexts.contains(refText) || foundTexts.any { it.endsWith(refText) }
+                    }
+                }
+
+                val coroutineScope = rememberCoroutineScope()
                 MarkdownEditor(
-                    title = "Edit Note: ${editingResource?.title ?: "Untitled"}",
+                    title = editingResource?.title ?: "Untitled",
                     initialText = editingResource?.extractedText ?: "",
                     onBackClick = { editingResource = null },
+                    onTextChange = { currentEditorText = it },
+                    onTitleChange = { newTitle -> 
+                        editingResource?.let { res ->
+                            viewModel.renameResource(res.id, newTitle)
+                        }
+                    },
                     onSave = { newText: String ->
                         editingResource?.let { res ->
                             viewModel.updateResourceText(res.id, newText, editSelectedReferences)
