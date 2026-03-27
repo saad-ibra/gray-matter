@@ -251,8 +251,8 @@ private fun OverallOpinionSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(if (hasOpinion) GrayMatterColors.Citrine.copy(alpha = 0.15f) else GrayMatterColors.SurfaceDark)
-                .border(1.dp, if (hasOpinion) GrayMatterColors.Citrine.copy(alpha = 0.4f) else GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+                .background(if (hasOpinion) GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f) else GrayMatterColors.SurfaceDark)
+                .border(1.dp, if (hasOpinion) GrayMatterColors.KnowledgeBlue.copy(alpha = 0.4f) else GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
                 .clickable(onClick = onClick)
                 .padding(20.dp),
             contentAlignment = Alignment.Center
@@ -261,12 +261,12 @@ private fun OverallOpinionSection(
                 Icon(
                     imageVector = if (hasOpinion) Icons.Default.EditNote else Icons.Default.RateReview,
                     contentDescription = null,
-                    tint = if (hasOpinion) GrayMatterColors.Citrine else GrayMatterColors.Primary
+                    tint = if (hasOpinion) GrayMatterColors.KnowledgeBlue else GrayMatterColors.Primary
                 )
                 Text(
                     text = if (hasOpinion) "Edit Overall Opinion" else "Add Overall Opinion",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = if (hasOpinion) GrayMatterColors.Citrine else GrayMatterColors.Primary
+                    color = if (hasOpinion) GrayMatterColors.KnowledgeBlue else GrayMatterColors.Primary
                 )
             }
         }

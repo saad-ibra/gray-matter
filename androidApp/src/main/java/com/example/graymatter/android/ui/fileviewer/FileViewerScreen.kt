@@ -441,7 +441,7 @@ fun FileViewerScreen(
                     
                     ListItem(
                         headlineContent = { Text("General Opinion", color = Color.White) },
-                        leadingContent = { Icon(Icons.Default.EditNote, null, tint = GrayMatterColors.Citrine) },
+                        leadingContent = { Icon(Icons.Default.EditNote, null, tint = GrayMatterColors.KnowledgeBlue) },
                         modifier = Modifier.clickable { 
                             viewModel.toggleAddEntrySheet()
                             viewModel.toggleCustomOpinionDialog()
@@ -539,7 +539,7 @@ fun FileViewerScreen(
                                 ) {
                                     Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
                                     IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
-                                        Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                        Icon(Icons.Default.Add, null, tint = GrayMatterColors.KnowledgeBlue, modifier = Modifier.size(20.dp))
                                     }
                                 }
                                 
@@ -677,7 +677,7 @@ fun FileViewerScreen(
                             ) {
                                 Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
                                 IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
-                                    Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                    Icon(Icons.Default.Add, null, tint = GrayMatterColors.KnowledgeBlue, modifier = Modifier.size(20.dp))
                                 }
                             }
                             
@@ -719,7 +719,7 @@ fun FileViewerScreen(
                                 .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
                                 .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
                                 .padding(12.dp),
-                            cursorBrush = SolidColor(GrayMatterColors.Citrine),
+                            cursorBrush = SolidColor(GrayMatterColors.KnowledgeBlue),
                             decorationBox = { inner ->
                                 if (text.isEmpty()) {
                                     Text("Type your reflection here...", color = GrayMatterColors.Neutral600)
@@ -738,8 +738,8 @@ fun FileViewerScreen(
                                 value = confidence,
                                 onValueChange = { confidence = it },
                                 colors = SliderDefaults.colors(
-                                    thumbColor = GrayMatterColors.Citrine,
-                                    activeTrackColor = GrayMatterColors.Citrine
+                                    thumbColor = GrayMatterColors.KnowledgeBlue,
+                                    activeTrackColor = GrayMatterColors.KnowledgeBlue
                                 )
                             )
                         }
@@ -755,7 +755,7 @@ fun FileViewerScreen(
                                 },
                                 enabled = text.isNotBlank(),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = GrayMatterColors.Citrine,
+                                    containerColor = GrayMatterColors.KnowledgeBlue,
                                     contentColor = Color.Black
                                 )
                             ) {

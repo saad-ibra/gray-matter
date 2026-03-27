@@ -227,8 +227,8 @@ fun ItemDetailScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(16.dp))
-                                    .background(GrayMatterColors.Primary.copy(alpha = 0.06f))
-                                    .border(1.dp, GrayMatterColors.Primary.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+                                    .background(GrayMatterColors.KnowledgeBlue.copy(alpha = 0.06f))
+                                    .border(1.dp, GrayMatterColors.KnowledgeBlue.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
                                     .padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
@@ -239,7 +239,7 @@ fun ItemDetailScreen(
                                     Icon(
                                         Icons.Default.Link,
                                         null,
-                                        tint = GrayMatterColors.Primary,
+                                        tint = GrayMatterColors.KnowledgeBlue,
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Text(
@@ -271,10 +271,10 @@ fun ItemDetailScreen(
                                         }
                                         Surface(
                                             shape = RoundedCornerShape(10.dp),
-                                            color = GrayMatterColors.Primary.copy(alpha = 0.10f),
+                                            color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.10f),
                                             modifier = Modifier.border(
                                                 0.5.dp,
-                                                GrayMatterColors.Primary.copy(alpha = 0.25f),
+                                                GrayMatterColors.KnowledgeBlue.copy(alpha = 0.25f),
                                                 RoundedCornerShape(10.dp)
                                             )
                                         ) {
@@ -285,14 +285,14 @@ fun ItemDetailScreen(
                                                 Icon(
                                                     linkIcon,
                                                     null,
-                                                    tint = GrayMatterColors.Primary.copy(alpha = 0.7f),
+                                                    tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.7f),
                                                     modifier = Modifier.size(14.dp)
                                                 )
                                                 Spacer(Modifier.width(6.dp))
                                                 Text(
                                                     linkText,
                                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                                                    color = GrayMatterColors.Primary,
+                                                    color = GrayMatterColors.KnowledgeBlue,
                                                     maxLines = 1
                                                 )
                                             }
@@ -591,7 +591,7 @@ private fun CustomEntryAddDialog(
                         ) {
                             Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
                             IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                Icon(Icons.Default.Add, null, tint = GrayMatterColors.KnowledgeBlue, modifier = Modifier.size(20.dp))
                             }
                         }
                         

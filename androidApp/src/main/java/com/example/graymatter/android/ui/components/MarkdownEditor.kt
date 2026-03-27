@@ -275,23 +275,23 @@ fun MarkdownEditor(
                                 Icon(
                                     Icons.Default.Link,
                                     contentDescription = null,
-                                    tint = GrayMatterColors.Jonquil.copy(alpha = 0.7f),
+                                    tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.7f),
                                     modifier = Modifier.size(14.dp)
                                 )
                                 liveReferences.forEach { ref ->
                                     Surface(
                                         shape = RoundedCornerShape(8.dp),
-                                        color = GrayMatterColors.Jonquil.copy(alpha = 0.12f),
+                                        color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.12f),
                                         modifier = Modifier.border(
                                             0.5.dp,
-                                            GrayMatterColors.Jonquil.copy(alpha = 0.3f),
+                                            GrayMatterColors.KnowledgeBlue.copy(alpha = 0.3f),
                                             RoundedCornerShape(8.dp)
                                         )
                                     ) {
                                         Text(
                                             text = ref,
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = GrayMatterColors.Jonquil,
+                                            color = GrayMatterColors.KnowledgeBlue,
                                             maxLines = 1,
                                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                         )
@@ -341,7 +341,7 @@ fun MarkdownEditor(
                                         onShowReferenceSelector()
                                     },
                                     shape = RoundedCornerShape(10.dp),
-                                    color = GrayMatterColors.Primary.copy(alpha = 0.15f),
+                                    color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f),
                                     modifier = Modifier.padding(horizontal = 4.dp)
                                 ) {
                                     Row(
@@ -351,13 +351,13 @@ fun MarkdownEditor(
                                         Icon(
                                             Icons.Default.Attachment,
                                             null,
-                                            tint = GrayMatterColors.Primary,
+                                            tint = GrayMatterColors.KnowledgeBlue,
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Text(
                                             "Reference",
                                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = GrayMatterColors.Primary
+                                            color = GrayMatterColors.KnowledgeBlue
                                         )
                                     }
                                 }

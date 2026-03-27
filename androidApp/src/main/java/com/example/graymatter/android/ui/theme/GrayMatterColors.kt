@@ -53,4 +53,5 @@ object GrayMatterColors {
     val Success = Color(0xFF22C55E)
     val Warning = Color(0xFFFACC15)
     val Error = Color(0xFFEF4444)
+    val KnowledgeBlue = Color(0xFF42A5F5)
 }

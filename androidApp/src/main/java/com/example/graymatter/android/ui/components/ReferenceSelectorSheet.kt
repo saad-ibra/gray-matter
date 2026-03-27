@@ -146,7 +146,7 @@ fun ReferenceSelectorSheet(
                             .fillMaxWidth()
                             .padding(bottom = 12.dp),
                         placeholder = { Text("Search everything...", color = GrayMatterColors.Neutral500) },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = GrayMatterColors.Primary) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = GrayMatterColors.KnowledgeBlue) },
                         trailingIcon = if (uiState.searchQuery.isNotEmpty()) {
                             {
                                 IconButton(onClick = { viewModel.search("") }) {
@@ -157,7 +157,7 @@ fun ReferenceSelectorSheet(
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = GrayMatterColors.Primary,
+                            focusedBorderColor = GrayMatterColors.KnowledgeBlue,
                             unfocusedBorderColor = GrayMatterColors.Neutral700,
                             focusedContainerColor = GrayMatterColors.SurfaceDark,
                             unfocusedContainerColor = GrayMatterColors.SurfaceDark
@@ -168,11 +168,11 @@ fun ReferenceSelectorSheet(
                     TabRow(
                         selectedTabIndex = uiState.activeTab.ordinal,
                         containerColor = Color.Transparent,
-                        contentColor = GrayMatterColors.Primary,
+                        contentColor = GrayMatterColors.KnowledgeBlue,
                         indicator = { tabPositions ->
                             TabRowDefaults.SecondaryIndicator(
                                 Modifier.tabIndicatorOffset(tabPositions[uiState.activeTab.ordinal]),
-                                color = GrayMatterColors.Primary
+                                color = GrayMatterColors.KnowledgeBlue
                             )
                         },
                         divider = {},
@@ -220,7 +220,7 @@ fun ReferenceSelectorSheet(
                                 Checkbox(
                                     checked = item.isChecked,
                                     onCheckedChange = { viewModel.toggleCheck(item) },
-                                    colors = CheckboxDefaults.colors(checkedColor = GrayMatterColors.Primary)
+                                    colors = CheckboxDefaults.colors(checkedColor = GrayMatterColors.KnowledgeBlue)
                                 )
                                 
                                 val icon = when (item) {
@@ -234,9 +234,9 @@ fun ReferenceSelectorSheet(
                                 }
                                 
                                 val iconColor = when (item) {
-                                    is ReferenceSelectorItem.TopicItem -> GrayMatterColors.Jonquil
-                                    is ReferenceSelectorItem.ResourceItem -> GrayMatterColors.Primary
-                                    is ReferenceSelectorItem.DetailItem -> GrayMatterColors.Citrine
+                                    is ReferenceSelectorItem.TopicItem -> GrayMatterColors.KnowledgeBlue
+                                    is ReferenceSelectorItem.ResourceItem -> GrayMatterColors.KnowledgeBlue
+                                    is ReferenceSelectorItem.DetailItem -> GrayMatterColors.KnowledgeBlue
                                 }
 
                                 Icon(
@@ -281,7 +281,7 @@ fun ReferenceSelectorSheet(
                                             Text(
                                                 text = label,
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = GrayMatterColors.Citrine.copy(alpha = 0.7f)
+                                                color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.7f)
                                             )
                                         }
                                     }

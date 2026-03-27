@@ -63,7 +63,7 @@ fun BacklinkPanel(
             Icon(
                 imageVector = Icons.Default.DatasetLinked,
                 contentDescription = "Backlinks",
-                tint = GrayMatterColors.Primary,
+                tint = GrayMatterColors.KnowledgeBlue,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -121,7 +121,7 @@ fun BacklinkPanel(
                         Icon(
                             Icons.Default.ArrowForward,
                             contentDescription = "Go",
-                            tint = GrayMatterColors.Primary,
+                            tint = GrayMatterColors.KnowledgeBlue,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -134,8 +134,8 @@ fun BacklinkPanel(
                     onClick = onViewInGraphClick,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = GrayMatterColors.Primary.copy(alpha = 0.15f),
-                        contentColor = GrayMatterColors.Primary
+                        containerColor = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f),
+                        contentColor = GrayMatterColors.KnowledgeBlue
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
