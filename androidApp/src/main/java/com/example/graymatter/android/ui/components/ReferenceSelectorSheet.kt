@@ -27,7 +27,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -65,7 +65,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.RadioButtonDefaults
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -217,10 +217,10 @@ fun ReferenceSelectorSheet(
                                     .padding(start = paddingStart, top = 4.dp, bottom = 4.dp, end = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Checkbox(
-                                    checked = item.isChecked,
-                                    onCheckedChange = { viewModel.toggleCheck(item) },
-                                    colors = CheckboxDefaults.colors(checkedColor = GrayMatterColors.KnowledgeBlue)
+                                RadioButton(
+                                    selected = item.isChecked,
+                                    onClick = { viewModel.toggleCheck(item) },
+                                    colors = RadioButtonDefaults.colors(selectedColor = GrayMatterColors.KnowledgeBlue)
                                 )
                                 
                                 val icon = when (item) {

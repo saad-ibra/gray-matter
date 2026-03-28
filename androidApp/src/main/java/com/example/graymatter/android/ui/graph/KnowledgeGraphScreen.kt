@@ -118,6 +118,11 @@ fun KnowledgeGraphScreen(
                 val node = simulator.nodes.find { it.id == initialSelectedNodeId }
                 if (node != null) {
                     selectedNode = node
+                    // Center the camera on this node
+                    offset = Offset(
+                        simulator.width / 2f - node.x * scale,
+                        simulator.height / 2f - node.y * scale
+                    )
                 }
             }
             
@@ -168,7 +173,12 @@ fun KnowledgeGraphScreen(
                     .fillMaxSize()
                     .pointerInput(Unit) {
                         detectTransformGestures { centroid, pan, zoom, _ ->
+                            val oldScale = scale
                             scale = (scale * zoom).coerceIn(0.1f, 5f)
+                            
+                            // Adjust offset to keep the point under the fingers exactly at the same screen coordinates
+                            offset = offset * zoom + centroid * (1f - zoom)
+                            
                             // Spin the 3D space with horizontal/vertical panning
                             globalRotY += pan.x * 0.01f
                             globalRotX += pan.y * 0.01f
@@ -524,10 +534,11 @@ fun KnowledgeGraphScreen(
         // Controls Overlay (Navigation)
         Column(
             modifier = Modifier
-                .align(Alignment.BottomStart)
+                .align(Alignment.TopEnd)
                 .statusBarsPadding()
-                .padding(bottom = 140.dp, start = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(top = 72.dp, end = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.End
         ) {
             
             // Zoom Controls

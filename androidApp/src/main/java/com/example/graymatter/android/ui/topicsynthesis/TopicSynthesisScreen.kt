@@ -419,20 +419,17 @@ private fun OverallOpinionSection(
     hasOpinion: Boolean,
     onClick: () -> Unit
 ) {
-    val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "rainbowColor")
-    val hueOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
-            animation = androidx.compose.animation.core.tween(3000, easing = androidx.compose.animation.core.LinearEasing),
-            repeatMode = androidx.compose.animation.core.RepeatMode.Restart
-        ),
-        label = "hue"
+    val rainbowColors = listOf(
+        Color(0xFFFF3B30),
+        Color(0xFFFF9500),
+        Color(0xFFFFCC00),
+        Color(0xFF4CD964),
+        Color(0xFF5AC8FA),
+        Color(0xFF007AFF),
+        Color(0xFF5856D6),
+        Color(0xFFFF2D55)
     )
-    
-    val dynamicRainbowColor = androidx.compose.ui.graphics.Color(
-        android.graphics.Color.HSVToColor(floatArrayOf(hueOffset, 0.75f, 1f))
-    )
+    val staticRainbowBrush = androidx.compose.ui.graphics.Brush.horizontalGradient(rainbowColors)
 
     Column(modifier = Modifier.padding(horizontal = 24.dp)) {
         Row(
@@ -451,8 +448,8 @@ private fun OverallOpinionSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(if (hasOpinion) dynamicRainbowColor.copy(alpha = 0.15f) else GrayMatterColors.SurfaceDark)
-                .border(1.dp, if (hasOpinion) dynamicRainbowColor.copy(alpha = 0.4f) else GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+                .background(if (hasOpinion) staticRainbowBrush else androidx.compose.ui.graphics.SolidColor(GrayMatterColors.SurfaceDark), alpha = if (hasOpinion) 0.15f else 1f)
+                .border(2.dp, if (hasOpinion) staticRainbowBrush else androidx.compose.ui.graphics.SolidColor(GrayMatterColors.Neutral800), RoundedCornerShape(16.dp))
                 .clickable(onClick = onClick)
                 .padding(20.dp),
             contentAlignment = Alignment.Center
@@ -461,12 +458,12 @@ private fun OverallOpinionSection(
                 Icon(
                     imageVector = if (hasOpinion) Icons.Default.EditNote else Icons.Default.RateReview,
                     contentDescription = null,
-                    tint = if (hasOpinion) dynamicRainbowColor else dynamicRainbowColor
+                    tint = if (hasOpinion) Color.White else GrayMatterColors.Primary
                 )
                 Text(
                     text = if (hasOpinion) "Edit Overall Opinion" else "Add Overall Opinion",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = if (hasOpinion) dynamicRainbowColor else dynamicRainbowColor
+                    color = if (hasOpinion) Color.White else GrayMatterColors.Primary
                 )
             }
         }

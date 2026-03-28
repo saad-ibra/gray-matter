@@ -392,7 +392,8 @@ fun ItemDetailScreen(
                         onJumpToPage = { resourceId, page ->
                             onOpenBookmark(Bookmark(id="", resourceId=resourceId, page=page, createdAt=0L))
                         },
-                        onLoadLinks = onLoadLinks
+                        onLoadLinks = onLoadLinks,
+                        onViewInGraph = onViewInGraphClick
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -701,7 +702,8 @@ private fun OpinionTimeline(
     onUpdateOpinion: (String, String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
     onDeleteOpinion: (String) -> Unit,
     onJumpToPage: (String, Int) -> Unit,
-    onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>
+    onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
+    onViewInGraph: (String) -> Unit
 ) {
     Column {
         opinions.forEachIndexed { index, opinion ->
@@ -720,7 +722,8 @@ private fun OpinionTimeline(
                         onJumpToPage(resourceId, page)
                     }
                 },
-                onLoadLinks = onLoadLinks
+                onLoadLinks = onLoadLinks,
+                onViewInGraph = onViewInGraph
             )
         }
     }
@@ -739,7 +742,8 @@ private fun OpinionTimelineItem(
     onUpdate: (String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
     onDelete: () -> Unit,
     onJump: () -> Unit,
-    onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>
+    onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
+    onViewInGraph: (String) -> Unit
 ) {
     var text by remember(opinion.text) { mutableStateOf(opinion.text) }
     var confidence by remember(opinion.confidenceScore) { mutableStateOf(opinion.confidenceScore.toFloat() / 100f) }
@@ -884,6 +888,10 @@ private fun OpinionTimelineItem(
                     if (isEditing) {
                         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.Delete, null, tint = GrayMatterColors.Error, modifier = Modifier.size(18.dp))
+                        }
+                    } else {
+                        IconButton(onClick = { onViewInGraph(opinion.id) }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.DatasetLinked, "View in Relatrix", tint = GrayMatterColors.KnowledgeBlue, modifier = Modifier.size(18.dp))
                         }
                     }
                 }

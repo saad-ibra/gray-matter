@@ -91,16 +91,15 @@ class ReferenceSelectorViewModel(
     }
 
     fun toggleCheck(item: ReferenceSelectorItem) {
-        val isChecked = !(checkedStateMap[item.id] ?: false)
-        checkedStateMap[item.id] = isChecked
+        val wasChecked = checkedStateMap[item.id] ?: false
+        checkedStateMap.clear()
         
-        val currentlySelected = _uiState.value.selectedItems.toMutableList()
-        if (isChecked) {
-            currentlySelected.add(item.copyItem(isChecked = true))
+        if (!wasChecked) {
+            checkedStateMap[item.id] = true
+            _uiState.update { it.copy(selectedItems = listOf(item.copyItem(isChecked = true))) }
         } else {
-            currentlySelected.removeAll { it.id == item.id }
+            _uiState.update { it.copy(selectedItems = emptyList()) }
         }
-        _uiState.update { it.copy(selectedItems = currentlySelected) }
         rebuildItems()
     }
     
