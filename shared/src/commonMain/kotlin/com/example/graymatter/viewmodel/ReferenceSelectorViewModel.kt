@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class ReferenceTab { ALL, TOPICS, RESOURCES, ANNOTATIONS }
+enum class ReferenceTab { ALL, TOPICS, RESOURCES, OPINIONS }
 
 data class ReferenceSelectorUiState(
     val items: List<ReferenceSelectorItem> = emptyList(),
@@ -63,7 +63,7 @@ class ReferenceSelectorViewModel(
                 topicRepository.topicsStream,
                 resourceRepository.resourcesStream,
                 itemRepository.itemsStream,
-                opinionRepository.getAllOpinions() // Assuming this exists or we load it differently
+                opinionRepository.getAllOpinions()
             ) { topics, resources, items, opinions ->
                 allTopics = topics
                 allResources = resources
@@ -127,6 +127,34 @@ class ReferenceSelectorViewModel(
         }
     }
 
+    /**
+     * Computes the set of valid item IDs — items whose parent topic still exists
+     * (or have no topic). This filters out orphaned items left behind after topic deletion.
+     */
+    private fun validItemIds(): Set<String> {
+        val topicIds = allTopics.map { it.id }.toSet()
+        return allItems.filter { item ->
+            item.topicId == null || item.topicId in topicIds
+        }.map { it.id }.toSet()
+    }
+
+    /**
+     * Returns only opinions that belong to valid (non-orphaned) items.
+     */
+    private fun validOpinions(): List<Opinion> {
+        val validIds = validItemIds()
+        return allOpinions.filter { it.itemId in validIds }
+    }
+
+    /**
+     * Returns only resources that belong to valid (non-orphaned) items.
+     */
+    private fun validResources(): List<Resource> {
+        val validIds = validItemIds()
+        val validResourceIds = allItems.filter { it.id in validIds }.map { it.resourceId }.toSet()
+        return allResources.filter { it.id in validResourceIds }
+    }
+
     private fun rebuildItems() {
         val query = _uiState.value.searchQuery.lowercase()
         val activeTab = _uiState.value.activeTab
@@ -149,9 +177,9 @@ class ReferenceSelectorViewModel(
             }
         }
 
-        // 2. Match Resources
+        // 2. Match Resources (only valid, non-orphaned)
         if (tab == ReferenceTab.ALL || tab == ReferenceTab.RESOURCES) {
-            allResources.filter { it.title?.lowercase()?.contains(query) == true }.forEach { res ->
+            validResources().filter { it.title?.lowercase()?.contains(query) == true }.forEach { res ->
                 val topicId = allItems.find { it.resourceId == res.id }?.topicId
                 val context = topicId?.let { tid -> allTopics.find { it.id == tid }?.name }
                 result.add(ReferenceSelectorItem.ResourceItem(
@@ -167,9 +195,9 @@ class ReferenceSelectorViewModel(
             }
         }
 
-        // 3. Match Annotations
-        if (tab == ReferenceTab.ALL || tab == ReferenceTab.ANNOTATIONS) {
-            allOpinions.filter { it.text.lowercase().contains(query) }.forEach { op ->
+        // 3. Match Opinions (only valid, non-orphaned)
+        if (tab == ReferenceTab.ALL || tab == ReferenceTab.OPINIONS) {
+            validOpinions().filter { it.text.lowercase().contains(query) }.forEach { op ->
                 val item = allItems.find { it.id == op.itemId }
                 val resource = item?.let { i -> allResources.find { it.id == i.resourceId } }
                 val context = resource?.title ?: "Unknown Resource"
@@ -214,10 +242,10 @@ class ReferenceSelectorViewModel(
                 }
             }
             ReferenceTab.RESOURCES -> {
-                allResources.forEach { res -> addResourceWithDetails(res, 0, result) }
+                validResources().forEach { res -> addResourceWithDetails(res, 0, result) }
             }
-            ReferenceTab.ANNOTATIONS -> {
-                allOpinions.forEach { op ->
+            ReferenceTab.OPINIONS -> {
+                validOpinions().forEach { op ->
                     val item = allItems.find { it.id == op.itemId }
                     val resource = item?.let { i -> allResources.find { it.id == i.resourceId } }
                     val typeLabel = if (op.text.startsWith("[TEMPLATE:")) "Template" else "Opinion"
@@ -252,3 +280,4 @@ class ReferenceSelectorViewModel(
         }
     }
 }
+

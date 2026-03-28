@@ -55,6 +55,10 @@ class DefaultReferenceLinkRepository(
         queries.deleteReferenceLinksBySource(sourceId)
     }
 
+    override suspend fun deleteReferenceLinksByTarget(targetId: String) = withContext(dispatcher) {
+        queries.deleteReferenceLinksByTarget(targetId)
+    }
+
     private fun ReferenceLinkEntity.toReferenceLink() = ReferenceLink(
         id = id,
         sourceType = ReferenceType.valueOf(sourceType),

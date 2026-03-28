@@ -549,6 +549,12 @@ fun GrayMatterNavigation(
                     referenceLinkRepository = appModule.referenceLinkRepository
                 )
             }
+
+            // Force fresh data on every navigation — ViewModel is cached so init only runs once
+            LaunchedEffect(Unit) {
+                graphViewModel.loadGraphData()
+            }
+
             com.example.graymatter.android.ui.graph.KnowledgeGraphScreen(
                 viewModel = graphViewModel,
                 onBackClick = { navController.popBackStack() },

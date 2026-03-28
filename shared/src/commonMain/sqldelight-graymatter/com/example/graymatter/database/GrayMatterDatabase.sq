@@ -301,3 +301,6 @@ DELETE FROM referenceLinkEntity WHERE id = ?;
 
 deleteReferenceLinksBySource:
 DELETE FROM referenceLinkEntity WHERE sourceId = ?;
+
+deleteReferenceLinksByTarget:
+DELETE FROM referenceLinkEntity WHERE targetId = ?;

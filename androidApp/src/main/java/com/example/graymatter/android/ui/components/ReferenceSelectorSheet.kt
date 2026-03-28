@@ -234,9 +234,15 @@ fun ReferenceSelectorSheet(
                                 }
                                 
                                 val iconColor = when (item) {
-                                    is ReferenceSelectorItem.TopicItem -> GrayMatterColors.KnowledgeBlue
-                                    is ReferenceSelectorItem.ResourceItem -> GrayMatterColors.KnowledgeBlue
-                                    is ReferenceSelectorItem.DetailItem -> GrayMatterColors.KnowledgeBlue
+                                    is ReferenceSelectorItem.TopicItem -> GrayMatterColors.Primary
+                                    is ReferenceSelectorItem.ResourceItem -> GrayMatterColors.Neutral300
+                                    is ReferenceSelectorItem.DetailItem -> {
+                                        when {
+                                            item.typeLabel == "Template" -> GrayMatterColors.CustomizedAccent
+                                            item.typeLabel == "Bookmark" -> GrayMatterColors.Jonquil
+                                            else -> GrayMatterColors.Success
+                                        }
+                                    }
                                 }
 
                                 Icon(
@@ -278,10 +284,15 @@ fun ReferenceSelectorSheet(
                                     } else if (item is ReferenceSelectorItem.DetailItem) {
                                         val label = item.typeLabel
                                         if (label != null) {
+                                            val labelColor = when (label) {
+                                                "Template" -> GrayMatterColors.CustomizedAccent
+                                                "Bookmark" -> GrayMatterColors.Jonquil
+                                                else -> GrayMatterColors.Success
+                                            }
                                             Text(
                                                 text = label,
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.7f)
+                                                color = labelColor.copy(alpha = 0.7f)
                                             )
                                         }
                                     }

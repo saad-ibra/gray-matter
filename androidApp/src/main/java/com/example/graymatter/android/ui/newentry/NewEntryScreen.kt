@@ -436,7 +436,7 @@ fun NewEntryScreen(
                     .border(
                         1.dp, 
                         if (selectedTemplate != null) GrayMatterColors.CustomizedAccent.copy(alpha = 0.3f)
-                        else GrayMatterColors.Citrine.copy(alpha = 0.3f), 
+                        else GrayMatterColors.Success.copy(alpha = 0.3f), 
                         RoundedCornerShape(16.dp)
                     )
                     .padding(20.dp),

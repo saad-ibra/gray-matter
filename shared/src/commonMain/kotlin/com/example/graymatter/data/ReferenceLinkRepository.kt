@@ -10,4 +10,5 @@ interface ReferenceLinkRepository {
     suspend fun insertReferenceLink(link: ReferenceLink)
     suspend fun deleteReferenceLink(id: String)
     suspend fun deleteReferenceLinksBySource(sourceId: String)
+    suspend fun deleteReferenceLinksByTarget(targetId: String)
 }

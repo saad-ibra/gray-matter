@@ -333,21 +333,56 @@ class GrayMatterViewModel(
     }
 
     /**
-     * Deletes a topic.
+     * Deletes a topic and ALL its contents: items, resources, opinions,
+     * reference links, and physical files.
      */
     fun deleteTopic(topicId: String) {
         viewModelScope.launch {
-            topicRepository.deleteTopic(topicId)
+            cascadeDeleteTopic(topicId)
         }
     }
 
     /**
-     * Deletes multiple topics.
+     * Deletes multiple topics and ALL their contents.
      */
     fun deleteTopics(topicIds: List<String>) {
         viewModelScope.launch {
-            topicIds.forEach { topicRepository.deleteTopic(it) }
+            topicIds.forEach { cascadeDeleteTopic(it) }
         }
+    }
+
+    /**
+     * Full cascade delete: cleans up reference links, physical files,
+     * opinions, items, and the topic record itself.
+     */
+    private suspend fun cascadeDeleteTopic(topicId: String) {
+        // 1. Get all items belonging to this topic
+        val topicItems = itemRepository.itemsStream.first().filter { it.topicId == topicId }
+
+        for (item in topicItems) {
+            // 2. Get all opinions for this item and delete their reference links
+            val opinions = opinionRepository.getOpinionsByItemId(item.id).first()
+            for (opinion in opinions) {
+                referenceLinkRepository.deleteReferenceLinksBySource(opinion.id)
+            }
+
+            // 3. Delete reference links where this resource is the target
+            referenceLinkRepository.deleteReferenceLinksByTarget(item.resourceId)
+
+            // 4. Delete physical file if it lives in our private storage
+            val resource = resourceRepository.getResourceById(item.resourceId)
+            val filePath = resource?.filePath
+            if (filePath != null && filePath.contains("/files/resources/")) {
+                val file = java.io.File(filePath)
+                if (file.exists()) file.delete()
+            }
+
+            // 5. Delete the item (DB cascade deletes opinions + bookmarks + reading progress)
+            itemRepository.deleteItem(item.id)
+        }
+
+        // 6. Finally delete the topic record itself
+        topicRepository.deleteTopic(topicId)
     }
 
     /**
@@ -760,7 +795,7 @@ class GrayMatterViewModel(
                     }
                     com.example.graymatter.domain.ReferenceType.ANNOTATION -> {
                         val op = opinionRepository.getOpinionById(link.targetId)
-                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = op.text, resourceId = op.itemId, typeLabel = "Annotation", isExpanded = false, isChecked = true) else null
+                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = op.text, resourceId = op.itemId, typeLabel = "Opinion", isExpanded = false, isChecked = true) else null
                     }
                 }
             }

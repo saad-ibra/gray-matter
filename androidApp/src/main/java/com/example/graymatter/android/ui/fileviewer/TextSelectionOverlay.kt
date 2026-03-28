@@ -400,9 +400,14 @@ fun TextSelectionOverlay(
             
             // Draw Persistent Highlights First
             for ((id, chars) in persistentHighlights) {
-                val isDictionary = opinions.find { it.id == id }?.text?.startsWith("[DICT] ") == true
-                val color = if (isDictionary) Color(0xFFC6280B).copy(alpha = 0.4f) else highlightColor
-                
+                val opinion = opinions.find { it.id == id }
+                val isDictionary = opinion?.text?.startsWith("[DICT] ") == true
+                val isAnnotation = opinion?.text?.startsWith("> ") == true
+                val color = when {
+                    isDictionary -> Color(0xFFC6280B).copy(alpha = 0.4f)
+                    isAnnotation -> GrayMatterColors.Gamboge.copy(alpha = 0.4f)
+                    else -> GrayMatterColors.Success.copy(alpha = 0.4f) // opinion = green
+                }
                 val lineRects = groupCharactersIntoRects(chars)
                 for (rect in lineRects) {
                     val pScreen = pdfToScreen(rect.left, rect.top)

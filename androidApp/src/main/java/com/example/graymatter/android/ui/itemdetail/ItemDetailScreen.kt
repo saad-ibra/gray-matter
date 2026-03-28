@@ -91,7 +91,7 @@ fun ItemDetailScreen(
                                 fabExpanded = false
                                 showAddDialog = true 
                             },
-                            containerColor = GrayMatterColors.Citrine,
+                            containerColor = GrayMatterColors.Success,
                             contentColor = Color.Black,
                             shape = CircleShape
                         ) {
@@ -1068,9 +1068,9 @@ private fun OpinionTimelineItem(
                             isDictionary -> Triple("DICTIONARY", Icons.Default.Book, Color(0xFFC6280B))
                             isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.Gamboge)
                             isTemplate -> Triple(dynamicTitle.uppercase(), Icons.Default.DashboardCustomize, GrayMatterColors.CustomizedAccent)
-                            isCustomTitle -> Triple(dynamicTitle.uppercase(), Icons.Default.EditNote, GrayMatterColors.Citrine)
+                            isCustomTitle -> Triple(dynamicTitle.uppercase(), Icons.Default.EditNote, GrayMatterColors.Success)
                             hasPageNumber -> Triple("BOOKMARK", Icons.Default.Bookmark, GrayMatterColors.Jonquil)
-                            else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.Citrine)
+                            else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.Success)
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1140,7 +1140,13 @@ private fun OpinionTimelineItem(
                     // Knowledge Connections in Edit Mode
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("KNOWLEDGE LINKS", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = GrayMatterColors.Neutral500)
-                        TextButton(onClick = { showReferenceSelector = true }, contentPadding = PaddingValues(0.dp)) {
+                        TextButton(
+                            onClick = {
+                                referenceSelectorViewModel?.clearSelection()
+                                showReferenceSelector = true
+                            },
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
                             Icon(Icons.Default.AddLink, null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
                             Text("Add")
@@ -1325,8 +1331,8 @@ private fun OpinionTimelineItem(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(GrayMatterColors.Citrine.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .border(1.dp, GrayMatterColors.Citrine.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.Success.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.Success.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                             .padding(16.dp)
                     ) {
                         Text(
@@ -1353,12 +1359,12 @@ private fun OpinionTimelineItem(
                         )
                     }
                 } else {
-                    // General Opinion (Citrine)
+                    // General Opinion (Success)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(GrayMatterColors.Citrine.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .border(1.dp, GrayMatterColors.Citrine.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.Success.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.Success.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                             .padding(16.dp)
                     ) {
                         Text(
@@ -1661,7 +1667,13 @@ private fun OpinionEditDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
-                        IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
+                        IconButton(
+                            onClick = {
+                                viewModel?.clearSelection()
+                                showReferenceSelector = true
+                            },
+                            modifier = Modifier.size(24.dp)
+                        ) {
                             Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
                         }
                     }

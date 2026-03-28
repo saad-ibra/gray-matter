@@ -345,7 +345,7 @@ fun KnowledgeGraphScreen(
                             NodeType.TEMPLATE -> GrayMatterColors.CustomizedAccent
                             NodeType.CUSTOM -> GrayMatterColors.CustomizedAccent
                             NodeType.DICTIONARY -> Color(0xFFC6280B)
-                            NodeType.OPINION -> GrayMatterColors.Citrine
+                            NodeType.OPINION -> GrayMatterColors.Success
                         }
                         // 3D Perspective Scale & Position
                         val pNode = project3D(node.x, node.y, node.z)
@@ -607,7 +607,7 @@ fun KnowledgeGraphScreen(
                                     "Bookmarks" -> GrayMatterColors.Jonquil.copy(alpha = 0.3f)
                                     "Templates" -> GrayMatterColors.CustomizedAccent.copy(alpha = 0.3f)
                                     "Dict" -> Color(0xFFC6280B).copy(alpha = 0.3f)
-                                    else -> GrayMatterColors.Citrine.copy(alpha = 0.3f)
+                                    else -> GrayMatterColors.Success.copy(alpha = 0.3f)
                                 },
                                 selectedLabelColor = when(name) {
                                     "Topics" -> Color.Black
@@ -616,7 +616,7 @@ fun KnowledgeGraphScreen(
                                     "Bookmarks" -> GrayMatterColors.Jonquil
                                     "Templates" -> GrayMatterColors.CustomizedAccent
                                     "Dict" -> Color(0xFFC6280B)
-                                    else -> GrayMatterColors.Citrine
+                                    else -> GrayMatterColors.Success
                                 }
                             )
                         )
@@ -642,12 +642,28 @@ fun KnowledgeGraphScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = node.type.name,
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = GrayMatterColors.Neutral500,
-                                modifier = Modifier.weight(1f)
-                            )
+                            val nodeColor = when (node.type) {
+                                NodeType.TOPIC -> Color.White
+                                NodeType.RESOURCE -> Color.LightGray
+                                NodeType.ANNOTATION -> GrayMatterColors.Gamboge
+                                NodeType.BOOKMARK -> GrayMatterColors.Jonquil
+                                NodeType.TEMPLATE, NodeType.CUSTOM -> GrayMatterColors.CustomizedAccent
+                                NodeType.DICTIONARY -> Color(0xFFC6280B)
+                                NodeType.OPINION -> GrayMatterColors.Success
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(nodeColor.copy(alpha = 0.15f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = node.type.name,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = nodeColor
+                                )
+                            }
+                            Spacer(modifier = Modifier.weight(1f))
                             IconButton(
                                 onClick = { selectedNode = null },
                                 modifier = Modifier.size(24.dp)
@@ -667,14 +683,13 @@ fun KnowledgeGraphScreen(
                                 onClick = { onNodeDoubleTap(node) },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = GrayMatterColors.Primary.copy(alpha = 0.15f),
-                                    contentColor = GrayMatterColors.Primary
+                                    containerColor = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f),
+                                    contentColor = GrayMatterColors.KnowledgeBlue
                                 ),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Text("Go to Details")
                             }
-                            
                             Button(
                                 onClick = { showDeleteDialog = node },
                                 modifier = Modifier.weight(1f),
