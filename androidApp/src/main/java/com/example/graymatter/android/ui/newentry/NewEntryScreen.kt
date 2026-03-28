@@ -64,7 +64,7 @@ fun NewEntryScreen(
     var opinionText by remember { mutableStateOf("") }
     var noteContent by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var confidenceScore by remember { mutableFloatStateOf(0.7f) }
+    var confidenceScore by remember { mutableFloatStateOf(0.0f) }
 
     var originalFileName by remember { mutableStateOf<String?>(null) }
     var fileUri by remember { mutableStateOf<Uri?>(null) }
@@ -553,7 +553,7 @@ fun NewEntryScreen(
                         EntryType.LINK -> viewModel.createNewItem(
                             url = urlValue,
                             opinionText = finalOpinion,
-                            confidence = (confidenceScore * 10).toInt(),
+                            confidence = (confidenceScore * 100).toInt(),
                             title = title.ifBlank { null },
                             description = finalDesc,
                             topicId = preSelectedTopicId,
@@ -570,7 +570,7 @@ fun NewEntryScreen(
                                 fileName = originalFileName ?: "Unknown",
                                 uri = fileUri ?: Uri.EMPTY,
                                 opinionText = finalOpinion,
-                                confidence = (confidenceScore * 10).toInt(),
+                                confidence = (confidenceScore * 100).toInt(),
                                 title = finalTitle,
                                 description = finalDesc,
                                 topicId = preSelectedTopicId,
@@ -584,7 +584,7 @@ fun NewEntryScreen(
                                 title = finalTitle,
                                 content = noteContent,
                                 opinionText = finalOpinion,
-                                confidence = (confidenceScore * 10).toInt(),
+                                confidence = (confidenceScore * 100).toInt(),
                                 description = finalDesc,
                                 topicId = preSelectedTopicId,
                                 referenceLinks = noteSelectedReferences,

@@ -79,54 +79,18 @@ fun ItemDetailScreen(
         containerColor = GrayMatterColors.BackgroundDark,
         floatingActionButton = {
             if (!isEditing) {
-                var fabExpanded by remember { mutableStateOf(false) }
-                
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.navigationBarsPadding()
+                FloatingActionButton(
+                    onClick = { showAddDialog = true },
+                    containerColor = GrayMatterColors.TextPrimary,
+                    contentColor = GrayMatterColors.BackgroundDark,
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier.size(60.dp)
                 ) {
-                    if (fabExpanded) {
-                        // Choice: Normal Opinion
-                        SmallFloatingActionButton(
-                            onClick = { 
-                                fabExpanded = false
-                                showAddDialog = true 
-                            },
-                            containerColor = GrayMatterColors.Success,
-                            contentColor = Color.Black,
-                            shape = CircleShape
-                        ) {
-                            Icon(Icons.Default.QuestionAnswer, "Opinion")
-                        }
-                        
-                        // Choice: Use Template
-                        SmallFloatingActionButton(
-                            onClick = { 
-                                fabExpanded = false
-                                showAddDialog = true 
-                            },
-                            containerColor = GrayMatterColors.CustomizedAccent,
-                            contentColor = Color.White,
-                            shape = CircleShape
-                        ) {
-                            Icon(Icons.Default.DashboardCustomize, "Template")
-                        }
-                    }
-
-                    FloatingActionButton(
-                        onClick = { fabExpanded = !fabExpanded },
-                        containerColor = GrayMatterColors.TextPrimary,
-                        contentColor = GrayMatterColors.BackgroundDark,
-                        shape = RoundedCornerShape(18.dp),
-                        modifier = Modifier.size(60.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (fabExpanded) Icons.Default.Close else Icons.Default.Add,
-                            contentDescription = "Add",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Opinion",
+                        modifier = Modifier.size(32.dp)
+                    )
                 }
             }
         }
@@ -401,8 +365,6 @@ fun ItemDetailScreen(
                                 colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.Primary)
                             ) {
                                 Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Export", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                             }
                         }
                     }
@@ -1472,7 +1434,7 @@ private fun OpinionEditDialog(
     var text by remember { mutableStateOf("") }
     var selectedTemplate by remember { mutableStateOf<com.example.graymatter.domain.CustomTemplate?>(null) }
     var templateFieldValues by remember { mutableStateOf(emptyMap<String, String>()) }
-    var confidence by remember { mutableFloatStateOf(0.7f) }
+    var confidence by remember { mutableFloatStateOf(0.0f) }
     var selectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
     var showReferenceSelector by remember { mutableStateOf(false) }
     

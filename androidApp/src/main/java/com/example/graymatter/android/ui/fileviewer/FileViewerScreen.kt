@@ -446,7 +446,7 @@ fun FileViewerScreen(
                     
                     ListItem(
                         headlineContent = { Text("General Opinion", color = Color.White) },
-                        leadingContent = { Icon(Icons.Default.EditNote, null, tint = GrayMatterColors.KnowledgeBlue) },
+                        leadingContent = { Icon(Icons.Default.EditNote, null, tint = GrayMatterColors.Success) },
                         modifier = Modifier.clickable { 
                             viewModel.toggleAddEntrySheet()
                             viewModel.toggleCustomOpinionDialog()
@@ -524,7 +524,7 @@ fun FileViewerScreen(
         if (viewModel.selectedTemplateForNewEntry != null) {
             val template = viewModel.selectedTemplateForNewEntry!!
             var fieldValues by remember { mutableStateOf(template.headings.associateWith { "" }) }
-            var confidence by remember { mutableFloatStateOf(0.7f) }
+            var confidence by remember { mutableFloatStateOf(0.0f) }
             var selectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
             var showReferenceSelector by remember { mutableStateOf(false) }
             
@@ -684,7 +684,7 @@ fun FileViewerScreen(
 
         if (viewModel.showCustomOpinionDialog) {
             var text by remember { mutableStateOf("") }
-            var confidence by remember { mutableFloatStateOf(0.7f) }
+            var confidence by remember { mutableFloatStateOf(0.0f) }
             var selectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
             var showReferenceSelector by remember { mutableStateOf(false) }
             
@@ -1066,7 +1066,7 @@ fun BookmarkOpinionDialog(
     onConfirm: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit
 ) {
     var text by remember { mutableStateOf("") }
-    var confidence by remember { mutableFloatStateOf(0.7f) }
+    var confidence by remember { mutableFloatStateOf(0.0f) }
     var selectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
     var showReferenceSelector by remember { mutableStateOf(false) }
     
@@ -1197,7 +1197,7 @@ fun BookmarkOpinionDialog(
 fun SelectionAnnotationDialog(
     selectedText: String,
     initialOpinion: String = "",
-    initialConfidence: Float = 0.7f,
+    initialConfidence: Float = 0.0f,
     viewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
     onDismiss: () -> Unit,
     onConfirm: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit

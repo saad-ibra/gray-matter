@@ -229,49 +229,6 @@ fun TopicSynthesisScreen(
     }
 }
 
-@Composable
-private fun OverallOpinionSection(
-    hasOpinion: Boolean,
-    onClick: () -> Unit
-) {
-    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "OVERALL OPINION",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                color = GrayMatterColors.Neutral500
-            )
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(if (hasOpinion) GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f) else GrayMatterColors.SurfaceDark)
-                .border(1.dp, if (hasOpinion) GrayMatterColors.KnowledgeBlue.copy(alpha = 0.4f) else GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
-                .clickable(onClick = onClick)
-                .padding(20.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Icon(
-                    imageVector = if (hasOpinion) Icons.Default.EditNote else Icons.Default.RateReview,
-                    contentDescription = null,
-                    tint = if (hasOpinion) GrayMatterColors.KnowledgeBlue else GrayMatterColors.Primary
-                )
-                Text(
-                    text = if (hasOpinion) "Edit Overall Opinion" else "Add Overall Opinion",
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = if (hasOpinion) GrayMatterColors.KnowledgeBlue else GrayMatterColors.Primary
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun TopicHeader(
@@ -296,7 +253,6 @@ private fun TopicHeader(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .weight(1f)
-                .clickable(onClick = onRenameClick)
                 .padding(horizontal = 8.dp)
         ) {
             Text(
@@ -305,21 +261,14 @@ private fun TopicHeader(
                 color = GrayMatterColors.Neutral500,
                 textAlign = TextAlign.Center
             )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = topicName, 
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), 
-                    color = GrayMatterColors.TextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(Icons.Default.Edit, null, tint = GrayMatterColors.Neutral600, modifier = Modifier.size(14.dp))
-            }
+            Text(
+                text = topicName, 
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), 
+                color = GrayMatterColors.TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
         }
         
         var showMenu by remember { mutableStateOf(false) }
@@ -334,6 +283,15 @@ private fun TopicHeader(
                 onDismissRequest = { showMenu = false },
                 modifier = Modifier.background(GrayMatterColors.SurfaceDark)
             ) {
+                DropdownMenuItem(
+                    text = { Text("Rename Topic", color = GrayMatterColors.TextPrimary) },
+                    onClick = {
+                        showMenu = false
+                        onRenameClick()
+                    },
+                    leadingIcon = { Icon(Icons.Default.Edit, null, tint = GrayMatterColors.Primary) }
+                )
+
                 DropdownMenuItem(
                     text = { Text("Export Topic", color = GrayMatterColors.TextPrimary) },
                     onClick = {
@@ -440,6 +398,49 @@ private fun ResourceItem(
                 )
             }
             Icon(Icons.Default.ChevronRight, null, tint = GrayMatterColors.Neutral700)
+        }
+    }
+}
+@Composable
+private fun OverallOpinionSection(
+    hasOpinion: Boolean,
+    onClick: () -> Unit
+) {
+    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "OVERALL OPINION",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                color = GrayMatterColors.Neutral500
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(if (hasOpinion) GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f) else GrayMatterColors.SurfaceDark)
+                .border(1.dp, if (hasOpinion) GrayMatterColors.KnowledgeBlue.copy(alpha = 0.4f) else GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+                .clickable(onClick = onClick)
+                .padding(20.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(
+                    imageVector = if (hasOpinion) Icons.Default.EditNote else Icons.Default.RateReview,
+                    contentDescription = null,
+                    tint = if (hasOpinion) GrayMatterColors.KnowledgeBlue else GrayMatterColors.Primary
+                )
+                Text(
+                    text = if (hasOpinion) "Edit Overall Opinion" else "Add Overall Opinion",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = if (hasOpinion) GrayMatterColors.KnowledgeBlue else GrayMatterColors.Primary
+                )
+            }
         }
     }
 }

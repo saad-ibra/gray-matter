@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,127 +37,138 @@ fun TemplateEditorDialog(
 
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = GrayMatterColors.SurfaceDark,
-        dragHandle = { BottomSheetDefaults.DragHandle(color = GrayMatterColors.Neutral700) }
-    ) {
-        Column(
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp)
-                .navigationBarsPadding()
-                .imePadding()
-                .verticalScroll(scrollState)
+                .padding(16.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(GrayMatterColors.SurfaceDark)
+                .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(24.dp))
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+                    .verticalScroll(scrollState)
             ) {
-                Text(
-                    text = if (template.name.isEmpty()) "Create Template" else "Edit Template",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = GrayMatterColors.TextPrimary
-                )
-                if (onDelete != null && template.name.isNotEmpty()) {
-                    IconButton(onClick = { onDelete(template.id) }) {
-                        Icon(Icons.Default.Delete, "Delete Template", tint = GrayMatterColors.Error)
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            TextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Template Name") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = GrayMatterColors.SurfaceInput,
-                    focusedContainerColor = GrayMatterColors.SurfaceInput,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedTextColor = Color.White,
-                    focusedTextColor = Color.White
-                ),
-                shape = RoundedCornerShape(16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "HEADINGS",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = GrayMatterColors.Neutral500
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            headings.forEachIndexed { index, heading ->
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextField(
-                        value = heading,
-                        onValueChange = { newVal ->
-                            val newList = headings.toMutableList()
-                            newList[index] = newVal
-                            headings = newList
-                        },
-                        placeholder = { Text("Heading ${index + 1}") },
-                        modifier = Modifier.weight(1f),
-                        colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = GrayMatterColors.SurfaceInput,
-                            focusedContainerColor = GrayMatterColors.SurfaceInput,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedTextColor = Color.White,
-                            focusedTextColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(16.dp)
+                    Text(
+                        text = if (template.name.isEmpty()) "Create Template" else "Edit Template",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = GrayMatterColors.TextPrimary
                     )
-                    IconButton(onClick = {
-                        headings = headings.toMutableList().apply { removeAt(index) }
-                    }) {
-                        Icon(Icons.Default.RemoveCircleOutline, "Remove Heading", tint = GrayMatterColors.Error)
+                    if (onDelete != null && template.name.isNotEmpty()) {
+                        IconButton(onClick = { onDelete(template.id) }) {
+                            Icon(Icons.Default.Delete, "Delete Template", tint = GrayMatterColors.Error)
+                        }
+                    } else {
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.Close, "Close", tint = GrayMatterColors.Neutral500)
+                        }
                     }
                 }
-            }
 
-            TextButton(
-                onClick = {
-                    headings = headings + ""
-                    scope.launch {
-                        delay(100)
-                        scrollState.animateScrollTo(scrollState.maxValue)
+                Spacer(modifier = Modifier.height(24.dp))
+
+                TextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Template Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        unfocusedContainerColor = GrayMatterColors.SurfaceInput,
+                        focusedContainerColor = GrayMatterColors.SurfaceInput,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedTextColor = Color.White,
+                        focusedTextColor = Color.White,
+                        cursorColor = GrayMatterColors.CustomizedAccent,
+                        focusedLabelColor = GrayMatterColors.CustomizedAccent,
+                        unfocusedLabelColor = GrayMatterColors.Neutral500
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "HEADINGS",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                    color = GrayMatterColors.Neutral500
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                headings.forEachIndexed { index, heading ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextField(
+                            value = heading,
+                            onValueChange = { newVal ->
+                                val newList = headings.toMutableList()
+                                newList[index] = newVal
+                                headings = newList
+                            },
+                            placeholder = { Text("Heading ${index + 1}") },
+                            modifier = Modifier.weight(1f),
+                            colors = TextFieldDefaults.colors(
+                                unfocusedContainerColor = GrayMatterColors.SurfaceInput,
+                                focusedContainerColor = GrayMatterColors.SurfaceInput,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedTextColor = Color.White,
+                                focusedTextColor = Color.White,
+                                cursorColor = GrayMatterColors.CustomizedAccent
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        IconButton(onClick = {
+                            headings = headings.toMutableList().apply { removeAt(index) }
+                        }) {
+                            Icon(Icons.Default.RemoveCircleOutline, "Remove Heading", tint = GrayMatterColors.Error)
+                        }
                     }
-                },
-                modifier = Modifier.padding(top = 8.dp)
-            ) {
-                Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Heading")
-            }
+                }
 
-            Spacer(modifier = Modifier.height(32.dp))
+                TextButton(
+                    onClick = {
+                        headings = headings + ""
+                        scope.launch {
+                            delay(100)
+                            scrollState.animateScrollTo(scrollState.maxValue)
+                        }
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
+                    colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.CustomizedAccent)
+                ) {
+                    Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Add Heading")
+                }
 
-            Button(
-                onClick = { onSave(template.copy(name = name, headings = headings.filter { it.isNotBlank() })) },
-                enabled = name.isNotBlank() && headings.any { it.isNotBlank() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.CustomizedAccent),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text("Save Template", fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Button(
+                    onClick = { onSave(template.copy(name = name, headings = headings.filter { it.isNotBlank() })) },
+                    enabled = name.isNotBlank() && headings.any { it.isNotBlank() },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.CustomizedAccent),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text("Save Template", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
             }
         }
     }
 }
+
