@@ -72,9 +72,9 @@ fun TemplateSelector(
             DropdownMenuItem(
                 text = { 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Add, null, tint = GrayMatterColors.KnowledgeBlue, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Add, null, tint = GrayMatterColors.CustomizedAccent, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(if (templates.isEmpty()) "Create first template..." else "Create new...", color = GrayMatterColors.KnowledgeBlue)
+                        Text("New Template", color = GrayMatterColors.CustomizedAccent)
                     }
                 },
                 onClick = {

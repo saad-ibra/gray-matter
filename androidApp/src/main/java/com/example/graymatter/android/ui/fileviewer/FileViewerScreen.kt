@@ -38,13 +38,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.graymatter.android.ui.theme.GrayMatterColors
+import com.example.graymatter.android.ui.components.TemplateSelector
+import com.example.graymatter.android.ui.components.TemplateEditorDialog
+import com.example.graymatter.android.ui.components.MarkdownEditor
 import com.example.graymatter.domain.ChapterOutline
 import com.example.graymatter.domain.ResourceType
+import com.example.graymatter.domain.CustomTemplate
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.type
 import com.example.graymatter.android.util.FileUtils
-import com.example.graymatter.android.ui.components.MarkdownEditor
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -83,6 +85,9 @@ fun FileViewerScreen(
             lastHapticTime = now
         }
     }
+    
+    var showAddEntrySheet by remember { mutableStateOf(false) }
+    var showTemplateEditor by remember { mutableStateOf(false) }
     
     var editingOpinion by remember { mutableStateOf<com.example.graymatter.domain.Opinion?>(null) }
 
@@ -260,7 +265,7 @@ fun FileViewerScreen(
                                 initialText = res.extractedText ?: "",
                                 onBackClick = onBackClick,
                                 onTextChange = { currentEditorText = it },
-                                onTitleChange = { newTitle -> viewModel.resource.value?.let { appModule_res -> /* Normally we'd rename here, but we'll focus on text for now */ } },
+                                onTitleChange = { /* Rename logic if needed */ },
                                 onSave = { content -> viewModel.updateResourceText(content, editSelectedReferences) },
                                 initialPreviewMode = true,
                                 onShowReferenceSelector = { 
@@ -470,9 +475,9 @@ fun FileViewerScreen(
                 containerColor = GrayMatterColors.SurfaceDark,
                 title = { Text("Select Template", color = Color.White) },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         if (templates.isEmpty()) {
-                            Text("No templates found. Create one in Profile.", color = GrayMatterColors.Neutral500)
+                            Text("No templates found.", color = GrayMatterColors.Neutral500)
                         } else {
                             templates.forEach { template ->
                                 Box(
@@ -489,6 +494,21 @@ fun FileViewerScreen(
                                     Text(template.name, color = Color.White, fontWeight = FontWeight.Bold)
                                 }
                             }
+                        }
+                        
+                        Divider(color = GrayMatterColors.Neutral800, modifier = Modifier.padding(vertical = 4.dp))
+                        
+                        TextButton(
+                            onClick = { 
+                                viewModel.toggleTemplateSelectionDialog()
+                                showTemplateEditor = true 
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.CustomizedAccent)
+                        ) {
+                            Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("New Template", fontWeight = FontWeight.Bold)
                         }
                     }
                 },
@@ -518,11 +538,27 @@ fun FileViewerScreen(
                         .padding(24.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Text(
-                            text = "New ${template.name}",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                            color = GrayMatterColors.TextPrimary
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "New ${template.name}",
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                color = GrayMatterColors.TextPrimary
+                            )
+                            
+                            TemplateSelector(
+                                templates = viewModel.templates.collectAsState().value,
+                                selectedTemplate = template,
+                                onTemplateSelect = { viewModel.selectTemplateForNewEntry(it) },
+                                onCreateTemplate = {
+                                    viewModel.selectTemplateForNewEntry(null)
+                                    showTemplateEditor = true
+                                }
+                            )
+                        }
                         
                         Column(
                             modifier = Modifier
@@ -719,7 +755,7 @@ fun FileViewerScreen(
                                 .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
                                 .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
                                 .padding(12.dp),
-                            cursorBrush = SolidColor(GrayMatterColors.KnowledgeBlue),
+                            cursorBrush = SolidColor(GrayMatterColors.Success),
                             decorationBox = { inner ->
                                 if (text.isEmpty()) {
                                     Text("Type your reflection here...", color = GrayMatterColors.Neutral600)
@@ -738,8 +774,8 @@ fun FileViewerScreen(
                                 value = confidence,
                                 onValueChange = { confidence = it },
                                 colors = SliderDefaults.colors(
-                                    thumbColor = GrayMatterColors.KnowledgeBlue,
-                                    activeTrackColor = GrayMatterColors.KnowledgeBlue
+                                    thumbColor = GrayMatterColors.Success,
+                                    activeTrackColor = GrayMatterColors.Success
                                 )
                             )
                         }
@@ -755,7 +791,7 @@ fun FileViewerScreen(
                                 },
                                 enabled = text.isNotBlank(),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = GrayMatterColors.KnowledgeBlue,
+                                    containerColor = GrayMatterColors.Success,
                                     contentColor = Color.Black
                                 )
                             ) {
@@ -811,6 +847,18 @@ fun FileViewerScreen(
                     val fullOpinion = "> $quote\n\n$updatedOpinion"
                     viewModel.updateAnnotation(op.id, fullOpinion, score, selectedRefs)
                     editingOpinion = null
+                }
+            )
+        }
+
+        if (showTemplateEditor) {
+            TemplateEditorDialog(
+                template = CustomTemplate("", "", emptyList()),
+                onDismiss = { showTemplateEditor = false },
+                onSave = { template ->
+                    viewModel.saveTemplate(template)
+                    viewModel.selectTemplateForNewEntry(template)
+                    showTemplateEditor = false
                 }
             )
         }

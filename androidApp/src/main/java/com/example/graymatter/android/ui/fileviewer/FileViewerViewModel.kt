@@ -597,6 +597,12 @@ class FileViewerViewModel(
         }
     }
 
+    fun saveTemplate(template: com.example.graymatter.domain.CustomTemplate) {
+        viewModelScope.launch {
+            resourceRepository.saveTemplate(template)
+        }
+    }
+
     // -- Settings --
     fun updateSettings(update: ReadingSettings.() -> ReadingSettings) {
         val current = _settings.value
