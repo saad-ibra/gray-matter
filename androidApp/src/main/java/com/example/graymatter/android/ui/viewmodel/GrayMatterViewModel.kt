@@ -452,6 +452,7 @@ class GrayMatterViewModel(
     fun updateTopicNotes(topicId: String, notes: String, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         viewModelScope.launch {
             topicRepository.updateTopicNotes(topicId, notes)
+            referenceLinkRepository.deleteReferenceLinksBySource(topicId)
             saveReferenceLinksInternal(topicId, com.example.graymatter.domain.ReferenceType.TOPIC, referenceLinks)
         }
     }

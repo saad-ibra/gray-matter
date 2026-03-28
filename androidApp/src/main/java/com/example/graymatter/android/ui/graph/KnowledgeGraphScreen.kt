@@ -59,6 +59,7 @@ import kotlin.math.sqrt
 @Composable
 fun KnowledgeGraphScreen(
     viewModel: KnowledgeGraphViewModel,
+    initialSelectedNodeId: String? = null,
     onBackClick: () -> Unit,
     onNavigateHome: () -> Unit,
     onNodeDoubleTap: (GraphNode) -> Unit
@@ -110,6 +111,13 @@ fun KnowledgeGraphScreen(
                     simulator.nodes.find { it.id == edge.target.id }?.let { tgt ->
                         simulator.edges.add(GraphEdge(edge.id, src, tgt, edge.weight))
                     }
+                }
+            }
+            
+            if (initialSelectedNodeId != null && selectedNode == null) {
+                val node = simulator.nodes.find { it.id == initialSelectedNodeId }
+                if (node != null) {
+                    selectedNode = node
                 }
             }
             
@@ -360,8 +368,16 @@ fun KnowledgeGraphScreen(
                         val isSelected = selectedNode == node
 
                         if (isSelected) {
+                            val pulsePhase = (kotlin.math.sin(currentTicks * 0.05f).toFloat() * 0.5f + 0.5f)
+                            val pulseRadius = scaledRadius + 15f * scale * zScale + (pulsePhase * 25f * scale * zScale)
+                            
                             drawCircle(
-                                color = nodeColor.copy(alpha = 0.4f),
+                                color = nodeColor.copy(alpha = 0.4f - (pulsePhase * 0.2f)),
+                                radius = pulseRadius,
+                                center = screenCenter
+                            )
+                            drawCircle(
+                                color = nodeColor.copy(alpha = 0.6f),
                                 radius = scaledRadius + 15f * scale * zScale,
                                 center = screenCenter
                             )

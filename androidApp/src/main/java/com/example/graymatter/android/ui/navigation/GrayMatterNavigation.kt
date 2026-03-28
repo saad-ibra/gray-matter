@@ -112,7 +112,7 @@ fun GrayMatterNavigation(
         composable(
             route = NavigationDestination.Home.route,
             enterTransition = {
-                if (initialState.destination.route == NavigationDestination.KnowledgeGraph.route) {
+                if (initialState.destination.route?.startsWith("knowledge_graph") == true) {
                     // Special case: Slide in from left (towards right/end) from Relatrix
                     slideIntoContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.End,
@@ -188,7 +188,7 @@ fun GrayMatterNavigation(
                                     navController.navigate(NavigationDestination.NewEntry.route)
                                 },
                                 onNavigateToGraph = {
-                                    navController.navigate(NavigationDestination.KnowledgeGraph.route)
+                                    navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute())
                                 },
                                 onDeleteTopics = { ids -> viewModel.deleteTopics(ids) },
                                 onRenameTopic = { id, name -> viewModel.renameTopic(id, name) },
@@ -199,7 +199,7 @@ fun GrayMatterNavigation(
                             ProfileScreen(
                                 viewModel = viewModel,
                                 onNavigateToGraph = {
-                                    navController.navigate(NavigationDestination.KnowledgeGraph.route)
+                                    navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute())
                                 }
                             )
                         }
@@ -255,6 +255,9 @@ fun GrayMatterNavigation(
                         val markdown = ExportService.exportTopicSummary(t, topicItems)
                         shareText(context, markdown, "Topic Analysis: ${t.name}")
                     }
+                },
+                onViewInGraph = { id -> 
+                    navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute(id))
                 },
                 onLoadLinks = { topicId -> viewModel.getLinksForTopic(topicId) }
             )
@@ -375,7 +378,7 @@ fun GrayMatterNavigation(
                 onLoadResourceLinks = { resourceId -> viewModel.getLinksForResource(resourceId) },
                 onLoadBacklinks = { resourceId -> viewModel.getResolvedBacklinksForTarget(resourceId) },
                 onViewInGraphClick = { resourceId -> 
-                    navController.navigate(NavigationDestination.KnowledgeGraph.route) 
+                    navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute(resourceId)) 
                 },
                 onSaveTemplate = { viewModel.saveTemplate(it) },
                 generateUuid = { viewModel.generateUuid() }
@@ -535,13 +538,24 @@ fun GrayMatterNavigation(
                 onBackClick = { navController.popBackStack() },
                 onLoadBacklinks = { resId -> viewModel.getResolvedBacklinksForTarget(resId) },
                 onViewInGraph = { resId -> 
-                    navController.navigate(NavigationDestination.KnowledgeGraph.route) 
+                    navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute(resId)) 
                 }
             )
         }
 
         // Rela-trix (Knowledge Graph) Screen
-        composable(NavigationDestination.KnowledgeGraph.route) {
+        composable(
+            route = NavigationDestination.KnowledgeGraph.route,
+            arguments = listOf(
+                navArgument(NavigationDestination.KnowledgeGraph.ARG_NODE_ID) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val nodeId = backStackEntry.arguments?.getString(NavigationDestination.KnowledgeGraph.ARG_NODE_ID)
+            
             val graphViewModel: com.example.graymatter.android.ui.graph.KnowledgeGraphViewModel = viewModel {
                 com.example.graymatter.android.ui.graph.KnowledgeGraphViewModel(
                     topicRepository = appModule.topicRepository,
@@ -559,6 +573,7 @@ fun GrayMatterNavigation(
 
             com.example.graymatter.android.ui.graph.KnowledgeGraphScreen(
                 viewModel = graphViewModel,
+                initialSelectedNodeId = nodeId,
                 onBackClick = { navController.popBackStack() },
                 onNavigateHome = {
                     navController.navigate(NavigationDestination.Home.route) {

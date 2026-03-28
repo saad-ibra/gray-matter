@@ -366,6 +366,15 @@ fun ItemDetailScreen(
                             ) {
                                 Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
                             }
+                            
+                            // View in Relatrix Button
+                            TextButton(
+                                onClick = { onViewInGraphClick(itemDetails.resource.id) },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.Primary)
+                            ) {
+                                Icon(Icons.Default.DatasetLinked, null, modifier = Modifier.size(18.dp))
+                            }
                         }
                     }
 

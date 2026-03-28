@@ -37,5 +37,9 @@ sealed class NavigationDestination(val route: String) {
             if (page != null) "file_viewer/$resourceId?page=$page" else "file_viewer/$resourceId"
     }
 
-    object KnowledgeGraph : NavigationDestination("knowledge_graph")
+    object KnowledgeGraph : NavigationDestination("knowledge_graph?nodeId={nodeId}") {
+        const val ARG_NODE_ID = "nodeId"
+        fun buildRoute(nodeId: String? = null) =
+            if (nodeId != null) "knowledge_graph?nodeId=$nodeId" else "knowledge_graph"
+    }
 }

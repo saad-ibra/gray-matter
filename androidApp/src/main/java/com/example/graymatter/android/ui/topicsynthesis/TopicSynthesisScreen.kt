@@ -1,4 +1,5 @@
 package com.example.graymatter.android.ui.topicsynthesis
+import androidx.compose.animation.core.*
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -42,6 +43,7 @@ fun TopicSynthesisScreen(
     onDeleteTopic: () -> Unit,
     onRenameTopic: (String) -> Unit,
     onExport: () -> Unit,
+    onViewInGraph: (String) -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
     modifier: Modifier = Modifier
@@ -138,7 +140,8 @@ fun TopicSynthesisScreen(
                     onBackClick = onBackClick,
                     onRenameClick = { showRenameDialog = true },
                     onDeleteClick = { showDeleteConfirm = true },
-                    onExportClick = onExport
+                    onExportClick = onExport,
+                    onViewInGraphClick = { onViewInGraph(topic.id) }
                 )
                 
                 LazyColumn(
@@ -236,7 +239,8 @@ private fun TopicHeader(
     onBackClick: () -> Unit,
     onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    onExportClick: () -> Unit
+    onExportClick: () -> Unit,
+    onViewInGraphClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -299,6 +303,15 @@ private fun TopicHeader(
                         onExportClick()
                     },
                     leadingIcon = { Icon(Icons.Default.Share, null, tint = GrayMatterColors.Primary) }
+                )
+                
+                DropdownMenuItem(
+                    text = { Text("View in Relatrix", color = GrayMatterColors.TextPrimary) },
+                    onClick = {
+                        showMenu = false
+                        onViewInGraphClick()
+                    },
+                    leadingIcon = { Icon(Icons.Default.DatasetLinked, null, tint = GrayMatterColors.Primary) }
                 )
                 
                 Divider(color = GrayMatterColors.Neutral800)
@@ -406,6 +419,21 @@ private fun OverallOpinionSection(
     hasOpinion: Boolean,
     onClick: () -> Unit
 ) {
+    val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "rainbowColor")
+    val hueOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.tween(3000, easing = androidx.compose.animation.core.LinearEasing),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Restart
+        ),
+        label = "hue"
+    )
+    
+    val dynamicRainbowColor = androidx.compose.ui.graphics.Color(
+        android.graphics.Color.HSVToColor(floatArrayOf(hueOffset, 0.75f, 1f))
+    )
+
     Column(modifier = Modifier.padding(horizontal = 24.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -423,8 +451,8 @@ private fun OverallOpinionSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(if (hasOpinion) GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f) else GrayMatterColors.SurfaceDark)
-                .border(1.dp, if (hasOpinion) GrayMatterColors.KnowledgeBlue.copy(alpha = 0.4f) else GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+                .background(if (hasOpinion) dynamicRainbowColor.copy(alpha = 0.15f) else GrayMatterColors.SurfaceDark)
+                .border(1.dp, if (hasOpinion) dynamicRainbowColor.copy(alpha = 0.4f) else GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
                 .clickable(onClick = onClick)
                 .padding(20.dp),
             contentAlignment = Alignment.Center
@@ -433,12 +461,12 @@ private fun OverallOpinionSection(
                 Icon(
                     imageVector = if (hasOpinion) Icons.Default.EditNote else Icons.Default.RateReview,
                     contentDescription = null,
-                    tint = if (hasOpinion) GrayMatterColors.KnowledgeBlue else GrayMatterColors.Primary
+                    tint = if (hasOpinion) dynamicRainbowColor else dynamicRainbowColor
                 )
                 Text(
                     text = if (hasOpinion) "Edit Overall Opinion" else "Add Overall Opinion",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = if (hasOpinion) GrayMatterColors.KnowledgeBlue else GrayMatterColors.Primary
+                    color = if (hasOpinion) dynamicRainbowColor else dynamicRainbowColor
                 )
             }
         }
