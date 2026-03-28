@@ -31,17 +31,15 @@ fun TemplateSelector(
     var showMenu by remember { mutableStateOf(false) }
 
     Box(modifier = modifier) {
-        TextButton(
-            onClick = { showMenu = true },
-            colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.Neutral500)
+        IconButton(
+            onClick = { showMenu = true }
         ) {
-            Icon(Icons.Default.DashboardCustomize, null, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = selectedTemplate?.name ?: "Use Template",
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+            Icon(
+                Icons.Default.DashboardCustomize,
+                contentDescription = "Template",
+                tint = GrayMatterColors.CustomizedAccent,
+                modifier = Modifier.size(20.dp)
             )
-            Icon(Icons.Default.ArrowDropDown, null)
         }
 
         DropdownMenu(

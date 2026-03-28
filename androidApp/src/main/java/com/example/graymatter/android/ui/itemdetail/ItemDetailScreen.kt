@@ -455,14 +455,8 @@ fun ItemDetailScreen(
                 template = com.example.graymatter.domain.CustomTemplate(generateUuid(), "", listOf("")),
                 onDismiss = { showTemplateEditor = false },
                 onSave = { updated ->
-                    // Since we can't easily access VM here without it being passed, 
-                    // this logic should technically be handled by the parent or the VM
-                    // passed to ItemDetailScreen.
-                    // Actually, templates are passed in, but saving needs the VM.
-                    // We need to pass the save callback!
-                    // Wait, ItemDetailScreen doesn't have a saveTemplate callback? 
-                    // I should add it or check if it's in the AppModule/ViewModel.
-                    // The GrayMatterViewModel is usually accessible in the Nav layer.
+                    onSaveTemplate(updated)
+                    showTemplateEditor = false
                 }
             )
         }
