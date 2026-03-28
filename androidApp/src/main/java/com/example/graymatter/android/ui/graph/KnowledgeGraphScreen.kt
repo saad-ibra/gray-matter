@@ -127,9 +127,21 @@ fun KnowledgeGraphScreen(
             }
             
             // Loop
+            var startupTicks = 0
             while (isActive) {
                 simulator.tick(speedMultiplier)
+                
+                // Track the selected node actively during the initial physics burst
+                // so it doesn't fly off-screen as the graph structure unfolds
+                if (initialSelectedNodeId != null && selectedNode != null && startupTicks < 120) {
+                    offset = Offset(
+                        simulator.width / 2f - selectedNode!!.x * scale,
+                        simulator.height / 2f - selectedNode!!.y * scale
+                    )
+                }
+
                 ticks++ // force redraw
+                startupTicks++
                 delay(16) // ~60fps
             }
         }
