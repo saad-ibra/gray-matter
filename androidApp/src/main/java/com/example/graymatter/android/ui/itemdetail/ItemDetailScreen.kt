@@ -371,9 +371,9 @@ fun ItemDetailScreen(
                             TextButton(
                                 onClick = { onViewInGraphClick(itemDetails.resource.id) },
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.Primary)
+                                colors = ButtonDefaults.textButtonColors(contentColor = Color.White)
                             ) {
-                                Icon(Icons.Default.DatasetLinked, null, modifier = Modifier.size(18.dp))
+                                Icon(Icons.Default.Hub, null, tint = Color.White, modifier = Modifier.size(18.dp))
                             }
                         }
                     }
@@ -891,7 +891,7 @@ private fun OpinionTimelineItem(
                         }
                     } else {
                         IconButton(onClick = { onViewInGraph(opinion.id) }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.DatasetLinked, "View in Relatrix", tint = GrayMatterColors.KnowledgeBlue, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Hub, "View in Relatrix", tint = Color.White, modifier = Modifier.size(18.dp))
                         }
                     }
                 }

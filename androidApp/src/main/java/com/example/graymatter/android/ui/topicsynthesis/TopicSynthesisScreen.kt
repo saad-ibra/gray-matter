@@ -311,7 +311,7 @@ private fun TopicHeader(
                         showMenu = false
                         onViewInGraphClick()
                     },
-                    leadingIcon = { Icon(Icons.Default.DatasetLinked, null, tint = GrayMatterColors.Primary) }
+                    leadingIcon = { Icon(Icons.Default.Hub, null, tint = Color.White) }
                 )
                 
                 Divider(color = GrayMatterColors.Neutral800)
@@ -420,14 +420,12 @@ private fun OverallOpinionSection(
     onClick: () -> Unit
 ) {
     val rainbowColors = listOf(
-        Color(0xFFFF3B30),
-        Color(0xFFFF9500),
-        Color(0xFFFFCC00),
-        Color(0xFF4CD964),
-        Color(0xFF5AC8FA),
-        Color(0xFF007AFF),
-        Color(0xFF5856D6),
-        Color(0xFFFF2D55)
+        GrayMatterColors.CocoaBrown,
+        GrayMatterColors.Gamboge,
+        GrayMatterColors.Jonquil,
+        GrayMatterColors.Success, // AppleGreen
+        GrayMatterColors.KnowledgeBlue,
+        GrayMatterColors.CustomizedAccent
     )
     val staticRainbowBrush = androidx.compose.ui.graphics.Brush.horizontalGradient(rainbowColors)
 
