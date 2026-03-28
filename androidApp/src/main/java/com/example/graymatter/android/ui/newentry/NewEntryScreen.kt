@@ -3,6 +3,8 @@ package com.example.graymatter.android.ui.newentry
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import com.example.graymatter.android.ui.components.TemplateSelector
+import com.example.graymatter.android.ui.components.DynamicEntryForm
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -78,6 +80,7 @@ fun NewEntryScreen(
     var noteSelectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
     var opinionSelectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
     var referenceToInsert by remember { mutableStateOf<String?>(null) }
+    var showTemplateEditor by remember { mutableStateOf(false) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -106,8 +109,18 @@ fun NewEntryScreen(
                 originalFileName = it.lastPathSegment ?: "Unknown file"
             }
             
-            // Always update title from filename when a new file is picked
-            val extractedTitle = originalFileName?.substringBeforeLast('.') ?: ""
+            // Refined title extraction: Remove special characters (_ -) and apply Title Case
+            val extractedTitle = originalFileName?.substringBeforeLast('.')
+                ?.replace(Regex("[_\\-]"), " ") // Replace underscores and hyphens with spaces
+                ?.replace(Regex("\\s+"), " ") // Normalize multiple spaces
+                ?.trim()
+                ?.split(" ")
+                ?.filter { it.isNotBlank() }
+                ?.joinToString(" ") { word -> 
+                    word.lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } 
+                }
+                ?: ""
+
             if (extractedTitle.isNotBlank()) {
                 title = extractedTitle
             }
@@ -160,7 +173,7 @@ fun NewEntryScreen(
                         val text = when (item) {
                             is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> "Topic: ${item.name}"
                             is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> "Resource: ${item.title}"
-                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> "Annotation: ${item.snippet.take(15)}..."
+                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> "Opinion: ${item.snippet.take(15)}..."
                         }
                         referenceToInsert = "[[$text]]"
                         // Also add to the note references
@@ -431,7 +444,7 @@ fun NewEntryScreen(
                     .clip(RoundedCornerShape(16.dp))
                     .background(
                         if (selectedTemplate != null) GrayMatterColors.CustomizedAccent.copy(alpha = 0.1f)
-                        else GrayMatterColors.AppleGreen.copy(alpha = 0.1f)
+                        else GrayMatterColors.Success.copy(alpha = 0.1f)
                     )
                     .border(
                         1.dp, 
@@ -459,7 +472,8 @@ fun NewEntryScreen(
                     templateFieldValues = templateFieldValues,
                     onFieldValueChange = { heading, value ->
                         templateFieldValues = templateFieldValues.toMutableMap().apply { put(heading, value) }
-                    }
+                    },
+                    onCreateTemplate = { showTemplateEditor = true }
                 )
 
                 // Knowledge Connections Section
@@ -498,7 +512,7 @@ fun NewEntryScreen(
                 ConfidenceLevelSection(
                     confidence = confidenceScore,
                     onConfidenceChange = { confidenceScore = it },
-                    accentColor = if (selectedTemplate != null) GrayMatterColors.CustomizedAccent else GrayMatterColors.AppleGreen
+                    accentColor = if (selectedTemplate != null) GrayMatterColors.CustomizedAccent else GrayMatterColors.Success
                 )
             }
         }
@@ -605,6 +619,17 @@ fun NewEntryScreen(
             onConfirm = { items ->
                 showReferenceSelector = false
                 opinionSelectedReferences = (opinionSelectedReferences + items).distinctBy { it.id }
+            }
+        )
+    }
+
+    if (showTemplateEditor) {
+        com.example.graymatter.android.ui.components.TemplateEditorDialog(
+            template = com.example.graymatter.domain.CustomTemplate(viewModel.generateUuid(), "", listOf("")),
+            onDismiss = { showTemplateEditor = false },
+            onSave = { updated ->
+                viewModel.saveTemplate(updated)
+                showTemplateEditor = false
             }
         )
     }
@@ -875,13 +900,14 @@ private fun TabButton(text: String, icon: androidx.compose.ui.graphics.vector.Im
 private fun CustomizedOpinionSection(
     opinionInput: String,
     onOpinionChange: (String) -> Unit,
-    templates: List<CustomTemplate>,
-    selectedTemplate: CustomTemplate?,
-    onTemplateSelect: (CustomTemplate?) -> Unit,
+    templates: List<com.example.graymatter.domain.CustomTemplate>,
+    selectedTemplate: com.example.graymatter.domain.CustomTemplate?,
+    onTemplateSelect: (com.example.graymatter.domain.CustomTemplate?) -> Unit,
     templateFieldValues: Map<String, String>,
-    onFieldValueChange: (String, String) -> Unit
+    onFieldValueChange: (String, String) -> Unit,
+    onCreateTemplate: () -> Unit
 ) {
-    val accentColor = if (selectedTemplate != null) GrayMatterColors.CustomizedAccent else GrayMatterColors.AppleGreen
+    val accentColor = if (selectedTemplate != null) GrayMatterColors.CustomizedAccent else GrayMatterColors.Success
     val bgColor = accentColor.copy(alpha = 0.08f)
     val borderColor = accentColor.copy(alpha = 0.2f)
     
@@ -903,7 +929,8 @@ private fun CustomizedOpinionSection(
             TemplateSelector(
                 templates = templates,
                 selectedTemplate = selectedTemplate,
-                onTemplateSelect = onTemplateSelect
+                onTemplateSelect = onTemplateSelect,
+                onCreateTemplate = onCreateTemplate
             )
         }
 
@@ -915,52 +942,15 @@ private fun CustomizedOpinionSection(
             )
         } else {
             Box(modifier = Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(12.dp)).background(bgColor).border(1.dp, borderColor, RoundedCornerShape(12.dp)).padding(16.dp)) {
-                BasicTextField(value = opinionInput, onValueChange = onOpinionChange, textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary, lineHeight = 24.sp), modifier = Modifier.fillMaxSize(), cursorBrush = SolidColor(GrayMatterColors.AppleGreen), decorationBox = { inner -> if (opinionInput.isEmpty()) Text("Type your understanding here...", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyLarge); inner() })
-            }
-        }
-    }
-}
-
-@Composable
-private fun TemplateSelector(
-    templates: List<CustomTemplate>,
-    selectedTemplate: CustomTemplate?,
-    onTemplateSelect: (CustomTemplate?) -> Unit
-) {
-    var showMenu by remember { mutableStateOf(false) }
-
-    Box {
-        TextButton(
-            onClick = { showMenu = true },
-            colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.Neutral500)
-        ) {
-            Icon(Icons.Default.DashboardCustomize, null, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = selectedTemplate?.name ?: "Use Template",
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-            )
-            Icon(Icons.Default.ArrowDropDown, null)
-        }
-
-        DropdownMenu(
-            expanded = showMenu,
-            onDismissRequest = { showMenu = false },
-            modifier = Modifier.background(GrayMatterColors.SurfaceDark)
-        ) {
-            DropdownMenuItem(
-                text = { Text("None (Plain Opinion)", color = Color.White) },
-                onClick = {
-                    onTemplateSelect(null)
-                    showMenu = false
-                }
-            )
-            templates.forEach { template ->
-                DropdownMenuItem(
-                    text = { Text(template.name, color = Color.White) },
-                    onClick = {
-                        onTemplateSelect(template)
-                        showMenu = false
+                BasicTextField(
+                    value = opinionInput, 
+                    onValueChange = onOpinionChange, 
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary, lineHeight = 24.sp), 
+                    modifier = Modifier.fillMaxSize(), 
+                    cursorBrush = SolidColor(GrayMatterColors.Success), 
+                    decorationBox = { inner -> 
+                        if (opinionInput.isEmpty()) Text("Type your understanding here...", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyLarge)
+                        inner() 
                     }
                 )
             }
@@ -968,51 +958,9 @@ private fun TemplateSelector(
     }
 }
 
-@Composable
-fun DynamicEntryForm(
-    template: CustomTemplate,
-    fieldValues: Map<String, String>,
-    onFieldValueChange: (String, String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        template.headings.forEach { heading ->
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = heading.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                    color = GrayMatterColors.Neutral500
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(GrayMatterColors.Neutral900)
-                        .border(
-                            width = 1.dp,
-                            color = GrayMatterColors.Neutral800,
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                        .padding(16.dp)
-                ) {
-                    BasicTextField(
-                        value = fieldValues[heading] ?: "",
-                        onValueChange = { onFieldValueChange(heading, it) },
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.White),
-                        modifier = Modifier.fillMaxWidth(),
-                        cursorBrush = SolidColor(GrayMatterColors.CustomizedAccent),
-                        decorationBox = { inner ->
-                            if ((fieldValues[heading] ?: "").isEmpty()) {
-                                Text("Enter $heading...", color = GrayMatterColors.Neutral700)
-                            }
-                            inner()
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
+
+// Removed local DynamicEntryForm in favor of shared component in ui.components
+
 
 @Composable
 private fun ConfidenceLevelSection(

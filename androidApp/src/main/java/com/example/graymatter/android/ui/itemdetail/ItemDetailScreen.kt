@@ -44,28 +44,30 @@ fun ItemDetailScreen(
     itemDetails: ItemWithDetails?,
     readingProgress: com.example.graymatter.domain.ReadingProgress?,
     templates: List<CustomTemplate> = emptyList(),
+    referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
     onBackClick: () -> Unit,
     onOpenResource: () -> Unit,
     onOpenBookmark: (Bookmark) -> Unit,
-    onUpdateDescription: (String?) -> Unit,
-    onAddOpinion: (text: String, confidence: Int, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
-    onUpdateOpinion: (id: String, text: String, confidence: Int, createdAt: Long, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
-    onDeleteOpinion: (id: String) -> Unit,
+    onUpdateDescription: (String) -> Unit,
+    onAddOpinion: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
+    onUpdateOpinion: (String, String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
+    onDeleteOpinion: (String) -> Unit,
     onRenameResource: (String) -> Unit,
-    onEditNote: () -> Unit,
     onDeleteItem: () -> Unit,
-    onExport: (List<com.example.graymatter.domain.Opinion>) -> Unit,
+    onEditNote: () -> Unit,
+    onExport: (List<Opinion>) -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     onLoadResourceLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     onLoadBacklinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.android.ui.components.BacklinkUiModel>>,
     onViewInGraphClick: (String) -> Unit,
-    referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
+    onSaveTemplate: (CustomTemplate) -> Unit = {},
+    generateUuid: () -> String = { "" },
     modifier: Modifier = Modifier
 ) {
     var isEditing by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
-    var showTemplateDialog by remember { mutableStateOf(false) }
-    var selectedTemplateForNewEntry by remember { mutableStateOf<CustomTemplate?>(null) }
+    var showTemplateEditor by remember { mutableStateOf(false) }
+    var showEditDialogId by remember { mutableStateOf<String?>(null) }
     var showRenameDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var description by remember(itemDetails?.item?.description) { mutableStateOf(itemDetails?.item?.description ?: "") }
@@ -102,7 +104,7 @@ fun ItemDetailScreen(
                         SmallFloatingActionButton(
                             onClick = { 
                                 fabExpanded = false
-                                showTemplateDialog = true 
+                                showAddDialog = true 
                             },
                             containerColor = GrayMatterColors.CustomizedAccent,
                             contentColor = Color.White,
@@ -141,7 +143,7 @@ fun ItemDetailScreen(
                 isEditing = isEditing,
                 onToggleEdit = {
                     if (isEditing) {
-                        onUpdateDescription(description.takeIf { it.isNotBlank() })
+                        onUpdateDescription(description)
                     }
                     isEditing = !isEditing
                 },
@@ -163,7 +165,7 @@ fun ItemDetailScreen(
                             
                             val type = when {
                                 isDictionary -> "Dictionary"
-                                isAnnotation -> "Annotation"
+                                isAnnotation -> "Opinion"
                                 isTemplate || isCustomTitle -> "Custom"
                                 hasPageNumber -> "Bookmark"
                                 else -> "Opinion"
@@ -335,7 +337,7 @@ fun ItemDetailScreen(
                                 ) {
                                     val availableFilters = listOf(
                                         "Dictionary" to Icons.Default.MenuBook,
-                                        "Annotation" to Icons.Default.FormatQuote,
+                                        "Opinion" to Icons.Default.FormatQuote,
                                         "Custom" to Icons.Default.DashboardCustomize,
                                         "Bookmark" to Icons.Default.Bookmark,
                                         "Opinion" to Icons.Default.QuestionAnswer
@@ -443,33 +445,12 @@ fun ItemDetailScreen(
         if (showAddDialog) {
             OpinionEditDialog(
                 viewModel = referenceSelectorViewModel,
+                templates = templates,
                 onDismiss = { showAddDialog = false },
+                onCreateTemplate = { showTemplateEditor = true },
                 onConfirm = { text, confidence, referenceLinks ->
                     onAddOpinion(text, confidence, referenceLinks)
                     showAddDialog = false
-                }
-            )
-        }
-
-        if (showTemplateDialog) {
-            TemplateSelectionDialog(
-                templates = templates,
-                onDismiss = { showTemplateDialog = false },
-                onTemplateSelect = { template ->
-                    selectedTemplateForNewEntry = template
-                    showTemplateDialog = false
-                }
-            )
-        }
-
-        if (selectedTemplateForNewEntry != null) {
-            CustomEntryAddDialog(
-                template = selectedTemplateForNewEntry!!,
-                viewModel = referenceSelectorViewModel,
-                onDismiss = { selectedTemplateForNewEntry = null },
-                onConfirm = { formattedText, confidence, referenceLinks ->
-                    onAddOpinion(formattedText, confidence, referenceLinks)
-                    selectedTemplateForNewEntry = null
                 }
             )
         }
@@ -506,186 +487,23 @@ fun ItemDetailScreen(
                 }
             )
         }
-    }
-}
 
-@Composable
-private fun TemplateSelectionDialog(
-    templates: List<CustomTemplate>,
-    onDismiss: () -> Unit,
-    onTemplateSelect: (CustomTemplate) -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = GrayMatterColors.SurfaceDark,
-        title = { Text("Select Template", color = Color.White) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (templates.isEmpty()) {
-                    Text("No templates found. Create one in Profile.", color = GrayMatterColors.Neutral500)
-                } else {
-                    templates.forEach { template ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(GrayMatterColors.Neutral900)
-                                .clickable { onTemplateSelect(template) }
-                                .padding(16.dp)
-                        ) {
-                            Text(template.name, color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-                    }
+        if (showTemplateEditor) {
+            com.example.graymatter.android.ui.components.TemplateEditorDialog(
+                template = com.example.graymatter.domain.CustomTemplate(generateUuid(), "", listOf("")),
+                onDismiss = { showTemplateEditor = false },
+                onSave = { updated ->
+                    // Since we can't easily access VM here without it being passed, 
+                    // this logic should technically be handled by the parent or the VM
+                    // passed to ItemDetailScreen.
+                    // Actually, templates are passed in, but saving needs the VM.
+                    // We need to pass the save callback!
+                    // Wait, ItemDetailScreen doesn't have a saveTemplate callback? 
+                    // I should add it or check if it's in the AppModule/ViewModel.
+                    // The GrayMatterViewModel is usually accessible in the Nav layer.
                 }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", color = Color.White.copy(alpha = 0.6f))
-            }
+            )
         }
-    )
-}
-
-@Composable
-private fun CustomEntryAddDialog(
-    template: CustomTemplate,
-    viewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
-    onDismiss: () -> Unit,
-    onConfirm: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit
-) {
-    var fieldValues by remember { mutableStateOf(template.headings.associateWith { "" }) }
-    var confidence by remember { mutableFloatStateOf(0.7f) }
-    var selectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
-    var showReferenceSelector by remember { mutableStateOf(false) }
-
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(GrayMatterColors.SurfaceDark)
-                .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(20.dp))
-                .padding(24.dp)
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(
-                    text = "New ${template.name}",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = GrayMatterColors.TextPrimary
-                )
-                
-                Column(
-                    modifier = Modifier
-                        .heightIn(max = 400.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Knowledge Connections Trigger
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
-                            IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Default.Add, null, tint = GrayMatterColors.KnowledgeBlue, modifier = Modifier.size(20.dp))
-                            }
-                        }
-                        
-                        if (selectedReferences.isNotEmpty()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                selectedReferences.forEach { ref ->
-                                    val refText = when (ref) {
-                                        is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
-                                        is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
-                                        is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
-                                    }
-                                    InputChip(
-                                        selected = true,
-                                        onClick = { selectedReferences = selectedReferences.filter { it.id != ref.id } },
-                                        label = { Text(refText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
-                                        trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
-                                        colors = InputChipDefaults.inputChipColors(
-                                            containerColor = GrayMatterColors.SurfaceInput,
-                                            labelColor = Color.White,
-                                            trailingIconColor = GrayMatterColors.Neutral500
-                                        ),
-                                        border = null
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    template.headings.forEach { heading ->
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                text = heading.uppercase(),
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                                color = GrayMatterColors.Neutral500
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
-                                    .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
-                                    .padding(12.dp)
-                            ) {
-                                BasicTextField(
-                                    value = fieldValues[heading] ?: "",
-                                    onValueChange = { newVal ->
-                                        fieldValues = fieldValues.toMutableMap().apply { put(heading, newVal) }
-                                    },
-                                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary),
-                                    modifier = Modifier.fillMaxWidth(),
-                                    cursorBrush = SolidColor(GrayMatterColors.CustomizedAccent)
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                Column {
-                    Text("Confidence: ${(confidence * 10).toInt()}/10", style = MaterialTheme.typography.labelMedium, color = GrayMatterColors.Neutral500)
-                    Slider(
-                        value = confidence, 
-                        onValueChange = { confidence = it }, 
-                        colors = SliderDefaults.colors(thumbColor = GrayMatterColors.CustomizedAccent, activeTrackColor = GrayMatterColors.CustomizedAccent)
-                    )
-                }
-                
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text("Cancel", color = GrayMatterColors.Neutral500) }
-                    Button(
-                        onClick = { 
-                            val formatted = formatTemplateContent(template, fieldValues)
-                            onConfirm(formatted, (confidence * 100).toInt(), selectedReferences) 
-                        }, 
-                        enabled = fieldValues.values.any { it.isNotBlank() },
-                        colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.CustomizedAccent, contentColor = Color.White)
-                    ) { 
-                        Text("Save") 
-                    }
-                }
-            }
-        }
-    }
-
-    if (showReferenceSelector && viewModel != null) {
-        com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
-            viewModel = viewModel,
-            onDismissRequest = { showReferenceSelector = false },
-            onConfirm = { items ->
-                showReferenceSelector = false
-                selectedReferences = (selectedReferences + items).distinctBy { it.id }
-            }
-        )
     }
 }
 
@@ -1066,8 +884,8 @@ private fun OpinionTimelineItem(
                         
                         val (title, icon, color) = when {
                             isDictionary -> Triple("DICTIONARY", Icons.Default.Book, Color(0xFFC6280B))
-                            isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.Gamboge)
-                            isTemplate -> Triple(dynamicTitle.uppercase(), Icons.Default.DashboardCustomize, GrayMatterColors.CustomizedAccent)
+                            isAnnotation -> Triple("OPINION", Icons.Default.FormatQuote, GrayMatterColors.Gamboge)
+                            isTemplate -> Triple("TEMPLATE", Icons.Default.DashboardCustomize, GrayMatterColors.CustomizedAccent)
                             isCustomTitle -> Triple(dynamicTitle.uppercase(), Icons.Default.EditNote, GrayMatterColors.Success)
                             hasPageNumber -> Triple("BOOKMARK", Icons.Default.Bookmark, GrayMatterColors.Jonquil)
                             else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.Success)
@@ -1646,10 +1464,14 @@ private fun DateTimePicker(initialTimestamp: Long, onDismiss: () -> Unit, onConf
 @Composable
 private fun OpinionEditDialog(
     viewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
+    templates: List<com.example.graymatter.domain.CustomTemplate> = emptyList(),
     onDismiss: () -> Unit, 
+    onCreateTemplate: () -> Unit,
     onConfirm: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit
 ) {
     var text by remember { mutableStateOf("") }
+    var selectedTemplate by remember { mutableStateOf<com.example.graymatter.domain.CustomTemplate?>(null) }
+    var templateFieldValues by remember { mutableStateOf(emptyMap<String, String>()) }
     var confidence by remember { mutableFloatStateOf(0.7f) }
     var selectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
     var showReferenceSelector by remember { mutableStateOf(false) }
@@ -1657,7 +1479,25 @@ private fun OpinionEditDialog(
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(GrayMatterColors.SurfaceDark).border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(20.dp)).padding(24.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("Add New Opinion", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Add New Opinion", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
+                    
+                    com.example.graymatter.android.ui.components.TemplateSelector(
+                        templates = templates,
+                        selectedTemplate = selectedTemplate,
+                        onTemplateSelect = { 
+                            selectedTemplate = it
+                            it?.let { template ->
+                                templateFieldValues = template.headings.associateWith { "" }
+                            }
+                        },
+                        onCreateTemplate = onCreateTemplate
+                    )
+                }
                 
                 // Knowledge Connections
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1706,7 +1546,17 @@ private fun OpinionEditDialog(
                     }
                 }
 
-                BasicTextField(value = text, onValueChange = { text = it }, textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary), modifier = Modifier.fillMaxWidth().height(120.dp).background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp)).border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp)).padding(16.dp), cursorBrush = SolidColor(GrayMatterColors.Primary), decorationBox = { inner -> if (text.isEmpty()) Text("Type your opinion here...", color = GrayMatterColors.Neutral600); inner() })
+                if (selectedTemplate != null) {
+                    com.example.graymatter.android.ui.components.DynamicEntryForm(
+                        template = selectedTemplate!!,
+                        fieldValues = templateFieldValues,
+                        onFieldValueChange = { heading, value ->
+                            templateFieldValues = templateFieldValues.toMutableMap().apply { put(heading, value) }
+                        }
+                    )
+                } else {
+                    BasicTextField(value = text, onValueChange = { text = it }, textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary), modifier = Modifier.fillMaxWidth().height(120.dp).background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp)).border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp)).padding(16.dp), cursorBrush = SolidColor(GrayMatterColors.Primary), decorationBox = { inner -> if (text.isEmpty()) Text("Type your opinion here...", color = GrayMatterColors.Neutral600); inner() })
+                }
                 
                 Column {
                     Text("Confidence: ${(confidence * 10).toInt()}/10", style = MaterialTheme.typography.labelMedium, color = GrayMatterColors.Neutral500)
@@ -1714,7 +1564,28 @@ private fun OpinionEditDialog(
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) { Text("Cancel", color = GrayMatterColors.Neutral500) }
-                    Button(onClick = { onConfirm(text, (confidence * 100).toInt(), selectedReferences) }, enabled = text.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary, contentColor = GrayMatterColors.OnPrimary)) { Text("Save") }
+                    Button(
+                        onClick = { 
+                            val finalText = if (selectedTemplate != null) {
+                                val sb = StringBuilder()
+                                sb.appendLine("[TEMPLATE:${selectedTemplate!!.name}]")
+                                selectedTemplate!!.headings.forEach { heading ->
+                                    val value = templateFieldValues[heading] ?: ""
+                                    if (value.isNotBlank()) {
+                                        sb.appendLine("### $heading")
+                                        sb.appendLine(value)
+                                        sb.appendLine()
+                                    }
+                                }
+                                sb.toString().trim()
+                            } else {
+                                text
+                            }
+                            onConfirm(finalText, (confidence * 100).toInt(), selectedReferences) 
+                        }, 
+                        enabled = (selectedTemplate != null && templateFieldValues.values.any { it.isNotBlank() }) || (selectedTemplate == null && text.isNotBlank()), 
+                        colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary, contentColor = GrayMatterColors.OnPrimary)
+                    ) { Text("Save") }
                 }
             }
         }

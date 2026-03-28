@@ -26,6 +26,8 @@ import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
 import com.example.graymatter.domain.CustomTemplate
 
+import com.example.graymatter.android.ui.components.TemplateEditorDialog
+
 @Composable
 fun ProfileScreen(
     viewModel: GrayMatterViewModel,
@@ -178,6 +180,7 @@ fun TemplatesManagementScreen(
         }
     }
 }
+
 
 @Composable
 private fun ProfileHeader() {

@@ -573,8 +573,7 @@ fun KnowledgeGraphScreen(
                 val filterOptions = listOf(
                     "Topics" to showTopics,
                     "Resources" to showResources,
-                    "Opinions" to showOpinions,
-                    "Annotations" to showAnnotations,
+                    "Opinions" to (showOpinions || showAnnotations),
                     "Bookmarks" to showBookmarks,
                     "Templates" to showTemplates,
                     "Dict" to showDictionary
@@ -591,8 +590,11 @@ fun KnowledgeGraphScreen(
                                 when (name) {
                                     "Topics" -> showTopics = !showTopics
                                     "Resources" -> showResources = !showResources
-                                    "Opinions" -> showOpinions = !showOpinions
-                                    "Annotations" -> showAnnotations = !showAnnotations
+                                    "Opinions" -> {
+                                        val newState = !(showOpinions && showAnnotations)
+                                        showOpinions = newState
+                                        showAnnotations = newState
+                                    }
                                     "Bookmarks" -> showBookmarks = !showBookmarks
                                     "Templates" -> showTemplates = !showTemplates
                                     "Dict" -> showDictionary = !showDictionary

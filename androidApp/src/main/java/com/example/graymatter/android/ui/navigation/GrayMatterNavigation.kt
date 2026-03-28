@@ -336,10 +336,10 @@ fun GrayMatterNavigation(
                     navController.navigate(NavigationDestination.FileViewer.buildRoute(bookmark.resourceId, bookmark.page))
                 },
                 onUpdateDescription = { desc ->
-                    itemId.let { viewModel.updateItemDescription(it, desc) }
+                    viewModel.updateItemDescription(itemId, desc)
                 },
                 onAddOpinion = { text, confidence, selectedLinks ->
-                    itemId.let { viewModel.addOpinion(it, text, confidence, referenceLinks = selectedLinks) }
+                    viewModel.addOpinion(itemId, text, confidence, referenceLinks = selectedLinks)
                 },
                 onUpdateOpinion = { opinionId, text, confidence, date, selectedLinks ->
                     viewModel.updateOpinion(opinionId, text, confidence, date, selectedLinks)
@@ -376,7 +376,9 @@ fun GrayMatterNavigation(
                 onLoadBacklinks = { resourceId -> viewModel.getResolvedBacklinksForTarget(resourceId) },
                 onViewInGraphClick = { resourceId -> 
                     navController.navigate(NavigationDestination.KnowledgeGraph.route) 
-                }
+                },
+                onSaveTemplate = { viewModel.saveTemplate(it) },
+                generateUuid = { viewModel.generateUuid() }
             )
 
             // Overlay the editor if we are editing a note

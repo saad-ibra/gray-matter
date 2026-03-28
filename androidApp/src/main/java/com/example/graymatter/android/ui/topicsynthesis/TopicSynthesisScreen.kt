@@ -114,7 +114,7 @@ fun TopicSynthesisScreen(
                         val text = when (item) {
                             is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> "Topic: ${item.name}"
                             is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> "Resource: ${item.title}"
-                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> "Annotation: ${item.snippet.take(15)}..."
+                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> "Opinion: ${item.snippet.take(15)}..."
                         }
                         referenceToInsert = "[[$text]]"
                     }
