@@ -379,7 +379,7 @@ fun FileViewerScreen(
             }
         }
 
-        // ── Bottom Bar (Animated) ──
+        // ── Bottom Bar (Animated) — Expanded HUD ──
         AnimatedVisibility(
             visible = viewModel.showBottomBar && (resource?.type != ResourceType.MARKDOWN),
             enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
@@ -402,25 +402,24 @@ fun FileViewerScreen(
                     }
                 }
                 
-                ReaderBottomBar(
+                HudNavigationSlider(
                     currentPage = viewModel.currentPage,
                     totalPages = viewModel.totalPages,
+                    isExpanded = true,
                     isBookmarked = isCurrentPageBookmarked,
                     chapters = viewModel.chapters.collectAsState().value,
-                    onPageSlide = { 
-                        viewModel.jumpToPage(it)
-                    },
-                    onPreviousPage = { 
+                    onPageSlide = { viewModel.jumpToPage(it) },
+                    onPreviousPage = {
                         viewModel.previousPage()
                         performThrottledHaptic()
                     },
-                    onNextPage = { 
+                    onNextPage = {
                         viewModel.nextPage()
                         performThrottledHaptic()
                     },
-                    onBookmarkToggle = { 
+                    onBookmarkToggle = {
                         if (!isCurrentPageBookmarked) {
-                            viewModel.openBookmarkDialog() 
+                            viewModel.openBookmarkDialog()
                         }
                     }
                 )
@@ -431,6 +430,25 @@ fun FileViewerScreen(
                     onAddClick = { viewModel.toggleAddEntrySheet() },
                     onBookmarksClick = { viewModel.toggleBookmarksSheet() },
                     onChaptersClick = { viewModel.toggleChaptersSheet() }
+                )
+            }
+        }
+
+        // ── Persistent Idle Progress Strip — always visible when bars hidden ──
+        if (!viewModel.showBottomBar && resource?.type == ResourceType.PDF) {
+            Box(
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) {
+                HudNavigationSlider(
+                    currentPage = viewModel.currentPage,
+                    totalPages = viewModel.totalPages,
+                    isExpanded = false,
+                    isBookmarked = false,
+                    chapters = viewModel.chapters.collectAsState().value,
+                    onPageSlide = {},
+                    onPreviousPage = {},
+                    onNextPage = {},
+                    onBookmarkToggle = {}
                 )
             }
         }
@@ -937,11 +955,10 @@ fun FileViewerTopBar(
     title: String,
     chapterName: String?,
     onBackClick: () -> Unit,
-    onMenuAction: (String) -> Unit = {}
+    @Suppress("UNUSED_PARAMETER") onMenuAction: (String) -> Unit = {}
 ) {
-    var menuExpanded by remember { mutableStateOf(false) }
     Surface(
-        color = Color.Black.copy(alpha = 0.85f),
+        color = HudDeepDark,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -975,196 +992,11 @@ fun FileViewerTopBar(
                     )
                 }
             }
-            Box {
-                IconButton(onClick = { menuExpanded = true }) {
-                    Icon(Icons.Default.MoreVert, "More", tint = Color.White)
-                }
-                androidx.compose.material3.DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false },
-                    modifier = Modifier.background(GrayMatterColors.SurfaceDark)
-                ) {
-                    androidx.compose.material3.DropdownMenuItem(
-                        text = { Text("Filter History", color = Color.White) },
-                        onClick = { menuExpanded = false; onMenuAction("filter") }
-                    )
-                    androidx.compose.material3.DropdownMenuItem(
-                        text = { Text("Export History", color = Color.White) },
-                        onClick = { menuExpanded = false; onMenuAction("export") }
-                    )
-                    androidx.compose.material3.DropdownMenuItem(
-                        text = { Text("View in Relatrix", color = Color.White) },
-                        onClick = { menuExpanded = false; onMenuAction("relatrix") }
-                    )
-                    androidx.compose.material3.DropdownMenuItem(
-                        text = { Text("Edit Item", color = Color.White) },
-                        onClick = { menuExpanded = false; onMenuAction("edit") }
-                    )
-                }
-            }
         }
     }
 }
 
-@Composable
-fun ReaderBottomBar(
-    currentPage: Int,
-    totalPages: Int,
-    isBookmarked: Boolean,
-    chapters: List<ChapterOutline> = emptyList(),
-    onPageSlide: (Int) -> Unit,
-    onPreviousPage: () -> Unit,
-    onNextPage: () -> Unit,
-    onBookmarkToggle: () -> Unit
-) {
-    var slidingValue by remember { mutableFloatStateOf(if (totalPages > 1) currentPage.toFloat() / (totalPages - 1).coerceAtLeast(1) else 0f) }
-    var isDragging by remember { mutableStateOf(false) }
-    var lastVibratedChapterPage by remember { mutableStateOf(-1) }
-    var dragTargetPage by remember { mutableStateOf(currentPage) }
-    val context = LocalContext.current
-
-    val flatChapters = remember(chapters) {
-        fun flatten(list: List<ChapterOutline>): List<ChapterOutline> = list.flatMap { listOf(it) + flatten(it.children) }
-        flatten(chapters)
-    }
-
-    LaunchedEffect(currentPage, totalPages) {
-        if (!isDragging && totalPages > 1) {
-            slidingValue = currentPage.toFloat() / (totalPages - 1).coerceAtLeast(1)
-        }
-    }
-    
-    Surface(
-        color = Color.Black.copy(alpha = 0.85f),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Slider(
-                        value = slidingValue,
-                        onValueChange = { newValue ->
-                            isDragging = true
-                            slidingValue = newValue
-                            if (totalPages > 1) {
-                                val maxPage = (totalPages - 1).coerceAtLeast(0)
-                                val newPage = (newValue * maxPage).toInt().coerceIn(0, maxPage)
-                                dragTargetPage = newPage
-                                // Only do haptics for chapter breaks during drag, don't jump pages
-                                val isChapterBreak = flatChapters.any { ch -> ch.targetPage == newPage }
-                                if (isChapterBreak && newPage != lastVibratedChapterPage) {
-                                    lastVibratedChapterPage = newPage
-                                    val vibrator = context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                        vibrator?.vibrate(android.os.VibrationEffect.createOneShot(50, 255))
-                                    } else {
-                                        @Suppress("DEPRECATION")
-                                        vibrator?.vibrate(50)
-                                    }
-                                } else if (!isChapterBreak) {
-                                    lastVibratedChapterPage = -1
-                                }
-                            }
-                        },
-                        onValueChangeFinished = {
-                            isDragging = false
-                            val maxPage = (totalPages - 1).coerceAtLeast(0)
-                            val newPage = (slidingValue * maxPage).toInt().coerceIn(0, maxPage)
-                            if (newPage != currentPage) {
-                                onPageSlide(newPage)
-                            }
-                        },
-                        colors = SliderDefaults.colors(
-                            thumbColor = Color.White,
-                            activeTrackColor = Color.White,
-                            inactiveTrackColor = Color.White.copy(alpha = 0.2f)
-                        )
-                    )
-                    
-                    // Chapter markers
-                    if (totalPages > 1 && chapters.isNotEmpty()) {
-                        BoxWithConstraints(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 10.dp) // Align with slider track
-                        ) {
-                            val trackWidth = maxWidth
-                            flatChapters.forEach { chapter ->
-                                val position = chapter.targetPage.toFloat() / (totalPages - 1)
-                                Box(
-                                    modifier = Modifier
-                                        .offset(x = trackWidth * position)
-                                        .size(4.dp)
-                                        .clip(CircleShape)
-                                        .background(Color.White.copy(alpha = 0.5f))
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                RepeatingIconButton(onClick = onPreviousPage, icon = Icons.Default.ChevronLeft)
-
-                RepeatingIconButton(onClick = onNextPage, icon = Icons.Default.ChevronRight)
-                
-                Spacer(modifier = Modifier.width(4.dp))
-                
-                IconButton(onClick = onBookmarkToggle) {
-                    Icon(
-                        if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                        null,
-                        tint = if (isBookmarked) Color(0xFFFFD700) else Color.White
-                    )
-                }
-            }
-            
-            val displayPage = if (totalPages > 1) (slidingValue * (totalPages - 1).coerceAtLeast(1)).toInt() + 1 else 1
-            Text(
-                "$displayPage / $totalPages",
-                color = Color.White.copy(alpha = 0.7f),
-                fontSize = 12.sp,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
-        }
-    }
-}
-
-@Composable
-fun RepeatingIconButton(
-    onClick: () -> Unit,
-    icon: androidx.compose.ui.graphics.vector.ImageVector
-) {
-    var isPressed by remember { mutableStateOf(false) }
-    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-
-    LaunchedEffect(isPressed) {
-        if (isPressed) {
-            while (true) {
-                onClick()
-                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                kotlinx.coroutines.delay(200L)
-            }
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .size(32.dp)
-            .pointerInput(Unit) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    isPressed = true
-                    waitForUpOrCancellation()
-                    isPressed = false
-                }
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(icon, contentDescription = null, tint = Color.White)
-    }
-}
+// ReaderBottomBar and RepeatingIconButton removed — replaced by HudNavigationSlider
 
 @Composable
 fun ReaderActionBar(
@@ -1175,7 +1007,7 @@ fun ReaderActionBar(
     onChaptersClick: () -> Unit
 ) {
     Surface(
-        color = Color.Black.copy(alpha = 0.92f),
+        color = HudDeepDark,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
