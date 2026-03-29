@@ -113,8 +113,8 @@ class KnowledgeGraphViewModel(
                 
                 val displayLabel = when (nodeType) {
                     NodeType.DICTIONARY -> opinion.text.substringAfter("[DICT]").trim().take(20) + "..."
-                    NodeType.TEMPLATE -> opinion.text.substringAfter("]\n").replace("|", ": ").replace("\n", " • ").trim().take(40) + "..."
-                    NodeType.CUSTOM -> opinion.text.substringAfter("]\n").replace("|", ": ").replace("\n", " • ").trim().take(40) + "..."
+                    NodeType.TEMPLATE -> opinion.text.substringAfter("]\n").replace("### ", "").replace("|", ": ").replace("\n", " • ").trim().take(40) + "..."
+                    NodeType.CUSTOM -> opinion.text.substringAfter("]\n").replace("### ", "").replace("|", ": ").replace("\n", " • ").trim().take(40) + "..."
                     NodeType.ANNOTATION -> opinion.text.substringAfter(">").trim().take(20) + "..."
                     NodeType.BOOKMARK -> if (opinion.text.isNotBlank()) opinion.text.take(20) + "..." else "Bookmark pg ${opinion.pageNumber}"
                     else -> opinion.text.take(20) + "..."

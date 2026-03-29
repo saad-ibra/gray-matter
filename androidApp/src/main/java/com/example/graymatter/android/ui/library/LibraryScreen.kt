@@ -83,8 +83,15 @@ fun LibraryScreen(
     }
     
     // Maintain a local copy of topics for fluid rearrangement during drag
-    val filteredTopicsState = remember(baseTopics) { mutableStateOf(baseTopics) }
+    val filteredTopicsState = remember { mutableStateOf(baseTopics) }
     val filteredTopics = filteredTopicsState.value
+
+    // Sync with parent data when not actively dragging (preserves animation state)
+    LaunchedEffect(baseTopics) {
+        if (draggedTopicId.value == null) {
+            filteredTopicsState.value = baseTopics
+        }
+    }
 
     // Snapshot refs for parameters to ensure suspended loops see latest values
     val currentOnUpdateOrder by rememberUpdatedState(onUpdateOrder)

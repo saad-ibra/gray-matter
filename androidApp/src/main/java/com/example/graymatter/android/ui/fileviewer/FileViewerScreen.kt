@@ -11,6 +11,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -77,6 +80,7 @@ fun FileViewerScreen(
     val context = LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     var lastHapticTime by remember { mutableLongStateOf(0L) }
+    var lastPageChangeTime by remember { mutableLongStateOf(0L) }
     
     val performThrottledHaptic: () -> Unit = {
         val now = System.currentTimeMillis()
@@ -155,13 +159,21 @@ fun FileViewerScreen(
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.key) {
                         Key.VolumeUp -> {
-                            viewModel.previousPage()
-                            performThrottledHaptic()
+                            val now = System.currentTimeMillis()
+                            if (now - lastPageChangeTime > 200L) {
+                                viewModel.previousPage()
+                                performThrottledHaptic()
+                                lastPageChangeTime = now
+                            }
                             true
                         }
                         Key.VolumeDown -> {
-                            viewModel.nextPage()
-                            performThrottledHaptic()
+                            val now = System.currentTimeMillis()
+                            if (now - lastPageChangeTime > 200L) {
+                                viewModel.nextPage()
+                                performThrottledHaptic()
+                                lastPageChangeTime = now
+                            }
                             true
                         }
                         else -> false
@@ -316,11 +328,55 @@ fun FileViewerScreen(
             exit = fadeOut() + slideOutVertically(),
             modifier = Modifier.align(Alignment.TopCenter)
         ) {
-            FileViewerTopBar(
-                title = resource?.title ?: "Document",
-                chapterName = viewModel.currentChapterName,
-                onBackClick = onBackClick
-            )
+            Column(modifier = Modifier.fillMaxWidth()) {
+                FileViewerTopBar(
+                    title = resource?.title ?: "Document",
+                    chapterName = viewModel.currentChapterName,
+                    onBackClick = onBackClick,
+                    onMenuAction = { action ->
+                        when(action) {
+                            "filter" -> { /* TODO: History Filter */ }
+                            "export" -> { /* TODO: Export History */ }
+                            "relatrix" -> onViewInGraph(resourceId)
+                            "edit" -> { /* TODO: Item Edit */ }
+                        }
+                    }
+                )
+                
+                val chapters = viewModel.chapters.collectAsState().value
+                if (chapters.isNotEmpty()) {
+                    val currentFlat = remember(chapters) {
+                        fun flatten(list: List<ChapterOutline>): List<ChapterOutline> = 
+                            list.flatMap { listOf(it) + flatten(it.children) }
+                        flatten(chapters).sortedBy { it.targetPage }.distinctBy { it.targetPage }
+                    }
+                    val currentPg = viewModel.currentPage
+                    val prevChapter = currentFlat.lastOrNull { it.targetPage < currentPg }
+                    val nextChapter = currentFlat.firstOrNull { it.targetPage > currentPg }
+                    
+                    if (prevChapter != null || nextChapter != null) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.Black.copy(alpha = 0.6f))
+                                .padding(horizontal = 16.dp, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            if (prevChapter != null) {
+                                TextButton(onClick = { viewModel.jumpToPage(prevChapter.targetPage); performThrottledHaptic() }) {
+                                    Text("Prev Ch. P. ${prevChapter.targetPage + 1}", color = Color.White, fontSize = 12.sp)
+                                }
+                            } else Spacer(modifier = Modifier.width(8.dp))
+                            
+                            if (nextChapter != null) {
+                                TextButton(onClick = { viewModel.jumpToPage(nextChapter.targetPage); performThrottledHaptic() }) {
+                                    Text("Next Ch. P. ${nextChapter.targetPage + 1}", color = Color.White, fontSize = 12.sp)
+                                }
+                            } else Spacer(modifier = Modifier.width(8.dp))
+                        }
+                    }
+                }
+            }
         }
 
         // ── Bottom Bar (Animated) ──
@@ -869,8 +925,10 @@ fun FileViewerScreen(
 fun FileViewerTopBar(
     title: String,
     chapterName: String?,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onMenuAction: (String) -> Unit = {}
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
     Surface(
         color = Color.Black.copy(alpha = 0.85f),
         modifier = Modifier.fillMaxWidth()
@@ -906,6 +964,33 @@ fun FileViewerTopBar(
                     )
                 }
             }
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(Icons.Default.MoreVert, "More", tint = Color.White)
+                }
+                androidx.compose.material3.DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                    modifier = Modifier.background(GrayMatterColors.SurfaceDark)
+                ) {
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text("Filter History", color = Color.White) },
+                        onClick = { menuExpanded = false; onMenuAction("filter") }
+                    )
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text("Export History", color = Color.White) },
+                        onClick = { menuExpanded = false; onMenuAction("export") }
+                    )
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text("View in Relatrix", color = Color.White) },
+                        onClick = { menuExpanded = false; onMenuAction("relatrix") }
+                    )
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text("Edit Item", color = Color.White) },
+                        onClick = { menuExpanded = false; onMenuAction("edit") }
+                    )
+                }
+            }
         }
     }
 }
@@ -921,12 +1006,15 @@ fun ReaderBottomBar(
     onNextPage: () -> Unit,
     onBookmarkToggle: () -> Unit
 ) {
-    var slidingValue by remember { mutableFloatStateOf(if (totalPages > 1) currentPage.toFloat() / (totalPages - 1) else 0f) }
+    var slidingValue by remember { mutableFloatStateOf(if (totalPages > 1) currentPage.toFloat() / (totalPages - 1).coerceAtLeast(1) else 0f) }
     var isDragging by remember { mutableStateOf(false) }
+    var lastVibratedChapterPage by remember { mutableStateOf(-1) }
+    var dragTargetPage by remember { mutableStateOf(currentPage) }
+    val context = LocalContext.current
 
     LaunchedEffect(currentPage, totalPages) {
         if (!isDragging && totalPages > 1) {
-            slidingValue = currentPage.toFloat() / (totalPages - 1)
+            slidingValue = currentPage.toFloat() / (totalPages - 1).coerceAtLeast(1)
         }
     }
     
@@ -939,19 +1027,34 @@ fun ReaderBottomBar(
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Slider(
                         value = slidingValue,
-                        onValueChange = { 
+                        onValueChange = { newValue ->
                             isDragging = true
-                            slidingValue = it 
+                            slidingValue = newValue
                             if (totalPages > 1) {
-                                val newPage = (it * (totalPages - 1)).toInt().coerceIn(0, totalPages - 1)
-                                if (newPage != currentPage) {
-                                    onPageSlide(newPage)
+                                val maxPage = (totalPages - 1).coerceAtLeast(0)
+                                val newPage = (newValue * maxPage).toInt().coerceIn(0, maxPage)
+                                dragTargetPage = newPage
+                                // Only do haptics for chapter breaks during drag, don't jump pages
+                                val flatChapters = chapters.flatMap { ch -> listOf(ch) + ch.children }
+                                val isChapterBreak = flatChapters.any { ch -> ch.targetPage == newPage }
+                                if (isChapterBreak && newPage != lastVibratedChapterPage) {
+                                    lastVibratedChapterPage = newPage
+                                    val vibrator = context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                        vibrator?.vibrate(android.os.VibrationEffect.createOneShot(50, 255))
+                                    } else {
+                                        @Suppress("DEPRECATION")
+                                        vibrator?.vibrate(50)
+                                    }
+                                } else if (!isChapterBreak) {
+                                    lastVibratedChapterPage = -1
                                 }
                             }
                         },
                         onValueChangeFinished = {
                             isDragging = false
-                            val newPage = (slidingValue * (totalPages - 1)).toInt().coerceIn(0, totalPages - 1)
+                            val maxPage = (totalPages - 1).coerceAtLeast(0)
+                            val newPage = (slidingValue * maxPage).toInt().coerceIn(0, maxPage)
                             if (newPage != currentPage) {
                                 onPageSlide(newPage)
                             }
@@ -971,7 +1074,11 @@ fun ReaderBottomBar(
                                 .padding(horizontal = 10.dp) // Align with slider track
                         ) {
                             val trackWidth = maxWidth
-                            chapters.forEach { chapter ->
+                            val currentFlat = remember(chapters) {
+                                fun flatten(list: List<ChapterOutline>): List<ChapterOutline> = list.flatMap { listOf(it) + flatten(it.children) }
+                                flatten(chapters)
+                            }
+                            currentFlat.forEach { chapter ->
                                 val position = chapter.targetPage.toFloat() / (totalPages - 1)
                                 Box(
                                     modifier = Modifier
@@ -987,13 +1094,9 @@ fun ReaderBottomBar(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                IconButton(onClick = onPreviousPage, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.ChevronLeft, null, tint = Color.White)
-                }
+                RepeatingIconButton(onClick = onPreviousPage, icon = Icons.Default.ChevronLeft)
 
-                IconButton(onClick = onNextPage, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.ChevronRight, null, tint = Color.White)
-                }
+                RepeatingIconButton(onClick = onNextPage, icon = Icons.Default.ChevronRight)
                 
                 Spacer(modifier = Modifier.width(4.dp))
                 
@@ -1006,7 +1109,7 @@ fun ReaderBottomBar(
                 }
             }
             
-            val displayPage = if (totalPages > 1) (slidingValue * (totalPages - 1)).toInt() + 1 else 1
+            val displayPage = if (totalPages > 1) (slidingValue * (totalPages - 1).coerceAtLeast(1)).toInt() + 1 else 1
             Text(
                 "$displayPage / $totalPages",
                 color = Color.White.copy(alpha = 0.7f),
@@ -1014,6 +1117,41 @@ fun ReaderBottomBar(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
+    }
+}
+
+@Composable
+fun RepeatingIconButton(
+    onClick: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
+    var isPressed by remember { mutableStateOf(false) }
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            while (true) {
+                onClick()
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                kotlinx.coroutines.delay(200L)
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    isPressed = true
+                    waitForUpOrCancellation()
+                    isPressed = false
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(icon, contentDescription = null, tint = Color.White)
     }
 }
 

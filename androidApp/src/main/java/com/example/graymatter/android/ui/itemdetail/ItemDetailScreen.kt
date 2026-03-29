@@ -101,21 +101,18 @@ fun ItemDetailScreen(
                 .padding(paddingValues)
                 .statusBarsPadding()
         ) {
-            // Header
-            ItemDetailHeader(
-                onBackClick = onBackClick,
-                isEditing = isEditing,
-                onToggleEdit = {
-                    if (isEditing) {
-                        onUpdateDescription(description)
-                    }
-                    isEditing = !isEditing
-                },
-                onDeleteClick = { showDeleteConfirm = true }
-            )
+            if (itemDetails == null) {
+                ItemDetailHeader(
+                    onBackClick = onBackClick,
+                    isEditing = false,
+                    onToggleEdit = {},
+                    onDeleteClick = {}
+                )
+            }
 
             if (itemDetails != null) {
                 var selectedFilters by remember { mutableStateOf(setOf("Dictionary", "Annotation", "Custom", "Bookmark", "Opinion")) }
+                var showFilterMenu by remember { mutableStateOf(false) }
                 
                 // Unified sorted list of Opinions
                 val sortedOpinions = remember(itemDetails.opinions, selectedFilters) {
@@ -129,7 +126,7 @@ fun ItemDetailScreen(
                             
                             val type = when {
                                 isDictionary -> "Dictionary"
-                                isAnnotation -> "Opinion"
+                                isAnnotation -> "Annotation"
                                 isTemplate || isCustomTitle -> "Custom"
                                 hasPageNumber -> "Bookmark"
                                 else -> "Opinion"
@@ -138,6 +135,22 @@ fun ItemDetailScreen(
                             selectedFilters.contains(type)
                         }
                 }
+
+                // Header with unified dropdown menu
+                ItemDetailHeader(
+                    onBackClick = onBackClick,
+                    isEditing = isEditing,
+                    onToggleEdit = {
+                        if (isEditing) {
+                            onUpdateDescription(description)
+                        }
+                        isEditing = !isEditing
+                    },
+                    onDeleteClick = { showDeleteConfirm = true },
+                    onFilterClick = { showFilterMenu = true },
+                    onExportClick = { onExport(sortedOpinions) },
+                    onViewInRelatrixClick = { onViewInGraphClick(itemDetails.resource.id) }
+                )
 
                 Column(
                     modifier = Modifier
@@ -271,111 +284,96 @@ fun ItemDetailScreen(
                         }
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Opinion History",
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = GrayMatterColors.TextPrimary
+                    Text(
+                        text = "Opinion History",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = GrayMatterColors.TextPrimary
+                    )
+
+                    // Filter bottom sheet / dropdown
+                    if (showFilterMenu) {
+                        val availableFilters = listOf(
+                            "Dictionary" to Icons.Default.MenuBook,
+                            "Annotation" to Icons.Default.FormatQuote,
+                            "Custom" to Icons.Default.DashboardCustomize,
+                            "Bookmark" to Icons.Default.Bookmark,
+                            "Opinion" to Icons.Default.QuestionAnswer
                         )
+                        val filterNames = availableFilters.map { it.first }.toSet()
                         
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            var expanded by remember { mutableStateOf(false) }
-                            Box {
-                                IconButton(onClick = { expanded = true }) {
-                                    Icon(
-                                        Icons.Default.FilterList, 
-                                        contentDescription = "Filter", 
-                                        tint = if (selectedFilters.isNotEmpty()) GrayMatterColors.Primary else GrayMatterColors.TextPrimary
-                                    )
-                                }
-                                DropdownMenu(
-                                    expanded = expanded,
-                                    onDismissRequest = { expanded = false },
-                                    modifier = Modifier.background(GrayMatterColors.SurfaceDark)
+                        AlertDialog(
+                            onDismissRequest = { showFilterMenu = false },
+                            containerColor = GrayMatterColors.SurfaceDark,
+                            title = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    val availableFilters = listOf(
-                                        "Dictionary" to Icons.Default.MenuBook,
-                                        "Opinion" to Icons.Default.FormatQuote,
-                                        "Custom" to Icons.Default.DashboardCustomize,
-                                        "Bookmark" to Icons.Default.Bookmark,
-                                        "Opinion" to Icons.Default.QuestionAnswer
-                                    )
-                                    val filterNames = availableFilters.map { it.first }.toSet()
-                                    
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
+                                    Text("Filter History", color = Color.White, fontWeight = FontWeight.Bold)
+                                    Row {
                                         TextButton(
                                             onClick = { selectedFilters = filterNames },
                                             contentPadding = PaddingValues(horizontal = 8.dp)
                                         ) {
-                                            Text("Select All", color = GrayMatterColors.Primary, fontSize = 13.sp)
+                                            Text("All", color = GrayMatterColors.Primary, fontSize = 13.sp)
                                         }
                                         TextButton(
                                             onClick = { selectedFilters = emptySet() },
                                             contentPadding = PaddingValues(horizontal = 8.dp)
                                         ) {
-                                            Text("Deselect All", color = GrayMatterColors.Primary, fontSize = 13.sp)
+                                            Text("None", color = GrayMatterColors.Primary, fontSize = 13.sp)
                                         }
                                     }
-                                    
-                                    Divider(color = GrayMatterColors.Neutral800)
-                                    
+                                }
+                            },
+                            text = {
+                                Column {
                                     availableFilters.forEach { (filter, icon) ->
                                         val isSelected = selectedFilters.contains(filter)
-                                        DropdownMenuItem(
-                                            text = {
-                                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                                    Checkbox(
-                                                        checked = isSelected,
-                                                        onCheckedChange = null,
-                                                        colors = CheckboxDefaults.colors(
-                                                            checkedColor = GrayMatterColors.Primary,
-                                                            uncheckedColor = GrayMatterColors.Neutral500,
-                                                            checkmarkColor = Color.Black
-                                                        )
-                                                    )
-                                                    Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = if (isSelected) GrayMatterColors.Primary else GrayMatterColors.Neutral500)
-                                                    Text(filter, color = Color.White)
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    selectedFilters = if (isSelected) {
+                                                        selectedFilters - filter
+                                                    } else {
+                                                        selectedFilters + filter
+                                                    }
                                                 }
-                                            },
-                                            onClick = {
-                                                selectedFilters = if (isSelected) {
-                                                    selectedFilters - filter
-                                                } else {
-                                                    selectedFilters + filter
-                                                }
-                                            }
-                                        )
+                                                .padding(vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            Checkbox(
+                                                checked = isSelected,
+                                                onCheckedChange = {
+                                                    selectedFilters = if (isSelected) {
+                                                        selectedFilters - filter
+                                                    } else {
+                                                        selectedFilters + filter
+                                                    }
+                                                },
+                                                colors = CheckboxDefaults.colors(
+                                                    checkedColor = GrayMatterColors.Primary,
+                                                    uncheckedColor = GrayMatterColors.Neutral500,
+                                                    checkmarkColor = Color.Black
+                                                )
+                                            )
+                                            Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = if (isSelected) GrayMatterColors.Primary else GrayMatterColors.Neutral500)
+                                            Text(filter, color = Color.White)
+                                        }
                                     }
                                 }
+                            },
+                            confirmButton = {
+                                TextButton(onClick = { showFilterMenu = false }) {
+                                    Text("Done", color = GrayMatterColors.Primary)
+                                }
                             }
-                            
-                            // Export History Button
-                            TextButton(
-                                onClick = { onExport(sortedOpinions) },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.Primary)
-                            ) {
-                                Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
-                            }
-                            
-                            // View in Relatrix Button
-                            TextButton(
-                                onClick = { onViewInGraphClick(itemDetails.resource.id) },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.textButtonColors(contentColor = Color.White)
-                            ) {
-                                Icon(Icons.Default.Hub, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                            }
-                        }
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -550,7 +548,10 @@ private fun ItemDetailHeader(
     onBackClick: () -> Unit,
     isEditing: Boolean,
     onToggleEdit: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    onFilterClick: (() -> Unit)? = null,
+    onExportClick: (() -> Unit)? = null,
+    onViewInRelatrixClick: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
@@ -573,14 +574,77 @@ private fun ItemDetailHeader(
                         modifier = Modifier.size(26.dp)
                     )
                 }
-            }
-            IconButton(onClick = onToggleEdit) {
-                Icon(
-                    imageVector = if (isEditing) Icons.Default.Check else Icons.Default.Edit,
-                    contentDescription = null,
-                    tint = if (isEditing) GrayMatterColors.Success else GrayMatterColors.TextPrimary,
-                    modifier = Modifier.size(26.dp)
-                )
+                IconButton(onClick = onToggleEdit) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Done Editing",
+                        tint = GrayMatterColors.Success,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+            } else {
+                var menuExpanded by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "Menu",
+                            tint = GrayMatterColors.TextPrimary
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                        modifier = Modifier.background(GrayMatterColors.SurfaceDark)
+                    ) {
+                        if (onFilterClick != null) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        Icon(Icons.Default.FilterList, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                        Text("Filter History", color = Color.White)
+                                    }
+                                },
+                                onClick = { menuExpanded = false; onFilterClick() }
+                            )
+                        }
+                        if (onExportClick != null) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        Icon(Icons.Default.Share, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                        Text("Export History", color = Color.White)
+                                    }
+                                },
+                                onClick = { menuExpanded = false; onExportClick() }
+                            )
+                        }
+                        if (onViewInRelatrixClick != null) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        Icon(Icons.Default.Hub, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                                        Text("View in Relatrix", color = Color.White)
+                                    }
+                                },
+                                onClick = { menuExpanded = false; onViewInRelatrixClick() }
+                            )
+                        }
+                        Divider(color = GrayMatterColors.Neutral800, modifier = Modifier.padding(vertical = 4.dp))
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Icon(Icons.Default.Edit, null, tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(20.dp))
+                                    Text("Edit Item", color = Color.White)
+                                }
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onToggleEdit()
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -853,7 +917,7 @@ private fun OpinionTimelineItem(
                         
                         val (title, icon, color) = when {
                             isDictionary -> Triple("DICTIONARY", Icons.Default.Book, Color(0xFFC6280B))
-                            isAnnotation -> Triple("OPINION", Icons.Default.FormatQuote, GrayMatterColors.Gamboge)
+                            isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.Gamboge)
                             isTemplate -> Triple("TEMPLATE", Icons.Default.DashboardCustomize, GrayMatterColors.CustomizedAccent)
                             isCustomTitle -> Triple(dynamicTitle.uppercase(), Icons.Default.EditNote, GrayMatterColors.Success)
                             hasPageNumber -> Triple("BOOKMARK", Icons.Default.Bookmark, GrayMatterColors.Jonquil)

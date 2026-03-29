@@ -251,7 +251,7 @@ fun PdfViewerContent(
 
                 // Prefetch surrounding pages (Low Res first for speed, then High Res)
                 if (isActive) {
-                    val prefetchPages = listOf(currentPage + 1, currentPage - 1).filter { it in 0 until r.pageCount }
+                    val prefetchPages = listOf(currentPage + 1, currentPage + 2, currentPage - 1).filter { it in 0 until r.pageCount }
                     
                     for (p in prefetchPages) {
                         if (!isActive) break
@@ -438,7 +438,7 @@ fun PdfViewerContent(
                                     )
                                 }
                             }
-                        } ?: Text("Preparing page...", color = GrayMatterColors.TextSecondary)
+                        } ?: Box(modifier = Modifier.fillMaxSize())
                     }
                 }
             }
