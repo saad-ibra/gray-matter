@@ -295,18 +295,23 @@ fun GrayMatterNavigation(
         composable(
             route = NavigationDestination.ItemDetail.route,
             arguments = listOf(
-                navArgument(NavigationDestination.ItemDetail.ARG_ITEM_ID) {
+                navArgument(NavigationDestination.ItemDetail.ARG_ITEM_ID) { type = NavType.StringType },
+                navArgument(NavigationDestination.ItemDetail.ARG_FOCUS_OPINION_ID) {
                     type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
                 }
             )
         ) { backStackEntry ->
             val itemId = backStackEntry.arguments?.getString(NavigationDestination.ItemDetail.ARG_ITEM_ID) ?: return@composable
+            val focusOpinionId = backStackEntry.arguments?.getString(NavigationDestination.ItemDetail.ARG_FOCUS_OPINION_ID)
             val itemDetails by viewModel.getItemDetails(itemId).collectAsState(initial = null)
             val readingProgress by viewModel.getReadingProgressStream(itemDetails?.resource?.id ?: "").collectAsState(initial = null)
 
             ItemDetailScreen(
                 itemDetails = itemDetails,
                 readingProgress = readingProgress,
+                focusOpinionId = focusOpinionId,
                 templates = templates,
                 referenceSelectorViewModel = referenceSelectorViewModel,
                 onBackClick = { navController.popBackStack() },
@@ -595,7 +600,7 @@ fun GrayMatterNavigation(
                             coroutineScope.launch {
                                 val opinion = appModule.opinionRepository.getOpinionById(node.id)
                                 if (opinion != null) {
-                                    navController.navigate(NavigationDestination.ItemDetail.buildRoute(opinion.itemId))
+                                    navController.navigate(NavigationDestination.ItemDetail.buildRoute(opinion.itemId, opinion.id))
                                 }
                             }
                         }

@@ -630,7 +630,13 @@ fun FileViewerScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
-                                    IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
+                                    IconButton(
+                                        onClick = { 
+                                            referenceSelectorViewModel?.clearSelection()
+                                            showReferenceSelector = true 
+                                        }, 
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
                                         Icon(Icons.Default.Add, null, tint = GrayMatterColors.KnowledgeBlue, modifier = Modifier.size(20.dp))
                                     }
                                 }
@@ -768,7 +774,13 @@ fun FileViewerScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
-                                IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
+                                IconButton(
+                                    onClick = { 
+                                        referenceSelectorViewModel?.clearSelection()
+                                        showReferenceSelector = true 
+                                    }, 
+                                    modifier = Modifier.size(24.dp)
+                                ) {
                                     Icon(Icons.Default.Add, null, tint = GrayMatterColors.KnowledgeBlue, modifier = Modifier.size(20.dp))
                                 }
                             }
@@ -1232,7 +1244,13 @@ fun BookmarkOpinionDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
-                        IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
+                        IconButton(
+                            onClick = { 
+                                viewModel?.clearSelection()
+                                showReferenceSelector = true 
+                            }, 
+                            modifier = Modifier.size(24.dp)
+                        ) {
                             Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
                         }
                     }
@@ -1385,7 +1403,13 @@ fun SelectionAnnotationDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
-                        IconButton(onClick = { showReferenceSelector = true }, modifier = Modifier.size(24.dp)) {
+                        IconButton(
+                            onClick = { 
+                                viewModel?.clearSelection()
+                                showReferenceSelector = true 
+                            }, 
+                            modifier = Modifier.size(24.dp)
+                        ) {
                             Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
                         }
                     }

@@ -60,6 +60,11 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.DashboardCustomize
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.QuestionAnswer
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
@@ -229,7 +234,14 @@ fun ReferenceSelectorSheet(
                                         if (item.type == "WEB_LINK") Icons.Default.Link else Icons.Default.Description
                                     }
                                     is ReferenceSelectorItem.DetailItem -> {
-                                        if (item.typeLabel == "Bookmark") Icons.Default.Bookmark else Icons.Default.FormatQuote
+                                        when (item.typeLabel) {
+                                            "Dictionary" -> Icons.Default.Book
+                                            "Annotation" -> Icons.Default.FormatQuote
+                                            "Template" -> Icons.Default.DashboardCustomize
+                                            "Custom" -> Icons.Default.EditNote
+                                            "Bookmark" -> Icons.Default.Bookmark
+                                            else -> Icons.Default.QuestionAnswer
+                                        }
                                     }
                                 }
                                 
@@ -237,9 +249,11 @@ fun ReferenceSelectorSheet(
                                     is ReferenceSelectorItem.TopicItem -> GrayMatterColors.Primary
                                     is ReferenceSelectorItem.ResourceItem -> GrayMatterColors.Neutral300
                                     is ReferenceSelectorItem.DetailItem -> {
-                                        when {
-                                            item.typeLabel == "Template" -> GrayMatterColors.CustomizedAccent
-                                            item.typeLabel == "Bookmark" -> GrayMatterColors.Jonquil
+                                        when (item.typeLabel) {
+                                            "Dictionary" -> Color(0xFFC6280B)
+                                            "Annotation" -> GrayMatterColors.Gamboge
+                                            "Template", "Custom" -> GrayMatterColors.CustomizedAccent
+                                            "Bookmark" -> GrayMatterColors.Jonquil
                                             else -> GrayMatterColors.Success
                                         }
                                     }
@@ -285,7 +299,9 @@ fun ReferenceSelectorSheet(
                                         val label = item.typeLabel
                                         if (label != null) {
                                             val labelColor = when (label) {
-                                                "Template" -> GrayMatterColors.CustomizedAccent
+                                                "Dictionary" -> Color(0xFFC6280B)
+                                                "Annotation" -> GrayMatterColors.Gamboge
+                                                "Template", "Custom" -> GrayMatterColors.CustomizedAccent
                                                 "Bookmark" -> GrayMatterColors.Jonquil
                                                 else -> GrayMatterColors.Success
                                             }

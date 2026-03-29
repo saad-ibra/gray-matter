@@ -200,7 +200,14 @@ class ReferenceSelectorViewModel(
                 val item = allItems.find { it.id == op.itemId }
                 val resource = item?.let { i -> allResources.find { it.id == i.resourceId } }
                 val context = resource?.title ?: "Unknown Resource"
-                val typeLabel = if (op.text.startsWith("[TEMPLATE:")) "Template" else "Opinion"
+                val typeLabel = when {
+                    op.text.startsWith("[DICT] ") -> "Dictionary"
+                    op.pageNumber != null && op.text.startsWith("> ") -> "Annotation"
+                    op.text.startsWith("[TEMPLATE:") -> "Template"
+                    op.text.startsWith("[CUSTOM: ") -> "Custom"
+                    op.pageNumber != null -> "Bookmark"
+                    else -> "Opinion"
+                }
                 result.add(ReferenceSelectorItem.DetailItem(
                     id = op.id,
                     snippet = op.text,
@@ -247,7 +254,14 @@ class ReferenceSelectorViewModel(
                 validOpinions().forEach { op ->
                     val item = allItems.find { it.id == op.itemId }
                     val resource = item?.let { i -> allResources.find { it.id == i.resourceId } }
-                    val typeLabel = if (op.text.startsWith("[TEMPLATE:")) "Template" else "Opinion"
+                    val typeLabel = when {
+                        op.text.startsWith("[DICT] ") -> "Dictionary"
+                        op.pageNumber != null && op.text.startsWith("> ") -> "Annotation"
+                        op.text.startsWith("[TEMPLATE:") -> "Template"
+                        op.text.startsWith("[CUSTOM: ") -> "Custom"
+                        op.pageNumber != null -> "Bookmark"
+                        else -> "Opinion"
+                    }
                     result.add(ReferenceSelectorItem.DetailItem(
                         id = op.id,
                         snippet = op.text,
@@ -273,7 +287,14 @@ class ReferenceSelectorViewModel(
             val opinions = dbItem?.let { item -> allOpinions.filter { it.itemId == item.id } } ?: emptyList()
             for (op in opinions) {
                 val opChecked = checkedStateMap[op.id] ?: false
-                val typeLabel = if (op.text.startsWith("[TEMPLATE:")) "Template" else "Opinion"
+                val typeLabel = when {
+                    op.text.startsWith("[DICT] ") -> "Dictionary"
+                    op.pageNumber != null && op.text.startsWith("> ") -> "Annotation"
+                    op.text.startsWith("[TEMPLATE:") -> "Template"
+                    op.text.startsWith("[CUSTOM: ") -> "Custom"
+                    op.pageNumber != null -> "Bookmark"
+                    else -> "Opinion"
+                }
                 result.add(ReferenceSelectorItem.DetailItem(op.id, op.text, res.id, typeLabel, false, opChecked, indent + 1))
             }
         }

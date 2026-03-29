@@ -13,9 +13,12 @@ sealed class NavigationDestination(val route: String) {
     
     object NewEntry : NavigationDestination("new_entry")
     
-    object ItemDetail : NavigationDestination("item_detail/{itemId}") {
+    object ItemDetail : NavigationDestination("item_detail/{itemId}?focusOpinionId={focusOpinionId}") {
         const val ARG_ITEM_ID = "itemId"
-        fun buildRoute(itemId: String) = "item_detail/$itemId"
+        const val ARG_FOCUS_OPINION_ID = "focusOpinionId"
+        fun buildRoute(itemId: String, focusOpinionId: String? = null) = 
+            if (focusOpinionId != null) "item_detail/$itemId?focusOpinionId=$focusOpinionId"
+            else "item_detail/$itemId"
     }
     
     object AddToTopic : NavigationDestination("add_to_topic/{itemId}") {

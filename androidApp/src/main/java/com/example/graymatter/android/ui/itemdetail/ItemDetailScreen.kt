@@ -1,6 +1,11 @@
 package com.example.graymatter.android.ui.itemdetail
 
 import androidx.compose.animation.core.*
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.ExperimentalFoundationApi
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,11 +43,12 @@ import java.util.*
  * Item Details Screen.
  * Features a beautiful animated timeline where opinions and bookmark reflections are unified.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ItemDetailScreen(
     itemDetails: ItemWithDetails?,
     readingProgress: com.example.graymatter.domain.ReadingProgress?,
+    focusOpinionId: String? = null,
     templates: List<CustomTemplate> = emptyList(),
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
     onBackClick: () -> Unit,
@@ -88,7 +94,7 @@ fun ItemDetailScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Add Opinion",
+                        contentDescription = "Add Knowledge",
                         modifier = Modifier.size(32.dp)
                     )
                 }
@@ -285,7 +291,7 @@ fun ItemDetailScreen(
                     }
 
                     Text(
-                        text = "Opinion History",
+                        text = "Knowledge History",
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -312,7 +318,7 @@ fun ItemDetailScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Filter History", color = Color.White, fontWeight = FontWeight.Bold)
+                                    Text("Filter Knowledge", color = Color.White, fontWeight = FontWeight.Bold)
                                     Row {
                                         TextButton(
                                             onClick = { selectedFilters = filterNames },
@@ -383,6 +389,7 @@ fun ItemDetailScreen(
                         opinions = sortedOpinions,
                         resourceId = itemDetails.resource.id,
                         isEditing = isEditing,
+                        focusOpinionId = focusOpinionId,
                         templates = templates,
                         referenceSelectorViewModel = referenceSelectorViewModel,
                         onUpdateOpinion = onUpdateOpinion,
@@ -761,6 +768,7 @@ private fun OpinionTimeline(
     opinions: List<Opinion>,
     resourceId: String,
     isEditing: Boolean,
+    focusOpinionId: String? = null,
     templates: List<CustomTemplate>,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel?,
     onUpdateOpinion: (String, String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
@@ -777,6 +785,7 @@ private fun OpinionTimeline(
                 isFirst = index == 0,
                 isLast = index == opinions.lastIndex,
                 isEditing = isEditing,
+                isFocused = opinion.id == focusOpinionId,
                 templates = templates,
                 referenceSelectorViewModel = referenceSelectorViewModel,
                 onUpdate = { text, confidence, date, links -> onUpdateOpinion(opinion.id, text, confidence, date, links) },
@@ -793,7 +802,7 @@ private fun OpinionTimeline(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun OpinionTimelineItem(
     opinion: Opinion,
@@ -801,6 +810,7 @@ private fun OpinionTimelineItem(
     isFirst: Boolean,
     isLast: Boolean,
     isEditing: Boolean,
+    isFocused: Boolean = false,
     templates: List<CustomTemplate>,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel?,
     onUpdate: (String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
@@ -828,10 +838,24 @@ private fun OpinionTimelineItem(
         label = "scale"
     )
 
+    val targetBackgroundColor = if (isFocused) GrayMatterColors.Primary.copy(alpha = 0.2f) else Color.Transparent
+    val backgroundColor by animateColorAsState(targetBackgroundColor, tween(1000))
+
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+
+    LaunchedEffect(isFocused) {
+        if (isFocused) {
+            delay(500)
+            bringIntoViewRequester.bringIntoView()
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
+            .background(backgroundColor)
+            .bringIntoViewRequester(bringIntoViewRequester)
     ) {
         // Physical thin line indicator
         Box(
@@ -1245,7 +1269,10 @@ private fun OpinionTimelineItem(
                             val linkText = when (link) {
                                 is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> link.name
                                 is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> link.title
-                                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> link.snippet
+                                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> {
+                                    val t = link.snippet
+                                    if (t.length > 10) t.take(10) + "..." else t
+                                }
                             }
                             val icon = when (link) {
                                 is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> Icons.Default.Tag
@@ -1521,7 +1548,7 @@ private fun OpinionEditDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Add New Opinion", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
+                    Text("Add Knowledge Entry", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
                     
                     com.example.graymatter.android.ui.components.TemplateSelector(
                         templates = templates,

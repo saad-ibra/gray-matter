@@ -173,7 +173,7 @@ fun NewEntryScreen(
                         val text = when (item) {
                             is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> "Topic: ${item.name}"
                             is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> "Resource: ${item.title}"
-                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> "Opinion: ${item.snippet.take(15)}..."
+                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> "Knowledge: ${item.snippet.take(15)}..."
                         }
                         referenceToInsert = "[[$text]]"
                         // Also add to the note references
@@ -480,7 +480,13 @@ fun NewEntryScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("KNOWLEDGE LINKS", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterColors.TextSecondary)
-                        TextButton(onClick = { showReferenceSelector = true }, contentPadding = PaddingValues(0.dp)) {
+                        TextButton(
+                            onClick = { 
+                                referenceSelectorViewModel.clearSelection()
+                                showReferenceSelector = true 
+                            }, 
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
                             Icon(Icons.Default.AddLink, null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
                             Text("Add connection")
