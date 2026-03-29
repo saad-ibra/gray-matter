@@ -264,7 +264,7 @@ class ReferenceSelectorViewModel(
                     }
                     result.add(ReferenceSelectorItem.DetailItem(
                         id = op.id,
-                        snippet = op.text,
+                        snippet = stripMarkdown(op.text),
                         resourceId = resource?.id ?: "",
                         typeLabel = typeLabel,
                         isExpanded = false,
@@ -295,9 +295,20 @@ class ReferenceSelectorViewModel(
                     op.pageNumber != null -> "Bookmark"
                     else -> "Opinion"
                 }
-                result.add(ReferenceSelectorItem.DetailItem(op.id, op.text, res.id, typeLabel, false, opChecked, indent + 1))
+                result.add(ReferenceSelectorItem.DetailItem(op.id, stripMarkdown(op.text), res.id, typeLabel, false, opChecked, indent + 1))
             }
         }
+    }
+
+    private fun stripMarkdown(text: String): String {
+        return text
+            .replace(Regex("\\[TEMPLATE:[^\\]]*\\]"), "")
+            .replace(Regex("\\[DICT\\]"), "")
+            .replace(Regex("\\[CUSTOM: [^\\]]*\\]"), "")
+            .replace(Regex("\\[Page \\d+\\]"), "")
+            .replace(Regex("[#*>\\[\\]]"), "")
+            .trim()
+            .replace(Regex("\\s+"), " ") 
     }
 }
 

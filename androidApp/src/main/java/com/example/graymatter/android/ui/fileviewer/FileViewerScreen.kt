@@ -409,7 +409,6 @@ fun FileViewerScreen(
                     chapters = viewModel.chapters.collectAsState().value,
                     onPageSlide = { 
                         viewModel.jumpToPage(it)
-                        performThrottledHaptic()
                     },
                     onPreviousPage = { 
                         viewModel.previousPage()
@@ -1024,6 +1023,11 @@ fun ReaderBottomBar(
     var dragTargetPage by remember { mutableStateOf(currentPage) }
     val context = LocalContext.current
 
+    val flatChapters = remember(chapters) {
+        fun flatten(list: List<ChapterOutline>): List<ChapterOutline> = list.flatMap { listOf(it) + flatten(it.children) }
+        flatten(chapters)
+    }
+
     LaunchedEffect(currentPage, totalPages) {
         if (!isDragging && totalPages > 1) {
             slidingValue = currentPage.toFloat() / (totalPages - 1).coerceAtLeast(1)
@@ -1047,7 +1051,6 @@ fun ReaderBottomBar(
                                 val newPage = (newValue * maxPage).toInt().coerceIn(0, maxPage)
                                 dragTargetPage = newPage
                                 // Only do haptics for chapter breaks during drag, don't jump pages
-                                val flatChapters = chapters.flatMap { ch -> listOf(ch) + ch.children }
                                 val isChapterBreak = flatChapters.any { ch -> ch.targetPage == newPage }
                                 if (isChapterBreak && newPage != lastVibratedChapterPage) {
                                     lastVibratedChapterPage = newPage
@@ -1086,11 +1089,7 @@ fun ReaderBottomBar(
                                 .padding(horizontal = 10.dp) // Align with slider track
                         ) {
                             val trackWidth = maxWidth
-                            val currentFlat = remember(chapters) {
-                                fun flatten(list: List<ChapterOutline>): List<ChapterOutline> = list.flatMap { listOf(it) + flatten(it.children) }
-                                flatten(chapters)
-                            }
-                            currentFlat.forEach { chapter ->
+                            flatChapters.forEach { chapter ->
                                 val position = chapter.targetPage.toFloat() / (totalPages - 1)
                                 Box(
                                     modifier = Modifier

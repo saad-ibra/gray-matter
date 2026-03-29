@@ -788,7 +788,7 @@ class GrayMatterViewModel(
                     }
                     com.example.graymatter.domain.ReferenceType.OPINION -> {
                         val op = opinionRepository.getOpinionById(link.targetId)
-                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = op.text, resourceId = op.itemId, typeLabel = "Opinion", isExpanded = false, isChecked = true) else null
+                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = stripMarkdown(op.text), resourceId = op.itemId, typeLabel = "Opinion", isExpanded = false, isChecked = true) else null
                     }
                     com.example.graymatter.domain.ReferenceType.BOOKMARK -> {
                         val bookmark = resourceRepository.getBookmarkById(link.targetId)
@@ -796,7 +796,7 @@ class GrayMatterViewModel(
                     }
                     com.example.graymatter.domain.ReferenceType.ANNOTATION -> {
                         val op = opinionRepository.getOpinionById(link.targetId)
-                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = op.text, resourceId = op.itemId, typeLabel = "Opinion", isExpanded = false, isChecked = true) else null
+                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = stripMarkdown(op.text), resourceId = op.itemId, typeLabel = "Opinion", isExpanded = false, isChecked = true) else null
                     }
                 }
             }
@@ -842,5 +842,14 @@ class GrayMatterViewModel(
                 }
             }
         }
+    }
+
+    private fun stripMarkdown(text: String): String {
+        return text.replace(Regex("\\[TEMPLATE:[^\\]]*\\]"), "")
+            .replace(Regex("\\[DICT\\]"), "")
+            .replace(Regex("\\[CUSTOM: [^\\]]*\\]"), "")
+            .replace(Regex("\\[Page \\d+\\]"), "")
+            .replace(Regex("[#*>\\[\\]]"), "")
+            .trim().replace(Regex("\\s+"), " ")
     }
 }

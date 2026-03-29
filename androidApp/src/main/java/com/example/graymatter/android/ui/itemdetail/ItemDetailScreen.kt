@@ -6,6 +6,7 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.ExperimentalFoundationApi
 import kotlinx.coroutines.delay
+import kotlinx.datetime.Clock
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -119,6 +120,8 @@ fun ItemDetailScreen(
             if (itemDetails != null) {
                 var selectedFilters by remember { mutableStateOf(setOf("Dictionary", "Annotation", "Custom", "Bookmark", "Opinion")) }
                 var showFilterMenu by remember { mutableStateOf(false) }
+                var localFocusOpinionId by remember(focusOpinionId) { mutableStateOf(focusOpinionId) }
+                var pulseTrigger by remember { mutableLongStateOf(0L) }
                 
                 // Unified sorted list of Opinions
                 val sortedOpinions = remember(itemDetails.opinions, selectedFilters) {
@@ -389,7 +392,7 @@ fun ItemDetailScreen(
                         opinions = sortedOpinions,
                         resourceId = itemDetails.resource.id,
                         isEditing = isEditing,
-                        focusOpinionId = focusOpinionId,
+                        focusOpinionId = localFocusOpinionId,
                         templates = templates,
                         referenceSelectorViewModel = referenceSelectorViewModel,
                         onUpdateOpinion = onUpdateOpinion,
@@ -398,7 +401,12 @@ fun ItemDetailScreen(
                             onOpenBookmark(Bookmark(id="", resourceId=resourceId, page=page, createdAt=0L))
                         },
                         onLoadLinks = onLoadLinks,
-                        onViewInGraph = onViewInGraphClick
+                        onViewInGraph = onViewInGraphClick,
+                        onOpinionClick = { 
+                            localFocusOpinionId = it 
+                            pulseTrigger = Clock.System.now().toEpochMilliseconds()
+                        },
+                        pulseTrigger = pulseTrigger
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -775,7 +783,9 @@ private fun OpinionTimeline(
     onDeleteOpinion: (String) -> Unit,
     onJumpToPage: (String, Int) -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
-    onViewInGraph: (String) -> Unit
+    onViewInGraph: (String) -> Unit,
+    onOpinionClick: (String) -> Unit,
+    pulseTrigger: Long = 0L
 ) {
     Column {
         opinions.forEachIndexed { index, opinion ->
@@ -796,7 +806,9 @@ private fun OpinionTimeline(
                     }
                 },
                 onLoadLinks = onLoadLinks,
-                onViewInGraph = onViewInGraph
+                onViewInGraph = onViewInGraph,
+                onOpinionClick = onOpinionClick,
+                pulseTrigger = pulseTrigger
             )
         }
     }
@@ -817,7 +829,9 @@ private fun OpinionTimelineItem(
     onDelete: () -> Unit,
     onJump: () -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
-    onViewInGraph: (String) -> Unit
+    onViewInGraph: (String) -> Unit,
+    onOpinionClick: (String) -> Unit,
+    pulseTrigger: Long = 0L
 ) {
     var text by remember(opinion.text) { mutableStateOf(opinion.text) }
     var confidence by remember(opinion.confidenceScore) { mutableStateOf(opinion.confidenceScore.toFloat() / 100f) }
@@ -838,15 +852,20 @@ private fun OpinionTimelineItem(
         label = "scale"
     )
 
-    val targetBackgroundColor = if (isFocused) GrayMatterColors.Primary.copy(alpha = 0.2f) else Color.Transparent
-    val backgroundColor by animateColorAsState(targetBackgroundColor, tween(1000))
-
+    val backgroundColor = remember { androidx.compose.animation.Animatable(Color.Transparent) }
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
 
-    LaunchedEffect(isFocused) {
+    LaunchedEffect(isFocused, pulseTrigger) {
         if (isFocused) {
             delay(500)
             bringIntoViewRequester.bringIntoView()
+            val pulseColor = GrayMatterColors.Primary.copy(alpha = 0.3f)
+            repeat(1) { // 1 pulse 
+                backgroundColor.animateTo(pulseColor, tween(333))
+                backgroundColor.animateTo(Color.Transparent, tween(333))
+            }
+        } else {
+            backgroundColor.snapTo(Color.Transparent)
         }
     }
 
@@ -854,7 +873,7 @@ private fun OpinionTimelineItem(
         modifier = Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .background(backgroundColor)
+            .background(backgroundColor.value)
             .bringIntoViewRequester(bringIntoViewRequester)
     ) {
         // Physical thin line indicator
@@ -991,7 +1010,7 @@ private fun OpinionTimelineItem(
             val isCustomTitle = text.startsWith("[CUSTOM: ")
             val hasPageNumber = opinion.pageNumber != null
 
-            if (hasPageNumber && !isEditing && !isTemplate && !isCustomTitle) {
+            if (hasPageNumber && !isEditing) {
                 Spacer(modifier = Modifier.height(4.dp))
                 val tagColor = when {
                     isDictionary -> Color(0xFFC6280B)
@@ -1280,7 +1299,11 @@ private fun OpinionTimelineItem(
                                 is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> Icons.Default.QuestionAnswer
                             }
                             AssistChip(
-                                onClick = { /* Future: navigate to link */ },
+                                onClick = { 
+                                    if (link is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem) {
+                                        onOpinionClick(link.id)
+                                    } 
+                                },
                                 label = { Text(linkText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
                                 leadingIcon = { Icon(icon, null, modifier = Modifier.size(16.dp)) },
                                 colors = AssistChipDefaults.assistChipColors(
@@ -1294,7 +1317,7 @@ private fun OpinionTimelineItem(
                     }
                 }
                 
-                if (hasPageNumber && !isEditing && !isTemplate && !isCustomTitle) {
+                if (hasPageNumber && !isEditing) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Launch, null, tint = GrayMatterColors.Primary.copy(alpha = 0.6f), modifier = Modifier.size(12.dp))

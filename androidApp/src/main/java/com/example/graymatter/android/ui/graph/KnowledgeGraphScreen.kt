@@ -36,8 +36,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlin.math.sqrt
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -413,7 +414,7 @@ fun KnowledgeGraphScreen(
                             }
                             
                             // Map to Screen Space and sort faces by Z (back to front)
-                            val faces = facesDef.map { faceIdx ->
+                            val faces: List<Triple<Float, androidx.compose.ui.graphics.Path, Color>> = facesDef.map { faceIdx ->
                                 val pA = projected[faceIdx[0]]
                                 val pB = projected[faceIdx[1]]
                                 val pC = projected[faceIdx[2]]
@@ -431,7 +432,7 @@ fun KnowledgeGraphScreen(
                                 val sB = toScr(pB)
                                 val sC = toScr(pC)
                                 
-                                val path = Path().apply {
+                                val path = androidx.compose.ui.graphics.Path().apply {
                                     moveTo(sA.x, sA.y)
                                     lineTo(sB.x, sB.y)
                                     lineTo(sC.x, sC.y)
@@ -445,7 +446,8 @@ fun KnowledgeGraphScreen(
                             }.sortedBy { -it.first } // sort descending Z (higher Z = further away)
                             
                             // Draw 
-                            faces.forEach { (_, path, _) ->
+                            faces.forEach { triple ->
+                                val path = triple.second
                                 // Glowing sci-fi neon edge wireframe (only outlined shapes)
                                 drawPath(path = path, color = color.copy(alpha=1f), style = Stroke(width = 1.5f * scale))
                             }
@@ -454,61 +456,47 @@ fun KnowledgeGraphScreen(
                         if (node.type == NodeType.TOPIC) {
                             val r = node.radius * 1.7f
                             val phi = (1f + sqrt(5f)) / 2f
-                            val v = r / sqrt(3f)
-                            val a = v
-                            val b = v / phi
-                            val c = v * phi
+                            val length = sqrt(1f + phi * phi)
+                            val vA = r / length
+                            val vB = r * phi / length
 
                             val vertices = arrayOf(
-                                floatArrayOf( a,  a,  a), // 0
-                                floatArrayOf( a,  a, -a), // 1
-                                floatArrayOf( a, -a,  a), // 2
-                                floatArrayOf( a, -a, -a), // 3
-                                floatArrayOf(-a,  a,  a), // 4
-                                floatArrayOf(-a,  a, -a), // 5
-                                floatArrayOf(-a, -a,  a), // 6
-                                floatArrayOf(-a, -a, -a), // 7
-                                floatArrayOf(0f,  b,  c), // 8
-                                floatArrayOf(0f,  b, -c), // 9
-                                floatArrayOf(0f, -b,  c), // 10
-                                floatArrayOf(0f, -b, -c), // 11
-                                floatArrayOf( b,  c, 0f), // 12
-                                floatArrayOf( b, -c, 0f), // 13
-                                floatArrayOf(-b,  c, 0f), // 14
-                                floatArrayOf(-b, -c, 0f), // 15
-                                floatArrayOf( c, 0f,  b), // 16
-                                floatArrayOf( c, 0f, -b), // 17
-                                floatArrayOf(-c, 0f,  b), // 18
-                                floatArrayOf(-c, 0f, -b)  // 19
+                                floatArrayOf(  0f,  vA,  vB), // 0
+                                floatArrayOf(  0f,  vA, -vB), // 1
+                                floatArrayOf(  0f, -vA,  vB), // 2
+                                floatArrayOf(  0f, -vA, -vB), // 3
+                                floatArrayOf(  vA,  vB,  0f), // 4
+                                floatArrayOf(  vA, -vB,  0f), // 5
+                                floatArrayOf( -vA,  vB,  0f), // 6
+                                floatArrayOf( -vA, -vB,  0f), // 7
+                                floatArrayOf(  vB,  0f,  vA), // 8
+                                floatArrayOf( -vB,  0f,  vA), // 9
+                                floatArrayOf(  vB,  0f, -vA), // 10
+                                floatArrayOf( -vB,  0f, -vA)  // 11
                             )
                             val facesDef = arrayOf(
-                                intArrayOf(8, 0, 16), intArrayOf(8, 16, 2), intArrayOf(8, 2, 10),      // Face 1
-                                intArrayOf(8, 10, 6), intArrayOf(8, 6, 18), intArrayOf(8, 18, 4),      // Face 2
-                                intArrayOf(8, 4, 14), intArrayOf(8, 14, 12), intArrayOf(8, 12, 0),     // Face 3
-                                intArrayOf(17, 1, 12), intArrayOf(17, 12, 0), intArrayOf(17, 0, 16),   // Face 4
-                                intArrayOf(17, 16, 2), intArrayOf(17, 2, 13), intArrayOf(17, 13, 3),   // Face 5
-                                intArrayOf(17, 3, 11), intArrayOf(17, 11, 9), intArrayOf(17, 9, 1),    // Face 6
-                                intArrayOf(19, 5, 9), intArrayOf(19, 9, 11), intArrayOf(19, 11, 7),    // Face 7
-                                intArrayOf(19, 7, 15), intArrayOf(19, 15, 6), intArrayOf(19, 6, 18),   // Face 8
-                                intArrayOf(19, 18, 4), intArrayOf(19, 4, 14), intArrayOf(19, 14, 5),   // Face 9
-                                intArrayOf(1, 9, 5), intArrayOf(1, 5, 14), intArrayOf(1, 14, 12),      // Face 10
-                                intArrayOf(3, 13, 15), intArrayOf(3, 15, 7), intArrayOf(3, 7, 11),     // Face 11
-                                intArrayOf(2, 13, 15), intArrayOf(2, 15, 6), intArrayOf(2, 6, 10)      // Face 12
+                                intArrayOf(0, 8, 4), intArrayOf(0, 4, 6), intArrayOf(0, 6, 9), intArrayOf(0, 9, 2), intArrayOf(0, 2, 8),
+                                intArrayOf(8, 10, 4), intArrayOf(4, 1, 6), intArrayOf(6, 11, 9), intArrayOf(9, 7, 2), intArrayOf(2, 5, 8),
+                                intArrayOf(4, 10, 1), intArrayOf(6, 1, 11), intArrayOf(9, 11, 7), intArrayOf(2, 7, 5), intArrayOf(8, 5, 10),
+                                intArrayOf(3, 10, 5), intArrayOf(3, 5, 7), intArrayOf(3, 7, 11), intArrayOf(3, 11, 1), intArrayOf(3, 1, 10)
                             )
                             drawSolidFaces(vertices, facesDef, nodeColor)
 
                         } else if (node.type == NodeType.RESOURCE) {
                             val r = node.radius * 1.5f
+                            val sq23 = sqrt(2f/3f)
+                            val sq3 = sqrt(3f)
                             val vertices = arrayOf(
-                                floatArrayOf(0f, -r, 0f),  // 0: Top
-                                floatArrayOf(-r, r, r),    // 1: FrontLeft
-                                floatArrayOf(r, r, r),     // 2: FrontRight
-                                floatArrayOf(-r, r, -r),   // 3: BackLeft
-                                floatArrayOf(r, r, -r)     // 4: BackRight
+                                floatArrayOf(0f, -r, 0f), 
+                                floatArrayOf(-r * sq23, r/3f, -r/sq3),
+                                floatArrayOf( r * sq23, r/3f, -r/sq3),
+                                floatArrayOf(0f, r/3f, r * 2f/sq3)
                             )
                             val facesDef = arrayOf(
-                                intArrayOf(0, 3, 1), intArrayOf(0, 4, 3), intArrayOf(0, 2, 4), intArrayOf(0, 1, 2),
-                                intArrayOf(1, 3, 2), intArrayOf(3, 4, 2) // Base
+                                intArrayOf(0, 1, 2), 
+                                intArrayOf(0, 2, 3), 
+                                intArrayOf(0, 3, 1), 
+                                intArrayOf(1, 3, 2)
                             )
                             drawSolidFaces(vertices, facesDef, nodeColor)
                             
@@ -714,7 +702,7 @@ fun KnowledgeGraphScreen(
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = node.label,
+                            text = stripMarkdown(node.label),
                             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                             color = Color.White
                         )
@@ -772,4 +760,13 @@ fun KnowledgeGraphScreen(
         }
         }
     }
+}
+
+private fun stripMarkdown(text: String): String {
+    return text.replace(Regex("\\[TEMPLATE:[^\\]]*\\]"), "")
+        .replace(Regex("\\[DICT\\]"), "")
+        .replace(Regex("\\[CUSTOM: [^\\]]*\\]"), "")
+        .replace(Regex("\\[Page \\d+\\]"), "")
+        .replace(Regex("[#*>\\[\\]]"), "")
+        .trim().replace(Regex("\\s+"), " ")
 }

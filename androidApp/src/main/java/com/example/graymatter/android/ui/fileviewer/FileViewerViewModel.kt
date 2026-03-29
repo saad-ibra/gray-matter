@@ -418,7 +418,7 @@ class FileViewerViewModel(
                 val opinion = Opinion(
                     id = opinionId,
                     itemId = item.id,
-                    text = "[Page ${currentPage + 1}] $opinionText",
+                    text = opinionText,
                     confidenceScore = confidence,
                     pageNumber = currentPage,
                     createdAt = now,
@@ -660,7 +660,7 @@ class FileViewerViewModel(
                     }
                     com.example.graymatter.domain.ReferenceType.OPINION -> {
                         val op = opinionRepository.getOpinionById(link.targetId)
-                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = op.text, resourceId = op.itemId, typeLabel = "Opinion", isExpanded = false, isChecked = true) else null
+                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = stripMarkdown(op.text), resourceId = op.itemId, typeLabel = "Opinion", isExpanded = false, isChecked = true) else null
                     }
                     com.example.graymatter.domain.ReferenceType.BOOKMARK -> {
                         val bookmark = resourceRepository.getBookmarkById(link.targetId)
@@ -696,5 +696,14 @@ class FileViewerViewModel(
     private fun generateUuid(): String {
         val chars = "abcdefghijklmnopqrstuvwxyz0123456789"
         return (1..32).map { chars[Random.nextInt(chars.length)] }.joinToString("")
+    }
+
+    private fun stripMarkdown(text: String): String {
+        return text.replace(Regex("\\[TEMPLATE:[^\\]]*\\]"), "")
+            .replace(Regex("\\[DICT\\]"), "")
+            .replace(Regex("\\[CUSTOM: [^\\]]*\\]"), "")
+            .replace(Regex("\\[Page \\d+\\]"), "")
+            .replace(Regex("[#*>\\[\\]]"), "")
+            .trim().replace(Regex("\\s+"), " ")
     }
 }
