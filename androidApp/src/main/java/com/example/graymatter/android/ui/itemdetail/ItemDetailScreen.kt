@@ -928,29 +928,27 @@ private fun OpinionTimelineItem(
             // Header: Serial Number, Title, Date & Confidence Badge
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                 Row(modifier = Modifier.weight(1f).padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    // Combined Serial Number & Relatrix Icon
+                    // Tactile History Node: High-Contrast "Pressable" Serial Number
                     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(28.dp)
                             .clip(CircleShape)
-                            .background(GrayMatterColors.Neutral900)
+                            .background(GrayMatterColors.Neutral600)
                             .clickable {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                 onViewInGraph(opinion.id)
                             }
-                            .border(1.5.dp, GrayMatterColors.Neutral700, CircleShape),
+                            .border(1.2.dp, Color.White.copy(alpha = 0.8f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Hub,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.25f),
-                            modifier = Modifier.size(24.dp)
-                        )
                         Text(
                             text = serialNumber.toString(),
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold, fontSize = 8.sp),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold, 
+                                fontSize = 10.sp,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                            ),
                             color = Color.White
                         )
                     }

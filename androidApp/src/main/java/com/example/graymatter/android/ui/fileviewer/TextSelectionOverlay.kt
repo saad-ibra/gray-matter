@@ -399,7 +399,6 @@ fun TextSelectionOverlay(
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val selectionColor = GrayMatterColors.CocoaBrown.copy(alpha = 0.4f)
-            val highlightColor = GrayMatterColors.Gamboge.copy(alpha = 0.4f)
             
             // Scaled padding to maintain relative shape during zoom
             val hPad = 0.dp.toPx() * zoomScale

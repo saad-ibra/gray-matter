@@ -13,7 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.Bookmark
@@ -344,7 +344,6 @@ fun KnowledgeGraphScreen(
                     .onSizeChanged { canvasSize = Size(it.width.toFloat(), it.height.toFloat()) }
                     .pointerInput(Unit) {
                         detectTransformGestures { centroid, pan, zoom, _ ->
-                            val oldScale = scale
                             scale = (scale * zoom).coerceIn(0.1f, 5f)
                             
                             // Adjust offset to keep the point under the fingers exactly at the same screen coordinates
@@ -679,7 +678,7 @@ fun KnowledgeGraphScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
             }
             Text(
                 text = "Rela-trix",
