@@ -523,7 +523,6 @@ private fun HudRepeatingButton(
         if (isPressed) {
             while (true) {
                 onClick()
-                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                 kotlinx.coroutines.delay(200L)
             }
         }
