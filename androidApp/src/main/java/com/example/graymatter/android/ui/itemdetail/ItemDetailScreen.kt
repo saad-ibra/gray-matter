@@ -928,18 +928,30 @@ private fun OpinionTimelineItem(
             // Header: Serial Number, Title, Date & Confidence Badge
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                 Row(modifier = Modifier.weight(1f).padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    // Serial Number
+                    // Combined Serial Number & Relatrix Icon
+                    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
                     Box(
                         modifier = Modifier
-                            .size(24.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
-                            .background(GrayMatterColors.SurfaceDark),
+                            .background(GrayMatterColors.Neutral900)
+                            .clickable {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                onViewInGraph(opinion.id)
+                            }
+                            .border(1.5.dp, GrayMatterColors.Neutral700, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
+                        Icon(
+                            imageVector = Icons.Default.Hub,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.25f),
+                            modifier = Modifier.size(24.dp)
+                        )
                         Text(
                             text = serialNumber.toString(),
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
-                            color = GrayMatterColors.Neutral500
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold, fontSize = 8.sp),
+                            color = Color.White
                         )
                     }
                     
@@ -995,10 +1007,6 @@ private fun OpinionTimelineItem(
                     if (isEditing) {
                         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.Delete, null, tint = GrayMatterColors.Error, modifier = Modifier.size(18.dp))
-                        }
-                    } else {
-                        IconButton(onClick = { onViewInGraph(opinion.id) }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.Hub, "View in Relatrix", tint = Color.White, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
