@@ -127,11 +127,14 @@ private fun ExpandedHudPanel(
     onBookmarkToggle: () -> Unit
 ) {
     val context = LocalContext.current
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     // Dragging state
     var isDragging by remember { mutableStateOf(false) }
     var dragFraction by remember { mutableFloatStateOf(progressFraction) }
     var lastVibratedChapterPage by remember { mutableIntStateOf(-1) }
+    var lastVibratedPage by remember { mutableIntStateOf(-1) }
+    var lastVibrationTime by remember { mutableLongStateOf(0L) }
 
     // Use rememberUpdatedState so the pointerInput closure always sees current chapter data
     val currentChapterPages by rememberUpdatedState(chapterPages)
@@ -235,6 +238,7 @@ private fun ExpandedHudPanel(
                             dragFraction = initialFraction
                             val page = fractionToPage(initialFraction)
                             onPageSlide(page)
+                            lastVibratedPage = page
 
                             // Haptic check
                             if (currentChapterPages.contains(page) && page != lastVibratedChapterPage) {
@@ -261,7 +265,19 @@ private fun ExpandedHudPanel(
                                 val movePage = fractionToPage(moveFraction)
                                 onPageSlide(movePage)
 
-                                // Haptic on chapter crossing
+                                // Per-page haptic feedback (throttled to max ~33Hz to prevent crash or stutter)
+                                if (movePage != lastVibratedPage) {
+                                    lastVibratedPage = movePage
+                                    val currentTime = System.currentTimeMillis()
+                                    if (currentTime - lastVibrationTime > 30) {
+                                        lastVibrationTime = currentTime
+                                        try {
+                                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                        } catch (_: Exception) { }
+                                    }
+                                }
+
+                                // Strong haptic on chapter crossing
                                 if (currentChapterPages.contains(movePage) && movePage != lastVibratedChapterPage) {
                                     lastVibratedChapterPage = movePage
                                     triggerHaptic(context)
@@ -548,6 +564,20 @@ private fun triggerHaptic(context: android.content.Context) {
             } else {
                 @Suppress("DEPRECATION")
                 vibrator.vibrate(40)
+            }
+        }
+    } catch (_: Exception) { }
+}
+
+private fun triggerHapticLight(context: android.content.Context) {
+    try {
+        val vibrator = context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? Vibrator
+        if (vibrator != null && vibrator.hasVibrator()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(8, 40))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(8)
             }
         }
     } catch (_: Exception) { }

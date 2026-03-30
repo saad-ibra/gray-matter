@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.IntOffset
@@ -324,14 +325,18 @@ fun TextSelectionOverlay(
             .pointerInput(handleHitRadius) {
                 awaitPointerEventScope {
                     while (true) {
-                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
                         val shInfo = startHandleInfo.value
                         val ehInfo = endHandleInfo.value
                         val sh = shInfo?.first
                         val eh = ehInfo?.first
 
-                        val isStart = sh != null && (down.position - sh).getDistance() < handleHitRadius
-                        val isEnd = eh != null && (down.position - eh).getDistance() < handleHitRadius
+                        val distStart = if (sh != null) (down.position - sh).getDistance() else Float.MAX_VALUE
+                        val distEnd = if (eh != null) (down.position - eh).getDistance() else Float.MAX_VALUE
+
+                        val hitRadius = handleHitRadius * 1.3f // Generous touch target
+                        val isStart = distStart < hitRadius && distStart <= distEnd
+                        val isEnd = distEnd < hitRadius && !isStart
 
                         if (isStart || isEnd) {
                             isDraggingStartHandle = isStart
@@ -339,15 +344,17 @@ fun TextSelectionOverlay(
                             showPopup = false
                             down.consume()
 
-                            // Remember initial physical screen position of the handle to accumulate deltas
-                            var currentScreenPos = if (isStart) sh!! else eh!!
+                            // Calculate the initial offset between touch and handle center to prevent jumping
+                            val touchOffset = if (isStart) sh!! - down.position else eh!! - down.position
 
                             do {
-                                val event = awaitPointerEvent()
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
                                 val change = event.changes.firstOrNull { it.id == down.id }
                                 if (change != null && change.pressed) {
                                     change.consume()
-                                    currentScreenPos += (change.position - change.previousPosition)
+                                    // Use absolute position tracking instead of deltas for 1:1 finger tracking
+                                    val currentScreenPos = change.position + touchOffset
+                                    
                                     // Convert screen position back to document space and save
                                     val newDocPos = screenToPdf(currentScreenPos)
                                     if (isStart) dragStart = newDocPos

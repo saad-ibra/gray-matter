@@ -7,14 +7,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * Using system default font family since custom fonts are missing.
+ * App-wide monospace font — matches the PDF reader's page counter for consistency.
  */
-val InterFontFamily = FontFamily.Default
+val InterFontFamily = FontFamily.Monospace
 
 /**
- * Using system default font family since custom fonts are missing.
+ * Style headers with monospace for a cohesive technical look.
  */
-val PlayfairDisplayFontFamily = FontFamily.Default
+val PlayfairDisplayFontFamily = FontFamily.Monospace
 
 /**
  * Gray Matter typography matching the design mockups.

@@ -8,14 +8,14 @@ import androidx.compose.ui.graphics.Color
  */
 object GrayMatterColors {
     // Backgrounds
-    val BackgroundDark = Color(0xFF0A0A0A)
+    val BackgroundDark = Color(0xFF000000)
     val BackgroundLight = Color(0xFFF6F7F8)
     
     // Surfaces
-    val SurfaceDark = Color(0xFF161616)
-    val SurfaceInput = Color(0xFF18181B)
-    val SurfaceBorder = Color(0xFF27272A)
-    val SurfaceCard = Color(0xFF121212)
+    val SurfaceDark = Color(0xFF0C0C0C)
+    val SurfaceInput = Color(0xFF0E0E10)
+    val SurfaceBorder = Color(0xFF1E1E22)
+    val SurfaceCard = Color(0xFF080808)
     
     // Text colors
     val TextPrimary = Color(0xFFFFFFFF)
@@ -42,12 +42,12 @@ object GrayMatterColors {
     val Neutral200 = Color(0xFFE4E4E7)
     val Neutral300 = Color(0xFFD4D4D8)
     val Neutral400 = Color(0xFFA1A1AA)
-    val Neutral500 = Color(0xFF71717A)
-    val Neutral600 = Color(0xFF52525B)
-    val Neutral700 = Color(0xFF3F3F46)
-    val Neutral800 = Color(0xFF27272A)
-    val Neutral900 = Color(0xFF18181B)
-    val Neutral950 = Color(0xFF0A0A0A)
+    val Neutral500 = Color(0xFF62626A)
+    val Neutral600 = Color(0xFF42424A)
+    val Neutral700 = Color(0xFF2A2A30)
+    val Neutral800 = Color(0xFF1A1A1E)
+    val Neutral900 = Color(0xFF101012)
+    val Neutral950 = Color(0xFF050505)
     
     // Functional colors
     val Success = Color(0xFF8EA208)

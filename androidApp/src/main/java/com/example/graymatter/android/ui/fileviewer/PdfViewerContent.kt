@@ -575,8 +575,7 @@ private suspend fun getOrRenderPdfPage(
 @Composable
 private fun getThemeBackgroundColor(theme: String): Color {
     return when (theme) {
-        "night" -> Color(0xFF1A1A1A)
-        "amoled_black" -> Color.Black
+        "night", "amoled_black" -> Color.Black
         "twilight" -> Color(0xFF12122A)
         "console" -> Color(0xFF0D0D0D)
         "sepia" -> Color(0xFFF4ECD8)

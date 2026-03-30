@@ -143,43 +143,32 @@ fun KnowledgeGraphScreen(
                 }
             }
             
-            if (initialSelectedNodeId != null && selectedNode == null) {
-                val node = simulator.nodes.find { it.id == initialSelectedNodeId }
-                if (node != null) {
-                    selectedNode = node
-                }
-            }
+            // Pre-warm physics so graph is stable before first render
+            repeat(150) { simulator.tick(speedMultiplier) }
+            physicsSettled = true
             
-            // Loop
-            var startupTicks = 0
+            // Render loop
             while (isActive) {
-                simulator.tick(speedMultiplier)
-                
-                // Track the selected node actively during the initial physics burst
-                // using actual canvas dimensions for proper centering
-                if (initialSelectedNodeId != null && selectedNode != null && startupTicks < 200) {
-                    if (canvasSize.width > 0f) {
-                        offset = Offset(
-                            canvasSize.width / 2f - selectedNode!!.x * scale,
-                            canvasSize.height / 2f - selectedNode!!.y * scale
-                        )
-                    }
-                }
-
-                if (startupTicks == 200) {
-                    physicsSettled = true
-                }
-
+                simulator.tick(speedMultiplier * 0.5f) // Slower tick after stable to reduce jitter
                 ticks++ // force redraw
-                startupTicks++
                 delay(16) // ~60fps
             }
         }
     }
 
+    // Explicit Sync: Ensure target node from route is highlighted even if graph data is cached
+    LaunchedEffect(initialSelectedNodeId, graphState.nodes, physicsSettled) {
+        if (initialSelectedNodeId != null && physicsSettled && graphState.nodes.isNotEmpty()) {
+            val node = simulator.nodes.find { it.id == initialSelectedNodeId }
+            if (node != null) {
+                selectedNode = node
+            }
+        }
+    }
+
     // Cinematic zoom animation on node selection
-    LaunchedEffect(selectedNode, physicsSettled) {
-        if (canvasSize == Size.Zero) return@LaunchedEffect
+    LaunchedEffect(selectedNode, physicsSettled, canvasSize) {
+        if (canvasSize.width <= 0f) return@LaunchedEffect
 
         if (selectedNode != null && physicsSettled) {
             wasSelected = true
@@ -208,7 +197,7 @@ fun KnowledgeGraphScreen(
             val startOffsetX = offset.x
             val startOffsetY = offset.y
             val anim = Animatable(0f)
-            anim.animateTo(1f, animationSpec = tween(600, easing = FastOutSlowInEasing)) {
+            anim.animateTo(1f, animationSpec = tween(300, easing = FastOutSlowInEasing)) {
                 val t = this.value
                 scale = startScale + (targetScale - startScale) * t
                 offset = Offset(

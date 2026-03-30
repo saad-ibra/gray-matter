@@ -419,16 +419,6 @@ private fun OverallOpinionSection(
     hasOpinion: Boolean,
     onClick: () -> Unit
 ) {
-    val rainbowColors = listOf(
-        GrayMatterColors.CocoaBrown,
-        GrayMatterColors.Gamboge,
-        GrayMatterColors.Jonquil,
-        GrayMatterColors.Success, // AppleGreen
-        GrayMatterColors.KnowledgeBlue,
-        GrayMatterColors.CustomizedAccent
-    )
-    val staticRainbowBrush = androidx.compose.ui.graphics.Brush.horizontalGradient(rainbowColors)
-
     Column(modifier = Modifier.padding(horizontal = 24.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -446,8 +436,8 @@ private fun OverallOpinionSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(if (hasOpinion) staticRainbowBrush else androidx.compose.ui.graphics.SolidColor(GrayMatterColors.SurfaceDark), alpha = if (hasOpinion) 0.15f else 1f)
-                .border(2.dp, if (hasOpinion) staticRainbowBrush else androidx.compose.ui.graphics.SolidColor(GrayMatterColors.Neutral800), RoundedCornerShape(16.dp))
+                .background(if (hasOpinion) GrayMatterColors.Neutral800.copy(alpha = 0.6f) else GrayMatterColors.SurfaceDark)
+                .border(1.5.dp, if (hasOpinion) GrayMatterColors.Neutral600 else GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
                 .clickable(onClick = onClick)
                 .padding(20.dp),
             contentAlignment = Alignment.Center
@@ -456,12 +446,12 @@ private fun OverallOpinionSection(
                 Icon(
                     imageVector = if (hasOpinion) Icons.Default.EditNote else Icons.Default.RateReview,
                     contentDescription = null,
-                    tint = if (hasOpinion) Color.White else GrayMatterColors.Primary
+                    tint = if (hasOpinion) GrayMatterColors.Neutral400 else GrayMatterColors.Primary
                 )
                 Text(
                     text = if (hasOpinion) "Edit Overall Opinion" else "Add Overall Opinion",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = if (hasOpinion) Color.White else GrayMatterColors.Primary
+                    color = if (hasOpinion) GrayMatterColors.Neutral400 else GrayMatterColors.Primary
                 )
             }
         }
