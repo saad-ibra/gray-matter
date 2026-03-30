@@ -788,7 +788,10 @@ class GrayMatterViewModel(
                     }
                     com.example.graymatter.domain.ReferenceType.OPINION -> {
                         val op = opinionRepository.getOpinionById(link.targetId)
-                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = stripMarkdown(op.text), resourceId = op.itemId, typeLabel = "Opinion", isExpanded = false, isChecked = true) else null
+                        if (op != null) {
+                            val resId = itemsStream.value.find { it.id == op.itemId }?.resourceId ?: op.itemId
+                            com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = stripMarkdown(op.text), resourceId = resId, typeLabel = "Opinion", isExpanded = false, isChecked = true)
+                        } else null
                     }
                     com.example.graymatter.domain.ReferenceType.BOOKMARK -> {
                         val bookmark = resourceRepository.getBookmarkById(link.targetId)
@@ -796,7 +799,10 @@ class GrayMatterViewModel(
                     }
                     com.example.graymatter.domain.ReferenceType.ANNOTATION -> {
                         val op = opinionRepository.getOpinionById(link.targetId)
-                        if (op != null) com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = stripMarkdown(op.text), resourceId = op.itemId, typeLabel = "Opinion", isExpanded = false, isChecked = true) else null
+                        if (op != null) {
+                            val resId = itemsStream.value.find { it.id == op.itemId }?.resourceId ?: op.itemId
+                            com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = stripMarkdown(op.text), resourceId = resId, typeLabel = "Opinion", isExpanded = false, isChecked = true)
+                        } else null
                     }
                 }
             }

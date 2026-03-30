@@ -68,7 +68,6 @@ fun FileViewerScreen(
     resourceId: String,
     initialPage: Int? = null,
     onBackClick: () -> Unit,
-    onLoadBacklinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.android.ui.components.BacklinkUiModel>>,
     onViewInGraph: (String) -> Unit,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null
 ) {
@@ -388,19 +387,6 @@ fun FileViewerScreen(
         ) {
             Column {
                 val isCurrentPageBookmarked = bookmarks.any { it.page == viewModel.currentPage }
-                
-                val backlinks by onLoadBacklinks(resourceId).collectAsState(initial = emptyList())
-                if (backlinks.isNotEmpty()) {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        com.example.graymatter.android.ui.components.BacklinkPanel(
-                            backlinks = backlinks,
-                            onBacklinkClick = { backlink ->
-                                // Navigation to source opinion not implemented yet
-                            },
-                            onViewInGraphClick = { onViewInGraph(resourceId) }
-                        )
-                    }
-                }
                 
                 HudNavigationSlider(
                     currentPage = viewModel.currentPage,

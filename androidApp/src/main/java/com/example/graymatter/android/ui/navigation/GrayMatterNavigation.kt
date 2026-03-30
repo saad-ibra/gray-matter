@@ -381,9 +381,27 @@ fun GrayMatterNavigation(
                 },
                 onLoadLinks = { opinionId -> viewModel.getLinksForOpinion(opinionId) },
                 onLoadResourceLinks = { resourceId -> viewModel.getLinksForResource(resourceId) },
-                onLoadBacklinks = { resourceId -> viewModel.getResolvedBacklinksForTarget(resourceId) },
                 onViewInGraphClick = { resourceId -> 
                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute(resourceId)) 
+                },
+                onNavigateToKnowledgeLink = { link ->
+                    when (link) {
+                        is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> {
+                            navController.navigate(NavigationDestination.TopicDetail.buildRoute(link.id))
+                        }
+                        is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> {
+                            val targetItem = items.find { it.resourceId == link.id }
+                            if (targetItem != null) {
+                                navController.navigate(NavigationDestination.ItemDetail.buildRoute(targetItem.id))
+                            }
+                        }
+                        is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> {
+                            val targetItem = items.find { it.resourceId == link.resourceId }
+                            if (targetItem != null) {
+                                navController.navigate(NavigationDestination.ItemDetail.buildRoute(targetItem.id, link.id))
+                            }
+                        }
+                    }
                 },
                 onSaveTemplate = { viewModel.saveTemplate(it) },
                 generateUuid = { viewModel.generateUuid() }
@@ -541,7 +559,6 @@ fun GrayMatterNavigation(
                 resourceId = resourceId,
                 initialPage = if (initialPage >= 0) initialPage else null,
                 onBackClick = { navController.popBackStack() },
-                onLoadBacklinks = { resId -> viewModel.getResolvedBacklinksForTarget(resId) },
                 onViewInGraph = { resId -> 
                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute(resId)) 
                 }

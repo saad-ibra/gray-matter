@@ -65,8 +65,8 @@ fun ItemDetailScreen(
     onExport: (List<Opinion>) -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     onLoadResourceLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
-    onLoadBacklinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.android.ui.components.BacklinkUiModel>>,
     onViewInGraphClick: (String) -> Unit,
+    onNavigateToKnowledgeLink: (com.example.graymatter.domain.ReferenceSelectorItem) -> Unit = {},
     onSaveTemplate: (CustomTemplate) -> Unit = {},
     generateUuid: () -> String = { "" },
     modifier: Modifier = Modifier
@@ -402,25 +402,16 @@ fun ItemDetailScreen(
                         },
                         onLoadLinks = onLoadLinks,
                         onViewInGraph = onViewInGraphClick,
-                        onOpinionClick = { 
-                            localFocusOpinionId = it 
-                            pulseTrigger = Clock.System.now().toEpochMilliseconds()
+                        onNavigateToKnowledgeLink = { link ->
+                            if (link is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem && link.resourceId == itemDetails.resource.id) {
+                                localFocusOpinionId = link.id 
+                                pulseTrigger = Clock.System.now().toEpochMilliseconds()
+                            } else {
+                                onNavigateToKnowledgeLink(link)
+                            }
                         },
                         pulseTrigger = pulseTrigger
                     )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    val backlinks by onLoadBacklinks(itemDetails.resource.id).collectAsState(initial = emptyList())
-                    if (backlinks.isNotEmpty() || isEditing) {
-                        com.example.graymatter.android.ui.components.BacklinkPanel(
-                            backlinks = backlinks,
-                            onBacklinkClick = { backlink ->
-                                // Implementation to navigate to the source based on backlink.sourceType and ID
-                            },
-                            onViewInGraphClick = { onViewInGraphClick(itemDetails.resource.id) }
-                        )
-                    }
 
                     Spacer(modifier = Modifier.height(100.dp))
                 }
@@ -784,7 +775,7 @@ private fun OpinionTimeline(
     onJumpToPage: (String, Int) -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     onViewInGraph: (String) -> Unit,
-    onOpinionClick: (String) -> Unit,
+    onNavigateToKnowledgeLink: (com.example.graymatter.domain.ReferenceSelectorItem) -> Unit,
     pulseTrigger: Long = 0L
 ) {
     Column {
@@ -807,7 +798,7 @@ private fun OpinionTimeline(
                 },
                 onLoadLinks = onLoadLinks,
                 onViewInGraph = onViewInGraph,
-                onOpinionClick = onOpinionClick,
+                onNavigateToKnowledgeLink = onNavigateToKnowledgeLink,
                 pulseTrigger = pulseTrigger
             )
         }
@@ -830,7 +821,7 @@ private fun OpinionTimelineItem(
     onJump: () -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     onViewInGraph: (String) -> Unit,
-    onOpinionClick: (String) -> Unit,
+    onNavigateToKnowledgeLink: (com.example.graymatter.domain.ReferenceSelectorItem) -> Unit,
     pulseTrigger: Long = 0L
 ) {
     var text by remember(opinion.text) { mutableStateOf(opinion.text) }
@@ -857,13 +848,10 @@ private fun OpinionTimelineItem(
 
     LaunchedEffect(isFocused, pulseTrigger) {
         if (isFocused) {
-            delay(500)
             bringIntoViewRequester.bringIntoView()
-            val pulseColor = GrayMatterColors.Primary.copy(alpha = 0.3f)
-            repeat(1) { // 1 pulse 
-                backgroundColor.animateTo(pulseColor, tween(333))
-                backgroundColor.animateTo(Color.Transparent, tween(333))
-            }
+            val pulseColor = GrayMatterColors.Primary.copy(alpha = 0.25f)
+            backgroundColor.animateTo(pulseColor, tween(150, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+            backgroundColor.animateTo(Color.Transparent, tween(800, easing = androidx.compose.animation.core.LinearOutSlowInEasing))
         } else {
             backgroundColor.snapTo(Color.Transparent)
         }
@@ -1306,9 +1294,7 @@ private fun OpinionTimelineItem(
                             }
                             AssistChip(
                                 onClick = { 
-                                    if (link is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem) {
-                                        onOpinionClick(link.id)
-                                    } 
+                                    onNavigateToKnowledgeLink(link)
                                 },
                                 label = { Text(linkText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
                                 leadingIcon = { Icon(icon, null, modifier = Modifier.size(16.dp)) },
