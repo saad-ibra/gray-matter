@@ -52,6 +52,20 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalHapticFeedback
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlin.math.sqrt
@@ -91,6 +105,20 @@ fun KnowledgeGraphScreen(
     var selectedNode by remember { mutableStateOf<GraphNode?>(null) }
     var showDeleteDialog by remember { mutableStateOf<GraphNode?>(null) }
 
+    // Canvas size tracking for proper centering
+    var canvasSize by remember { mutableStateOf(Size.Zero) }
+
+    // Physics settling flag for cinematic zoom timing
+    var physicsSettled by remember { mutableStateOf(initialSelectedNodeId == null) }
+
+    // Cinematic zoom tracking
+    var wasSelected by remember { mutableStateOf(false) }
+
+    // Volume button navigation
+    val focusRequester = remember { FocusRequester() }
+    val haptic = LocalHapticFeedback.current
+    var lastVolumeChangeTime by remember { mutableLongStateOf(0L) }
+
     LaunchedEffect(Unit) {
         if (graphState.nodes.isEmpty()) {
             viewModel.loadGraphData()
@@ -119,11 +147,6 @@ fun KnowledgeGraphScreen(
                 val node = simulator.nodes.find { it.id == initialSelectedNodeId }
                 if (node != null) {
                     selectedNode = node
-                    // Center the camera on this node
-                    offset = Offset(
-                        simulator.width / 2f - node.x * scale,
-                        simulator.height / 2f - node.y * scale
-                    )
                 }
             }
             
@@ -133,12 +156,18 @@ fun KnowledgeGraphScreen(
                 simulator.tick(speedMultiplier)
                 
                 // Track the selected node actively during the initial physics burst
-                // so it doesn't fly off-screen as the graph structure unfolds
-                if (initialSelectedNodeId != null && selectedNode != null && startupTicks < 120) {
-                    offset = Offset(
-                        simulator.width / 2f - selectedNode!!.x * scale,
-                        simulator.height / 2f - selectedNode!!.y * scale
-                    )
+                // using actual canvas dimensions for proper centering
+                if (initialSelectedNodeId != null && selectedNode != null && startupTicks < 200) {
+                    if (canvasSize.width > 0f) {
+                        offset = Offset(
+                            canvasSize.width / 2f - selectedNode!!.x * scale,
+                            canvasSize.height / 2f - selectedNode!!.y * scale
+                        )
+                    }
+                }
+
+                if (startupTicks == 200) {
+                    physicsSettled = true
                 }
 
                 ticks++ // force redraw
@@ -148,7 +177,146 @@ fun KnowledgeGraphScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(GrayMatterColors.BackgroundDark)) {
+    // Cinematic zoom animation on node selection
+    LaunchedEffect(selectedNode, physicsSettled) {
+        if (canvasSize == Size.Zero) return@LaunchedEffect
+
+        if (selectedNode != null && physicsSettled) {
+            wasSelected = true
+            val node = selectedNode ?: return@LaunchedEffect
+
+            // Calculate 3D projected position of the target node
+            val targetScale = 2.5f
+            val cosX = kotlin.math.cos(globalRotX)
+            val sinX = kotlin.math.sin(globalRotX)
+            val cosY = kotlin.math.cos(globalRotY)
+            val sinY = kotlin.math.sin(globalRotY)
+
+            val rx = node.x - simulator.width / 2f
+            val ry = node.y - simulator.height / 2f
+            val rz = node.z
+            val x1 = rx * cosY - rz * sinY
+            val z1 = rz * cosY + rx * sinY
+            val y2 = ry * cosX - z1 * sinX
+            val z2 = z1 * cosX + ry * sinX
+            val zScaleNode = (z2 + 400f).coerceIn(100f, 800f) / 400f
+
+            val targetOffsetX = canvasSize.width / 2f - x1 * targetScale * zScaleNode - simulator.width / 2f * targetScale
+            val targetOffsetY = canvasSize.height / 2f - y2 * targetScale * zScaleNode - simulator.height / 2f * targetScale
+
+            val startScale = scale
+            val startOffsetX = offset.x
+            val startOffsetY = offset.y
+            val anim = Animatable(0f)
+            anim.animateTo(1f, animationSpec = tween(600, easing = FastOutSlowInEasing)) {
+                val t = this.value
+                scale = startScale + (targetScale - startScale) * t
+                offset = Offset(
+                    startOffsetX + (targetOffsetX - startOffsetX) * t,
+                    startOffsetY + (targetOffsetY - startOffsetY) * t
+                )
+            }
+        } else if (selectedNode == null && wasSelected) {
+            wasSelected = false
+            // Zoom out to centered overview
+            val targetScale = 1f
+            val targetOffsetX = canvasSize.width / 2f - simulator.width / 2f * targetScale
+            val targetOffsetY = canvasSize.height / 2f - simulator.height / 2f * targetScale
+
+            val startScale = scale
+            val startOffsetX = offset.x
+            val startOffsetY = offset.y
+            val anim = Animatable(0f)
+            anim.animateTo(1f, animationSpec = tween(500, easing = FastOutSlowInEasing)) {
+                val t = this.value
+                scale = startScale + (targetScale - startScale) * t
+                offset = Offset(
+                    startOffsetX + (targetOffsetX - startOffsetX) * t,
+                    startOffsetY + (targetOffsetY - startOffsetY) * t
+                )
+            }
+        }
+    }
+
+    // Request focus for volume button capture
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(GrayMatterColors.BackgroundDark)
+            .focusRequester(focusRequester)
+            .focusable()
+            .onKeyEvent { keyEvent ->
+                if (keyEvent.type == KeyEventType.KeyDown) {
+                    when (keyEvent.key) {
+                        Key.VolumeUp -> {
+                            val now = System.currentTimeMillis()
+                            if (now - lastVolumeChangeTime > 200L) {
+                                lastVolumeChangeTime = now
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                // Cycle to previous node (visible nodes only)
+                                val visibleNodes = simulator.nodes.filter { node ->
+                                    when (node.type) {
+                                        NodeType.TOPIC -> showTopics
+                                        NodeType.RESOURCE -> showResources
+                                        NodeType.ANNOTATION -> showAnnotations
+                                        NodeType.BOOKMARK -> showBookmarks
+                                        NodeType.TEMPLATE -> showTemplates
+                                        NodeType.CUSTOM -> showCustom
+                                        NodeType.DICTIONARY -> showDictionary
+                                        NodeType.OPINION -> showOpinions
+                                    }
+                                }
+                                if (visibleNodes.isNotEmpty()) {
+                                    val currentIdx = visibleNodes.indexOf(selectedNode)
+                                    val prevIdx = if (currentIdx <= 0) visibleNodes.lastIndex else currentIdx - 1
+                                    selectedNode = visibleNodes[prevIdx]
+                                }
+                            }
+                            true
+                        }
+                        Key.VolumeDown -> {
+                            val now = System.currentTimeMillis()
+                            if (now - lastVolumeChangeTime > 200L) {
+                                lastVolumeChangeTime = now
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                // Cycle to next node (visible nodes only)
+                                val visibleNodes = simulator.nodes.filter { node ->
+                                    when (node.type) {
+                                        NodeType.TOPIC -> showTopics
+                                        NodeType.RESOURCE -> showResources
+                                        NodeType.ANNOTATION -> showAnnotations
+                                        NodeType.BOOKMARK -> showBookmarks
+                                        NodeType.TEMPLATE -> showTemplates
+                                        NodeType.CUSTOM -> showCustom
+                                        NodeType.DICTIONARY -> showDictionary
+                                        NodeType.OPINION -> showOpinions
+                                    }
+                                }
+                                if (visibleNodes.isNotEmpty()) {
+                                    val currentIdx = visibleNodes.indexOf(selectedNode)
+                                    val nextIdx = if (currentIdx < 0 || currentIdx >= visibleNodes.lastIndex) 0 else currentIdx + 1
+                                    selectedNode = visibleNodes[nextIdx]
+                                }
+                            }
+                            true
+                        }
+                        else -> false
+                    }
+                } else if (keyEvent.type == KeyEventType.KeyUp) {
+                    // Consume KeyUp for Volume keys to suppress system volume UI
+                    when (keyEvent.key) {
+                        Key.VolumeUp, Key.VolumeDown -> true
+                        else -> false
+                    }
+                } else {
+                    false
+                }
+            }
+    ) {
         if (graphState.isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
@@ -184,6 +352,7 @@ fun KnowledgeGraphScreen(
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
+                    .onSizeChanged { canvasSize = Size(it.width.toFloat(), it.height.toFloat()) }
                     .pointerInput(Unit) {
                         detectTransformGestures { centroid, pan, zoom, _ ->
                             val oldScale = scale
@@ -284,7 +453,7 @@ fun KnowledgeGraphScreen(
 
                 // Center everything initially
                 if (currentTicks == 1 && offset == Offset.Zero) {
-                    offset = Offset(size.width / 2f - 400f, size.height / 2f - 400f)
+                    offset = Offset(size.width / 2f - simulator.width / 2f * scale, size.height / 2f - simulator.height / 2f * scale)
                 }
 
                 // Axes removed as requested by user
