@@ -57,6 +57,10 @@ class FileViewerViewModel(
     private val _opinions = MutableStateFlow<List<Opinion>>(emptyList())
     val opinions: StateFlow<List<Opinion>> = _opinions.asStateFlow()
 
+    // Global dictionary words from ALL resources (phrase → origin Opinion)
+    private val _globalDictionaryWords = MutableStateFlow<Map<String, Opinion>>(emptyMap())
+    val globalDictionaryWords: StateFlow<Map<String, Opinion>> = _globalDictionaryWords.asStateFlow()
+
     private val _templates = MutableStateFlow<List<CustomTemplate>>(emptyList())
     val templates: StateFlow<List<CustomTemplate>> = _templates.asStateFlow()
 
@@ -146,6 +150,21 @@ class FileViewerViewModel(
                 viewModelScope.launch {
                     resourceRepository.templatesStream.collect { list ->
                         _templates.value = list
+                    }
+                }
+
+                // Load global dictionary words from ALL opinions
+                viewModelScope.launch {
+                    opinionRepository.getAllOpinions().collect { allOpinions ->
+                        val dictMap = mutableMapOf<String, Opinion>()
+                        allOpinions.filter { it.text.startsWith("[DICT] ") && !it.isDeleted }.forEach { op ->
+                            val phrase = op.text.removePrefix("[DICT] ").trim().lowercase()
+                            // Keep the earliest entry as the "origin"
+                            if (!dictMap.containsKey(phrase) || op.createdAt < dictMap[phrase]!!.createdAt) {
+                                dictMap[phrase] = op
+                            }
+                        }
+                        _globalDictionaryWords.value = dictMap
                     }
                 }
             }

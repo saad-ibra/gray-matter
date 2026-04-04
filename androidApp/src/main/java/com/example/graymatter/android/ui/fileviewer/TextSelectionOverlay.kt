@@ -40,11 +40,13 @@ fun TextSelectionOverlay(
     autoCropRect: android.graphics.RectF?,
     cropPadding: Int,
     opinions: List<com.example.graymatter.domain.Opinion> = emptyList(),
+    globalDictionaryWords: Map<String, com.example.graymatter.domain.Opinion> = emptyMap(),
     zoomScale: Float = 1f,
     panOffset: Offset = Offset.Zero,
     renderScale: Float = density * 1.5f,
     onEmptyTap: (Offset, Float) -> Unit = {_, _ -> },
     onSelectionChange: (Boolean) -> Unit = {},
+    onNavigateToDictionaryOrigin: (opinionId: String, itemId: String) -> Unit = { _, _ -> },
     onActionCompleted: (action: String, selectedText: String?, id: String?) -> Unit
 ) {
     val offsetSaver = Saver<Offset?, String>(
@@ -232,6 +234,37 @@ fun TextSelectionOverlay(
         }
     }
 
+    // Global dictionary highlights: find all instances of dictionary phrases
+    // that are NOT already covered by local persistentHighlights
+    val globalDictHighlights = remember(globalDictionaryWords, characters, persistentHighlights) {
+        if (globalDictionaryWords.isEmpty() || characters.isEmpty()) return@remember emptyList<Triple<String, List<PdfCharacter>, com.example.graymatter.domain.Opinion>>()
+        
+        val results = mutableListOf<Triple<String, List<PdfCharacter>, com.example.graymatter.domain.Opinion>>()
+        
+        for ((phrase, originOpinion) in globalDictionaryWords) {
+            // Find all instances of this phrase in pageText (case-insensitive)
+            val lowerPageText = pageText.lowercase()
+            var searchStart = 0
+            while (searchStart < lowerPageText.length) {
+                val idx = lowerPageText.indexOf(phrase, searchStart)
+                if (idx == -1) break
+                val endIdx = minOf(idx + phrase.length, characters.size)
+                if (endIdx <= characters.size && idx < characters.size) {
+                    val matchChars = characters.subList(idx, endIdx)
+                    // Check if this range is already covered by a local persistent highlight
+                    val isCoveredLocally = persistentHighlights.any { (_, localChars) ->
+                        localChars.any { lc -> matchChars.any { mc -> mc === lc } }
+                    }
+                    if (!isCoveredLocally) {
+                        results.add(Triple("global_dict_${originOpinion.id}_$idx", matchChars, originOpinion))
+                    }
+                }
+                searchStart = idx + phrase.length
+            }
+        }
+        results
+    }
+
     // Determine position of start and end drag handles
     val startHandleInfo = derivedStateOf {
         val chars = selectedCharacters.value
@@ -275,7 +308,7 @@ fun TextSelectionOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(persistentHighlights) {
+            .pointerInput(persistentHighlights, globalDictHighlights, zoomScale, panOffset) {
                 detectTapGestures(
                     onTap = { offset ->
                         val pdfOffset = screenToPdf(offset)
@@ -313,11 +346,32 @@ fun TextSelectionOverlay(
                             dragEnd = null
                             showPopup = false
                         } else {
-                            showAnnotationPopupId = null
-                            dragStart = null
-                            dragEnd = null
-                            showPopup = false
-                            onEmptyTap(offset, imageSize.width.toFloat())
+                            // Check global dictionary highlights
+                            val tappedGlobalDict = globalDictHighlights.find { (_, chars, _) ->
+                                if (tappedCharIdx != -1) {
+                                    chars.any { it === characters[tappedCharIdx] }
+                                } else {
+                                    val expandByPdf = (12.dp.value * density) / (baseRenderScale * scale * zoomScale)
+                                    val bounds = android.graphics.RectF(
+                                        chars.minOf { it.x } - expandByPdf,
+                                        chars.minOf { it.y } - expandByPdf,
+                                        chars.maxOf { it.x + it.width } + expandByPdf,
+                                        chars.maxOf { it.y + it.height } + expandByPdf
+                                    )
+                                    bounds.contains(pdfOffset.x, pdfOffset.y)
+                                }
+                            }
+                            if (tappedGlobalDict != null) {
+                                // Navigate to origin dictionary entry
+                                val originOp = tappedGlobalDict.third
+                                onNavigateToDictionaryOrigin(originOp.id, originOp.itemId)
+                            } else {
+                                showAnnotationPopupId = null
+                                dragStart = null
+                                dragEnd = null
+                                showPopup = false
+                                onEmptyTap(offset, imageSize.width.toFloat())
+                            }
                         }
                     }
                 )
@@ -369,7 +423,7 @@ fun TextSelectionOverlay(
                     }
                 }
             }
-            .pointerInput(Unit) {
+            .pointerInput(zoomScale, panOffset) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = { offset ->
                         val docPos = screenToPdf(offset)
@@ -427,6 +481,27 @@ fun TextSelectionOverlay(
                     
                     drawRect(
                         color = color,
+                        topLeft = Offset(paddedX, paddedY),
+                        size = androidx.compose.ui.geometry.Size(paddedW, paddedH)
+                    )
+                }
+            }
+
+            // Draw Global Dictionary Highlights (pink)
+            for ((_, chars, _) in globalDictHighlights) {
+                val lineRects = groupCharactersIntoRects(chars)
+                for (rect in lineRects) {
+                    val pScreen = pdfToScreen(rect.left, rect.top)
+                    val screenW = rect.width() * baseRenderScale * scale * zoomScale
+                    val screenH = rect.height() * baseRenderScale * scale * zoomScale
+                    
+                    val paddedX = pScreen.x - hPad
+                    val paddedY = pScreen.y - vPad
+                    val paddedW = screenW + hPad * 2
+                    val paddedH = screenH + vPad * 2
+                    
+                    drawRect(
+                        color = Color(0xFFFF69B4).copy(alpha = 0.4f),
                         topLeft = Offset(paddedX, paddedY),
                         size = androidx.compose.ui.geometry.Size(paddedW, paddedH)
                     )

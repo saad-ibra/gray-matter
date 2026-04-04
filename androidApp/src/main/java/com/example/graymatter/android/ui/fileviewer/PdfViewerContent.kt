@@ -63,11 +63,13 @@ fun PdfViewerContent(
     autoCrop: Boolean = true,
     theme: String = "daylight",
     opinions: List<com.example.graymatter.domain.Opinion> = emptyList(),
+    globalDictionaryWords: Map<String, com.example.graymatter.domain.Opinion> = emptyMap(),
     onPageChanged: (page: Int, total: Int) -> Unit,
     onTotalPages: (Int) -> Unit,
     onChaptersFound: (List<com.example.graymatter.domain.ChapterOutline>) -> Unit = {},
     onEmptyTap: (Offset, Float) -> Unit = {_,_ -> },
     onTextSelectionAction: (action: String, text: String, id: String?) -> Unit = { _, _, _ -> },
+    onNavigateToDictionaryOrigin: (opinionId: String, itemId: String) -> Unit = { _, _ -> },
     onRequestPreviousPage: () -> Unit = {},
     onRequestNextPage: () -> Unit = {}
 ) {
@@ -425,11 +427,13 @@ fun PdfViewerContent(
                                         autoCropRect = if (autoCrop) cropCache[currentPage] else null,
                                         cropPadding = if (autoCrop) (16 * density).toInt() else 0,
                                         opinions = opinions.filter { it.pageNumber == currentPage },
+                                        globalDictionaryWords = globalDictionaryWords,
                                         zoomScale = zoomScale,
                                         panOffset = panOffset,
                                         renderScale = currentRenderScale,
                                         onEmptyTap = onEmptyTap,
                                         onSelectionChange = { isTextSelected = it },
+                                        onNavigateToDictionaryOrigin = onNavigateToDictionaryOrigin,
                                         onActionCompleted = { action, text, id ->
                                             if (text != null || id != null) {
                                                 onTextSelectionAction(action, text ?: "", id)

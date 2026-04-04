@@ -260,7 +260,7 @@ fun GrayMatterNavigation(
                 onViewInGraph = { id -> 
                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute(id))
                 },
-                onLoadLinks = { topicId -> viewModel.getLinksForTopic(topicId) }
+                onLoadLinks = { id -> viewModel.getLinksForTopic(id) }
             )
         }
 
@@ -444,7 +444,6 @@ fun GrayMatterNavigation(
                     }.distinctBy { it.id }
                 }
 
-                val coroutineScope = rememberCoroutineScope()
                 MarkdownEditor(
                     title = editingResource?.title ?: "Untitled",
                     initialText = editingResource?.extractedText ?: "",
@@ -567,6 +566,10 @@ fun GrayMatterNavigation(
                 onBackClick = { navController.popBackStack() },
                 onViewInGraph = { resId -> 
                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute(resId)) 
+                },
+                onNavigateToDictionaryOrigin = { opinionId, itemId ->
+                    // Navigate to the resource detail page and focus the dictionary opinion
+                    navController.navigate(NavigationDestination.ResourceDetail.buildRoute(itemId, opinionId))
                 }
             )
         }

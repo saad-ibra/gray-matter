@@ -233,6 +233,59 @@ fun KnowledgeGraphScreen(
         focusRequester.requestFocus()
     }
 
+    // Depth-First Search for deterministic navigation
+    val dfsOrderedNodes by remember {
+        derivedStateOf {
+            val visibleNodes = simulator.nodes.filter { node ->
+                when (node.type) {
+                    NodeType.TOPIC -> showTopics
+                    NodeType.RESOURCE -> showResources
+                    NodeType.ANNOTATION -> showAnnotations
+                    NodeType.BOOKMARK -> showBookmarks
+                    NodeType.TEMPLATE -> showTemplates
+                    NodeType.CUSTOM -> showCustom
+                    NodeType.DICTIONARY -> showDictionary
+                    NodeType.OPINION -> showOpinions
+                }
+            }.toSet()
+
+            val adjList = mutableMapOf<String, MutableList<String>>()
+            for (edge in simulator.edges) {
+                if (edge.source in visibleNodes && edge.target in visibleNodes) {
+                    adjList.getOrPut(edge.source.id) { mutableListOf() }.add(edge.target.id)
+                    adjList.getOrPut(edge.target.id) { mutableListOf() }.add(edge.source.id)
+                }
+            }
+
+            val ordered = mutableListOf<GraphNode>()
+            val visited = mutableSetOf<String>()
+
+            fun dfs(node: GraphNode) {
+                if (!visited.add(node.id)) return
+                ordered.add(node)
+                
+                // Priority sort for children: Resources first, then others
+                val neighbors = adjList[node.id]?.mapNotNull { id -> visibleNodes.find { it.id == id } }
+                    ?.sortedBy { if (it.type == NodeType.RESOURCE) 0 else 1 }
+                    
+                neighbors?.forEach { child -> dfs(child) }
+            }
+
+            // Start DFS from Topics (roots)
+            val topics = visibleNodes.filter { it.type == NodeType.TOPIC }
+            topics.forEach { dfs(it) }
+
+            // Then from any unvisited Resources
+            val resources = visibleNodes.filter { it.type == NodeType.RESOURCE }
+            resources.forEach { if (it.id !in visited) dfs(it) }
+
+            // Append any disconnected nodes at the end
+            visibleNodes.forEach { if (it.id !in visited) dfs(it) }
+
+            ordered
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -247,23 +300,11 @@ fun KnowledgeGraphScreen(
                             if (now - lastVolumeChangeTime > 200L) {
                                 lastVolumeChangeTime = now
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                // Cycle to previous node (visible nodes only)
-                                val visibleNodes = simulator.nodes.filter { node ->
-                                    when (node.type) {
-                                        NodeType.TOPIC -> showTopics
-                                        NodeType.RESOURCE -> showResources
-                                        NodeType.ANNOTATION -> showAnnotations
-                                        NodeType.BOOKMARK -> showBookmarks
-                                        NodeType.TEMPLATE -> showTemplates
-                                        NodeType.CUSTOM -> showCustom
-                                        NodeType.DICTIONARY -> showDictionary
-                                        NodeType.OPINION -> showOpinions
-                                    }
-                                }
-                                if (visibleNodes.isNotEmpty()) {
-                                    val currentIdx = visibleNodes.indexOf(selectedNode)
-                                    val prevIdx = if (currentIdx <= 0) visibleNodes.lastIndex else currentIdx - 1
-                                    selectedNode = visibleNodes[prevIdx]
+                                // Cycle to previous node in DFS order
+                                if (dfsOrderedNodes.isNotEmpty()) {
+                                    val currentIdx = dfsOrderedNodes.indexOf(selectedNode)
+                                    val prevIdx = if (currentIdx <= 0) dfsOrderedNodes.lastIndex else currentIdx - 1
+                                    selectedNode = dfsOrderedNodes[prevIdx]
                                 }
                             }
                             true
@@ -273,23 +314,11 @@ fun KnowledgeGraphScreen(
                             if (now - lastVolumeChangeTime > 200L) {
                                 lastVolumeChangeTime = now
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                // Cycle to next node (visible nodes only)
-                                val visibleNodes = simulator.nodes.filter { node ->
-                                    when (node.type) {
-                                        NodeType.TOPIC -> showTopics
-                                        NodeType.RESOURCE -> showResources
-                                        NodeType.ANNOTATION -> showAnnotations
-                                        NodeType.BOOKMARK -> showBookmarks
-                                        NodeType.TEMPLATE -> showTemplates
-                                        NodeType.CUSTOM -> showCustom
-                                        NodeType.DICTIONARY -> showDictionary
-                                        NodeType.OPINION -> showOpinions
-                                    }
-                                }
-                                if (visibleNodes.isNotEmpty()) {
-                                    val currentIdx = visibleNodes.indexOf(selectedNode)
-                                    val nextIdx = if (currentIdx < 0 || currentIdx >= visibleNodes.lastIndex) 0 else currentIdx + 1
-                                    selectedNode = visibleNodes[nextIdx]
+                                // Cycle to next node in DFS order
+                                if (dfsOrderedNodes.isNotEmpty()) {
+                                    val currentIdx = dfsOrderedNodes.indexOf(selectedNode)
+                                    val nextIdx = if (currentIdx < 0 || currentIdx >= dfsOrderedNodes.lastIndex) 0 else currentIdx + 1
+                                    selectedNode = dfsOrderedNodes[nextIdx]
                                 }
                             }
                             true

@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import dev.jeziellago.compose.markdowntext.MarkdownText
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun MarkdownEditor(
     title: String,
@@ -84,12 +86,13 @@ fun MarkdownEditor(
         textFieldValue.text.split(Regex("\\s+")).count { it.isNotBlank() }
     }
 
+    val imeVisible = WindowInsets.isImeVisible
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(GrayMatterColors.BackgroundDark)
             .statusBarsPadding()
-            .imePadding()
     ) {
         // Header
         Row(
@@ -152,6 +155,9 @@ fun MarkdownEditor(
             }
         }
 
+        Column(
+            modifier = Modifier.imePadding()
+        ) {
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -367,7 +373,10 @@ fun MarkdownEditor(
                 }
             }
         }
-        Spacer(modifier = Modifier.navigationBarsPadding().height(8.dp))
+        if (!imeVisible) {
+            Spacer(modifier = Modifier.navigationBarsPadding().height(8.dp))
+        }
+        } // end imePadding wrapper
     }
 
     if (showDiscardConfirm) {
