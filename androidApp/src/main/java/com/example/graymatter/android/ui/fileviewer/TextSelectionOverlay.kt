@@ -67,6 +67,10 @@ fun TextSelectionOverlay(
     // Tap to show popup for existing annotations
     var showAnnotationPopupId by remember { mutableStateOf<String?>(null) }
     var annotationPopupOffset by remember { mutableStateOf<Offset?>(null) }
+    
+    // Tap to show popup for global dictionary highlights
+    var showGlobalDictPopupId by remember { mutableStateOf<String?>(null) }
+    var globalDictPopupOffset by remember { mutableStateOf<Offset?>(null) }
 
     val pageText = remember(characters) { characters.joinToString("") { it.unicode } }
 
@@ -76,6 +80,8 @@ fun TextSelectionOverlay(
         showPopup = false
         showAnnotationPopupId = null
         annotationPopupOffset = null
+        showGlobalDictPopupId = null
+        globalDictPopupOffset = null
     }
 
     // Helper to group characters into contiguous line rectangles (in PDF coordinates)
@@ -205,7 +211,7 @@ fun TextSelectionOverlay(
         characters.subList(minIdx, maxIdx + 1)
     }
 
-    val isSelectionActive = selectedCharacters.value.isNotEmpty() || showAnnotationPopupId != null
+    val isSelectionActive = selectedCharacters.value.isNotEmpty() || showAnnotationPopupId != null || showGlobalDictPopupId != null
     LaunchedEffect(isSelectionActive) {
         onSelectionChange(isSelectionActive)
     }
@@ -342,6 +348,8 @@ fun TextSelectionOverlay(
                         if (tappedHighlightId != null) {
                             showAnnotationPopupId = tappedHighlightId
                             annotationPopupOffset = offset
+                            showGlobalDictPopupId = null
+                            globalDictPopupOffset = null
                             dragStart = null
                             dragEnd = null
                             showPopup = false
@@ -362,11 +370,18 @@ fun TextSelectionOverlay(
                                 }
                             }
                             if (tappedGlobalDict != null) {
-                                // Navigate to origin dictionary entry
-                                val originOp = tappedGlobalDict.third
-                                onNavigateToDictionaryOrigin(originOp.id, originOp.itemId)
+                                showGlobalDictPopupId = tappedGlobalDict.first
+                                globalDictPopupOffset = offset
+                                showAnnotationPopupId = null
+                                annotationPopupOffset = null
+                                dragStart = null
+                                dragEnd = null
+                                showPopup = false
                             } else {
                                 showAnnotationPopupId = null
+                                annotationPopupOffset = null
+                                showGlobalDictPopupId = null
+                                globalDictPopupOffset = null
                                 dragStart = null
                                 dragEnd = null
                                 showPopup = false
@@ -431,6 +446,7 @@ fun TextSelectionOverlay(
                         dragEnd = docPos
                         showPopup = false
                         showAnnotationPopupId = null
+                        showGlobalDictPopupId = null
                     },
                     onDrag = { change, _ ->
                         dragEnd = screenToPdf(change.position)
@@ -464,7 +480,7 @@ fun TextSelectionOverlay(
                 val isDictionary = opinion?.text?.startsWith("[DICT] ") == true
                 val isAnnotation = opinion?.text?.startsWith("> ") == true
                 val color = when {
-                    isDictionary -> Color(0xFFC6280B).copy(alpha = 0.4f)
+                    isDictionary -> Color(0xFFD32F2F).copy(alpha = 0.4f)
                     isAnnotation -> GrayMatterColors.Gamboge.copy(alpha = 0.4f)
                     else -> GrayMatterColors.Success.copy(alpha = 0.4f) // opinion = green
                 }
@@ -501,7 +517,7 @@ fun TextSelectionOverlay(
                     val paddedH = screenH + vPad * 2
                     
                     drawRect(
-                        color = Color(0xFFFF69B4).copy(alpha = 0.4f),
+                        color = Color(0xFFF6B3B3).copy(alpha = 0.4f),
                         topLeft = Offset(paddedX, paddedY),
                         size = androidx.compose.ui.geometry.Size(paddedW, paddedH)
                     )
@@ -684,6 +700,75 @@ fun TextSelectionOverlay(
                         Text("Delete", color = GrayMatterColors.Error)
                     }
                 }
+                }
+            }
+        }
+
+        // Tapped Global Dictionary Popup
+        val gdId = showGlobalDictPopupId
+        val gdOffset = globalDictPopupOffset
+        if (gdId != null && gdOffset != null) {
+            val globalDictItem = globalDictHighlights.find { it.first == gdId }
+            if (globalDictItem != null) {
+                val highlightChars = globalDictItem.second
+                val minX = highlightChars.minOf { pdfToScreen(it.x, it.y).x }
+                val maxX = highlightChars.maxOf { pdfToScreen(it.x + it.width, it.y).x }
+                val minY = highlightChars.minOf { pdfToScreen(it.x, it.y).y }
+                val maxY = highlightChars.maxOf { pdfToScreen(it.x, it.y + it.height).y }
+                
+                val bubbleWidth = 340f
+                val bubbleHeight = 140f
+                
+                val popupX = ((minX + maxX) / 2f - bubbleWidth / 2f).coerceIn(16f, (imageSize.width - bubbleWidth - 16f).coerceAtLeast(16f))
+                var popupY = minY - bubbleHeight - 56f
+                if (popupY < 16f) {
+                    popupY = maxY + 64f
+                }
+                
+                Popup(offset = IntOffset(popupX.toInt(), popupY.toInt())) {
+                    Row(
+                        modifier = Modifier
+                            .background(GrayMatterColors.SurfaceDark, RoundedCornerShape(8.dp))
+                            .padding(4.dp)
+                    ) {
+                        TextButton(onClick = {
+                            val text = highlightChars.joinToString("") { it.unicode }
+                            clipboardManager.setText(AnnotatedString(text))
+                            showGlobalDictPopupId = null
+                            globalDictPopupOffset = null
+                            onActionCompleted("copy", text, null)
+                        }) {
+                            Text("Copy", color = Color.White)
+                        }
+
+                        TextButton(onClick = {
+                            showGlobalDictPopupId = null
+                            globalDictPopupOffset = null
+                            val originOp = globalDictItem.third
+                            onNavigateToDictionaryOrigin(originOp.id, originOp.itemId)
+                        }) {
+                            Text("Source", color = Color.White)
+                        }
+
+                        TextButton(onClick = {
+                            val text = highlightChars.joinToString("") { it.unicode }
+                            showGlobalDictPopupId = null
+                            globalDictPopupOffset = null
+                            val originOp = globalDictItem.third
+                            onActionCompleted("dictionary", text, originOp.id)
+                        }) {
+                            Text("Search", color = Color(0xFFC6280B))
+                        }
+
+                        TextButton(onClick = {
+                            showGlobalDictPopupId = null
+                            globalDictPopupOffset = null
+                            val originOp = globalDictItem.third
+                            onActionCompleted("delete", null, originOp.id)
+                        }) {
+                            Text("Delete", color = GrayMatterColors.Error)
+                        }
+                    }
                 }
             }
         }
