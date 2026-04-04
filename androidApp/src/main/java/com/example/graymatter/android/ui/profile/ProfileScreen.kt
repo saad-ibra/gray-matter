@@ -1,5 +1,6 @@
 package com.example.graymatter.android.ui.profile
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,11 +39,13 @@ fun ProfileScreen(
     var showRecentlyDeleted by remember { mutableStateOf(false) }
 
     if (showTemplatesScreen) {
+        BackHandler { showTemplatesScreen = false }
         TemplatesManagementScreen(
             viewModel = viewModel,
             onBackClick = { showTemplatesScreen = false }
         )
     } else if (showRecentlyDeleted) {
+        BackHandler { showRecentlyDeleted = false }
         RecentlyDeletedScreen(
             viewModel = viewModel,
             onBackClick = { showRecentlyDeleted = false }
@@ -65,12 +68,12 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     SettingsButton(
                         icon = Icons.Default.Hub,
-                        title = "Rela-trix",
+                        title = "Relatrix",
                         onClick = onNavigateToGraph
                     )
                     SettingsButton(
                         icon = Icons.Default.ListAlt,
-                        title = "Templates Management",
+                        title = "Template Management",
                         onClick = { showTemplatesScreen = true }
                     )
                     SettingsButton(
@@ -148,7 +151,7 @@ fun TemplatesManagementScreen(
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = GrayMatterColors.TextPrimary)
                 }
                 Text(
-                    text = "Templates Management",
+                    text = "Template Management",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = GrayMatterColors.TextPrimary,
                     modifier = Modifier.padding(start = 8.dp)
@@ -352,7 +355,7 @@ fun RecentlyDeletedScreen(
                             is DeletedItemUiModel.OpinionItem -> {
                                 val text = item.text
                                 when {
-                                    text.startsWith("[DICT]") -> "Dictionary"
+                                    text.startsWith("[DICT") -> "Dictionary"
                                     text.startsWith("> ") -> "Annotation"
                                     text.startsWith("[TEMPLATE:") || text.startsWith("[CUSTOM:") -> "Template/Custom"
                                     item.hasPage -> "Bookmark"

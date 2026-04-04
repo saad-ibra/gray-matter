@@ -141,7 +141,7 @@ fun BacklinkPanel(
                 ) {
                     Icon(Icons.Default.DatasetLinked, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("View in Rela-trix", fontWeight = FontWeight.Bold)
+                    Text("View in Relatrix", fontWeight = FontWeight.Bold)
                 }
                 
                 Spacer(modifier = Modifier.height(8.dp))

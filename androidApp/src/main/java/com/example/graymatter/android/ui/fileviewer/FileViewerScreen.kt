@@ -241,11 +241,11 @@ fun FileViewerScreen(
                                         viewModel.toggleBars()
                                     }
                                 },
-                                onTextSelectionAction = { action, text, id -> 
+                                onTextSelectionAction = { action, text, id, startIndex -> 
                                     when(action) {
                                         "annotate", "create" -> viewModel.onTextSelected("annotate", text)
                                         "dictionary" -> {
-                                            viewModel.saveDictionaryEntry(text, id)
+                                            viewModel.saveDictionaryEntry(text, id, startIndex)
                                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=${Uri.encode(text)}"))
                                             context.startActivity(intent)
                                         }
@@ -439,6 +439,21 @@ fun FileViewerScreen(
                     onPreviousPage = {},
                     onNextPage = {},
                     onBookmarkToggle = {}
+                )
+            }
+        }
+
+        // ── Undo Snackbar ──
+        if (viewModel.recentlyDeletedOpinionId != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = if (viewModel.showBottomBar && resource?.type != ResourceType.MARKDOWN) 120.dp else 48.dp)
+            ) {
+                com.example.graymatter.android.ui.components.UndoSnackbar(
+                    message = "Annotation deleted",
+                    onUndo = { viewModel.undoDeleteOpinion() },
+                    onDismissRequest = { viewModel.clearRecentlyDeletedOpinion() }
                 )
             }
         }

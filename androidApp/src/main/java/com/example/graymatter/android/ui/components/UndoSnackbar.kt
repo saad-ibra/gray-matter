@@ -23,7 +23,7 @@ fun UndoSnackbar(
     message: String,
     onUndo: () -> Unit,
     onDismissRequest: () -> Unit,
-    durationMillis: Long = 10000L,
+    durationMillis: Long = 6000L,
     modifier: Modifier = Modifier
 ) {
     var progress by remember { mutableFloatStateOf(1f) }
@@ -80,20 +80,6 @@ fun UndoSnackbar(
                         trackColor = GrayMatterColors.Neutral800,
                         strokeWidth = 2.dp
                     )
-                    IconButton(
-                        onClick = {
-                            progress = 0f
-                            onDismissRequest()
-                        },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Skip timer",
-                            tint = GrayMatterColors.TextPrimary,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
                 }
             }
         }

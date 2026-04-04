@@ -711,7 +711,7 @@ fun KnowledgeGraphScreen(
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
             }
             Text(
-                text = "Rela-trix",
+                text = "Relatrix",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = Color.White,
                 modifier = Modifier.padding(start = 8.dp)
@@ -969,7 +969,7 @@ fun KnowledgeGraphScreen(
 
 private fun stripMarkdown(text: String): String {
     return text.replace(Regex("\\[TEMPLATE:[^\\]]*\\]"), "")
-        .replace(Regex("\\[DICT\\]"), "")
+        .replace(Regex("\\[DICT:?\\d*\\]"), "")
         .replace(Regex("\\[CUSTOM: [^\\]]*\\]"), "")
         .replace(Regex("\\[Page \\d+\\]"), "")
         .replace(Regex("[#*>\\[\\]]"), "")

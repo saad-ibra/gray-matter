@@ -68,7 +68,7 @@ fun PdfViewerContent(
     onTotalPages: (Int) -> Unit,
     onChaptersFound: (List<com.example.graymatter.domain.ChapterOutline>) -> Unit = {},
     onEmptyTap: (Offset, Float) -> Unit = {_,_ -> },
-    onTextSelectionAction: (action: String, text: String, id: String?) -> Unit = { _, _, _ -> },
+    onTextSelectionAction: (action: String, text: String, id: String?, startIndex: Int?) -> Unit = { _, _, _, _ -> },
     onNavigateToDictionaryOrigin: (opinionId: String, itemId: String) -> Unit = { _, _ -> },
     onRequestPreviousPage: () -> Unit = {},
     onRequestNextPage: () -> Unit = {}
@@ -434,9 +434,9 @@ fun PdfViewerContent(
                                         onEmptyTap = onEmptyTap,
                                         onSelectionChange = { isTextSelected = it },
                                         onNavigateToDictionaryOrigin = onNavigateToDictionaryOrigin,
-                                        onActionCompleted = { action, text, id ->
+                                        onActionCompleted = { action, text, id, startIndex ->
                                             if (text != null || id != null) {
-                                                onTextSelectionAction(action, text ?: "", id)
+                                                onTextSelectionAction(action, text ?: "", id, startIndex)
                                             }
                                         }
                                     )

@@ -96,6 +96,9 @@ class FileViewerViewModel(
     var selectedTemplateForNewEntry by mutableStateOf<CustomTemplate?>(null)
         private set
 
+    var recentlyDeletedOpinionId by mutableStateOf<String?>(null)
+        private set
+
     fun toggleAddEntrySheet() { showAddEntrySheet = !showAddEntrySheet }
     fun toggleCustomOpinionDialog() { showCustomOpinionDialog = !showCustomOpinionDialog }
     fun toggleTemplateSelectionDialog() { showTemplateSelectionDialog = !showTemplateSelectionDialog }
@@ -157,10 +160,11 @@ class FileViewerViewModel(
                 viewModelScope.launch {
                     opinionRepository.getAllOpinions().collect { allOpinions ->
                         val dictMap = mutableMapOf<String, Opinion>()
-                        allOpinions.filter { it.text.startsWith("[DICT] ") && !it.isDeleted }.forEach { op ->
-                            val phrase = op.text.removePrefix("[DICT] ").trim().lowercase()
+                        allOpinions.filter { it.text.startsWith("[DICT") && !it.isDeleted }.forEach { op ->
+                            // phrase is between ']' and the end
+                            val phrase = op.text.substringAfter("] ").trim().lowercase()
                             // Keep the earliest entry as the "origin"
-                            if (!dictMap.containsKey(phrase) || op.createdAt < dictMap[phrase]!!.createdAt) {
+                            if (phrase.isNotEmpty() && (!dictMap.containsKey(phrase) || op.createdAt < dictMap[phrase]!!.createdAt)) {
                                 dictMap[phrase] = op
                             }
                         }
@@ -484,7 +488,7 @@ class FileViewerViewModel(
         }
     }
 
-    fun saveDictionaryEntry(phrase: String, existingOpinionId: String? = null) {
+    fun saveDictionaryEntry(phrase: String, existingOpinionId: String? = null, startIndex: Int? = null) {
         val res = _resource.value ?: return
         viewModelScope.launch {
             val now = Clock.System.now().toEpochMilliseconds()
@@ -493,8 +497,8 @@ class FileViewerViewModel(
                 val cleanPhrase = phrase.trim()
                 val existing = _opinions.value.find { 
                     (existingOpinionId != null && it.id == existingOpinionId) ||
-                    (it.text.startsWith("[DICT] ") && 
-                    it.text.removePrefix("[DICT] ").trim().equals(cleanPhrase, ignoreCase = true))
+                    (it.text.startsWith("[DICT") && 
+                    it.text.substringAfter("] ").trim().equals(cleanPhrase, ignoreCase = true))
                 }
                 
                 if (existing != null) {
@@ -506,10 +510,11 @@ class FileViewerViewModel(
                     )
                     opinionRepository.updateOpinion(updatedOpinion)
                 } else {
+                    val dictText = if (startIndex != null) "[DICT:$startIndex] $cleanPhrase" else "[DICT] $cleanPhrase"
                     val opinion = Opinion(
                         id = generateUuid(),
                         itemId = item.id,
-                        text = "[DICT] $cleanPhrase",
+                        text = dictText,
                         confidenceScore = 100, // Dictionary entries are high confidence by default
                         pageNumber = currentPage,
                         createdAt = now,
@@ -539,8 +544,22 @@ class FileViewerViewModel(
 
     fun deleteAnnotation(id: String) {
         viewModelScope.launch {
-            opinionRepository.deleteOpinion(id)
+            opinionRepository.softDeleteOpinion(id)
+            recentlyDeletedOpinionId = id
         }
+    }
+
+    fun undoDeleteOpinion() {
+        viewModelScope.launch {
+            recentlyDeletedOpinionId?.let { id ->
+                opinionRepository.undoDeleteOpinion(id)
+            }
+            recentlyDeletedOpinionId = null
+        }
+    }
+
+    fun clearRecentlyDeletedOpinion() {
+        recentlyDeletedOpinionId = null
     }
 
     fun saveGeneralOpinion(content: String, confidence: Int, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {

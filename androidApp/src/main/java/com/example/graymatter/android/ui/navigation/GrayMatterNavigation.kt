@@ -574,7 +574,7 @@ fun GrayMatterNavigation(
             )
         }
 
-        // Rela-trix (Knowledge Graph) Screen
+        // Relatrix (Knowledge Graph) Screen
         composable(
             route = NavigationDestination.KnowledgeGraph.route,
             arguments = listOf(

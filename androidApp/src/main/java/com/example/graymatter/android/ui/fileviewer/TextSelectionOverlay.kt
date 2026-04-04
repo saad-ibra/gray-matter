@@ -47,7 +47,7 @@ fun TextSelectionOverlay(
     onEmptyTap: (Offset, Float) -> Unit = {_, _ -> },
     onSelectionChange: (Boolean) -> Unit = {},
     onNavigateToDictionaryOrigin: (opinionId: String, itemId: String) -> Unit = { _, _ -> },
-    onActionCompleted: (action: String, selectedText: String?, id: String?) -> Unit
+    onActionCompleted: (action: String, selectedText: String?, id: String?, startIndex: Int?) -> Unit
 ) {
     val offsetSaver = Saver<Offset?, String>(
         save = { it?.let { "${it.x},${it.y}" } ?: "" },
@@ -227,9 +227,33 @@ fun TextSelectionOverlay(
                 }
             } else if (opinion.text.startsWith("[DICT] ")) {
                 quote = opinion.text.removePrefix("[DICT] ").trim()
+                val startIndex = pageText.indexOf(quote)
+                if (startIndex != -1) {
+                    val chars = characters.subList(startIndex, minOf(startIndex + quote.length, characters.size))
+                    return@mapNotNull opinion.id to chars
+                }
+            } else if (opinion.text.startsWith("[DICT:")) {
+                val match = Regex("\\[DICT:(\\d+)\\] (.*)").find(opinion.text)
+                if (match != null) {
+                    val index = match.groupValues[1].toInt()
+                    quote = match.groupValues[2].trim()
+                    if (index >= 0 && index + quote.length <= characters.size) {
+                        val chars = characters.subList(index, minOf(index + quote.length, characters.size))
+                        val textAtRange = chars.joinToString("") { it.unicode }
+                        if (textAtRange.equals(quote, ignoreCase = true)) {
+                            return@mapNotNull opinion.id to chars
+                        } else {
+                            val fallbackIndex = pageText.indexOf(quote)
+                            if (fallbackIndex != -1) {
+                                val fallbackChars = characters.subList(fallbackIndex, minOf(fallbackIndex + quote.length, characters.size))
+                                return@mapNotNull opinion.id to fallbackChars
+                            }
+                        }
+                    }
+                }
             }
 
-            if (quote.isNotEmpty()) {
+            if (quote.isNotEmpty() && !opinion.text.startsWith("[DICT")) {
                 val startIndex = pageText.indexOf(quote)
                 if (startIndex != -1) {
                     val chars = characters.subList(startIndex, minOf(startIndex + quote.length, characters.size))
@@ -477,7 +501,7 @@ fun TextSelectionOverlay(
             // Draw Persistent Highlights First
             for ((id, chars) in persistentHighlights) {
                 val opinion = opinions.find { it.id == id }
-                val isDictionary = opinion?.text?.startsWith("[DICT] ") == true
+                val isDictionary = opinion?.text?.startsWith("[DICT") == true
                 val isAnnotation = opinion?.text?.startsWith("> ") == true
                 val color = when {
                     isDictionary -> Color(0xFFD32F2F).copy(alpha = 0.4f)
@@ -598,30 +622,36 @@ fun TextSelectionOverlay(
                         .padding(4.dp)
                 ) {
                     TextButton(onClick = {
-                        val text = selectedCharacters.value.joinToString("") { it.unicode }
+                        val textChars = selectedCharacters.value
+                        val text = textChars.joinToString("") { it.unicode }
+                        val startIndex = characters.indexOf(textChars.first())
                         clipboardManager.setText(AnnotatedString(text))
                         dragStart = null
                         dragEnd = null
                         showPopup = false
-                        onActionCompleted("copy", text, null)
+                        onActionCompleted("copy", text, null, startIndex)
                     }) {
                         Text("Copy", color = Color.White)
                     }
                     TextButton(onClick = {
-                        val text = selectedCharacters.value.joinToString("") { it.unicode }
+                        val textChars = selectedCharacters.value
+                        val text = textChars.joinToString("") { it.unicode }
+                        val startIndex = characters.indexOf(textChars.first())
                         dragStart = null
                         dragEnd = null
                         showPopup = false
-                        onActionCompleted("annotate", text, null)
+                        onActionCompleted("annotate", text, null, startIndex)
                     }) {
                         Text("Annotate", color = Color.White)
                     }
                     TextButton(onClick = {
-                        val text = selectedCharacters.value.joinToString("") { it.unicode }
+                        val textChars = selectedCharacters.value
+                        val text = textChars.joinToString("") { it.unicode }
+                        val startIndex = characters.indexOf(textChars.first())
                         dragStart = null
                         dragEnd = null
                         showPopup = false
-                        onActionCompleted("dictionary", text, null)
+                        onActionCompleted("dictionary", text, null, startIndex)
                     }) {
                         Text("Save & Search", color = Color(0xFFC6280B))
                     }
@@ -661,7 +691,7 @@ fun TextSelectionOverlay(
                         clipboardManager.setText(AnnotatedString(text))
                         showAnnotationPopupId = null
                         annotationPopupOffset = null
-                        onActionCompleted("copy", text, pId)
+                        onActionCompleted("copy", text, pId, null)
                     }) {
                         Text("Copy", color = Color.White)
                     }
@@ -673,7 +703,7 @@ fun TextSelectionOverlay(
                             val text = chars.joinToString("") { it.unicode }
                             showAnnotationPopupId = null
                             annotationPopupOffset = null
-                            onActionCompleted("edit", text, pId)
+                            onActionCompleted("edit", text, pId, null)
                         }) {
                             Text("Edit", color = Color.White)
                         }
@@ -683,7 +713,7 @@ fun TextSelectionOverlay(
                             val text = chars.joinToString("") { it.unicode }
                             showAnnotationPopupId = null
                             annotationPopupOffset = null
-                            onActionCompleted("dictionary", text, pId)
+                            onActionCompleted("dictionary", text, pId, null)
                         }) {
                             Text("Search", color = Color(0xFFC6280B))
                         }
@@ -695,7 +725,7 @@ fun TextSelectionOverlay(
                         dragStart = null
                         dragEnd = null
                         showPopup = false
-                        onActionCompleted("delete", null, pId)
+                        onActionCompleted("delete", null, pId, null)
                     }) {
                         Text("Delete", color = GrayMatterColors.Error)
                     }
@@ -736,7 +766,7 @@ fun TextSelectionOverlay(
                             clipboardManager.setText(AnnotatedString(text))
                             showGlobalDictPopupId = null
                             globalDictPopupOffset = null
-                            onActionCompleted("copy", text, null)
+                            onActionCompleted("copy", text, null, null)
                         }) {
                             Text("Copy", color = Color.White)
                         }
@@ -751,11 +781,13 @@ fun TextSelectionOverlay(
                         }
 
                         TextButton(onClick = {
-                            val text = highlightChars.joinToString("") { it.unicode }
+                            val textChars = highlightChars
+                            val text = textChars.joinToString("") { it.unicode }
+                            val startIndex = characters.indexOf(textChars.first())
                             showGlobalDictPopupId = null
                             globalDictPopupOffset = null
                             val originOp = globalDictItem.third
-                            onActionCompleted("dictionary", text, originOp.id)
+                            onActionCompleted("dictionary", text, originOp.id, startIndex)
                         }) {
                             Text("Search", color = Color(0xFFC6280B))
                         }
@@ -764,7 +796,7 @@ fun TextSelectionOverlay(
                             showGlobalDictPopupId = null
                             globalDictPopupOffset = null
                             val originOp = globalDictItem.third
-                            onActionCompleted("delete", null, originOp.id)
+                            onActionCompleted("delete", null, originOp.id, null)
                         }) {
                             Text("Delete", color = GrayMatterColors.Error)
                         }

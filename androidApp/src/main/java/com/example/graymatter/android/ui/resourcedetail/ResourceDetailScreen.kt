@@ -134,7 +134,7 @@ fun ResourceDetailScreen(
                     resourceEntryDetails.opinions.sortedByDescending { it.createdAt }
                         .filter { opinion ->
                             val isAnnotation = opinion.text.startsWith("> ")
-                            val isDictionary = opinion.text.startsWith("[DICT] ")
+                            val isDictionary = opinion.text.startsWith("[DICT")
                             val isTemplate = opinion.text.startsWith("[TEMPLATE:")
                             val isCustomTitle = opinion.text.startsWith("[CUSTOM: ")
                             val hasPageNumber = opinion.pageNumber != null
@@ -992,7 +992,7 @@ private fun OpinionTimelineItem(
 
                     Column {
                         val isAnnotation = opinion.text.startsWith("> ")
-                        val isDictionary = opinion.text.startsWith("[DICT] ")
+                        val isDictionary = opinion.text.startsWith("[DICT")
                         val isTemplate = opinion.text.startsWith("[TEMPLATE:")
                         val isCustomTitle = opinion.text.startsWith("[CUSTOM: ")
                         val hasPageNumber = opinion.pageNumber != null
@@ -1046,7 +1046,7 @@ private fun OpinionTimelineItem(
             }
             
             val isAnnotation = text.startsWith("> ")
-            val isDictionary = text.startsWith("[DICT] ")
+            val isDictionary = text.startsWith("[DICT")
             val isTemplate = text.startsWith("[TEMPLATE:")
             val isCustomTitle = text.startsWith("[CUSTOM: ")
             val hasPageNumber = opinion.pageNumber != null
@@ -1172,7 +1172,11 @@ private fun OpinionTimelineItem(
                 }
             } else {
                 if (isDictionary) {
-                    val phrase = text.removePrefix("[DICT] ").trim()
+                    val phrase = if (text.startsWith("[DICT:")) {
+                        text.substringAfter("] ").trim()
+                    } else {
+                        text.removePrefix("[DICT] ").trim()
+                    }
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
