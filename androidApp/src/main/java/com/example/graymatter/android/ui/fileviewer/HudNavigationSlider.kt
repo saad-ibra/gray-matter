@@ -66,7 +66,8 @@ fun HudNavigationSlider(
     onPageSlide: (Int) -> Unit,
     onPreviousPage: () -> Unit,
     onNextPage: () -> Unit,
-    onBookmarkToggle: () -> Unit
+    onBookmarkToggle: () -> Unit,
+    isLeftHanded: Boolean = false
 ) {
     // Flatten chapters once and pre-compute fractional positions
     val flatChapters = remember(chapters) {
@@ -100,7 +101,8 @@ fun HudNavigationSlider(
             onPageSlide = onPageSlide,
             onPreviousPage = onPreviousPage,
             onNextPage = onNextPage,
-            onBookmarkToggle = onBookmarkToggle
+            onBookmarkToggle = onBookmarkToggle,
+            isLeftHanded = isLeftHanded
         )
     } else {
         IdleProgressStrip(
@@ -124,7 +126,8 @@ private fun ExpandedHudPanel(
     onPageSlide: (Int) -> Unit,
     onPreviousPage: () -> Unit,
     onNextPage: () -> Unit,
-    onBookmarkToggle: () -> Unit
+    onBookmarkToggle: () -> Unit,
+    isLeftHanded: Boolean = false
 ) {
     val context = LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -189,7 +192,7 @@ private fun ExpandedHudPanel(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 6.dp),
-            horizontalArrangement = Arrangement.End,
+            horizontalArrangement = if (isLeftHanded) Arrangement.Start else Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Page counter — monospace, zero-padded
@@ -213,112 +216,222 @@ private fun ExpandedHudPanel(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Track canvas (fills remaining space)
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(28.dp)
-                    .pointerInput(totalPages, chapterPages) {
-                        if (totalPages <= 1) return@pointerInput
-                        awaitEachGesture {
-                            val down = awaitFirstDown(requireUnconsumed = true)
-                            isDragging = true
-                            val trackWidth = size.width.toFloat()
+            if (isLeftHanded) {
+                // Prev / Next buttons
+                HudRepeatingButton(onClick = onPreviousPage, icon = Icons.Default.ChevronLeft)
+                HudRepeatingButton(onClick = onNextPage, icon = Icons.Default.ChevronRight)
 
-                            fun xToFraction(x: Float): Float {
-                                return (x / trackWidth).coerceIn(0f, 1f)
-                            }
+                Spacer(modifier = Modifier.width(4.dp))
 
-                            fun fractionToPage(f: Float): Int {
-                                val maxPage = (totalPages - 1).coerceAtLeast(0)
-                                return (f * maxPage).toInt().coerceIn(0, maxPage)
-                            }
+                // Bookmark
+                IconButton(
+                    onClick = onBookmarkToggle,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                        contentDescription = null,
+                        tint = if (isBookmarked) Color(0xFFFFD700) else HudAccentDim,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
 
-                            val initialFraction = xToFraction(down.position.x)
-                            dragFraction = initialFraction
-                            val page = fractionToPage(initialFraction)
-                            onPageSlide(page)
-                            lastVibratedPage = page
+                Spacer(modifier = Modifier.width(8.dp))
 
-                            // Haptic check
-                            if (currentChapterPages.contains(page) && page != lastVibratedChapterPage) {
-                                lastVibratedChapterPage = page
-                                triggerHaptic(context)
-                            } else if (!currentChapterPages.contains(page)) {
-                                lastVibratedChapterPage = -1
-                            }
+                // Track canvas (fills remaining space)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(28.dp)
+                        .pointerInput(totalPages, chapterPages) {
+                            if (totalPages <= 1) return@pointerInput
+                            awaitEachGesture {
+                                val down = awaitFirstDown(requireUnconsumed = true)
+                                isDragging = true
+                                val trackWidth = size.width.toFloat()
 
-                            // Track drag movement
-                            while (true) {
-                                val event = awaitPointerEvent()
-                                val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                                if (!change.pressed) {
-                                    val finalFraction = xToFraction(change.position.x)
-                                    dragFraction = finalFraction
-                                    val finalPage = fractionToPage(finalFraction)
-                                    onPageSlide(finalPage)
-                                    isDragging = false
-                                    break
-                                }
-                                val moveFraction = xToFraction(change.position.x)
-                                dragFraction = moveFraction
-                                val movePage = fractionToPage(moveFraction)
-                                onPageSlide(movePage)
-
-                                // Per-page haptic feedback (throttled to max ~33Hz to prevent crash or stutter)
-                                if (movePage != lastVibratedPage) {
-                                    lastVibratedPage = movePage
-                                    val currentTime = System.currentTimeMillis()
-                                    if (currentTime - lastVibrationTime > 30) {
-                                        lastVibrationTime = currentTime
-                                        try {
-                                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                        } catch (_: Exception) { }
-                                    }
+                                fun xToFraction(x: Float): Float {
+                                    return (x / trackWidth).coerceIn(0f, 1f)
                                 }
 
-                                // Strong haptic on chapter crossing
-                                if (currentChapterPages.contains(movePage) && movePage != lastVibratedChapterPage) {
-                                    lastVibratedChapterPage = movePage
+                                fun fractionToPage(f: Float): Int {
+                                    val maxPage = (totalPages - 1).coerceAtLeast(0)
+                                    return (f * maxPage).toInt().coerceIn(0, maxPage)
+                                }
+
+                                val initialFraction = xToFraction(down.position.x)
+                                dragFraction = initialFraction
+                                val page = fractionToPage(initialFraction)
+                                onPageSlide(page)
+                                lastVibratedPage = page
+
+                                // Haptic check
+                                if (currentChapterPages.contains(page) && page != lastVibratedChapterPage) {
+                                    lastVibratedChapterPage = page
                                     triggerHaptic(context)
-                                } else if (!currentChapterPages.contains(movePage)) {
+                                } else if (!currentChapterPages.contains(page)) {
                                     lastVibratedChapterPage = -1
                                 }
 
-                                change.consume()
+                                // Track drag movement
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                    if (!change.pressed) {
+                                        val finalFraction = xToFraction(change.position.x)
+                                        dragFraction = finalFraction
+                                        val finalPage = fractionToPage(finalFraction)
+                                        onPageSlide(finalPage)
+                                        isDragging = false
+                                        break
+                                    }
+                                    val moveFraction = xToFraction(change.position.x)
+                                    dragFraction = moveFraction
+                                    val movePage = fractionToPage(moveFraction)
+                                    onPageSlide(movePage)
+
+                                    // Per-page haptic feedback (throttled to max ~33Hz to prevent crash or stutter)
+                                    if (movePage != lastVibratedPage) {
+                                        lastVibratedPage = movePage
+                                        val currentTime = System.currentTimeMillis()
+                                        if (currentTime - lastVibrationTime > 30) {
+                                            lastVibrationTime = currentTime
+                                            try {
+                                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                            } catch (_: Exception) { }
+                                        }
+                                    }
+
+                                    // Strong haptic on chapter crossing
+                                    if (currentChapterPages.contains(movePage) && movePage != lastVibratedChapterPage) {
+                                        lastVibratedChapterPage = movePage
+                                        triggerHaptic(context)
+                                    } else if (!currentChapterPages.contains(movePage)) {
+                                        lastVibratedChapterPage = -1
+                                    }
+
+                                    change.consume()
+                                }
                             }
                         }
+                ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        drawExpandedTrack(
+                            fraction = displayFraction,
+                            chapterFractions = chapterFractions,
+                            glowAlpha = glowAlpha,
+                            isDragging = isDragging
+                        )
                     }
-            ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawExpandedTrack(
-                        fraction = displayFraction,
-                        chapterFractions = chapterFractions,
-                        glowAlpha = glowAlpha,
-                        isDragging = isDragging
+                }
+            } else {
+                // Track canvas (fills remaining space)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(28.dp)
+                        .pointerInput(totalPages, chapterPages) {
+                            if (totalPages <= 1) return@pointerInput
+                            awaitEachGesture {
+                                val down = awaitFirstDown(requireUnconsumed = true)
+                                isDragging = true
+                                val trackWidth = size.width.toFloat()
+
+                                fun xToFraction(x: Float): Float {
+                                    return (x / trackWidth).coerceIn(0f, 1f)
+                                }
+
+                                fun fractionToPage(f: Float): Int {
+                                    val maxPage = (totalPages - 1).coerceAtLeast(0)
+                                    return (f * maxPage).toInt().coerceIn(0, maxPage)
+                                }
+
+                                val initialFraction = xToFraction(down.position.x)
+                                dragFraction = initialFraction
+                                val page = fractionToPage(initialFraction)
+                                onPageSlide(page)
+                                lastVibratedPage = page
+
+                                // Haptic check
+                                if (currentChapterPages.contains(page) && page != lastVibratedChapterPage) {
+                                    lastVibratedChapterPage = page
+                                    triggerHaptic(context)
+                                } else if (!currentChapterPages.contains(page)) {
+                                    lastVibratedChapterPage = -1
+                                }
+
+                                // Track drag movement
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                    if (!change.pressed) {
+                                        val finalFraction = xToFraction(change.position.x)
+                                        dragFraction = finalFraction
+                                        val finalPage = fractionToPage(finalFraction)
+                                        onPageSlide(finalPage)
+                                        isDragging = false
+                                        break
+                                    }
+                                    val moveFraction = xToFraction(change.position.x)
+                                    dragFraction = moveFraction
+                                    val movePage = fractionToPage(moveFraction)
+                                    onPageSlide(movePage)
+
+                                    // Per-page haptic feedback (throttled to max ~33Hz to prevent crash or stutter)
+                                    if (movePage != lastVibratedPage) {
+                                        lastVibratedPage = movePage
+                                        val currentTime = System.currentTimeMillis()
+                                        if (currentTime - lastVibrationTime > 30) {
+                                            lastVibrationTime = currentTime
+                                            try {
+                                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                            } catch (_: Exception) { }
+                                        }
+                                    }
+
+                                    // Strong haptic on chapter crossing
+                                    if (currentChapterPages.contains(movePage) && movePage != lastVibratedChapterPage) {
+                                        lastVibratedChapterPage = movePage
+                                        triggerHaptic(context)
+                                    } else if (!currentChapterPages.contains(movePage)) {
+                                        lastVibratedChapterPage = -1
+                                    }
+
+                                    change.consume()
+                                }
+                            }
+                        }
+                ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        drawExpandedTrack(
+                            fraction = displayFraction,
+                            chapterFractions = chapterFractions,
+                            glowAlpha = glowAlpha,
+                            isDragging = isDragging
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Prev / Next buttons
+                HudRepeatingButton(onClick = onPreviousPage, icon = Icons.Default.ChevronLeft)
+                HudRepeatingButton(onClick = onNextPage, icon = Icons.Default.ChevronRight)
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                // Bookmark
+                IconButton(
+                    onClick = onBookmarkToggle,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                        contentDescription = null,
+                        tint = if (isBookmarked) Color(0xFFFFD700) else HudAccentDim,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Prev / Next buttons
-            HudRepeatingButton(onClick = onPreviousPage, icon = Icons.Default.ChevronLeft)
-            HudRepeatingButton(onClick = onNextPage, icon = Icons.Default.ChevronRight)
-
-            Spacer(modifier = Modifier.width(4.dp))
-
-            // Bookmark
-            IconButton(
-                onClick = onBookmarkToggle,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                    contentDescription = null,
-                    tint = if (isBookmarked) Color(0xFFFFD700) else HudAccentDim,
-                    modifier = Modifier.size(18.dp)
-                )
             }
         }
     }

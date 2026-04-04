@@ -68,6 +68,16 @@ fun DisplaySettingsSheet(
                 ThemeOption("Vintage Parchment", "vintage_parchment", Color(0xFFF1E5AC), Color(0xFF4E342E))
             ), settings.theme, onSettingsChanged, settings)
 
+            Spacer(modifier = Modifier.height(24.dp))
+            Divider(color = Color.White.copy(alpha = 0.1f))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ToggleRow(
+                label = "Left-handed Optimization",
+                checked = settings.isLeftHanded,
+                onCheckedChange = { onSettingsChanged(settings.copy(isLeftHanded = it)) }
+            )
+
             Spacer(modifier = Modifier.height(40.dp))
         }
     }

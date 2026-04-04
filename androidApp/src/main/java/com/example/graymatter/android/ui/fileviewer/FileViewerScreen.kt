@@ -411,7 +411,8 @@ fun FileViewerScreen(
                         if (!isCurrentPageBookmarked) {
                             viewModel.openBookmarkDialog()
                         }
-                    }
+                    },
+                    isLeftHanded = settings.isLeftHanded
                 )
 
                 ReaderActionBar(
@@ -438,7 +439,8 @@ fun FileViewerScreen(
                     onPageSlide = {},
                     onPreviousPage = {},
                     onNextPage = {},
-                    onBookmarkToggle = {}
+                    onBookmarkToggle = {},
+                    isLeftHanded = settings.isLeftHanded
                 )
             }
         }

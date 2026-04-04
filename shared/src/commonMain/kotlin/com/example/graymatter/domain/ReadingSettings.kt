@@ -14,5 +14,6 @@ data class ReadingSettings(
     val brightness: Double = -1.0,     // -1 = system default
     val keepScreenOn: Boolean = false,
     val textReflow: Boolean = true,
-    val autoCrop: Boolean = true       // Defaulted to true
+    val autoCrop: Boolean = true,       // Defaulted to true
+    val isLeftHanded: Boolean = false
 )
