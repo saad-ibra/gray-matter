@@ -322,7 +322,19 @@ fun RecentlyDeletedScreen(
                 }
                 
                 if (isSelectionMode) {
-                    Row {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val allSelected = selectedIds.size == combinedList.size
+                        TextButton(
+                            onClick = {
+                                selectedIds = if (allSelected) emptySet() else combinedList.map { it.id }.toSet()
+                            }
+                        ) {
+                            Text(
+                                text = if (allSelected) "Deselect All" else "Select All",
+                                color = GrayMatterColors.Primary,
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
                         IconButton(onClick = { showRestoreConfirm = true }) {
                             Icon(Icons.Default.Restore, contentDescription = "Restore", tint = GrayMatterColors.Primary)
                         }
