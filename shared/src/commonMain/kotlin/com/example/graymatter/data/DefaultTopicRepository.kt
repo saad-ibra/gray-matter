@@ -39,8 +39,22 @@ class DefaultTopicRepository(
             notes = topic.notes,
             resourceCount = topic.resourceCount.toLong(),
             sortOrder = topic.sortOrder.toLong(),
-            updatedAt = topic.updatedAt
+            updatedAt = topic.updatedAt,
+            isDeleted = if (topic.isDeleted) 1L else 0L,
+            deletedAt = topic.deletedAt
         )
+    }
+    
+    override suspend fun softDeleteTopic(id: String) = withContext(dispatcher) {
+        queries.softDeleteTopic(Clock.System.now().toEpochMilliseconds(), id)
+    }
+
+    override suspend fun undoDeleteTopic(id: String) = withContext(dispatcher) {
+        queries.undoDeleteTopic(id)
+    }
+
+    override suspend fun getDeletedTopics(): List<Topic> = withContext(dispatcher) {
+        queries.getDeletedTopics().executeAsList().map { it.toTopic() }
     }
     
     override suspend fun updateTopicNotes(topicId: String, notes: String?) = withContext(dispatcher) {
@@ -91,5 +105,7 @@ private fun TopicEntity.toTopic(): Topic = Topic(
     notes = notes,
     resourceCount = resourceCount.toInt(),
     sortOrder = sortOrder.toInt(),
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    isDeleted = isDeleted == 1L,
+    deletedAt = deletedAt
 )

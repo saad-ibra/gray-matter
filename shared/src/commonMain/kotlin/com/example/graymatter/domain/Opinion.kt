@@ -10,5 +10,7 @@ data class Opinion(
     val confidenceScore: Int,
     val pageNumber: Int? = null,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val isDeleted: Boolean = false,
+    val deletedAt: Long? = null
 )

@@ -55,12 +55,16 @@ fun LibraryScreen(
     @Suppress("UNUSED_PARAMETER") onCreateClick: () -> Unit,
     @Suppress("UNUSED_PARAMETER") onNavigateToGraph: () -> Unit,
     onDeleteTopics: (List<String>) -> Unit,
+    onUndoDeleteTopics: (List<String>) -> Unit,
     @Suppress("UNUSED_PARAMETER") onRenameTopic: (String, String) -> Unit,
     onUpdateOrder: (List<String>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedTopics by remember { mutableStateOf<Set<String>>(emptySet()) }
+    
+    var topicsToDelete by remember { mutableStateOf<List<String>?>(null) }
+    var deletedTopicsInfo by remember { mutableStateOf<List<String>?>(null) }
     
     val selectionMode = selectedTopics.isNotEmpty()
     val haptic = LocalHapticFeedback.current
@@ -238,7 +242,7 @@ fun LibraryScreen(
                                             val draggedId = draggedTopicId.value
                                             if (draggedId != null) {
                                                 if (isOverTrash.value) {
-                                                    currentOnDeleteTopics(listOf(draggedId))
+                                                    topicsToDelete = listOf(draggedId)
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                 } else {
                                                     currentOnUpdateOrder(filteredTopicsState.value.map { it.id })
@@ -296,8 +300,7 @@ fun LibraryScreen(
                 SelectionActionBar(
                     count = selectedTopics.size,
                     onDelete = {
-                        onDeleteTopics(selectedTopics.toList())
-                        selectedTopics = emptySet()
+                        topicsToDelete = selectedTopics.toList()
                     },
                     onClear = { selectedTopics = emptySet() }
                 )
@@ -374,6 +377,48 @@ fun LibraryScreen(
                     )
                 }
             }
+        }
+
+        if (topicsToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { topicsToDelete = null },
+                title = { Text("Delete Topics", color = Color.White) },
+                text = { Text("Are you sure you want to delete ${topicsToDelete!!.size} topic(s)?", color = GrayMatterColors.TextSecondary) },
+                containerColor = Color(0xFF1A1A1E),
+                confirmButton = {
+                    TextButton(onClick = {
+                        val ids = topicsToDelete!!
+                        currentOnDeleteTopics(ids)
+                        deletedTopicsInfo = ids
+                        selectedTopics = emptySet()
+                        topicsToDelete = null
+                    }) {
+                        Text("Delete", color = GrayMatterColors.Error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { topicsToDelete = null }) {
+                        Text("Cancel", color = Color.White)
+                    }
+                }
+            )
+        }
+
+        if (deletedTopicsInfo != null) {
+            com.example.graymatter.android.ui.components.UndoSnackbar(
+                message = "${deletedTopicsInfo!!.size} topic(s) deleted",
+                onUndo = {
+                    onUndoDeleteTopics(deletedTopicsInfo!!)
+                    deletedTopicsInfo = null
+                },
+                onDismissRequest = {
+                    deletedTopicsInfo = null
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 100.dp)
+                    .imePadding()
+            )
         }
     }
     

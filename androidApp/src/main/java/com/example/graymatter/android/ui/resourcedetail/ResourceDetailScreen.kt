@@ -59,8 +59,10 @@ fun ResourceDetailScreen(
     onAddOpinion: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
     onUpdateOpinion: (String, String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
     onDeleteOpinion: (String) -> Unit,
+    onUndoDeleteOpinion: (String) -> Unit = {},
     onRenameResource: (String) -> Unit,
     onDeleteResourceEntry: () -> Unit,
+    onUndoDeleteResourceEntry: () -> Unit = {},
     onEditNote: () -> Unit,
     onExport: (List<Opinion>) -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
@@ -79,8 +81,12 @@ fun ResourceDetailScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var description by remember(resourceEntryDetails?.resourceEntry?.description) { mutableStateOf(resourceEntryDetails?.resourceEntry?.description ?: "") }
 
-    Scaffold(
-        modifier = modifier
+    var deletedResourceInfo by remember { mutableStateOf<Pair<String, String>?>(null) } // ID and Title
+    var deletedOpinionInfo by remember { mutableStateOf<String?>(null) } // Opinion ID
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier
             .fillMaxSize()
             .background(GrayMatterColors.BackgroundDark),
         containerColor = GrayMatterColors.BackgroundDark,
@@ -396,7 +402,10 @@ fun ResourceDetailScreen(
                         templates = templates,
                         referenceSelectorViewModel = referenceSelectorViewModel,
                         onUpdateOpinion = onUpdateOpinion,
-                        onDeleteOpinion = onDeleteOpinion,
+                        onDeleteOpinion = { opinionId -> 
+                            deletedOpinionInfo = opinionId
+                            onDeleteOpinion(opinionId)
+                        },
                         onJumpToPage = { resourceId, page ->
                             onOpenBookmark(Bookmark(id="", resourceId=resourceId, page=page, createdAt=0L))
                         },
@@ -451,6 +460,9 @@ fun ResourceDetailScreen(
                 confirmButton = {
                     TextButton(onClick = {
                         showDeleteConfirm = false
+                        resourceEntryDetails?.let {
+                            deletedResourceInfo = Pair(it.resourceEntry.id, it.resource.title ?: "Resource")                            
+                        }
                         onDeleteResourceEntry()
                     }) {
                         Text("Delete", color = GrayMatterColors.Error)
@@ -473,6 +485,41 @@ fun ResourceDetailScreen(
                     showTemplateEditor = false
                 }
             )
+        }
+
+        // Overlay Undo Snackbars
+        if (deletedResourceInfo != null) {
+            com.example.graymatter.android.ui.components.UndoSnackbar(
+                message = "${deletedResourceInfo!!.second} deleted",
+                onUndo = {
+                    onUndoDeleteResourceEntry()
+                    deletedResourceInfo = null
+                },
+                onDismissRequest = {
+                    deletedResourceInfo = null
+                    onBackClick() // Exit screen when finished
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 100.dp)
+                    .imePadding()
+            )
+        } else if (deletedOpinionInfo != null) {
+            com.example.graymatter.android.ui.components.UndoSnackbar(
+                message = "Opinion deleted",
+                onUndo = {
+                    onUndoDeleteOpinion(deletedOpinionInfo!!)
+                    deletedOpinionInfo = null
+                },
+                onDismissRequest = {
+                    deletedOpinionInfo = null
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 100.dp)
+                    .imePadding()
+            )
+        }
         }
     }
 }

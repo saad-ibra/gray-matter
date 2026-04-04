@@ -127,7 +127,9 @@ class DefaultResourceEntryRepository(
                 description = description,
                 firstOpinionAt = now,
                 lastOpinionAt = now,
-                opinionCount = 1
+                opinionCount = 1,
+                isDeleted = 0L,
+                deletedAt = null
             )
             
             queries.insertOpinion(
@@ -137,7 +139,9 @@ class DefaultResourceEntryRepository(
                 confidenceScore = confidence.toLong(),
                 pageNumber = null,
                 createdAt = now,
-                updatedAt = now
+                updatedAt = now,
+                isDeleted = 0L,
+                deletedAt = null
             )
         }
     }
@@ -170,6 +174,18 @@ class DefaultResourceEntryRepository(
             }
         }
     }
+    
+    override suspend fun softDeleteResourceEntry(id: String) = withContext(dispatcher) {
+        queries.softDeleteResourceEntry(Clock.System.now().toEpochMilliseconds(), id)
+    }
+
+    override suspend fun undoDeleteResourceEntry(id: String) = withContext(dispatcher) {
+        queries.undoDeleteResourceEntry(id)
+    }
+
+    override suspend fun getDeletedResourceEntries(): List<ResourceEntry> = withContext(dispatcher) {
+        queries.getDeletedResourceEntries().executeAsList().map { it.toResourceEntry() }
+    }
 }
 
 private fun ItemEntity.toResourceEntry(): ResourceEntry = ResourceEntry(
@@ -179,5 +195,7 @@ private fun ItemEntity.toResourceEntry(): ResourceEntry = ResourceEntry(
     description = description,
     firstOpinionAt = firstOpinionAt,
     lastOpinionAt = lastOpinionAt,
-    opinionCount = opinionCount.toInt()
+    opinionCount = opinionCount.toInt(),
+    isDeleted = isDeleted == 1L,
+    deletedAt = deletedAt
 )

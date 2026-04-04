@@ -191,6 +191,7 @@ fun GrayMatterNavigation(
                                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute())
                                 },
                                 onDeleteTopics = { ids -> viewModel.deleteTopics(ids) },
+                                onUndoDeleteTopics = { ids -> viewModel.undoDeleteTopics(ids) },
                                 onRenameTopic = { id, name -> viewModel.renameTopic(id, name) },
                                 onUpdateOrder = { ids -> viewModel.updateTopicOrder(ids) }
                             )
@@ -368,7 +369,12 @@ fun GrayMatterNavigation(
                 },
                 onDeleteResourceEntry = {
                     viewModel.deleteResourceEntry(resourceEntryId)
-                    navController.popBackStack()
+                },
+                onUndoDeleteResourceEntry = {
+                    viewModel.undoDeleteResourceEntry(resourceEntryId)
+                },
+                onUndoDeleteOpinion = { opinionId -> 
+                    viewModel.undoDeleteOpinion(opinionId)
                 },
                 onEditNote = {
                     editingResource = itemDetails?.resource

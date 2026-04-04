@@ -104,6 +104,7 @@ fun KnowledgeGraphScreen(
     // Selection
     var selectedNode by remember { mutableStateOf<GraphNode?>(null) }
     var showDeleteDialog by remember { mutableStateOf<GraphNode?>(null) }
+    var deletedNodeInfo by remember { mutableStateOf<GraphNode?>(null) }
 
     // Canvas size tracking for proper centering
     var canvasSize by remember { mutableStateOf(Size.Zero) }
@@ -898,10 +899,11 @@ fun KnowledgeGraphScreen(
                 onDismissRequest = { showDeleteDialog = null },
                 containerColor = GrayMatterColors.SurfaceDark,
                 title = { Text("Delete ${nodeToDelete.type.name}?", color = Color.White) },
-                text = { Text("This will also delete all its connections and instances. This action cannot be undone.", color = GrayMatterColors.Neutral500) },
+                text = { Text("This will also delete all its connections and instances. This action can be undone for 10 seconds.", color = GrayMatterColors.Neutral500) },
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.deleteNodeById(nodeToDelete)
+                        deletedNodeInfo = nodeToDelete
                         showDeleteDialog = null
                         selectedNode = null
                     }) {
@@ -913,6 +915,23 @@ fun KnowledgeGraphScreen(
                         Text("Cancel", color = GrayMatterColors.TextPrimary)
                     }
                 }
+            )
+        }
+
+        if (deletedNodeInfo != null) {
+            com.example.graymatter.android.ui.components.UndoSnackbar(
+                message = "${deletedNodeInfo!!.type.name} deleted",
+                onUndo = {
+                    viewModel.undoDeleteNode(deletedNodeInfo!!)
+                    deletedNodeInfo = null
+                },
+                onDismissRequest = {
+                    deletedNodeInfo = null
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 24.dp)
+                    .imePadding()
             )
         }
         }

@@ -65,6 +65,49 @@ class GrayMatterViewModel(
     private val _isImporting = MutableStateFlow(false)
     val isImporting: StateFlow<Boolean> = _isImporting.asStateFlow()
 
+    private val _deletedTopics = MutableStateFlow<List<Topic>>(emptyList())
+    val deletedTopics: StateFlow<List<Topic>> = _deletedTopics.asStateFlow()
+
+    private val _deletedOpinions = MutableStateFlow<List<Opinion>>(emptyList())
+    val deletedOpinions: StateFlow<List<Opinion>> = _deletedOpinions.asStateFlow()
+
+    private val _deletedResourceEntries = MutableStateFlow<List<ResourceEntryWithDetails>>(emptyList())
+    val deletedResourceEntries: StateFlow<List<ResourceEntryWithDetails>> = _deletedResourceEntries.asStateFlow()
+
+    init {
+        purgeOldDeletedItems()
+        loadRecentlyDeleted()
+    }
+
+    fun loadRecentlyDeleted() {
+        viewModelScope.launch {
+            _deletedTopics.value = topicRepository.getDeletedTopics()
+            _deletedOpinions.value = opinionRepository.getDeletedOpinions()
+            val entries = resourceEntryRepository.getDeletedResourceEntries()
+            _deletedResourceEntries.value = entries.mapNotNull { resourceEntryRepository.getResourceEntryWithDetails(it.id) }
+        }
+    }
+
+    fun purgeOldDeletedItems() {
+        viewModelScope.launch {
+            val now = Clock.System.now().toEpochMilliseconds()
+            val thirtyDaysInMillis = 30L * 24 * 60 * 60 * 1000
+            
+            topicRepository.getDeletedTopics().forEach { 
+                val deletedAt = it.deletedAt
+                if (deletedAt != null && now - deletedAt > thirtyDaysInMillis) permanentlyDeleteTopic(it.id) 
+            }
+            resourceEntryRepository.getDeletedResourceEntries().forEach {
+                val deletedAt = it.deletedAt
+                if (deletedAt != null && now - deletedAt > thirtyDaysInMillis) permanentlyDeleteResourceEntry(it.id)
+            }
+            opinionRepository.getDeletedOpinions().forEach {
+                val deletedAt = it.deletedAt
+                if (deletedAt != null && now - deletedAt > thirtyDaysInMillis) permanentlyDeleteOpinion(it.id)
+            }
+        }
+    }
+
     // Templates
     val templates: StateFlow<List<CustomTemplate>> = resourceRepository.templatesStream
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -284,19 +327,51 @@ class GrayMatterViewModel(
     }
 
     /**
-     * Deletes an opinion.
+     * Soft deletes an opinion.
      */
     fun deleteOpinion(opinionId: String) {
         viewModelScope.launch {
+            opinionRepository.softDeleteOpinion(opinionId)
+            loadRecentlyDeleted()
+        }
+    }
+    
+    fun undoDeleteOpinion(opinionId: String) {
+        viewModelScope.launch {
+            opinionRepository.undoDeleteOpinion(opinionId)
+            loadRecentlyDeleted()
+        }
+    }
+    
+    fun permanentlyDeleteOpinion(opinionId: String) {
+        viewModelScope.launch {
             opinionRepository.deleteOpinion(opinionId)
+            loadRecentlyDeleted()
         }
     }
 
     /**
-     * Deletes a resource entry and its associated resource.
-     * Also deletes the physical file from internal storage.
+     * Soft deletes a resource entry.
      */
     fun deleteResourceEntry(resourceEntryId: String) {
+        viewModelScope.launch {
+            resourceEntryRepository.softDeleteResourceEntry(resourceEntryId)
+            loadRecentlyDeleted()
+        }
+    }
+
+    fun undoDeleteResourceEntry(resourceEntryId: String) {
+        viewModelScope.launch {
+            resourceEntryRepository.undoDeleteResourceEntry(resourceEntryId)
+            loadRecentlyDeleted()
+        }
+    }
+
+    /**
+     * Deletes a resource entry and its associated resource permanently.
+     * Also deletes the physical file from internal storage.
+     */
+    fun permanentlyDeleteResourceEntry(resourceEntryId: String) {
         viewModelScope.launch {
             val details = resourceEntryRepository.getResourceEntryWithDetails(resourceEntryId)
             val filePath = details?.resource?.filePath
@@ -310,6 +385,7 @@ class GrayMatterViewModel(
                     file.delete()
                 }
             }
+            loadRecentlyDeleted()
         }
     }
     
@@ -333,21 +409,63 @@ class GrayMatterViewModel(
     }
 
     /**
-     * Deletes a topic and ALL its contents: resource entries, resources, opinions,
-     * reference links, and physical files.
+     * Soft deletes a topic and its resources.
      */
     fun deleteTopic(topicId: String) {
         viewModelScope.launch {
+            val resources = getResourceEntriesByTopic(topicId).first()
+            topicRepository.softDeleteTopic(topicId)
+            for (resource in resources) {
+                resourceEntryRepository.softDeleteResourceEntry(resource.resourceEntry.id)
+            }
+            loadRecentlyDeleted()
+        }
+    }
+
+    fun deleteTopics(topicIds: List<String>) {
+        viewModelScope.launch {
+            topicIds.forEach { deleteTopic(it) } // Use the recursive deleteTopic
+        }
+    }
+
+    fun undoDeleteTopics(topicIds: List<String>) {
+        viewModelScope.launch {
+            topicIds.forEach { undoDeleteTopic(it) }
+        }
+    }
+
+    fun undoDeleteTopic(topicId: String) {
+        viewModelScope.launch {
+            val topic = topicRepository.getDeletedTopics().find { it.id == topicId }
+            val deletedAt = topic?.deletedAt ?: 0L
+            topicRepository.undoDeleteTopic(topicId)
+            
+            // Restore resources that were deleted alongside this topic (within a 5-second window to account for processing variation)
+            val recentlyDeletedResources = resourceEntryRepository.getDeletedResourceEntries()
+            for (deletedResource in recentlyDeletedResources) {
+                val resDeletedAt = deletedResource.deletedAt ?: 0L
+                if (deletedResource.topicId == topicId && kotlin.math.abs(resDeletedAt - deletedAt) < 5000L) {
+                    resourceEntryRepository.undoDeleteResourceEntry(deletedResource.id)
+                }
+            }
+            loadRecentlyDeleted()
+        }
+    }
+
+    fun permanentlyDeleteTopic(topicId: String) {
+        viewModelScope.launch {
             cascadeDeleteTopic(topicId)
+            loadRecentlyDeleted()
         }
     }
 
     /**
-     * Deletes multiple topics and ALL their contents.
+     * Deletes multiple topics and ALL their contents permanently.
      */
-    fun deleteTopics(topicIds: List<String>) {
+    fun deleteTopicsPermanently(topicIds: List<String>) {
         viewModelScope.launch {
             topicIds.forEach { cascadeDeleteTopic(it) }
+            loadRecentlyDeleted()
         }
     }
 

@@ -35,11 +35,17 @@ fun ProfileScreen(
     modifier: Modifier = Modifier
 ) {
     var showTemplatesScreen by remember { mutableStateOf(false) }
+    var showRecentlyDeleted by remember { mutableStateOf(false) }
 
     if (showTemplatesScreen) {
         TemplatesManagementScreen(
             viewModel = viewModel,
             onBackClick = { showTemplatesScreen = false }
+        )
+    } else if (showRecentlyDeleted) {
+        RecentlyDeletedScreen(
+            viewModel = viewModel,
+            onBackClick = { showRecentlyDeleted = false }
         )
     } else {
         Box(
@@ -67,12 +73,18 @@ fun ProfileScreen(
                         title = "Templates Management",
                         onClick = { showTemplatesScreen = true }
                     )
+                    SettingsButton(
+                        icon = Icons.Default.Restore,
+                        title = "Recently Deleted",
+                        onClick = { showRecentlyDeleted = true }
+                    )
                 }
             }
         }
     }
 }
 
+// ... existing code ...
 @Composable
 private fun SettingsButton(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit) {
     Box(
@@ -102,6 +114,12 @@ private fun SettingsButton(icon: androidx.compose.ui.graphics.vector.ImageVector
             Icon(Icons.Default.ChevronRight, null, tint = GrayMatterColors.Neutral700)
         }
     }
+}
+
+sealed class DeletedItemUiModel(val id: String, val title: String, val deletedAt: Long) {
+    class TopicItem(id: String, title: String, deletedAt: Long) : DeletedItemUiModel(id, title, deletedAt)
+    class ResourceItem(id: String, title: String, deletedAt: Long, val resourceType: String) : DeletedItemUiModel(id, title, deletedAt)
+    class OpinionItem(id: String, title: String, deletedAt: Long, val text: String, val hasPage: Boolean) : DeletedItemUiModel(id, title, deletedAt)
 }
 
 @Composable
@@ -181,6 +199,264 @@ fun TemplatesManagementScreen(
     }
 }
 
+@Composable
+fun RecentlyDeletedScreen(
+    viewModel: GrayMatterViewModel,
+    onBackClick: () -> Unit
+) {
+    val deletedTopics by viewModel.deletedTopics.collectAsState()
+    val deletedResources by viewModel.deletedResourceEntries.collectAsState()
+    val deletedOpinions by viewModel.deletedOpinions.collectAsState()
+
+    val combinedList = remember(deletedTopics, deletedResources, deletedOpinions) {
+        val list = mutableListOf<DeletedItemUiModel>()
+        list.addAll(deletedTopics.map { 
+            DeletedItemUiModel.TopicItem(it.id, it.name, it.deletedAt ?: 0L) 
+        })
+        list.addAll(deletedResources.map { 
+            DeletedItemUiModel.ResourceItem(it.resourceEntry.id, it.resource.title ?: "Untitled Resource", it.resourceEntry.deletedAt ?: 0L, it.resource.type.name) 
+        })
+        list.addAll(deletedOpinions.map { 
+            DeletedItemUiModel.OpinionItem(it.id, "Opinion", it.deletedAt ?: 0L, it.text, it.pageNumber != null) 
+        })
+        list.sortedByDescending { it.deletedAt }
+    }
+
+    var selectedIds by remember { mutableStateOf(setOf<String>()) }
+    val isSelectionMode = selectedIds.isNotEmpty()
+
+    var showRestoreConfirm by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    if (showRestoreConfirm) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showRestoreConfirm = false },
+            title = { Text("Restore Items", color = Color.White) },
+            text = { Text("Are you sure you want to restore ${selectedIds.size} selected item(s)?", color = GrayMatterColors.TextSecondary) },
+            containerColor = Color(0xFF1A1A1E),
+            confirmButton = {
+                TextButton(onClick = {
+                    val ids = selectedIds
+                    ids.forEach { id ->
+                        val item = combinedList.find { it.id == id }
+                        when (item) {
+                            is DeletedItemUiModel.TopicItem -> viewModel.undoDeleteTopic(id)
+                            is DeletedItemUiModel.ResourceItem -> viewModel.undoDeleteResourceEntry(id)
+                            is DeletedItemUiModel.OpinionItem -> viewModel.undoDeleteOpinion(id)
+                            else -> {}
+                        }
+                    }
+                    selectedIds = emptySet()
+                    showRestoreConfirm = false
+                }) {
+                    Text("Restore", color = GrayMatterColors.Primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRestoreConfirm = false }) {
+                    Text("Cancel", color = Color.White)
+                }
+            }
+        )
+    }
+
+    if (showDeleteConfirm) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Permanently Delete", color = Color.White) },
+            text = { Text("Are you sure you want to permanently delete ${selectedIds.size} selected item(s)? This action cannot be undone.", color = GrayMatterColors.TextSecondary) },
+            containerColor = Color(0xFF1A1A1E),
+            confirmButton = {
+                TextButton(onClick = {
+                    val ids = selectedIds
+                    ids.forEach { id ->
+                        val item = combinedList.find { it.id == id }
+                        when (item) {
+                            is DeletedItemUiModel.TopicItem -> viewModel.permanentlyDeleteTopic(id)
+                            is DeletedItemUiModel.ResourceItem -> viewModel.permanentlyDeleteResourceEntry(id)
+                            is DeletedItemUiModel.OpinionItem -> viewModel.permanentlyDeleteOpinion(id)
+                            else -> {}
+                        }
+                    }
+                    selectedIds = emptySet()
+                    showDeleteConfirm = false
+                }) {
+                    Text("Delete", color = GrayMatterColors.Error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancel", color = Color.White)
+                }
+            }
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(GrayMatterColors.BackgroundDark)
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 24.dp)
+                    .statusBarsPadding(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = GrayMatterColors.TextPrimary)
+                    }
+                    Text(
+                        text = if (isSelectionMode) "${selectedIds.size} Selected" else "Recently Deleted",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = GrayMatterColors.TextPrimary,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+                
+                if (isSelectionMode) {
+                    Row {
+                        IconButton(onClick = { showRestoreConfirm = true }) {
+                            Icon(Icons.Default.Restore, contentDescription = "Restore", tint = GrayMatterColors.Primary)
+                        }
+                        IconButton(onClick = { showDeleteConfirm = true }) {
+                            Icon(Icons.Default.DeleteForever, contentDescription = "Permanently Delete", tint = GrayMatterColors.Error)
+                        }
+                    }
+                }
+            }
+
+            if (combinedList.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.DeleteOutline, null, tint = GrayMatterColors.Neutral600, modifier = Modifier.size(64.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("No recently deleted items", color = GrayMatterColors.Neutral600)
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 32.dp)
+                ) {
+                    items(combinedList) { item ->
+                        val isSelected = selectedIds.contains(item.id)
+                        
+                        val typeName = when (item) {
+                            is DeletedItemUiModel.TopicItem -> "Topic"
+                            is DeletedItemUiModel.ResourceItem -> "Resource"
+                            is DeletedItemUiModel.OpinionItem -> {
+                                val text = item.text
+                                when {
+                                    text.startsWith("[DICT]") -> "Dictionary"
+                                    text.startsWith("> ") -> "Annotation"
+                                    text.startsWith("[TEMPLATE:") || text.startsWith("[CUSTOM:") -> "Template/Custom"
+                                    item.hasPage -> "Bookmark"
+                                    else -> "Opinion"
+                                }
+                            }
+                        }
+
+                        val icon = when (typeName) {
+                            "Topic" -> Icons.Default.Folder
+                            "Resource" -> Icons.Default.Article
+                            "Dictionary" -> Icons.Default.MenuBook
+                            "Annotation" -> Icons.Default.FormatQuote
+                            "Template/Custom" -> Icons.Default.DashboardCustomize
+                            "Bookmark" -> Icons.Default.Bookmark
+                            else -> Icons.Default.QuestionAnswer
+                        }
+                        
+                        val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+                        val thirtyDays = 30L * 24 * 60 * 60 * 1000
+                        val elapsed = now - item.deletedAt
+                        val remaining = thirtyDays - elapsed
+                        val daysRemaining = maxOf(0, (remaining / (24 * 60 * 60 * 1000)).toInt())
+                        
+                        val snippet = if (item is DeletedItemUiModel.OpinionItem) {
+                            item.text.replace(Regex("\\[(TEMPLATE|CUSTOM|DICT).*?\\]|>"), "").trim().take(50)
+                        } else ""
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp, vertical = 6.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isSelected) GrayMatterColors.Primary.copy(alpha=0.1f) else GrayMatterColors.SurfaceDark)
+                                .border(1.dp, if (isSelected) GrayMatterColors.Primary else GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                                .clickable {
+                                    if (isSelectionMode) {
+                                        selectedIds = if (isSelected) selectedIds - item.id else selectedIds + item.id
+                                    } else {
+                                        selectedIds = setOf(item.id)
+                                    }
+                                }
+                                .padding(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (isSelectionMode) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = { 
+                                            selectedIds = if (it) selectedIds + item.id else selectedIds - item.id 
+                                        },
+                                        colors = CheckboxDefaults.colors(
+                                            checkedColor = GrayMatterColors.Primary,
+                                            uncheckedColor = GrayMatterColors.Neutral500,
+                                            checkmarkColor = Color.Black
+                                        ),
+                                        modifier = Modifier.padding(end = 12.dp)
+                                    )
+                                }
+                                
+                                Icon(icon, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(24.dp))
+                                Spacer(modifier = Modifier.width(16.dp))
+                                
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = typeName,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = GrayMatterColors.Primary,
+                                            modifier = Modifier.padding(end = 6.dp)
+                                        )
+                                        Text(
+                                            text = "• $daysRemaining days left",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (daysRemaining <= 3) GrayMatterColors.Error else GrayMatterColors.Neutral500
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = item.title,
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                        color = GrayMatterColors.TextPrimary,
+                                        maxLines = 1
+                                    )
+                                    if (snippet.isNotBlank()) {
+                                        Text(
+                                            text = snippet,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = GrayMatterColors.TextSecondary,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun ProfileHeader() {

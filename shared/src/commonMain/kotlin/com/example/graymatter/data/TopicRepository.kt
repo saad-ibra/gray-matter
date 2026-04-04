@@ -46,7 +46,25 @@ interface TopicRepository {
     /**
      * Delete a topic.
      */
+    /**
+     * Delete topic completely
+     */
     suspend fun deleteTopic(id: String)
+    
+    /**
+     * Soft delete a topic
+     */
+    suspend fun softDeleteTopic(id: String)
+
+    /**
+     * Undo soft delete of a topic
+     */
+    suspend fun undoDeleteTopic(id: String)
+
+    /**
+     * Get all deleted topics
+     */
+    suspend fun getDeletedTopics(): List<Topic>
     
     /**
      * Search topics by query text.

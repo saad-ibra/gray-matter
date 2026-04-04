@@ -11,7 +11,9 @@ data class ResourceEntry(
     val description: String? = null,
     val firstOpinionAt: Long,
     val lastOpinionAt: Long,
-    val opinionCount: Int
+    val opinionCount: Int,
+    val isDeleted: Boolean = false,
+    val deletedAt: Long? = null
 )
 
 /**

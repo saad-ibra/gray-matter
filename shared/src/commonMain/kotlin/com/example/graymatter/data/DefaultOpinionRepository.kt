@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 
 class DefaultOpinionRepository(
     private val database: GrayMatterDatabase,
@@ -41,8 +42,22 @@ class DefaultOpinionRepository(
             confidenceScore = opinion.confidenceScore.toLong(),
             pageNumber = opinion.pageNumber?.toLong(),
             createdAt = opinion.createdAt,
-            updatedAt = opinion.updatedAt
+            updatedAt = opinion.updatedAt,
+            isDeleted = if (opinion.isDeleted) 1L else 0L,
+            deletedAt = opinion.deletedAt
         )
+    }
+    
+    override suspend fun softDeleteOpinion(id: String) = withContext(dispatcher) {
+        queries.softDeleteOpinion(Clock.System.now().toEpochMilliseconds(), id)
+    }
+
+    override suspend fun undoDeleteOpinion(id: String) = withContext(dispatcher) {
+        queries.undoDeleteOpinion(id)
+    }
+
+    override suspend fun getDeletedOpinions(): List<Opinion> = withContext(dispatcher) {
+        queries.getDeletedOpinions().executeAsList().map { it.toOpinion() }
     }
     
     override suspend fun updateOpinion(opinion: Opinion) = withContext(dispatcher) {
@@ -72,5 +87,7 @@ private fun OpinionEntity.toOpinion(): Opinion = Opinion(
     confidenceScore = confidenceScore.toInt(),
     pageNumber = pageNumber?.toInt(),
     createdAt = createdAt,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    isDeleted = isDeleted == 1L,
+    deletedAt = deletedAt
 )

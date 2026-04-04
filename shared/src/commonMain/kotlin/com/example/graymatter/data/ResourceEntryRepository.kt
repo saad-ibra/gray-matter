@@ -75,5 +75,23 @@ interface ResourceEntryRepository {
     /**
      * Delete a resource entry and its associated resource and opinions.
      */
+    /**
+     * Delete a resource entry completely.
+     */
     suspend fun deleteResourceEntry(id: String)
+    
+    /**
+     * Soft delete a resource entry.
+     */
+    suspend fun softDeleteResourceEntry(id: String)
+
+    /**
+     * Undo soft delete of a resource entry.
+     */
+    suspend fun undoDeleteResourceEntry(id: String)
+
+    /**
+     * Get all deleted resource entries.
+     */
+    suspend fun getDeletedResourceEntries(): List<ResourceEntry>
 }

@@ -36,7 +36,25 @@ interface OpinionRepository {
     /**
      * Delete an opinion.
      */
+    /**
+     * Delete an opinion completely.
+     */
     suspend fun deleteOpinion(id: String)
+    
+    /**
+     * Soft delete an opinion.
+     */
+    suspend fun softDeleteOpinion(id: String)
+
+    /**
+     * Undo soft delete of an opinion.
+     */
+    suspend fun undoDeleteOpinion(id: String)
+
+    /**
+     * Get all deleted opinions.
+     */
+    suspend fun getDeletedOpinions(): List<Opinion>
     
     /**
      * Search opinions by query text.

@@ -191,22 +191,11 @@ class KnowledgeGraphViewModel(
     fun deleteNodeById(node: GraphNode) {
         viewModelScope.launch {
             when (node.type) {
-                NodeType.TOPIC -> topicRepository.deleteTopic(node.id)
+                NodeType.TOPIC -> topicRepository.softDeleteTopic(node.id)
                 NodeType.RESOURCE -> {
                     val item = resourceEntryRepository.getResourceEntryByResourceId(node.id)
                     if (item != null) {
-                        resourceEntryRepository.deleteResourceEntry(item.id)
-                        
-                        // Delete physical file if it's a markdown resource in our private dir
-                        val resource = resourceRepository.getResourceById(node.id)
-                        val filePath = resource?.filePath
-                        if (filePath != null && filePath.contains("/files/resources/")) {
-                            val file = java.io.File(filePath)
-                            if (file.exists()) {
-                                file.delete()
-                            }
-                        }
-                        resourceRepository.deleteResource(node.id)
+                        resourceEntryRepository.softDeleteResourceEntry(item.id)
                     }
                 }
                 NodeType.OPINION,
@@ -215,8 +204,30 @@ class KnowledgeGraphViewModel(
                 NodeType.DICTIONARY,
                 NodeType.TEMPLATE,
                 NodeType.CUSTOM -> {
-                    opinionRepository.deleteOpinion(node.id)
-                    referenceLinkRepository.deleteReferenceLinksBySource(node.id)
+                    opinionRepository.softDeleteOpinion(node.id)
+                }
+            }
+            loadGraphData()
+        }
+    }
+
+    fun undoDeleteNode(node: GraphNode) {
+        viewModelScope.launch {
+            when (node.type) {
+                NodeType.TOPIC -> topicRepository.undoDeleteTopic(node.id)
+                NodeType.RESOURCE -> {
+                    val item = resourceEntryRepository.getResourceEntryByResourceId(node.id) // It still has the mapping
+                    if (item != null) {
+                        resourceEntryRepository.undoDeleteResourceEntry(item.id)
+                    }
+                }
+                NodeType.OPINION,
+                NodeType.ANNOTATION,
+                NodeType.BOOKMARK,
+                NodeType.DICTIONARY,
+                NodeType.TEMPLATE,
+                NodeType.CUSTOM -> {
+                    opinionRepository.undoDeleteOpinion(node.id)
                 }
             }
             loadGraphData()

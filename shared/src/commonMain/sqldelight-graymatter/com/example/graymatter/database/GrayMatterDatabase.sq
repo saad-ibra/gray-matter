@@ -18,7 +18,9 @@ CREATE TABLE topicEntity (
     notes TEXT,
     resourceCount INTEGER NOT NULL DEFAULT 0,
     sortOrder INTEGER NOT NULL DEFAULT 0,
-    updatedAt INTEGER NOT NULL
+    updatedAt INTEGER NOT NULL,
+    isDeleted INTEGER NOT NULL DEFAULT 0,
+    deletedAt INTEGER
 );
 
 -- 3. Item table (Depends on resourceEntity and topicEntity)
@@ -30,6 +32,8 @@ CREATE TABLE itemEntity (
     firstOpinionAt INTEGER NOT NULL,
     lastOpinionAt INTEGER NOT NULL,
     opinionCount INTEGER NOT NULL DEFAULT 1,
+    isDeleted INTEGER NOT NULL DEFAULT 0,
+    deletedAt INTEGER,
     FOREIGN KEY (resourceId) REFERENCES resourceEntity(id) ON DELETE CASCADE,
     FOREIGN KEY (topicId) REFERENCES topicEntity(id) ON DELETE SET NULL
 );
@@ -43,6 +47,8 @@ CREATE TABLE opinionEntity (
     pageNumber INTEGER,
     createdAt INTEGER NOT NULL,
     updatedAt INTEGER NOT NULL,
+    isDeleted INTEGER NOT NULL DEFAULT 0,
+    deletedAt INTEGER,
     FOREIGN KEY (itemId) REFERENCES itemEntity(id) ON DELETE CASCADE
 );
 
@@ -114,14 +120,14 @@ UPDATE resourceEntity SET extractedText = ? WHERE id = ?;
 
 -- Opinion queries
 insertOpinion:
-INSERT OR REPLACE INTO opinionEntity(id, itemId, text, confidenceScore, pageNumber, createdAt, updatedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO opinionEntity(id, itemId, text, confidenceScore, pageNumber, createdAt, updatedAt, isDeleted, deletedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 getOpinionById:
 SELECT * FROM opinionEntity WHERE id = ?;
 
 getOpinionsByItemId:
-SELECT * FROM opinionEntity WHERE itemId = ? ORDER BY createdAt DESC;
+SELECT * FROM opinionEntity WHERE itemId = ? AND isDeleted = 0 ORDER BY createdAt DESC;
 
 updateOpinion:
 UPDATE opinionEntity SET text = ?, confidenceScore = ?, createdAt = ?, pageNumber = ?, updatedAt = ? WHERE id = ?;
@@ -129,10 +135,19 @@ UPDATE opinionEntity SET text = ?, confidenceScore = ?, createdAt = ?, pageNumbe
 deleteOpinion:
 DELETE FROM opinionEntity WHERE id = ?;
 
+softDeleteOpinion:
+UPDATE opinionEntity SET isDeleted = 1, deletedAt = ? WHERE id = ?;
+
+undoDeleteOpinion:
+UPDATE opinionEntity SET isDeleted = 0, deletedAt = NULL WHERE id = ?;
+
+getDeletedOpinions:
+SELECT * FROM opinionEntity WHERE isDeleted = 1 ORDER BY deletedAt DESC;
+
 -- Resource Entry (Item) queries
 insertResourceEntry:
-INSERT OR REPLACE INTO itemEntity(id, resourceId, topicId, description, firstOpinionAt, lastOpinionAt, opinionCount)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO itemEntity(id, resourceId, topicId, description, firstOpinionAt, lastOpinionAt, opinionCount, isDeleted, deletedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 getResourceEntryById:
 SELECT * FROM itemEntity WHERE id = ?;
@@ -141,10 +156,10 @@ getResourceEntryByResourceId:
 SELECT * FROM itemEntity WHERE resourceId = ?;
 
 getAllResourceEntries:
-SELECT * FROM itemEntity ORDER BY lastOpinionAt DESC;
+SELECT * FROM itemEntity WHERE isDeleted = 0 ORDER BY lastOpinionAt DESC;
 
 getResourceEntriesByTopicId:
-SELECT * FROM itemEntity WHERE topicId = ? ORDER BY lastOpinionAt DESC;
+SELECT * FROM itemEntity WHERE topicId = ? AND isDeleted = 0 ORDER BY lastOpinionAt DESC;
 
 updateResourceEntryTopic:
 UPDATE itemEntity SET topicId = ? WHERE id = ?;
@@ -158,16 +173,25 @@ UPDATE itemEntity SET lastOpinionAt = ?, opinionCount = opinionCount + 1 WHERE i
 deleteResourceEntry:
 DELETE FROM itemEntity WHERE id = ?;
 
+softDeleteResourceEntry:
+UPDATE itemEntity SET isDeleted = 1, deletedAt = ? WHERE id = ?;
+
+undoDeleteResourceEntry:
+UPDATE itemEntity SET isDeleted = 0, deletedAt = NULL WHERE id = ?;
+
+getDeletedResourceEntries:
+SELECT * FROM itemEntity WHERE isDeleted = 1 ORDER BY deletedAt DESC;
+
 -- Topic queries
 insertTopic:
-INSERT OR REPLACE INTO topicEntity(id, name, notes, resourceCount, sortOrder, updatedAt)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO topicEntity(id, name, notes, resourceCount, sortOrder, updatedAt, isDeleted, deletedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 getTopicById:
 SELECT * FROM topicEntity WHERE id = ?;
 
 getAllTopics:
-SELECT * FROM topicEntity ORDER BY sortOrder ASC, updatedAt DESC;
+SELECT * FROM topicEntity WHERE isDeleted = 0 ORDER BY sortOrder ASC, updatedAt DESC;
 
 updateTopicNotes:
 UPDATE topicEntity SET notes = ?, updatedAt = ? WHERE id = ?;
@@ -190,6 +214,15 @@ UPDATE topicEntity SET sortOrder = ?, updatedAt = ? WHERE id = ?;
 deleteTopic:
 DELETE FROM topicEntity WHERE id = ?;
 
+softDeleteTopic:
+UPDATE topicEntity SET isDeleted = 1, deletedAt = ? WHERE id = ?;
+
+undoDeleteTopic:
+UPDATE topicEntity SET isDeleted = 0, deletedAt = NULL WHERE id = ?;
+
+getDeletedTopics:
+SELECT * FROM topicEntity WHERE isDeleted = 1 ORDER BY deletedAt DESC;
+
 -- Custom Template queries
 insertTemplate:
 INSERT OR REPLACE INTO customTemplateEntity(id, name, headings)
@@ -206,7 +239,7 @@ DELETE FROM customTemplateEntity WHERE id = ?;
 
 -- Opinion queries
 getAllOpinions:
-SELECT * FROM opinionEntity ORDER BY createdAt ASC;
+SELECT * FROM opinionEntity WHERE isDeleted = 0 ORDER BY createdAt ASC;
 
 -- Search queries
 searchOpinions:
