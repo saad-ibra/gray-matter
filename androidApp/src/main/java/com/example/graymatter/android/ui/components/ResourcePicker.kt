@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.graymatter.domain.ItemWithDetails
+import com.example.graymatter.domain.ResourceEntryWithDetails
 import com.example.graymatter.domain.Opinion
 import com.example.graymatter.domain.Resource
 import com.example.graymatter.domain.ResourceType
@@ -20,7 +20,7 @@ import com.example.graymatter.domain.ResourceType
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResourcePicker(
-    availableItems: List<ItemWithDetails>,
+    availableItems: List<ResourceEntryWithDetails>,
     onReferenceSelected: (Resource, Opinion?) -> Unit,
     modifier: Modifier = Modifier
 ) {

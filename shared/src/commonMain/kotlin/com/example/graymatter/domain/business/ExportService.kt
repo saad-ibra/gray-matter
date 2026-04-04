@@ -1,6 +1,6 @@
 package com.example.graymatter.domain.business
 
-import com.example.graymatter.domain.ItemWithDetails
+import com.example.graymatter.domain.ResourceEntryWithDetails
 import com.example.graymatter.domain.Opinion
 import com.example.graymatter.domain.Resource
 import com.example.graymatter.domain.Topic
@@ -10,9 +10,9 @@ import com.example.graymatter.domain.Topic
  */
 object ExportService {
 
-    fun exportItemHistory(itemDetails: ItemWithDetails, filteredOpinions: List<Opinion>? = null): String {
+    fun exportResourceHistory(resourceEntryDetails: ResourceEntryWithDetails, filteredOpinions: List<Opinion>? = null): String {
         val sb = StringBuilder()
-        val resource = itemDetails.resource
+        val resource = resourceEntryDetails.resource
         
         sb.append("# Opinion History: ${resource.title ?: "Untitled"}\n\n")
         
@@ -22,13 +22,13 @@ object ExportService {
             sb.append("**Source:** ${resource.filePath.substringAfterLast("/")}\n\n")
         }
         
-        if (itemDetails.item.description != null) {
-            sb.append("> ${itemDetails.item.description}\n\n")
+        if (resourceEntryDetails.resourceEntry.description != null) {
+            sb.append("> ${resourceEntryDetails.resourceEntry.description}\n\n")
         }
         
         sb.append("--- \n\n")
 
-        val opinionsToExport = filteredOpinions?.sortedBy { it.createdAt } ?: itemDetails.opinions.sortedBy { it.createdAt }
+        val opinionsToExport = filteredOpinions?.sortedBy { it.createdAt } ?: resourceEntryDetails.opinions.sortedBy { it.createdAt }
 
         opinionsToExport.forEachIndexed { index, opinion ->
             val pageInfo = if (opinion.pageNumber != null) " (Page ${opinion.pageNumber + 1})" else ""
@@ -47,7 +47,7 @@ object ExportService {
         return sb.toString()
     }
 
-    fun exportTopicSummary(topic: Topic, itemsWithDetails: List<ItemWithDetails>): String {
+    fun exportTopicSummary(topic: Topic, resourceEntriesWithDetails: List<ResourceEntryWithDetails>): String {
         val sb = StringBuilder()
         sb.append("# Topic Analysis: ${topic.name}\n\n")
         
@@ -56,10 +56,10 @@ object ExportService {
             sb.append("${topic.notes}\n\n")
         }
         
-        if (itemsWithDetails.isNotEmpty()) {
+        if (resourceEntriesWithDetails.isNotEmpty()) {
             sb.append("## Resources Included\n\n")
-            itemsWithDetails.forEach { itemDetail ->
-                val resource = itemDetail.resource
+            resourceEntriesWithDetails.forEach { entryDetail ->
+                val resource = entryDetail.resource
                 val title = resource.title ?: resource.url ?: "Untitled"
                 sb.append("### $title\n")
                 if (resource.url != null) {
@@ -68,13 +68,13 @@ object ExportService {
                     sb.append("**Source:** ${resource.filePath.substringAfterLast("/")}\n\n")
                 }
                 
-                if (itemDetail.item.description != null) {
-                    sb.append("> ${itemDetail.item.description}\n\n")
+                if (entryDetail.resourceEntry.description != null) {
+                    sb.append("> ${entryDetail.resourceEntry.description}\n\n")
                 }
                 
-                if (itemDetail.opinions.isNotEmpty()) {
+                if (entryDetail.opinions.isNotEmpty()) {
                     sb.append("#### Opinion History\n")
-                    itemDetail.opinions.sortedBy { it.createdAt }.forEachIndexed { index, opinion ->
+                    entryDetail.opinions.sortedBy { it.createdAt }.forEachIndexed { index, opinion ->
                         val pageInfo = if (opinion.pageNumber != null) " (Page ${opinion.pageNumber + 1})" else ""
                         sb.append("${index + 1}. Reflection$pageInfo\n")
                         

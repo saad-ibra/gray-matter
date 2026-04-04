@@ -13,17 +13,17 @@ sealed class NavigationDestination(val route: String) {
     
     object NewEntry : NavigationDestination("new_entry")
     
-    object ItemDetail : NavigationDestination("item_detail/{itemId}?focusOpinionId={focusOpinionId}") {
-        const val ARG_ITEM_ID = "itemId"
+    object ResourceDetail : NavigationDestination("resource_detail/{resourceEntryId}?focusOpinionId={focusOpinionId}") {
+        const val ARG_RESOURCE_ENTRY_ID = "resourceEntryId"
         const val ARG_FOCUS_OPINION_ID = "focusOpinionId"
-        fun buildRoute(itemId: String, focusOpinionId: String? = null) = 
-            if (focusOpinionId != null) "item_detail/$itemId?focusOpinionId=$focusOpinionId"
-            else "item_detail/$itemId"
+        fun buildRoute(resourceEntryId: String, focusOpinionId: String? = null) = 
+            if (focusOpinionId != null) "resource_detail/$resourceEntryId?focusOpinionId=$focusOpinionId"
+            else "resource_detail/$resourceEntryId"
     }
     
-    object AddToTopic : NavigationDestination("add_to_topic/{itemId}") {
-        const val ARG_ITEM_ID = "itemId"
-        fun buildRoute(itemId: String) = "add_to_topic/$itemId"
+    object AddToTopic : NavigationDestination("add_to_topic/{resourceEntryId}") {
+        const val ARG_RESOURCE_ENTRY_ID = "resourceEntryId"
+        fun buildRoute(resourceEntryId: String) = "add_to_topic/$resourceEntryId"
     }
     
     object TopicDetail : NavigationDestination("topic_detail/{topicId}") {

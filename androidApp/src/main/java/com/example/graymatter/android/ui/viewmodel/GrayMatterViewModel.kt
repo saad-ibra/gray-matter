@@ -7,15 +7,15 @@ import android.webkit.MimeTypeMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.graymatter.android.util.FileUtils
-import com.example.graymatter.data.ItemRepository
+import com.example.graymatter.data.ResourceEntryRepository
 import com.example.graymatter.data.OpinionRepository
 import com.example.graymatter.data.ResourceRepository
 import com.example.graymatter.data.TopicRepository
 import com.example.graymatter.data.ReferenceLinkRepository
 import com.example.graymatter.domain.Bookmark
 import com.example.graymatter.domain.CustomTemplate
-import com.example.graymatter.domain.Item
-import com.example.graymatter.domain.ItemWithDetails
+import com.example.graymatter.domain.ResourceEntry
+import com.example.graymatter.domain.ResourceEntryWithDetails
 import com.example.graymatter.domain.Opinion
 import com.example.graymatter.domain.ReadingProgress
 import com.example.graymatter.domain.Resource
@@ -29,10 +29,10 @@ import kotlin.random.Random
 
 /**
  * Main ViewModel for Gray Matter app.
- * Handles all business logic for creating items, opinions, and topics.
+ * Handles all business logic for creating resource entries, opinions, and topics.
  */
 class GrayMatterViewModel(
-    private val itemRepository: ItemRepository,
+    private val resourceEntryRepository: ResourceEntryRepository,
     private val resourceRepository: ResourceRepository,
     private val opinionRepository: OpinionRepository,
     private val topicRepository: TopicRepository,
@@ -42,21 +42,21 @@ class GrayMatterViewModel(
     val topicsStream: StateFlow<List<Topic>> = topicRepository.topicsStream
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val itemsStream: StateFlow<List<Item>> = itemRepository.itemsStream
+    val resourceEntriesStream: StateFlow<List<ResourceEntry>> = resourceEntryRepository.resourceEntriesStream
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /**
-     * Stream of the most recent items with full details.
+     * Stream of the most recent resource entries with full details.
      */
-    val recentItemsDetails: StateFlow<List<ItemWithDetails>> = itemsStream
-        .flatMapLatest { items ->
-            if (items.isEmpty()) return@flatMapLatest flowOf(emptyList())
+    val recentResourceEntryDetails: StateFlow<List<ResourceEntryWithDetails>> = resourceEntriesStream
+        .flatMapLatest { entries ->
+            if (entries.isEmpty()) return@flatMapLatest flowOf(emptyList())
 
-            // Take 4 most recent items
-            val recentItems = items.sortedByDescending { it.firstOpinionAt }.take(4)
+            // Take 4 most recent entries
+            val recentEntries = entries.sortedByDescending { it.firstOpinionAt }.take(4)
 
             // Combine their individual details streams into one list
-            combine(recentItems.map { itemRepository.getItemWithDetailsStream(it.id) }) { detailsArray ->
+            combine(recentEntries.map { resourceEntryRepository.getResourceEntryWithDetailsStream(it.id) }) { detailsArray ->
                 detailsArray.filterNotNull()
             }
         }
@@ -75,9 +75,9 @@ class GrayMatterViewModel(
      */
     fun checkResourceIntegrity() {
         viewModelScope.launch {
-            val items = itemRepository.itemsStream.first()
-            items.forEach { item ->
-                val details = itemRepository.getItemWithDetails(item.id)
+            val entries = resourceEntryRepository.resourceEntriesStream.first()
+            entries.forEach { entry ->
+                val details = resourceEntryRepository.getResourceEntryWithDetails(entry.id)
                 val filePath = details?.resource?.filePath
                 if (details?.resource?.type != ResourceType.WEB_LINK && filePath != null) {
                     if (!FileUtils.verifyFileExists(filePath)) {
@@ -89,17 +89,17 @@ class GrayMatterViewModel(
     }
     
     /**
-     * Creates a new item with resource and first opinion.
-     * Returns the created itemId.
+     * Creates a new resource entry with resource and first opinion.
+     * Returns the created resourceEntryId.
      */
-    suspend fun createNewItem(url: String, opinionText: String, confidence: Int, title: String? = null, description: String? = null, topicId: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()): String {
+    suspend fun createNewResourceEntry(url: String, opinionText: String, confidence: Int, title: String? = null, description: String? = null, topicId: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
-        val itemId = generateUuid()
+        val resourceEntryId = generateUuid()
         val opinionId = generateUuid()
         
-        itemRepository.createItemWithDetails(
-            itemId = itemId,
+        resourceEntryRepository.createResourceEntryWithDetails(
+            resourceEntryId = resourceEntryId,
             resourceId = resourceId,
             resourceType = ResourceType.WEB_LINK.name,
             url = url,
@@ -114,16 +114,16 @@ class GrayMatterViewModel(
         )
         
         if (topicId != null) {
-            itemRepository.updateItemTopic(itemId, topicId)
+            resourceEntryRepository.updateResourceEntryTopic(resourceEntryId, topicId)
         }
         
         saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
         
-        return itemId
+        return resourceEntryId
     }
 
     /**
-     * Creates a new Note item. Saved with Markdown content in internal storage.
+     * Creates a new Note resource entry. Saved with Markdown content in internal storage.
      */
     suspend fun createNewNote(
         context: Context, 
@@ -138,7 +138,7 @@ class GrayMatterViewModel(
     ): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
-        val itemId = generateUuid()
+        val resourceEntryId = generateUuid()
         val opinionId = generateUuid()
 
         // Create the .md file in internal storage
@@ -147,8 +147,8 @@ class GrayMatterViewModel(
         val internalFile = java.io.File(outputDir, "${generateUuid()}.md")
         internalFile.writeText(content)
         
-        itemRepository.createItemWithDetails(
-            itemId = itemId,
+        resourceEntryRepository.createResourceEntryWithDetails(
+            resourceEntryId = resourceEntryId,
             resourceId = resourceId,
             resourceType = ResourceType.MARKDOWN.name,
             url = null,
@@ -163,7 +163,7 @@ class GrayMatterViewModel(
         )
         
         if (topicId != null) {
-            itemRepository.updateItemTopic(itemId, topicId)
+            resourceEntryRepository.updateResourceEntryTopic(resourceEntryId, topicId)
         }
         
         // Save note-level links as RESOURCE type
@@ -171,15 +171,15 @@ class GrayMatterViewModel(
         // Save opinion-level links as OPINION type
         saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, opinionReferenceLinks)
         
-        return itemId
+        return resourceEntryId
     }
     
     /**
-     * Creates a new item from a file resource with first opinion.
+     * Creates a new resource entry from a file resource with first opinion.
      * Copies the file to internal storage first.
-     * Returns the created itemId.
+     * Returns the created resourceEntryId.
      */
-    suspend fun createNewItemFromFile(
+    suspend fun createNewResourceEntryFromFile(
         context: Context,
         fileName: String,
         uri: Uri,
@@ -203,13 +203,13 @@ class GrayMatterViewModel(
             // 2. Only after successful copy, write to database
             val now = Clock.System.now().toEpochMilliseconds()
             val resourceId = generateUuid()
-            val itemId = generateUuid()
+            val resourceEntryId = generateUuid()
             val opinionId = generateUuid()
             
             val resourceType = determineResourceType(fileName, internalPath)
             
-            itemRepository.createItemWithDetails(
-                itemId = itemId,
+            resourceEntryRepository.createResourceEntryWithDetails(
+                resourceEntryId = resourceEntryId,
                 resourceId = resourceId,
                 resourceType = resourceType.name,
                 url = null,
@@ -224,13 +224,13 @@ class GrayMatterViewModel(
             )
             
             if (topicId != null) {
-                itemRepository.updateItemTopic(itemId, topicId)
+                resourceEntryRepository.updateResourceEntryTopic(resourceEntryId, topicId)
             }
             
             saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
 
             _isImporting.value = false
-            itemId
+            resourceEntryId
         } catch (e: Exception) {
             e.printStackTrace()
             _isImporting.value = false
@@ -239,16 +239,16 @@ class GrayMatterViewModel(
     }
     
     /**
-     * Adds a new opinion to an existing item.
+     * Adds a new opinion to an existing resource entry.
      */
-    fun addOpinion(itemId: String, opinionText: String, confidence: Int, createdAt: Long? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
+    fun addOpinion(resourceEntryId: String, opinionText: String, confidence: Int, createdAt: Long? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         viewModelScope.launch {
             val now = Clock.System.now().toEpochMilliseconds()
             val finalCreatedAt = createdAt ?: now
             
             val opinion = Opinion(
                 id = generateUuid(),
-                itemId = itemId,
+                itemId = resourceEntryId,
                 text = opinionText,
                 confidenceScore = confidence,
                 createdAt = finalCreatedAt,
@@ -259,8 +259,8 @@ class GrayMatterViewModel(
             referenceLinkRepository.deleteReferenceLinksBySource(opinion.id)
             saveReferenceLinksInternal(opinion.id, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
             
-            // Update item metadata
-            itemRepository.updateItemOpinionMetadata(itemId, finalCreatedAt)
+            // Update resource entry metadata
+            resourceEntryRepository.updateResourceEntryOpinionMetadata(resourceEntryId, finalCreatedAt)
         }
     }
 
@@ -293,15 +293,15 @@ class GrayMatterViewModel(
     }
 
     /**
-     * Deletes an item and its associated resource.
+     * Deletes a resource entry and its associated resource.
      * Also deletes the physical file from internal storage.
      */
-    fun deleteItem(itemId: String) {
+    fun deleteResourceEntry(resourceEntryId: String) {
         viewModelScope.launch {
-            val details = itemRepository.getItemWithDetails(itemId)
+            val details = resourceEntryRepository.getResourceEntryWithDetails(resourceEntryId)
             val filePath = details?.resource?.filePath
             
-            itemRepository.deleteItem(itemId)
+            resourceEntryRepository.deleteResourceEntry(resourceEntryId)
 
             // Delete physical file if it exists and is in our app's private directory
             if (filePath != null && filePath.contains("/files/resources/")) {
@@ -333,7 +333,7 @@ class GrayMatterViewModel(
     }
 
     /**
-     * Deletes a topic and ALL its contents: items, resources, opinions,
+     * Deletes a topic and ALL its contents: resource entries, resources, opinions,
      * reference links, and physical files.
      */
     fun deleteTopic(topicId: String) {
@@ -353,32 +353,32 @@ class GrayMatterViewModel(
 
     /**
      * Full cascade delete: cleans up reference links, physical files,
-     * opinions, items, and the topic record itself.
+     * opinions, resource entries, and the topic record itself.
      */
     private suspend fun cascadeDeleteTopic(topicId: String) {
-        // 1. Get all items belonging to this topic
-        val topicItems = itemRepository.itemsStream.first().filter { it.topicId == topicId }
+        // 1. Get all resource entries belonging to this topic
+        val topicEntries = resourceEntryRepository.resourceEntriesStream.first().filter { it.topicId == topicId }
 
-        for (item in topicItems) {
-            // 2. Get all opinions for this item and delete their reference links
-            val opinions = opinionRepository.getOpinionsByItemId(item.id).first()
+        for (entry in topicEntries) {
+            // 2. Get all opinions for this entry and delete their reference links
+            val opinions = opinionRepository.getOpinionsByItemId(entry.id).first()
             for (opinion in opinions) {
                 referenceLinkRepository.deleteReferenceLinksBySource(opinion.id)
             }
 
             // 3. Delete reference links where this resource is the target
-            referenceLinkRepository.deleteReferenceLinksByTarget(item.resourceId)
+            referenceLinkRepository.deleteReferenceLinksByTarget(entry.resourceId)
 
             // 4. Delete physical file if it lives in our private storage
-            val resource = resourceRepository.getResourceById(item.resourceId)
+            val resource = resourceRepository.getResourceById(entry.resourceId)
             val filePath = resource?.filePath
             if (filePath != null && filePath.contains("/files/resources/")) {
                 val file = java.io.File(filePath)
                 if (file.exists()) file.delete()
             }
 
-            // 5. Delete the item (DB cascade deletes opinions + bookmarks + reading progress)
-            itemRepository.deleteItem(item.id)
+            // 5. Delete the resource entry (DB cascade deletes opinions + bookmarks + reading progress)
+            resourceEntryRepository.deleteResourceEntry(entry.id)
         }
 
         // 6. Finally delete the topic record itself
@@ -404,37 +404,37 @@ class GrayMatterViewModel(
     }
     
     /**
-     * Assigns a topic to an item.
+     * Assigns a topic to a resource entry.
      */
-    fun assignTopicToItem(itemId: String, topicId: String) {
+    fun assignTopicToResourceEntry(resourceEntryId: String, topicId: String) {
         viewModelScope.launch {
-            itemRepository.updateItemTopic(itemId, topicId)
+            resourceEntryRepository.updateResourceEntryTopic(resourceEntryId, topicId)
         }
     }
 
     /**
-     * Updates an item's description.
+     * Updates a resource entry's description.
      */
-    fun updateItemDescription(itemId: String, description: String?) {
+    fun updateResourceEntryDescription(resourceEntryId: String, description: String?) {
         viewModelScope.launch {
-            itemRepository.updateItemDescription(itemId, description)
+            resourceEntryRepository.updateResourceEntryDescription(resourceEntryId, description)
         }
     }
     
     /**
-     * Gets full item details as a reactive flow.
+     * Gets full resource entry details as a reactive flow.
      */
-    fun getItemDetails(itemId: String): Flow<ItemWithDetails?> {
-        return itemRepository.getItemWithDetailsStream(itemId)
+    fun getResourceEntryDetails(resourceEntryId: String): Flow<ResourceEntryWithDetails?> {
+        return resourceEntryRepository.getResourceEntryWithDetailsStream(resourceEntryId)
     }
 
     /**
-     * Gets items for a topic.
+     * Gets resource entries for a topic.
      */
-    fun getItemsByTopic(topicId: String): Flow<List<ItemWithDetails>> {
-        return itemRepository.itemsStream.map { items ->
-            items.filter { it.topicId == topicId }.mapNotNull { item ->
-                itemRepository.getItemWithDetails(item.id)
+    fun getResourceEntriesByTopic(topicId: String): Flow<List<ResourceEntryWithDetails>> {
+        return resourceEntryRepository.resourceEntriesStream.map { entries ->
+            entries.filter { it.topicId == topicId }.mapNotNull { entry ->
+                resourceEntryRepository.getResourceEntryWithDetails(entry.id)
             }
         }
     }
@@ -442,7 +442,7 @@ class GrayMatterViewModel(
     /**
      * Gets a resource by its ID.
      */
-    suspend fun getResourceForItem(resourceId: String): Resource? {
+    suspend fun getResourceForResourceEntry(resourceId: String): Resource? {
         return resourceRepository.getResourceById(resourceId)
     }
     
@@ -485,10 +485,6 @@ class GrayMatterViewModel(
             }
             
             if (referenceLinks.isNotEmpty()) {
-                // We add to existing links for the resource, or we can just append.
-                // Since this is an edit, we might want to just append them to the existing links.
-                // The current saveReferenceLinksInternal doesn't delete existing links for that source, it just adds them if they are new (or rather creates new IDs).
-                // Let's use it to append new links.
                 saveReferenceLinksInternal(resourceId, com.example.graymatter.domain.ReferenceType.RESOURCE, referenceLinks)
             }
         }
@@ -553,16 +549,16 @@ class GrayMatterViewModel(
     /**
      * Gets the last opened document with full details for the "Continue Reading" card.
      */
-    val continueReadingItem: StateFlow<ItemWithDetails?> = lastOpenedProgress
+    val continueReadingResourceEntry: StateFlow<ResourceEntryWithDetails?> = lastOpenedProgress
         .flatMapLatest { progress ->
             if (progress == null) flowOf(null)
             else {
-                val itemFlow = flow {
-                    val item = itemRepository.getItemByResourceId(progress.resourceId)
-                    emit(item)
+                val entryFlow = flow {
+                    val entry = resourceEntryRepository.getResourceEntryByResourceId(progress.resourceId)
+                    emit(entry)
                 }
-                itemFlow.flatMapLatest { item ->
-                    if (item != null) itemRepository.getItemWithDetailsStream(item.id)
+                entryFlow.flatMapLatest { entry ->
+                    if (entry != null) resourceEntryRepository.getResourceEntryWithDetailsStream(entry.id)
                     else flowOf(null)
                 }
             }
@@ -605,9 +601,9 @@ class GrayMatterViewModel(
             val bookmark = resourceRepository.getBookmarkById(bookmarkId)
             
             if (bookmark != null) {
-                val item = itemRepository.getItemByResourceId(bookmark.resourceId)
-                if (item != null) {
-                    val opinions = opinionRepository.getOpinionsByItemId(item.id).first()
+                val entry = resourceEntryRepository.getResourceEntryByResourceId(bookmark.resourceId)
+                if (entry != null) {
+                    val opinions = opinionRepository.getOpinionsByItemId(entry.id).first()
                     val matchingOpinion = opinions.firstOrNull { 
                         it.createdAt == bookmark.createdAt || 
                         (it.pageNumber == bookmark.page && it.text.contains(bookmark.opinion ?: ""))
@@ -627,13 +623,13 @@ class GrayMatterViewModel(
      * Exports backup of all data as JSON.
      */
     suspend fun exportBackupData(): String {
-        val items = itemsStream.value
+        val entries = resourceEntriesStream.value
         val topics = topicsStream.value
         val resources = mutableListOf<Resource>()
         val opinions = mutableListOf<Opinion>()
         
-        for (item in items) {
-            val details = itemRepository.getItemWithDetails(item.id)
+        for (entry in entries) {
+            val details = resourceEntryRepository.getResourceEntryWithDetails(entry.id)
             if (details != null) {
                 resources.add(details.resource)
                 opinions.addAll(details.opinions)
@@ -644,7 +640,7 @@ class GrayMatterViewModel(
         val sb = StringBuilder()
         sb.appendLine("{")
         sb.appendLine("  \"exportDate\": \"${Clock.System.now()}\",")
-        sb.appendLine("  \"itemCount\": ${items.size},")
+        sb.appendLine("  \"resourceEntryCount\": ${entries.size},")
         sb.appendLine("  \"topicCount\": ${topics.size},")
         sb.appendLine("  \"resourceCount\": ${resources.size},")
         sb.appendLine("  \"opinionCount\": ${opinions.size}")
@@ -789,7 +785,7 @@ class GrayMatterViewModel(
                     com.example.graymatter.domain.ReferenceType.OPINION -> {
                         val op = opinionRepository.getOpinionById(link.targetId)
                         if (op != null) {
-                            val resId = itemsStream.value.find { it.id == op.itemId }?.resourceId ?: op.itemId
+                            val resId = resourceEntriesStream.value.find { it.id == op.itemId }?.resourceId ?: op.itemId
                             com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = stripMarkdown(op.text), resourceId = resId, typeLabel = "Opinion", isExpanded = false, isChecked = true)
                         } else null
                     }
@@ -800,7 +796,7 @@ class GrayMatterViewModel(
                     com.example.graymatter.domain.ReferenceType.ANNOTATION -> {
                         val op = opinionRepository.getOpinionById(link.targetId)
                         if (op != null) {
-                            val resId = itemsStream.value.find { it.id == op.itemId }?.resourceId ?: op.itemId
+                            val resId = resourceEntriesStream.value.find { it.id == op.itemId }?.resourceId ?: op.itemId
                             com.example.graymatter.domain.ReferenceSelectorItem.DetailItem(id = op.id, snippet = stripMarkdown(op.text), resourceId = resId, typeLabel = "Opinion", isExpanded = false, isChecked = true)
                         } else null
                     }
@@ -820,8 +816,8 @@ class GrayMatterViewModel(
                     com.example.graymatter.domain.ReferenceType.OPINION -> {
                         val opinion = opinionRepository.getOpinionById(link.sourceId)
                         if (opinion != null) {
-                            val item = itemRepository.getItemByResourceId(opinion.itemId) ?: itemRepository.getItemWithDetails(opinion.itemId)?.item
-                            val resourceDetails = item?.let { itemRepository.getItemWithDetails(it.id) }
+                            val entry = resourceEntryRepository.getResourceEntryByResourceId(opinion.itemId) ?: resourceEntryRepository.getResourceEntryWithDetails(opinion.itemId)?.resourceEntry
+                            val resourceDetails = entry?.let { resourceEntryRepository.getResourceEntryWithDetails(it.id) }
                             val resourceTitle = resourceDetails?.resource?.title ?: "Unknown Source"
                             
                             com.example.graymatter.android.ui.components.BacklinkUiModel(

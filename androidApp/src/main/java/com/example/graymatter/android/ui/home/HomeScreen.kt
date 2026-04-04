@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
-import com.example.graymatter.domain.ItemWithDetails
+import com.example.graymatter.domain.ResourceEntryWithDetails
 import com.example.graymatter.domain.ResourceType
 
 /**
@@ -33,7 +33,7 @@ import com.example.graymatter.domain.ResourceType
 @Composable
 fun HomeScreen(
     viewModel: GrayMatterViewModel,
-    continueReadingItem: ItemWithDetails?,
+    continueReadingItem: ResourceEntryWithDetails?,
     continueReadingProgress: com.example.graymatter.domain.ReadingProgress?,
     onCreateNewEntryClick: () -> Unit,
     onNavigateToLibrary: () -> Unit,
@@ -41,7 +41,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     // Collect the reactive stream of the 4 most recent items with details
-    val recentItems by viewModel.recentItemsDetails.collectAsState()
+    val recentItems by viewModel.recentResourceEntryDetails.collectAsState()
     
     LazyColumn(
         modifier = modifier
@@ -90,12 +90,12 @@ fun HomeScreen(
                 }
             }
 
-            items(recentItems, key = { it.item.id }) { details ->
+            items(recentItems, key = { it.resourceEntry.id }) { details ->
                 RecentItemCard(
                     title = details.resource.title ?: "Untitled Resource",
-                    time = formatTime(details.item.firstOpinionAt),
+                    time = formatTime(details.resourceEntry.firstOpinionAt),
                     type = details.resource.type,
-                    onClick = { onItemClick(details.item.id) }
+                    onClick = { onItemClick(details.resourceEntry.id) }
                 )
             }
         }

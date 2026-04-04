@@ -713,7 +713,7 @@ fun FileViewerScreen(
                             TextButton(onClick = { viewModel.selectTemplateForNewEntry(null) }) { Text("Cancel", color = GrayMatterColors.Neutral500) }
                             Button(
                                 onClick = { 
-                                    // Assemble template format as expected in ItemDetailScreen / History
+                                    // Assemble template format as expected in ResourceDetailScreen / History
                                     val formatted = buildString {
                                         append("[TEMPLATE:${template.name}]\n")
                                         template.headings.forEach { heading ->

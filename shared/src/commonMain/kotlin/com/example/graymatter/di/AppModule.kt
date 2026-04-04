@@ -1,10 +1,10 @@
 package com.example.graymatter.di
 
-import com.example.graymatter.data.DefaultItemRepository
+import com.example.graymatter.data.DefaultResourceEntryRepository
 import com.example.graymatter.data.DefaultOpinionRepository
 import com.example.graymatter.data.DefaultResourceRepository
 import com.example.graymatter.data.DefaultTopicRepository
-import com.example.graymatter.data.ItemRepository
+import com.example.graymatter.data.ResourceEntryRepository
 import com.example.graymatter.data.OpinionRepository
 import com.example.graymatter.data.ResourceRepository
 import com.example.graymatter.data.ReferenceLinkRepository
@@ -42,8 +42,8 @@ class AppModule(
         DefaultTopicRepository(database, defaultDispatcher)
     }
     
-    val itemRepository: ItemRepository by lazy {
-        DefaultItemRepository(
+    val resourceEntryRepository: ResourceEntryRepository by lazy {
+        DefaultResourceEntryRepository(
             database = database,
             resourceRepository = resourceRepository,
             opinionRepository = opinionRepository,

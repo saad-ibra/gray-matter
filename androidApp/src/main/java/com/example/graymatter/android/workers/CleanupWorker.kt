@@ -29,16 +29,16 @@ class CleanupWorker(
         if (resourceDir.exists()) {
             val files = resourceDir.listFiles()
             if (files != null) {
-                // Fetch current items from the database
-                // itemsStream is a Flow<List<Item>>, so we use .first() to get the current snapshot
-                val itemsList = appModule.itemRepository.itemsStream.first()
+                // Fetch current resource entries from the database
+                // resourceEntriesStream is a Flow<List<ResourceEntry>>, so we use .first() to get the current snapshot
+                val resourceEntriesList = appModule.resourceEntryRepository.resourceEntriesStream.first()
                 
                 // Collect all valid file paths currently tracked in the database
                 val validPaths = mutableSetOf<String>()
-                for (item in itemsList) {
-                    // getItemWithDetails is a suspend function, so we must call it within the suspend doWork()
+                for (resourceEntry in resourceEntriesList) {
+                    // getResourceEntryWithDetails is a suspend function, so we must call it within the suspend doWork()
                     // or another coroutine context. A simple for-loop is the safest way.
-                    val details = appModule.itemRepository.getItemWithDetails(item.id)
+                    val details = appModule.resourceEntryRepository.getResourceEntryWithDetails(resourceEntry.id)
                     details?.resource?.filePath?.let { path ->
                         // Store the absolute path for reliable comparison
                         validPaths.add(File(path).absolutePath)

@@ -22,7 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.graymatter.android.ui.addtotopic.AddToTopicScreen
 import com.example.graymatter.android.ui.home.HomeScreen
-import com.example.graymatter.android.ui.itemdetail.ItemDetailScreen
+import com.example.graymatter.android.ui.resourcedetail.ResourceDetailScreen
 import com.example.graymatter.android.ui.library.LibraryScreen
 import com.example.graymatter.android.ui.newentry.EntryType
 import com.example.graymatter.android.ui.newentry.NewEntryScreen
@@ -53,7 +53,7 @@ fun GrayMatterNavigation(
 ) {
     val viewModel: GrayMatterViewModel = viewModel {
         GrayMatterViewModel(
-            itemRepository = appModule.itemRepository,
+            resourceEntryRepository = appModule.resourceEntryRepository,
             resourceRepository = appModule.resourceRepository,
             opinionRepository = appModule.opinionRepository,
             topicRepository = appModule.topicRepository,
@@ -62,7 +62,7 @@ fun GrayMatterNavigation(
     }
 
     val topics by viewModel.topicsStream.collectAsState(initial = emptyList())
-    val items by viewModel.itemsStream.collectAsState(initial = emptyList())
+    val items by viewModel.resourceEntriesStream.collectAsState(initial = emptyList())
     val templates by viewModel.templates.collectAsState()
     var editingResource by remember { mutableStateOf<com.example.graymatter.domain.Resource?>(null) }
     val coroutineScope = rememberCoroutineScope()
@@ -73,7 +73,7 @@ fun GrayMatterNavigation(
             topicRepository = appModule.topicRepository,
             resourceRepository = appModule.resourceRepository,
             opinionRepository = appModule.opinionRepository,
-            itemRepository = appModule.itemRepository,
+            resourceEntryRepository = appModule.resourceEntryRepository,
             coroutineScope = null,
             defaultDispatcher = kotlinx.coroutines.Dispatchers.Default
         )
@@ -157,7 +157,7 @@ fun GrayMatterNavigation(
                 ) { page ->
                     when (page) {
                         0 -> {
-                            val continueReadingItem by viewModel.continueReadingItem.collectAsState()
+                            val continueReadingItem by viewModel.continueReadingResourceEntry.collectAsState()
                             val lastOpenedProgress by viewModel.lastOpenedProgress.collectAsState()
 
                             HomeScreen(
@@ -170,8 +170,8 @@ fun GrayMatterNavigation(
                                 onNavigateToLibrary = {
                                     coroutineScope.launch { pagerState.animateScrollToPage(1) }
                                 },
-                                onItemClick = { itemId ->
-                                    navController.navigate(NavigationDestination.ItemDetail.buildRoute(itemId))
+                                onItemClick = { resourceEntryId ->
+                                    navController.navigate(NavigationDestination.ResourceDetail.buildRoute(resourceEntryId))
                                 }
                             )
                         }
@@ -221,7 +221,7 @@ fun GrayMatterNavigation(
             val topic = topics.find { it.id == topicId }
             
             // Collect resources for this topic
-            val topicItems by viewModel.getItemsByTopic(topicId ?: "").collectAsState(initial = emptyList())
+            val topicItems by viewModel.getResourceEntriesByTopic(topicId ?: "").collectAsState(initial = emptyList())
             val resources = topicItems.map { it.resource }
 
             TopicSynthesisScreen(
@@ -233,9 +233,9 @@ fun GrayMatterNavigation(
                     navController.navigate(NavigationDestination.NewEntry.route + "?topicId=$topicId")
                 },
                 onResourceClick = { resource ->
-                    val item = topicItems.find { it.resource.id == resource.id }?.item
+                    val item = topicItems.find { it.resource.id == resource.id }?.resourceEntry
                     item?.let {
-                        navController.navigate(NavigationDestination.ItemDetail.buildRoute(it.id))
+                        navController.navigate(NavigationDestination.ResourceDetail.buildRoute(it.id))
                     }
                 },
                 onSaveOverallOpinion = { notes, selectedReferences ->
@@ -285,31 +285,31 @@ fun GrayMatterNavigation(
                         popUpTo(NavigationDestination.Home.route) { inclusive = true }
                     }
                 },
-                onNavigateToAddToTopic = { itemId ->
-                    navController.navigate("add_to_topic/$itemId")
+                onNavigateToAddToTopic = { resourceEntryId ->
+                    navController.navigate("add_to_topic/$resourceEntryId")
                 }
             )
         }
 
-        // Item Detail Screen
+        // Resource Detail Screen
         composable(
-            route = NavigationDestination.ItemDetail.route,
+            route = NavigationDestination.ResourceDetail.route,
             arguments = listOf(
-                navArgument(NavigationDestination.ItemDetail.ARG_ITEM_ID) { type = NavType.StringType },
-                navArgument(NavigationDestination.ItemDetail.ARG_FOCUS_OPINION_ID) {
+                navArgument(NavigationDestination.ResourceDetail.ARG_RESOURCE_ENTRY_ID) { type = NavType.StringType },
+                navArgument(NavigationDestination.ResourceDetail.ARG_FOCUS_OPINION_ID) {
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null
                 }
             )
         ) { backStackEntry ->
-            val itemId = backStackEntry.arguments?.getString(NavigationDestination.ItemDetail.ARG_ITEM_ID) ?: return@composable
-            val focusOpinionId = backStackEntry.arguments?.getString(NavigationDestination.ItemDetail.ARG_FOCUS_OPINION_ID)
-            val itemDetails by viewModel.getItemDetails(itemId).collectAsState(initial = null)
+            val resourceEntryId = backStackEntry.arguments?.getString(NavigationDestination.ResourceDetail.ARG_RESOURCE_ENTRY_ID) ?: return@composable
+            val focusOpinionId = backStackEntry.arguments?.getString(NavigationDestination.ResourceDetail.ARG_FOCUS_OPINION_ID)
+            val itemDetails by viewModel.getResourceEntryDetails(resourceEntryId).collectAsState(initial = null)
             val readingProgress by viewModel.getReadingProgressStream(itemDetails?.resource?.id ?: "").collectAsState(initial = null)
 
-            ItemDetailScreen(
-                itemDetails = itemDetails,
+            ResourceDetailScreen(
+                resourceEntryDetails = itemDetails,
                 readingProgress = readingProgress,
                 focusOpinionId = focusOpinionId,
                 templates = templates,
@@ -344,10 +344,10 @@ fun GrayMatterNavigation(
                     navController.navigate(NavigationDestination.FileViewer.buildRoute(bookmark.resourceId, bookmark.page))
                 },
                 onUpdateDescription = { desc ->
-                    viewModel.updateItemDescription(itemId, desc)
+                    viewModel.updateResourceEntryDescription(resourceEntryId, desc)
                 },
                 onAddOpinion = { text, confidence, selectedLinks ->
-                    viewModel.addOpinion(itemId, text, confidence, referenceLinks = selectedLinks)
+                    viewModel.addOpinion(resourceEntryId, text, confidence, referenceLinks = selectedLinks)
                 },
                 onUpdateOpinion = { opinionId, text, confidence, date, selectedLinks ->
                     viewModel.updateOpinion(opinionId, text, confidence, date, selectedLinks)
@@ -366,8 +366,8 @@ fun GrayMatterNavigation(
                         viewModel.renameResource(resource.id, finalName)
                     }
                 },
-                onDeleteItem = {
-                    viewModel.deleteItem(itemId)
+                onDeleteResourceEntry = {
+                    viewModel.deleteResourceEntry(resourceEntryId)
                     navController.popBackStack()
                 },
                 onEditNote = {
@@ -375,7 +375,7 @@ fun GrayMatterNavigation(
                 },
                 onExport = { filteredOpinions ->
                     itemDetails?.let { details ->
-                        val markdown = ExportService.exportItemHistory(details, filteredOpinions)
+                        val markdown = ExportService.exportResourceHistory(details, filteredOpinions)
                         shareText(context, markdown, "Opinion History: ${details.resource.title ?: "Untitled"}")
                     }
                 },
@@ -392,13 +392,13 @@ fun GrayMatterNavigation(
                         is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> {
                             val targetItem = items.find { it.resourceId == link.id }
                             if (targetItem != null) {
-                                navController.navigate(NavigationDestination.ItemDetail.buildRoute(targetItem.id))
+                                navController.navigate(NavigationDestination.ResourceDetail.buildRoute(targetItem.id))
                             }
                         }
                         is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> {
                             val targetItem = items.find { it.resourceId == link.resourceId }
                             if (targetItem != null) {
-                                navController.navigate(NavigationDestination.ItemDetail.buildRoute(targetItem.id, link.id))
+                                navController.navigate(NavigationDestination.ResourceDetail.buildRoute(targetItem.id, link.id))
                             }
                         }
                     }
@@ -490,18 +490,18 @@ fun GrayMatterNavigation(
         composable(
             route = NavigationDestination.AddToTopic.route,
             arguments = listOf(
-                navArgument(NavigationDestination.AddToTopic.ARG_ITEM_ID) {
+                navArgument(NavigationDestination.AddToTopic.ARG_RESOURCE_ENTRY_ID) {
                     type = NavType.StringType
                 }
             )
         ) { backStackEntry ->
-            val itemId = backStackEntry.arguments?.getString(NavigationDestination.AddToTopic.ARG_ITEM_ID)
+            val resourceEntryId = backStackEntry.arguments?.getString(NavigationDestination.AddToTopic.ARG_RESOURCE_ENTRY_ID)
 
             AddToTopicScreen(
                 topics = topics,
                 onBackClick = { navController.popBackStack() },
                 onSelectTopic = { topic ->
-                    itemId?.let { viewModel.assignTopicToItem(it, topic.id) }
+                    resourceEntryId?.let { viewModel.assignTopicToResourceEntry(it, topic.id) }
                     navController.navigate(NavigationDestination.Home.route) {
                         popUpTo(NavigationDestination.Home.route)
                     }
@@ -509,7 +509,7 @@ fun GrayMatterNavigation(
                 onCreateNewTopic = { topicName ->
                     coroutineScope.launch {
                         val newTopicId = viewModel.createTopic(topicName)
-                        itemId?.let { viewModel.assignTopicToItem(it, newTopicId) }
+                        resourceEntryId?.let { viewModel.assignTopicToResourceEntry(it, newTopicId) }
                         navController.navigate(NavigationDestination.Home.route) {
                             popUpTo(NavigationDestination.Home.route)
                         }
@@ -548,7 +548,7 @@ fun GrayMatterNavigation(
                 com.example.graymatter.android.ui.fileviewer.FileViewerViewModel(
                     resourceRepository = appModule.resourceRepository,
                     opinionRepository = appModule.opinionRepository,
-                    itemRepository = appModule.itemRepository,
+                    resourceEntryRepository = appModule.resourceEntryRepository,
                     referenceLinkRepository = appModule.referenceLinkRepository
                 )
             }
@@ -581,7 +581,7 @@ fun GrayMatterNavigation(
             val graphViewModel: com.example.graymatter.android.ui.graph.KnowledgeGraphViewModel = viewModel {
                 com.example.graymatter.android.ui.graph.KnowledgeGraphViewModel(
                     topicRepository = appModule.topicRepository,
-                    itemRepository = appModule.itemRepository,
+                    resourceEntryRepository = appModule.resourceEntryRepository,
                     resourceRepository = appModule.resourceRepository,
                     opinionRepository = appModule.opinionRepository,
                     referenceLinkRepository = appModule.referenceLinkRepository
@@ -609,15 +609,15 @@ fun GrayMatterNavigation(
                         }
                         com.example.graymatter.android.ui.graph.NodeType.RESOURCE -> {
                             // Find corresponding item mapped to this resource
-                            val item = viewModel.itemsStream.value.find { it.resourceId == node.id }
-                            if (item != null) navController.navigate(NavigationDestination.ItemDetail.buildRoute(item.id))
+                            val item = viewModel.resourceEntriesStream.value.find { it.resourceId == node.id }
+                            if (item != null) navController.navigate(NavigationDestination.ResourceDetail.buildRoute(item.id))
                         }
                         else -> {
                             // Opinions open the ItemDetail for their parent item
                             coroutineScope.launch {
                                 val opinion = appModule.opinionRepository.getOpinionById(node.id)
                                 if (opinion != null) {
-                                    navController.navigate(NavigationDestination.ItemDetail.buildRoute(opinion.itemId, opinion.id))
+                                    navController.navigate(NavigationDestination.ResourceDetail.buildRoute(opinion.itemId, opinion.id))
                                 }
                             }
                         }

@@ -1,10 +1,10 @@
 package com.example.graymatter.domain.business
 
-import com.example.graymatter.data.ItemRepository
+import com.example.graymatter.data.ResourceEntryRepository
 import com.example.graymatter.data.OpinionRepository
 import com.example.graymatter.data.ResourceRepository
 import com.example.graymatter.data.TopicRepository
-import com.example.graymatter.domain.ItemWithDetails
+import com.example.graymatter.domain.ResourceEntryWithDetails
 import kotlinx.coroutines.flow.first
 
 /**
@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.first
  * indexes and searches across Resources, Opinions, and Topics.
  */
 class LocalSearchEngine(
-    private val itemRepository: ItemRepository,
+    private val resourceEntryRepository: ResourceEntryRepository,
     private val resourceRepository: ResourceRepository,
     private val opinionRepository: OpinionRepository,
     private val topicRepository: TopicRepository
@@ -20,9 +20,9 @@ class LocalSearchEngine(
 
     /**
      * Performs a full-text search across all entities.
-     * Groups results by Item.
+     * Groups results by ResourceEntry.
      */
-    suspend fun search(query: String): List<ItemWithDetails> {
+    suspend fun search(query: String): List<ResourceEntryWithDetails> {
         if (query.isBlank()) return emptyList()
         
         println("Starting search for: $query")
@@ -31,26 +31,26 @@ class LocalSearchEngine(
         
         // 2. Search Opinions
         val matchingOpinions = opinionRepository.searchOpinions(query)
-        val itemIdsFromOpinions = matchingOpinions.map { it.itemId }.toSet()
+        val resourceEntryIdsFromOpinions = matchingOpinions.map { it.itemId }.toSet()
         
-        // Combine all Item IDs
-        val allItemIds = mutableSetOf<String>()
+        // Combine all ResourceEntry IDs
+        val allResourceEntryIds = mutableSetOf<String>()
         
-        // Get items for matching resources
+        // Get resource entries for matching resources
         matchingResources.forEach { resource ->
-            val item = itemRepository.getItemByResourceId(resource.id)
-            if (item != null) allItemIds.add(item.id)
+            val resourceEntry = resourceEntryRepository.getResourceEntryByResourceId(resource.id)
+            if (resourceEntry != null) allResourceEntryIds.add(resourceEntry.id)
         }
         
-        allItemIds.addAll(itemIdsFromOpinions)
+        allResourceEntryIds.addAll(resourceEntryIdsFromOpinions)
         
-        // Fetch full details for all unique items
-        val results = allItemIds.mapNotNull { itemId ->
-            itemRepository.getItemWithDetails(itemId)
+        // Fetch full details for all unique resource entries
+        val results = allResourceEntryIds.mapNotNull { resourceEntryId ->
+            resourceEntryRepository.getResourceEntryWithDetails(resourceEntryId)
         }
         
         // Sort by relevance (simple heuristic: recent activity first, or match quality)
         // Here we just sort by last activity
-        return results.sortedByDescending { it.item.lastOpinionAt }
+        return results.sortedByDescending { it.resourceEntry.lastOpinionAt }
     }
 }

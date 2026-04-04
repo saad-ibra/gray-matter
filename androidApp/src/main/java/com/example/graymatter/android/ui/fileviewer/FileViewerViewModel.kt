@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.graymatter.data.ResourceRepository
 import com.example.graymatter.data.OpinionRepository
-import com.example.graymatter.data.ItemRepository
+import com.example.graymatter.data.ResourceEntryRepository
 import com.example.graymatter.domain.CustomTemplate
 import com.example.graymatter.domain.Bookmark
 import com.example.graymatter.domain.ChapterOutline
@@ -34,7 +34,7 @@ import kotlinx.coroutines.flow.map
 class FileViewerViewModel(
     private val resourceRepository: ResourceRepository,
     private val opinionRepository: OpinionRepository,
-    private val itemRepository: ItemRepository,
+    private val resourceEntryRepository: ResourceEntryRepository,
     private val referenceLinkRepository: com.example.graymatter.data.ReferenceLinkRepository
 ) : ViewModel() {
 
@@ -136,7 +136,7 @@ class FileViewerViewModel(
 
             _bookmarks.value = resourceRepository.getBookmarks(resourceId)
 
-            val item = itemRepository.getItemByResourceId(res.id)
+            val item = resourceEntryRepository.getResourceEntryByResourceId(res.id)
             if (item != null) {
                 viewModelScope.launch {
                     opinionRepository.getOpinionsByItemId(item.id).collect { list ->
@@ -412,7 +412,7 @@ class FileViewerViewModel(
             resourceRepository.saveBookmark(bookmark)
             saveReferenceLinksInternal(bookmarkId, com.example.graymatter.domain.ReferenceType.BOOKMARK, referenceLinks)
             
-            val item = itemRepository.getItemByResourceId(res.id)
+            val item = resourceEntryRepository.getResourceEntryByResourceId(res.id)
             if (item != null) {
                 val opinionId = generateUuid()
                 val opinion = Opinion(
@@ -426,7 +426,7 @@ class FileViewerViewModel(
                 )
                 opinionRepository.saveOpinion(opinion)
                 saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
-                itemRepository.updateItemOpinionMetadata(item.id, now)
+                resourceEntryRepository.updateResourceEntryOpinionMetadata(item.id, now)
             }
             
             _bookmarks.value = resourceRepository.getBookmarks(res.id)
@@ -440,7 +440,7 @@ class FileViewerViewModel(
 
         viewModelScope.launch {
             val now = Clock.System.now().toEpochMilliseconds()
-            val item = itemRepository.getItemByResourceId(res.id)
+            val item = resourceEntryRepository.getResourceEntryByResourceId(res.id)
             
             if (item != null) {
                 // Add the snippet inline as a blockquote
@@ -458,7 +458,7 @@ class FileViewerViewModel(
                 )
                 opinionRepository.saveOpinion(opinion)
                 saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
-                itemRepository.updateItemOpinionMetadata(item.id, now)
+                resourceEntryRepository.updateResourceEntryOpinionMetadata(item.id, now)
             }
             showSelectionAnnotationDialog = false
             selectedText = null
@@ -469,7 +469,7 @@ class FileViewerViewModel(
         val res = _resource.value ?: return
         viewModelScope.launch {
             val now = Clock.System.now().toEpochMilliseconds()
-            val item = itemRepository.getItemByResourceId(res.id)
+            val item = resourceEntryRepository.getResourceEntryByResourceId(res.id)
             if (item != null) {
                 val cleanPhrase = phrase.trim()
                 val existing = _opinions.value.find { 
@@ -498,7 +498,7 @@ class FileViewerViewModel(
                     )
                     opinionRepository.saveOpinion(opinion)
                 }
-                itemRepository.updateItemOpinionMetadata(item.id, now)
+                resourceEntryRepository.updateResourceEntryOpinionMetadata(item.id, now)
             }
         }
     }
@@ -528,7 +528,7 @@ class FileViewerViewModel(
         val res = _resource.value ?: return
         viewModelScope.launch {
             val now = Clock.System.now().toEpochMilliseconds()
-            val item = itemRepository.getItemByResourceId(res.id)
+            val item = resourceEntryRepository.getResourceEntryByResourceId(res.id)
             if (item != null) {
                 val opinionId = generateUuid()
                 val opinion = Opinion(
@@ -542,7 +542,7 @@ class FileViewerViewModel(
                 )
                 opinionRepository.saveOpinion(opinion)
                 saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
-                itemRepository.updateItemOpinionMetadata(item.id, now)
+                resourceEntryRepository.updateResourceEntryOpinionMetadata(item.id, now)
             }
         }
     }
@@ -551,7 +551,7 @@ class FileViewerViewModel(
         val res = _resource.value ?: return
         viewModelScope.launch {
             val now = Clock.System.now().toEpochMilliseconds()
-            val item = itemRepository.getItemByResourceId(res.id)
+            val item = resourceEntryRepository.getResourceEntryByResourceId(res.id)
             if (item != null) {
                 val opinionId = generateUuid()
                 val opinion = Opinion(
@@ -565,7 +565,7 @@ class FileViewerViewModel(
                 )
                 opinionRepository.saveOpinion(opinion)
                 saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
-                itemRepository.updateItemOpinionMetadata(item.id, now)
+                resourceEntryRepository.updateResourceEntryOpinionMetadata(item.id, now)
             }
         }
     }
@@ -576,7 +576,7 @@ class FileViewerViewModel(
             val bookmark = resourceRepository.getBookmarkById(bookmarkId)
 
             if (bookmark != null) {
-                val item = itemRepository.getItemByResourceId(res.id)
+                val item = resourceEntryRepository.getResourceEntryByResourceId(res.id)
                 if (item != null) {
                     // Collect the first list of opinions from the Flow
                     val opinions = opinionRepository.getOpinionsByItemId(item.id).first()

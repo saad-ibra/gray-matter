@@ -129,33 +129,33 @@ UPDATE opinionEntity SET text = ?, confidenceScore = ?, createdAt = ?, pageNumbe
 deleteOpinion:
 DELETE FROM opinionEntity WHERE id = ?;
 
--- Item queries
-insertItem:
+-- Resource Entry (Item) queries
+insertResourceEntry:
 INSERT OR REPLACE INTO itemEntity(id, resourceId, topicId, description, firstOpinionAt, lastOpinionAt, opinionCount)
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
-getItemById:
+getResourceEntryById:
 SELECT * FROM itemEntity WHERE id = ?;
 
-getItemByResourceId:
+getResourceEntryByResourceId:
 SELECT * FROM itemEntity WHERE resourceId = ?;
 
-getAllItems:
+getAllResourceEntries:
 SELECT * FROM itemEntity ORDER BY lastOpinionAt DESC;
 
-getItemsByTopicId:
+getResourceEntriesByTopicId:
 SELECT * FROM itemEntity WHERE topicId = ? ORDER BY lastOpinionAt DESC;
 
-updateItemTopic:
+updateResourceEntryTopic:
 UPDATE itemEntity SET topicId = ? WHERE id = ?;
 
-updateItemDescription:
+updateResourceEntryDescription:
 UPDATE itemEntity SET description = ? WHERE id = ?;
 
-updateItemOpinionMetadata:
+updateResourceEntryOpinionMetadata:
 UPDATE itemEntity SET lastOpinionAt = ?, opinionCount = opinionCount + 1 WHERE id = ?;
 
-deleteItem:
+deleteResourceEntry:
 DELETE FROM itemEntity WHERE id = ?;
 
 -- Topic queries

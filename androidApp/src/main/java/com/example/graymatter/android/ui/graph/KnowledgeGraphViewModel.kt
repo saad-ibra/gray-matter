@@ -2,7 +2,7 @@ package com.example.graymatter.android.ui.graph
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.graymatter.data.ItemRepository
+import com.example.graymatter.data.ResourceEntryRepository
 import com.example.graymatter.data.OpinionRepository
 import com.example.graymatter.data.ReferenceLinkRepository
 import com.example.graymatter.data.ResourceRepository
@@ -23,7 +23,7 @@ data class GraphDataState(
 class KnowledgeGraphViewModel(
     private val topicRepository: TopicRepository,
     private val resourceRepository: ResourceRepository,
-    private val itemRepository: ItemRepository,
+    private val resourceEntryRepository: ResourceEntryRepository,
     private val opinionRepository: OpinionRepository,
     private val referenceLinkRepository: ReferenceLinkRepository
 ) : ViewModel() {
@@ -61,7 +61,7 @@ class KnowledgeGraphViewModel(
             }
 
             // 2. Fetch Resources and Items (Resources act as hubs)
-            val allItems = itemRepository.itemsStream.first()
+            val allItems = resourceEntryRepository.resourceEntriesStream.first()
             val allOpinions = opinionRepository.getAllOpinions().first()
             val allReferenceLinks = referenceLinkRepository.getAllReferenceLinks().first()
 
@@ -193,9 +193,9 @@ class KnowledgeGraphViewModel(
             when (node.type) {
                 NodeType.TOPIC -> topicRepository.deleteTopic(node.id)
                 NodeType.RESOURCE -> {
-                    val item = itemRepository.getItemByResourceId(node.id)
+                    val item = resourceEntryRepository.getResourceEntryByResourceId(node.id)
                     if (item != null) {
-                        itemRepository.deleteItem(item.id)
+                        resourceEntryRepository.deleteResourceEntry(item.id)
                         
                         // Delete physical file if it's a markdown resource in our private dir
                         val resource = resourceRepository.getResourceById(node.id)

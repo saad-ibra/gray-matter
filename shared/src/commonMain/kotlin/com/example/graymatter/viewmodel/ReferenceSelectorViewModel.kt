@@ -6,9 +6,9 @@ import com.example.graymatter.data.TopicRepository
 import com.example.graymatter.domain.Opinion
 import com.example.graymatter.domain.ReferenceSelectorItem
 import com.example.graymatter.domain.Resource
-import com.example.graymatter.domain.Item
+import com.example.graymatter.domain.ResourceEntry
 import com.example.graymatter.domain.Topic
-import com.example.graymatter.data.ItemRepository
+import com.example.graymatter.data.ResourceEntryRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
@@ -35,7 +35,7 @@ class ReferenceSelectorViewModel(
     private val topicRepository: TopicRepository,
     private val resourceRepository: ResourceRepository,
     private val opinionRepository: OpinionRepository,
-    private val itemRepository: ItemRepository,
+    private val resourceEntryRepository: ResourceEntryRepository,
     coroutineScope: CoroutineScope?,
     private val defaultDispatcher: CoroutineDispatcher
 ) {
@@ -46,7 +46,7 @@ class ReferenceSelectorViewModel(
 
     private var allTopics = emptyList<Topic>()
     private var allResources = emptyList<Resource>()
-    private var allItems = emptyList<Item>()
+    private var allResourceEntries = emptyList<ResourceEntry>()
     private var allOpinions = emptyList<Opinion>()
     
     // Map of parent IDs to their state
@@ -62,12 +62,12 @@ class ReferenceSelectorViewModel(
             combine(
                 topicRepository.topicsStream,
                 resourceRepository.resourcesStream,
-                itemRepository.itemsStream,
+                resourceEntryRepository.resourceEntriesStream,
                 opinionRepository.getAllOpinions()
-            ) { topics, resources, items, opinions ->
+            ) { topics, resources, resourceEntries, opinions ->
                 allTopics = topics
                 allResources = resources
-                allItems = items
+                allResourceEntries = resourceEntries
                 allOpinions = opinions
                 rebuildItems()
             }.launchIn(this)
@@ -127,30 +127,30 @@ class ReferenceSelectorViewModel(
     }
 
     /**
-     * Computes the set of valid item IDs — items whose parent topic still exists
-     * (or have no topic). This filters out orphaned items left behind after topic deletion.
+     * Computes the set of valid resource entry IDs — entries whose parent topic still exists
+     * (or have no topic). This filters out orphaned entries left behind after topic deletion.
      */
-    private fun validItemIds(): Set<String> {
+    private fun validResourceEntryIds(): Set<String> {
         val topicIds = allTopics.map { it.id }.toSet()
-        return allItems.filter { item ->
-            item.topicId == null || item.topicId in topicIds
+        return allResourceEntries.filter { entry ->
+            entry.topicId == null || entry.topicId in topicIds
         }.map { it.id }.toSet()
     }
 
     /**
-     * Returns only opinions that belong to valid (non-orphaned) items.
+     * Returns only opinions that belong to valid (non-orphaned) resource entries.
      */
     private fun validOpinions(): List<Opinion> {
-        val validIds = validItemIds()
+        val validIds = validResourceEntryIds()
         return allOpinions.filter { it.itemId in validIds }
     }
 
     /**
-     * Returns only resources that belong to valid (non-orphaned) items.
+     * Returns only resources that belong to valid (non-orphaned) resource entries.
      */
     private fun validResources(): List<Resource> {
-        val validIds = validItemIds()
-        val validResourceIds = allItems.filter { it.id in validIds }.map { it.resourceId }.toSet()
+        val validIds = validResourceEntryIds()
+        val validResourceIds = allResourceEntries.filter { it.id in validIds }.map { it.resourceId }.toSet()
         return allResources.filter { it.id in validResourceIds }
     }
 
@@ -179,7 +179,7 @@ class ReferenceSelectorViewModel(
         // 2. Match Resources (only valid, non-orphaned)
         if (tab == ReferenceTab.ALL || tab == ReferenceTab.RESOURCES) {
             validResources().filter { it.title?.lowercase()?.contains(query) == true }.forEach { res ->
-                val topicId = allItems.find { it.resourceId == res.id }?.topicId
+                val topicId = allResourceEntries.find { it.resourceId == res.id }?.topicId
                 val context = topicId?.let { tid -> allTopics.find { it.id == tid }?.name }
                 result.add(ReferenceSelectorItem.ResourceItem(
                     id = res.id,
@@ -197,8 +197,8 @@ class ReferenceSelectorViewModel(
         // 3. Match Opinions (only valid, non-orphaned)
         if (tab == ReferenceTab.ALL || tab == ReferenceTab.OPINIONS) {
             validOpinions().filter { it.text.lowercase().contains(query) }.forEach { op ->
-                val item = allItems.find { it.id == op.itemId }
-                val resource = item?.let { i -> allResources.find { it.id == i.resourceId } }
+                val resourceEntry = allResourceEntries.find { it.id == op.itemId }
+                val resource = resourceEntry?.let { entry -> allResources.find { it.id == entry.resourceId } }
                 val context = resource?.title ?: "Unknown Resource"
                 val typeLabel = when {
                     op.text.startsWith("[DICT] ") -> "Dictionary"
@@ -231,7 +231,7 @@ class ReferenceSelectorViewModel(
                     result.add(ReferenceSelectorItem.TopicItem(topic.id, topic.name, isExpanded, isChecked))
                     
                     if (isExpanded) {
-                        val topicResourceIds = allItems.filter { it.topicId == topic.id }.map { it.resourceId }.toSet()
+                        val topicResourceIds = allResourceEntries.filter { it.topicId == topic.id }.map { it.resourceId }.toSet()
                         val topicResources = allResources.filter { it.id in topicResourceIds }
                         for (res in topicResources) {
                             addResourceWithDetails(res, 1, result)
@@ -241,7 +241,7 @@ class ReferenceSelectorViewModel(
                 
                 if (tab == ReferenceTab.ALL) {
                     // Show uncategorized resources at the end
-                    val categorizedResourceIds = allItems.filter { it.topicId != null }.map { it.resourceId }.toSet()
+                    val categorizedResourceIds = allResourceEntries.filter { it.topicId != null }.map { it.resourceId }.toSet()
                     allResources.filter { it.id !in categorizedResourceIds }.forEach { res ->
                         addResourceWithDetails(res, 0, result)
                     }
@@ -252,8 +252,8 @@ class ReferenceSelectorViewModel(
             }
             ReferenceTab.OPINIONS -> {
                 validOpinions().forEach { op ->
-                    val item = allItems.find { it.id == op.itemId }
-                    val resource = item?.let { i -> allResources.find { it.id == i.resourceId } }
+                    val resourceEntry = allResourceEntries.find { it.id == op.itemId }
+                    val resource = resourceEntry?.let { entry -> allResources.find { it.id == entry.resourceId } }
                     val typeLabel = when {
                         op.text.startsWith("[DICT] ") -> "Dictionary"
                         op.pageNumber != null && op.text.startsWith("> ") -> "Annotation"
@@ -283,8 +283,8 @@ class ReferenceSelectorViewModel(
         result.add(ReferenceSelectorItem.ResourceItem(res.id, res.title ?: "Untitled", res.type.name, null, isExpanded, isChecked, indent))
         
         if (isExpanded) {
-            val dbItem = allItems.find { it.resourceId == res.id }
-            val opinions = dbItem?.let { item -> allOpinions.filter { it.itemId == item.id } } ?: emptyList()
+            val dbEntry = allResourceEntries.find { it.resourceId == res.id }
+            val opinions = dbEntry?.let { entry -> allOpinions.filter { it.itemId == entry.id } } ?: emptyList()
             for (op in opinions) {
                 val opChecked = checkedStateMap[op.id] ?: false
                 val typeLabel = when {

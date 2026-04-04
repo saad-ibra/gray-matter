@@ -556,7 +556,7 @@ fun NewEntryScreen(
                     }
 
                     val newItemId = when (entryType) {
-                        EntryType.LINK -> viewModel.createNewItem(
+                        EntryType.LINK -> viewModel.createNewResourceEntry(
                             url = urlValue,
                             opinionText = finalOpinion,
                             confidence = (confidenceScore * 100).toInt(),
@@ -571,7 +571,7 @@ fun NewEntryScreen(
                                 if (ext.isNotEmpty()) "$title.$ext" else title
                             } else if (title.isNotBlank()) title else originalFileName ?: "Unknown"
 
-                            viewModel.createNewItemFromFile(
+                            viewModel.createNewResourceEntryFromFile(
                                 context = context,
                                 fileName = originalFileName ?: "Unknown",
                                 uri = fileUri ?: Uri.EMPTY,
