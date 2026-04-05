@@ -112,6 +112,31 @@ interface ResourceRepository {
      */
     suspend fun deleteBookmarksByResourceId(resourceId: String)
 
+    /**
+     * Soft delete a bookmark.
+     */
+    suspend fun softDeleteBookmark(id: String)
+
+    /**
+     * Undo soft delete of a bookmark.
+     */
+    suspend fun undoDeleteBookmark(id: String)
+
+    /**
+     * Bulk soft delete bookmarks for a resource.
+     */
+    suspend fun softDeleteBookmarksByResourceId(resourceId: String, deletedAt: Long)
+
+    /**
+     * Bulk undo soft delete bookmarks for a resource by timestamp.
+     */
+    suspend fun undoDeleteBookmarksByResourceId(resourceId: String, deletedAt: Long)
+
+    /**
+     * Get all deleted bookmarks.
+     */
+    suspend fun getDeletedBookmarks(): List<Bookmark>
+
     // -- Reading Settings --
 
     /**

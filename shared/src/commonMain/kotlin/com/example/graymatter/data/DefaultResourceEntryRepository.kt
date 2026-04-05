@@ -19,7 +19,7 @@ import kotlinx.datetime.Clock
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DefaultResourceEntryRepository(
-    private val database: GrayMatterDatabase,
+    database: GrayMatterDatabase,
     private val resourceRepository: ResourceRepository,
     private val opinionRepository: OpinionRepository,
     private val topicRepository: TopicRepository,
@@ -176,15 +176,41 @@ class DefaultResourceEntryRepository(
     }
     
     override suspend fun softDeleteResourceEntry(id: String) = withContext(dispatcher) {
-        queries.softDeleteResourceEntry(Clock.System.now().toEpochMilliseconds(), id)
+        val entry = getResourceEntryById(id) ?: return@withContext
+        val now = Clock.System.now().toEpochMilliseconds()
+        queries.softDeleteResourceEntry(now, id)
+        opinionRepository.softDeleteOpinionsByItemId(id, now)
+        resourceRepository.softDeleteBookmarksByResourceId(entry.resourceId, now)
     }
 
     override suspend fun undoDeleteResourceEntry(id: String) = withContext(dispatcher) {
+        val entry = getResourceEntryById(id) ?: return@withContext
+        val deletedAt = entry.deletedAt ?: return@withContext
         queries.undoDeleteResourceEntry(id)
+        opinionRepository.undoDeleteOpinionsByItemId(id, deletedAt)
+        resourceRepository.undoDeleteBookmarksByResourceId(entry.resourceId, deletedAt)
     }
 
     override suspend fun getDeletedResourceEntries(): List<ResourceEntry> = withContext(dispatcher) {
         queries.getDeletedResourceEntries().executeAsList().map { it.toResourceEntry() }
+    }
+
+    override suspend fun softDeleteResourceEntriesByTopicId(topicId: String, deletedAt: Long) = withContext(dispatcher) {
+        val entries = queries.getResourceEntriesByTopicId(topicId).executeAsList()
+        entries.forEach { entry ->
+            opinionRepository.softDeleteOpinionsByItemId(entry.id, deletedAt)
+            resourceRepository.softDeleteBookmarksByResourceId(entry.resourceId, deletedAt)
+        }
+        queries.softDeleteResourceEntriesByTopicId(deletedAt, topicId)
+    }
+
+    override suspend fun undoDeleteResourceEntriesByTopicId(topicId: String, deletedAt: Long) = withContext(dispatcher) {
+        val entries = queries.getResourceEntriesByTopicId(topicId).executeAsList()
+        entries.forEach { entry ->
+            opinionRepository.undoDeleteOpinionsByItemId(entry.id, deletedAt)
+            resourceRepository.undoDeleteBookmarksByResourceId(entry.resourceId, deletedAt)
+        }
+        queries.undoDeleteResourceEntriesByTopicId(topicId, deletedAt)
     }
 }
 

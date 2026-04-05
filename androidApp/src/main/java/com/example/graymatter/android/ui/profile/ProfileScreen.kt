@@ -210,8 +210,9 @@ fun RecentlyDeletedScreen(
     val deletedTopics by viewModel.deletedTopics.collectAsState()
     val deletedResources by viewModel.deletedResourceEntries.collectAsState()
     val deletedOpinions by viewModel.deletedOpinions.collectAsState()
+    val deletedBookmarks by viewModel.deletedBookmarks.collectAsState()
 
-    val combinedList = remember(deletedTopics, deletedResources, deletedOpinions) {
+    val combinedList = remember(deletedTopics, deletedResources, deletedOpinions, deletedBookmarks) {
         val list = mutableListOf<DeletedItemUiModel>()
         list.addAll(deletedTopics.map { 
             DeletedItemUiModel.TopicItem(it.id, it.name, it.deletedAt ?: 0L) 
@@ -221,6 +222,9 @@ fun RecentlyDeletedScreen(
         })
         list.addAll(deletedOpinions.map { 
             DeletedItemUiModel.OpinionItem(it.id, "Opinion", it.deletedAt ?: 0L, it.text, it.pageNumber != null) 
+        })
+        list.addAll(deletedBookmarks.map {
+            DeletedItemUiModel.OpinionItem(it.id, it.title ?: "Bookmark", it.deletedAt ?: 0L, it.opinion ?: "", true)
         })
         list.sortedByDescending { it.deletedAt }
     }
@@ -245,7 +249,11 @@ fun RecentlyDeletedScreen(
                         when (item) {
                             is DeletedItemUiModel.TopicItem -> viewModel.undoDeleteTopic(id)
                             is DeletedItemUiModel.ResourceItem -> viewModel.undoDeleteResourceEntry(id)
-                            is DeletedItemUiModel.OpinionItem -> viewModel.undoDeleteOpinion(id)
+                            is DeletedItemUiModel.OpinionItem -> {
+                                // Check if it's a bookmark or opinion by looking at the deletedLists
+                                if (deletedBookmarks.any { it.id == id }) viewModel.undoDeleteBookmark(id)
+                                else viewModel.undoDeleteOpinion(id)
+                            }
                             else -> {}
                         }
                     }
@@ -277,7 +285,10 @@ fun RecentlyDeletedScreen(
                         when (item) {
                             is DeletedItemUiModel.TopicItem -> viewModel.permanentlyDeleteTopic(id)
                             is DeletedItemUiModel.ResourceItem -> viewModel.permanentlyDeleteResourceEntry(id)
-                            is DeletedItemUiModel.OpinionItem -> viewModel.permanentlyDeleteOpinion(id)
+                            is DeletedItemUiModel.OpinionItem -> {
+                                if (deletedBookmarks.any { it.id == id }) viewModel.permanentlyDeleteBookmark(id)
+                                else viewModel.permanentlyDeleteOpinion(id)
+                            }
                             else -> {}
                         }
                     }

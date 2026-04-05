@@ -73,6 +73,8 @@ CREATE TABLE bookmarkEntity (
     opinion TEXT,
     confidenceScore INTEGER,
     createdAt INTEGER NOT NULL,
+    isDeleted INTEGER NOT NULL DEFAULT 0,
+    deletedAt INTEGER,
     FOREIGN KEY (resourceId) REFERENCES resourceEntity(id) ON DELETE CASCADE
 );
 
@@ -144,6 +146,18 @@ UPDATE opinionEntity SET isDeleted = 0, deletedAt = NULL WHERE id = ?;
 getDeletedOpinions:
 SELECT * FROM opinionEntity WHERE isDeleted = 1 ORDER BY deletedAt DESC;
 
+softDeleteOpinionsByItemId:
+UPDATE opinionEntity SET isDeleted = 1, deletedAt = ? WHERE itemId = ? AND isDeleted = 0;
+
+undoDeleteOpinionsByItemId:
+UPDATE opinionEntity SET isDeleted = 0, deletedAt = NULL WHERE itemId = ? AND deletedAt = ?;
+
+softDeleteOpinionsByTopicId:
+UPDATE opinionEntity SET isDeleted = 1, deletedAt = ? WHERE itemId IN (SELECT id FROM itemEntity WHERE topicId = ?) AND isDeleted = 0;
+
+undoDeleteOpinionsByTopicId:
+UPDATE opinionEntity SET isDeleted = 0, deletedAt = NULL WHERE itemId IN (SELECT id FROM itemEntity WHERE topicId = ?) AND deletedAt = ?;
+
 -- Resource Entry (Item) queries
 insertResourceEntry:
 INSERT OR REPLACE INTO itemEntity(id, resourceId, topicId, description, firstOpinionAt, lastOpinionAt, opinionCount, isDeleted, deletedAt)
@@ -181,6 +195,12 @@ UPDATE itemEntity SET isDeleted = 0, deletedAt = NULL WHERE id = ?;
 
 getDeletedResourceEntries:
 SELECT * FROM itemEntity WHERE isDeleted = 1 ORDER BY deletedAt DESC;
+
+softDeleteResourceEntriesByTopicId:
+UPDATE itemEntity SET isDeleted = 1, deletedAt = ? WHERE topicId = ? AND isDeleted = 0;
+
+undoDeleteResourceEntriesByTopicId:
+UPDATE itemEntity SET isDeleted = 0, deletedAt = NULL WHERE topicId = ? AND deletedAt = ?;
 
 -- Topic queries
 insertTopic:
@@ -277,11 +297,11 @@ DELETE FROM readingProgressEntity WHERE resourceId = ?;
 
 -- Bookmark Queries
 insertBookmark:
-INSERT OR REPLACE INTO bookmarkEntity(id, resourceId, page, percentPosition, title, opinion, confidenceScore, createdAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO bookmarkEntity(id, resourceId, page, percentPosition, title, opinion, confidenceScore, createdAt, isDeleted, deletedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 getBookmarksByResourceId:
-SELECT * FROM bookmarkEntity WHERE resourceId = ? ORDER BY page ASC;
+SELECT * FROM bookmarkEntity WHERE resourceId = ? AND isDeleted = 0 ORDER BY page ASC;
 
 getBookmarkById:
 SELECT * FROM bookmarkEntity WHERE id = ?;
@@ -291,6 +311,27 @@ DELETE FROM bookmarkEntity WHERE id = ?;
 
 deleteBookmarksByResourceId:
 DELETE FROM bookmarkEntity WHERE resourceId = ?;
+
+softDeleteBookmark:
+UPDATE bookmarkEntity SET isDeleted = 1, deletedAt = ? WHERE id = ?;
+
+undoDeleteBookmark:
+UPDATE bookmarkEntity SET isDeleted = 0, deletedAt = NULL WHERE id = ?;
+
+getDeletedBookmarks:
+SELECT * FROM bookmarkEntity WHERE isDeleted = 1 ORDER BY deletedAt DESC;
+
+softDeleteBookmarksByResourceId:
+UPDATE bookmarkEntity SET isDeleted = 1, deletedAt = ? WHERE resourceId = ? AND isDeleted = 0;
+
+undoDeleteBookmarksByResourceId:
+UPDATE bookmarkEntity SET isDeleted = 0, deletedAt = NULL WHERE resourceId = ? AND deletedAt = ?;
+
+softDeleteBookmarksByTopicId:
+UPDATE bookmarkEntity SET isDeleted = 1, deletedAt = ? WHERE resourceId IN (SELECT resourceId FROM itemEntity WHERE topicId = ?) AND isDeleted = 0;
+
+undoDeleteBookmarksByTopicId:
+UPDATE bookmarkEntity SET isDeleted = 0, deletedAt = NULL WHERE resourceId IN (SELECT resourceId FROM itemEntity WHERE topicId = ?) AND deletedAt = ?;
 
 -- Reading Settings Queries
 insertOrUpdateReadingSettings:

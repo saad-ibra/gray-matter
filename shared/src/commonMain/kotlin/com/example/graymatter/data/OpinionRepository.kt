@@ -60,4 +60,14 @@ interface OpinionRepository {
      * Search opinions by query text.
      */
     suspend fun searchOpinions(query: String): List<Opinion>
+
+    /**
+     * Bulk soft delete opinions by item ID.
+     */
+    suspend fun softDeleteOpinionsByItemId(itemId: String, deletedAt: Long)
+
+    /**
+     * Bulk undo soft delete opinions by item ID and timestamp.
+     */
+    suspend fun undoDeleteOpinionsByItemId(itemId: String, deletedAt: Long)
 }

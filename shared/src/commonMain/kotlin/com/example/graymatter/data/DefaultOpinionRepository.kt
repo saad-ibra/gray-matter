@@ -78,6 +78,14 @@ class DefaultOpinionRepository(
     override suspend fun searchOpinions(query: String): List<Opinion> = withContext(dispatcher) {
         queries.searchOpinions(query).executeAsList().map { it.toOpinion() }
     }
+
+    override suspend fun softDeleteOpinionsByItemId(itemId: String, deletedAt: Long) = withContext(dispatcher) {
+        queries.softDeleteOpinionsByItemId(deletedAt, itemId)
+    }
+
+    override suspend fun undoDeleteOpinionsByItemId(itemId: String, deletedAt: Long) = withContext(dispatcher) {
+        queries.undoDeleteOpinionsByItemId(itemId, deletedAt)
+    }
 }
 
 private fun OpinionEntity.toOpinion(): Opinion = Opinion(

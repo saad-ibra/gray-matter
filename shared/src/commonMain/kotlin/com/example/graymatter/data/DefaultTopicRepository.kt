@@ -46,11 +46,24 @@ class DefaultTopicRepository(
     }
     
     override suspend fun softDeleteTopic(id: String) = withContext(dispatcher) {
-        queries.softDeleteTopic(Clock.System.now().toEpochMilliseconds(), id)
+        val now = Clock.System.now().toEpochMilliseconds()
+        queries.transaction {
+            queries.softDeleteTopic(now, id)
+            queries.softDeleteResourceEntriesByTopicId(now, id)
+            queries.softDeleteOpinionsByTopicId(now, id)
+            queries.softDeleteBookmarksByTopicId(now, id)
+        }
     }
 
     override suspend fun undoDeleteTopic(id: String) = withContext(dispatcher) {
-        queries.undoDeleteTopic(id)
+        val topic = getTopicById(id) ?: return@withContext
+        val deletedAt = topic.deletedAt ?: return@withContext
+        queries.transaction {
+            queries.undoDeleteTopic(id)
+            queries.undoDeleteResourceEntriesByTopicId(id, deletedAt)
+            queries.undoDeleteOpinionsByTopicId(id, deletedAt)
+            queries.undoDeleteBookmarksByTopicId(id, deletedAt)
+        }
     }
 
     override suspend fun getDeletedTopics(): List<Topic> = withContext(dispatcher) {

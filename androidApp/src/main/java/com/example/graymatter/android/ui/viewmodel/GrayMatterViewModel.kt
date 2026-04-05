@@ -74,6 +74,9 @@ class GrayMatterViewModel(
     private val _deletedResourceEntries = MutableStateFlow<List<ResourceEntryWithDetails>>(emptyList())
     val deletedResourceEntries: StateFlow<List<ResourceEntryWithDetails>> = _deletedResourceEntries.asStateFlow()
 
+    private val _deletedBookmarks = MutableStateFlow<List<Bookmark>>(emptyList())
+    val deletedBookmarks: StateFlow<List<Bookmark>> = _deletedBookmarks.asStateFlow()
+
     init {
         purgeOldDeletedItems()
         loadRecentlyDeleted()
@@ -83,6 +86,7 @@ class GrayMatterViewModel(
         viewModelScope.launch {
             _deletedTopics.value = topicRepository.getDeletedTopics()
             _deletedOpinions.value = opinionRepository.getDeletedOpinions()
+            _deletedBookmarks.value = resourceRepository.getDeletedBookmarks()
             val entries = resourceEntryRepository.getDeletedResourceEntries()
             _deletedResourceEntries.value = entries.mapNotNull { resourceEntryRepository.getResourceEntryWithDetails(it.id) }
         }
@@ -104,6 +108,10 @@ class GrayMatterViewModel(
             opinionRepository.getDeletedOpinions().forEach {
                 val deletedAt = it.deletedAt
                 if (deletedAt != null && now - deletedAt > thirtyDaysInMillis) permanentlyDeleteOpinion(it.id)
+            }
+            resourceRepository.getDeletedBookmarks().forEach {
+                val deletedAt = it.deletedAt
+                if (deletedAt != null && now - deletedAt > thirtyDaysInMillis) permanentlyDeleteBookmark(it.id)
             }
         }
     }
@@ -413,41 +421,28 @@ class GrayMatterViewModel(
      */
     fun deleteTopic(topicId: String) {
         viewModelScope.launch {
-            val resources = getResourceEntriesByTopic(topicId).first()
             topicRepository.softDeleteTopic(topicId)
-            for (resource in resources) {
-                resourceEntryRepository.softDeleteResourceEntry(resource.resourceEntry.id)
-            }
             loadRecentlyDeleted()
         }
     }
 
     fun deleteTopics(topicIds: List<String>) {
         viewModelScope.launch {
-            topicIds.forEach { deleteTopic(it) } // Use the recursive deleteTopic
+            topicIds.forEach { topicRepository.softDeleteTopic(it) }
+            loadRecentlyDeleted()
         }
     }
 
     fun undoDeleteTopics(topicIds: List<String>) {
         viewModelScope.launch {
-            topicIds.forEach { undoDeleteTopic(it) }
+            topicIds.forEach { topicRepository.undoDeleteTopic(it) }
+            loadRecentlyDeleted()
         }
     }
 
     fun undoDeleteTopic(topicId: String) {
         viewModelScope.launch {
-            val topic = topicRepository.getDeletedTopics().find { it.id == topicId }
-            val deletedAt = topic?.deletedAt ?: 0L
             topicRepository.undoDeleteTopic(topicId)
-            
-            // Restore resources that were deleted alongside this topic (within a 5-second window to account for processing variation)
-            val recentlyDeletedResources = resourceEntryRepository.getDeletedResourceEntries()
-            for (deletedResource in recentlyDeletedResources) {
-                val resDeletedAt = deletedResource.deletedAt ?: 0L
-                if (deletedResource.topicId == topicId && kotlin.math.abs(resDeletedAt - deletedAt) < 5000L) {
-                    resourceEntryRepository.undoDeleteResourceEntry(deletedResource.id)
-                }
-            }
             loadRecentlyDeleted()
         }
     }
@@ -712,28 +707,26 @@ class GrayMatterViewModel(
     }
 
     /**
-     * Deletes a bookmark and its associated opinion (if it exists).
+     * Soft deletes a bookmark.
      */
     fun deleteBookmark(bookmarkId: String) {
         viewModelScope.launch {
-            val bookmark = resourceRepository.getBookmarkById(bookmarkId)
-            
-            if (bookmark != null) {
-                val entry = resourceEntryRepository.getResourceEntryByResourceId(bookmark.resourceId)
-                if (entry != null) {
-                    val opinions = opinionRepository.getOpinionsByItemId(entry.id).first()
-                    val matchingOpinion = opinions.firstOrNull { 
-                        it.createdAt == bookmark.createdAt || 
-                        (it.pageNumber == bookmark.page && it.text.contains(bookmark.opinion ?: ""))
-                    }
-                    
-                    if (matchingOpinion != null) {
-                        opinionRepository.deleteOpinion(matchingOpinion.id)
-                    }
-                }
-            }
-            
+            resourceRepository.softDeleteBookmark(bookmarkId)
+            loadRecentlyDeleted()
+        }
+    }
+
+    fun undoDeleteBookmark(bookmarkId: String) {
+        viewModelScope.launch {
+            resourceRepository.undoDeleteBookmark(bookmarkId)
+            loadRecentlyDeleted()
+        }
+    }
+
+    fun permanentlyDeleteBookmark(bookmarkId: String) {
+        viewModelScope.launch {
             resourceRepository.deleteBookmark(bookmarkId)
+            loadRecentlyDeleted()
         }
     }
 

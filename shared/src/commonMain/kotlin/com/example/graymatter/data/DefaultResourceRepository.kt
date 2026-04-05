@@ -133,7 +133,9 @@ class DefaultResourceRepository(
             title = bookmark.title,
             opinion = bookmark.opinion,
             confidenceScore = bookmark.confidenceScore?.toLong(),
-            createdAt = bookmark.createdAt
+            createdAt = bookmark.createdAt,
+            isDeleted = if (bookmark.isDeleted) 1L else 0L,
+            deletedAt = bookmark.deletedAt
         )
     }
 
@@ -143,6 +145,26 @@ class DefaultResourceRepository(
 
     override suspend fun deleteBookmarksByResourceId(resourceId: String) = withContext(dispatcher) {
         queries.deleteBookmarksByResourceId(resourceId)
+    }
+
+    override suspend fun softDeleteBookmark(id: String) = withContext(dispatcher) {
+        queries.softDeleteBookmark(kotlinx.datetime.Clock.System.now().toEpochMilliseconds(), id)
+    }
+
+    override suspend fun undoDeleteBookmark(id: String) = withContext(dispatcher) {
+        queries.undoDeleteBookmark(id)
+    }
+
+    override suspend fun softDeleteBookmarksByResourceId(resourceId: String, deletedAt: Long) = withContext(dispatcher) {
+        queries.softDeleteBookmarksByResourceId(deletedAt, resourceId)
+    }
+
+    override suspend fun undoDeleteBookmarksByResourceId(resourceId: String, deletedAt: Long) = withContext(dispatcher) {
+        queries.undoDeleteBookmarksByResourceId(resourceId, deletedAt)
+    }
+
+    override suspend fun getDeletedBookmarks(): List<Bookmark> = withContext(dispatcher) {
+        queries.getDeletedBookmarks().executeAsList().map { it.toBookmark() }
     }
 
     // -- Reading Settings --
@@ -220,7 +242,9 @@ private fun BookmarkEntity.toBookmark(): Bookmark = Bookmark(
     title = title ?: "",
     opinion = opinion,
     confidenceScore = confidenceScore?.toInt(),
-    createdAt = createdAt
+    createdAt = createdAt,
+    isDeleted = isDeleted == 1L,
+    deletedAt = deletedAt
 )
 
 private fun ReadingSettingsEntity.toReadingSettings(): ReadingSettings = ReadingSettings(

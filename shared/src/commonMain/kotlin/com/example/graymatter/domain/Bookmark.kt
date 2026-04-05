@@ -11,5 +11,7 @@ data class Bookmark(
     val title: String? = null,
     val opinion: String? = null,
     val confidenceScore: Int? = null,
-    val createdAt: Long
+    val createdAt: Long,
+    val isDeleted: Boolean = false,
+    val deletedAt: Long? = null
 )

@@ -94,4 +94,14 @@ interface ResourceEntryRepository {
      * Get all deleted resource entries.
      */
     suspend fun getDeletedResourceEntries(): List<ResourceEntry>
+
+    /**
+     * Bulk soft delete resource entries by topic ID.
+     */
+    suspend fun softDeleteResourceEntriesByTopicId(topicId: String, deletedAt: Long)
+
+    /**
+     * Bulk undo soft delete resource entries by topic ID and timestamp.
+     */
+    suspend fun undoDeleteResourceEntriesByTopicId(topicId: String, deletedAt: Long)
 }
