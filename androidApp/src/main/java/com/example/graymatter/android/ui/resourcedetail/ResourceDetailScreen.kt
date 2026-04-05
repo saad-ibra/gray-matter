@@ -982,7 +982,7 @@ private fun OpinionTimelineItem(
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold, 
                                 fontSize = 10.sp,
-                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                                fontFamily = com.example.graymatter.android.ui.theme.InterFontFamily
                             ),
                             color = Color.White
                         )

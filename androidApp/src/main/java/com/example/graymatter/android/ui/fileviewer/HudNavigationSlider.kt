@@ -202,7 +202,7 @@ private fun ExpandedHudPanel(
             Text(
                 text = "$pageStr / $totalStr",
                 style = TextStyle(
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = com.example.graymatter.android.ui.theme.InterFontFamily,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp,

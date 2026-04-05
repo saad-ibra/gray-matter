@@ -92,9 +92,9 @@ fun TextViewerContent(
     val bgColor = themeColors.background
 
     val fontFamily = when (settings.typeface) {
-        "serif" -> FontFamily.Serif
-        "monospace" -> FontFamily.Monospace
-        else -> FontFamily.Default
+        "serif" -> com.example.graymatter.android.ui.theme.PlayfairDisplayFontFamily
+        "monospace" -> com.example.graymatter.android.ui.theme.InterFontFamily
+        else -> com.example.graymatter.android.ui.theme.InterFontFamily
     }
 
     val scrollState = rememberScrollState()

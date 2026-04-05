@@ -2,25 +2,32 @@ package com.example.graymatter.android.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.example.graymatter.android.R
 
 /**
- * App-wide monospace font — matches the PDF reader's page counter for consistency.
+ * Custom Inter Font Family from resources.
  */
-val InterFontFamily = FontFamily.Monospace
+val InterFontFamily = FontFamily(
+    Font(R.font.inter_regular, FontWeight.Normal),
+    Font(R.font.inter_semibold, FontWeight.SemiBold),
+    Font(R.font.inter_bold, FontWeight.Bold)
+)
 
 /**
- * Style headers with monospace for a cohesive technical look.
+ * Custom Playfair Display Font Family from resources.
  */
-val PlayfairDisplayFontFamily = FontFamily.Monospace
+val PlayfairDisplayFontFamily = FontFamily(
+    Font(R.font.playfair_display_medium, FontWeight.Medium)
+)
 
 /**
- * Gray Matter typography matching the design mockups.
+ * Gray Matter typography using bundled fonts for cross-device consistency.
  */
 val GrayMatterTypography = Typography(
-    // Display - Large headers with Playfair Display
     displayLarge = TextStyle(
         fontFamily = PlayfairDisplayFontFamily,
         fontWeight = FontWeight.Medium,
@@ -42,8 +49,6 @@ val GrayMatterTypography = Typography(
         lineHeight = 32.sp,
         letterSpacing = 0.sp
     ),
-    
-    // Headlines - Inter
     headlineLarge = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight.SemiBold,
@@ -65,8 +70,6 @@ val GrayMatterTypography = Typography(
         lineHeight = 22.sp,
         letterSpacing = 0.sp
     ),
-    
-    // Title
     titleLarge = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight.Bold,
@@ -88,8 +91,6 @@ val GrayMatterTypography = Typography(
         lineHeight = 20.sp,
         letterSpacing = 0.sp
     ),
-    
-    // Body
     bodyLarge = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight.Normal,
@@ -111,8 +112,6 @@ val GrayMatterTypography = Typography(
         lineHeight = 16.sp,
         letterSpacing = 0.sp
     ),
-    
-    // Labels
     labelLarge = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight.Bold,
