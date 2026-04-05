@@ -51,13 +51,22 @@ fun GrayMatterNavigation(
     navController: NavHostController = rememberNavController(),
     modifier: Modifier = Modifier
 ) {
+    val autoLinkService = remember {
+        com.example.graymatter.domain.business.AutoLinkService(
+            topicRepository = appModule.topicRepository,
+            resourceRepository = appModule.resourceRepository,
+            referenceLinkRepository = appModule.referenceLinkRepository
+        )
+    }
+
     val viewModel: GrayMatterViewModel = viewModel {
         GrayMatterViewModel(
             resourceEntryRepository = appModule.resourceEntryRepository,
             resourceRepository = appModule.resourceRepository,
             opinionRepository = appModule.opinionRepository,
             topicRepository = appModule.topicRepository,
-            referenceLinkRepository = appModule.referenceLinkRepository
+            referenceLinkRepository = appModule.referenceLinkRepository,
+            autoLinkService = autoLinkService
         )
     }
 
@@ -457,15 +466,48 @@ fun GrayMatterNavigation(
                     onSave = { newText: String ->
                         editingResource?.let { res ->
                             viewModel.updateResourceText(res.id, newText, editSelectedReferences)
+                            // Update the local snapshot so MarkdownEditor tracks saved state correctly
+                            editingResource = res.copy(extractedText = newText)
                         }
-                        editingResource = null
                     },
                     onShowReferenceSelector = { 
                         referenceSelectorViewModel.clearSelection()
                         showEditReferenceSelector = true 
                     },
                     referenceToInsert = editReferenceToInsert,
-                    onReferenceInserted = { editReferenceToInsert = null }
+                    onReferenceInserted = { editReferenceToInsert = null },
+                    onReferenceTap = { refText ->
+                        // Resolve the reference text to a navigation target
+                        // Strip prefixes like "Topic: ", "Resource: ", "Knowledge: "
+                        val cleanText = refText
+                            .removePrefix("Topic: ")
+                            .removePrefix("Resource: ")
+                            .removePrefix("Knowledge: ")
+                            .removeSuffix("...")
+                            .trim()
+
+                        // Try to find a matching topic (synchronous — already in memory)
+                        val matchingTopic = topics.firstOrNull { 
+                            it.name.equals(cleanText, ignoreCase = true) 
+                        }
+                        if (matchingTopic != null) {
+                            editingResource = null
+                            navController.navigate(NavigationDestination.TopicDetail.buildRoute(matchingTopic.id))
+                            return@MarkdownEditor
+                        }
+
+                        // Try to find a matching resource (async lookup)
+                        coroutineScope.launch {
+                            for (entry in items) {
+                                val resource = viewModel.getResourceForResourceEntry(entry.resourceId)
+                                if (resource?.title?.contains(cleanText, ignoreCase = true) == true) {
+                                    editingResource = null
+                                    navController.navigate(NavigationDestination.ResourceDetail.buildRoute(entry.id))
+                                    return@launch
+                                }
+                            }
+                        }
+                    }
                 )
                 
                 if (showEditReferenceSelector) {
@@ -554,7 +596,8 @@ fun GrayMatterNavigation(
                     resourceRepository = appModule.resourceRepository,
                     opinionRepository = appModule.opinionRepository,
                     resourceEntryRepository = appModule.resourceEntryRepository,
-                    referenceLinkRepository = appModule.referenceLinkRepository
+                    referenceLinkRepository = appModule.referenceLinkRepository,
+                    autoLinkService = autoLinkService
                 )
             }
 

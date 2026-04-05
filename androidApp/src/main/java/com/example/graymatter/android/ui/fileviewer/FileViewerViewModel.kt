@@ -16,6 +16,7 @@ import com.example.graymatter.domain.ReadingSettings
 import com.example.graymatter.domain.Resource
 import com.example.graymatter.domain.ResourceType
 import com.example.graymatter.domain.Opinion
+import com.example.graymatter.domain.ReferenceType
 import com.example.graymatter.domain.SearchResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,7 +36,8 @@ class FileViewerViewModel(
     private val resourceRepository: ResourceRepository,
     private val opinionRepository: OpinionRepository,
     private val resourceEntryRepository: ResourceEntryRepository,
-    private val referenceLinkRepository: com.example.graymatter.data.ReferenceLinkRepository
+    private val referenceLinkRepository: com.example.graymatter.data.ReferenceLinkRepository,
+    private val autoLinkService: com.example.graymatter.domain.business.AutoLinkService
 ) : ViewModel() {
 
     private val _resource = MutableStateFlow<Resource?>(null)
@@ -241,9 +243,7 @@ class FileViewerViewModel(
             _resource.value = res.copy(extractedText = newText)
             _pageTextMap[0] = newText
             
-            if (referenceLinks.isNotEmpty()) {
-                saveReferenceLinksInternal(res.id, com.example.graymatter.domain.ReferenceType.RESOURCE, referenceLinks)
-            }
+            autoLinkService.syncLinks(res.id, com.example.graymatter.domain.ReferenceType.RESOURCE, newText, referenceLinks)
         }
     }
 
@@ -433,7 +433,7 @@ class FileViewerViewModel(
                 createdAt = now
             )
             resourceRepository.saveBookmark(bookmark)
-            saveReferenceLinksInternal(bookmarkId, com.example.graymatter.domain.ReferenceType.BOOKMARK, referenceLinks)
+            autoLinkService.syncLinks(bookmarkId, com.example.graymatter.domain.ReferenceType.BOOKMARK, "Page ${currentPage + 1}", referenceLinks)
             
             val item = resourceEntryRepository.getResourceEntryByResourceId(res.id)
             if (item != null) {
@@ -448,7 +448,7 @@ class FileViewerViewModel(
                     updatedAt = now
                 )
                 opinionRepository.saveOpinion(opinion)
-                saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+                autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, opinionText, referenceLinks)
                 resourceEntryRepository.updateResourceEntryOpinionMetadata(item.id, now)
             }
             
@@ -480,7 +480,7 @@ class FileViewerViewModel(
                     updatedAt = now
                 )
                 opinionRepository.saveOpinion(opinion)
-                saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+                autoLinkService.syncLinks(opinionId, ReferenceType.OPINION, fullOpinion, referenceLinks)
                 resourceEntryRepository.updateResourceEntryOpinionMetadata(item.id, now)
             }
             showSelectionAnnotationDialog = false
@@ -538,7 +538,7 @@ class FileViewerViewModel(
                     updatedAt = now
                 )
             )
-            saveReferenceLinksInternal(id, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+            autoLinkService.syncLinks(id, com.example.graymatter.domain.ReferenceType.OPINION, text, referenceLinks)
         }
     }
 
@@ -579,7 +579,7 @@ class FileViewerViewModel(
                     updatedAt = now
                 )
                 opinionRepository.saveOpinion(opinion)
-                saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+                autoLinkService.syncLinks(opinionId, ReferenceType.OPINION, content, referenceLinks)
                 resourceEntryRepository.updateResourceEntryOpinionMetadata(item.id, now)
             }
         }
@@ -602,7 +602,7 @@ class FileViewerViewModel(
                     updatedAt = now
                 )
                 opinionRepository.saveOpinion(opinion)
-                saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+                autoLinkService.syncLinks(opinionId, ReferenceType.OPINION, formattedText, referenceLinks)
                 resourceEntryRepository.updateResourceEntryOpinionMetadata(item.id, now)
             }
         }

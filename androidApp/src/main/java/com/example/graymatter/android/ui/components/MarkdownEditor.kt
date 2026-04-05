@@ -1,7 +1,9 @@
 package com.example.graymatter.android.ui.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -39,14 +41,31 @@ fun MarkdownEditor(
     referenceToInsert: String? = null,
     onReferenceInserted: () -> Unit = {},
     onTextChange: (String) -> Unit = {},
+    onReferenceTap: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var textFieldValue by remember {
         mutableStateOf(TextFieldValue(initialText, selection = TextRange(initialText.length)))
     }
     var isPreviewMode by remember { mutableStateOf(initialPreviewMode) }
-    var showDiscardConfirm by remember { mutableStateOf(false) }
+    var showUnsavedDialog by remember { mutableStateOf(false) }
     var editableTitle by remember { mutableStateOf(title) }
+    // Track the last-saved text so we can distinguish "dirty" from "saved"
+    var lastSavedText by remember { mutableStateOf(initialText) }
+
+    // Pending reference tap — stored so we can auto-save before navigating
+    var pendingReferenceTap by remember { mutableStateOf<String?>(null) }
+
+    val hasUnsavedChanges = textFieldValue.text != lastSavedText || editableTitle != title
+
+    // Intercept Android back button
+    BackHandler(enabled = true) {
+        if (hasUnsavedChanges) {
+            showUnsavedDialog = true
+        } else {
+            onBackClick()
+        }
+    }
 
     // Sync text state upstream
     LaunchedEffect(textFieldValue.text) {
@@ -103,8 +122,8 @@ fun MarkdownEditor(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = {
-                if (textFieldValue.text != initialText || editableTitle != title) {
-                    showDiscardConfirm = true
+                if (hasUnsavedChanges) {
+                    showUnsavedDialog = true
                 } else {
                     onBackClick()
                 }
@@ -129,7 +148,10 @@ fun MarkdownEditor(
             }
 
             TextButton(
-                onClick = { onSave(textFieldValue.text) },
+                onClick = {
+                    onSave(textFieldValue.text)
+                    lastSavedText = textFieldValue.text
+                },
                 enabled = editableTitle.isNotBlank()
             ) {
                 Text(
@@ -204,16 +226,94 @@ fun MarkdownEditor(
             }
 
             if (isPreviewMode) {
+                // Preview mode with tappable [[references]]
                 Box(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                    val processedMarkdown = textFieldValue.text.replace(
-                        Regex("\\[\\[(.*?)\\]\\]"), 
-                        "**<u>$1</u>**"
-                    )
-                    MarkdownText(
-                        markdown = processedMarkdown,
-                        color = Color.White,
-                        modifier = Modifier.fillMaxSize().padding(bottom = 32.dp)
-                    )
+                    Column(modifier = Modifier.fillMaxSize().padding(bottom = 32.dp)) {
+                        // Split text by [[...]] references for mixed rendering
+                        val rawText = textFieldValue.text
+                        val refPattern = Regex("\\[\\[(.*?)\\]\\]")
+                        val segments = remember(rawText) {
+                            buildList {
+                                var lastEnd = 0
+                                for (match in refPattern.findAll(rawText)) {
+                                    if (match.range.first > lastEnd) {
+                                        add(PreviewSegment.Markdown(rawText.substring(lastEnd, match.range.first)))
+                                    }
+                                    add(PreviewSegment.Reference(match.groupValues[1]))
+                                    lastEnd = match.range.last + 1
+                                }
+                                if (lastEnd < rawText.length) {
+                                    add(PreviewSegment.Markdown(rawText.substring(lastEnd)))
+                                }
+                            }
+                        }
+
+                        segments.forEach { segment ->
+                            when (segment) {
+                                is PreviewSegment.Markdown -> {
+                                    if (segment.text.isNotBlank()) {
+                                        MarkdownText(
+                                            markdown = segment.text,
+                                            color = Color.White,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                }
+                                is PreviewSegment.Reference -> {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f),
+                                        modifier = Modifier
+                                            .padding(vertical = 4.dp)
+                                            .border(
+                                                0.5.dp,
+                                                GrayMatterColors.KnowledgeBlue.copy(alpha = 0.4f),
+                                                RoundedCornerShape(8.dp)
+                                            )
+                                            .clickable {
+                                                if (onReferenceTap != null) {
+                                                    if (hasUnsavedChanges) {
+                                                        // Auto-save before navigating
+                                                        onSave(textFieldValue.text)
+                                                        lastSavedText = textFieldValue.text
+                                                    }
+                                                    onReferenceTap(segment.refText)
+                                                }
+                                            }
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Link,
+                                                null,
+                                                tint = GrayMatterColors.KnowledgeBlue,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                            Spacer(Modifier.width(6.dp))
+                                            Text(
+                                                segment.refText,
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    fontWeight = FontWeight.SemiBold
+                                                ),
+                                                color = GrayMatterColors.KnowledgeBlue
+                                            )
+                                            if (onReferenceTap != null) {
+                                                Spacer(Modifier.width(4.dp))
+                                                Icon(
+                                                    Icons.Default.OpenInNew,
+                                                    null,
+                                                    tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.6f),
+                                                    modifier = Modifier.size(12.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             } else {
                 Box(modifier = Modifier.weight(1f)) {
@@ -379,27 +479,47 @@ fun MarkdownEditor(
         } // end imePadding wrapper
     }
 
-    if (showDiscardConfirm) {
+    // Three-option unsaved changes dialog
+    if (showUnsavedDialog) {
         AlertDialog(
-            onDismissRequest = { showDiscardConfirm = false },
-            title = { Text("Discard Changes?", color = Color.White) },
-            text = { Text("You have unsaved changes. Are you sure you want to discard them?", color = GrayMatterColors.TextSecondary) },
+            onDismissRequest = { showUnsavedDialog = false },
+            title = { Text("Unsaved Changes", color = Color.White) },
+            text = { Text("You have unsaved changes. What would you like to do?", color = GrayMatterColors.TextSecondary) },
             containerColor = Color(0xFF1A1A1E),
             confirmButton = {
                 TextButton(onClick = {
-                    showDiscardConfirm = false
+                    showUnsavedDialog = false
+                    onSave(textFieldValue.text)
+                    lastSavedText = textFieldValue.text
                     onBackClick()
                 }) {
-                    Text("Discard", color = GrayMatterColors.Error)
+                    Text("Save & Close", color = GrayMatterColors.Primary, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDiscardConfirm = false }) {
-                    Text("Cancel", color = Color.White)
+                Row {
+                    TextButton(onClick = {
+                        showUnsavedDialog = false
+                    }) {
+                        Text("Continue Editing", color = Color.White)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = {
+                        showUnsavedDialog = false
+                        onBackClick()
+                    }) {
+                        Text("Discard", color = GrayMatterColors.Error)
+                    }
                 }
             }
         )
     }
+}
+
+/** Preview segments: either plain markdown or a tappable [[reference]]. */
+private sealed class PreviewSegment {
+    data class Markdown(val text: String) : PreviewSegment()
+    data class Reference(val refText: String) : PreviewSegment()
 }
 
 @Composable

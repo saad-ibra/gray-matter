@@ -36,7 +36,8 @@ class GrayMatterViewModel(
     private val resourceRepository: ResourceRepository,
     private val opinionRepository: OpinionRepository,
     private val topicRepository: TopicRepository,
-    private val referenceLinkRepository: ReferenceLinkRepository
+    private val referenceLinkRepository: ReferenceLinkRepository,
+    private val autoLinkService: com.example.graymatter.domain.business.AutoLinkService
 ) : ViewModel() {
     
     val topicsStream: StateFlow<List<Topic>> = topicRepository.topicsStream
@@ -168,7 +169,7 @@ class GrayMatterViewModel(
             resourceEntryRepository.updateResourceEntryTopic(resourceEntryId, topicId)
         }
         
-        saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+        autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, opinionText, referenceLinks)
         
         return resourceEntryId
     }
@@ -217,10 +218,10 @@ class GrayMatterViewModel(
             resourceEntryRepository.updateResourceEntryTopic(resourceEntryId, topicId)
         }
         
-        // Save note-level links as RESOURCE type
-        saveReferenceLinksInternal(resourceId, com.example.graymatter.domain.ReferenceType.RESOURCE, referenceLinks)
-        // Save opinion-level links as OPINION type
-        saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, opinionReferenceLinks)
+        // Save note-level links as RESOURCE type (extracted from content)
+        autoLinkService.syncLinks(resourceId, com.example.graymatter.domain.ReferenceType.RESOURCE, content, referenceLinks)
+        // Save opinion-level links as OPINION type (extracted from first opinion)
+        autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, opinionText, opinionReferenceLinks)
         
         return resourceEntryId
     }
@@ -278,7 +279,7 @@ class GrayMatterViewModel(
                 resourceEntryRepository.updateResourceEntryTopic(resourceEntryId, topicId)
             }
             
-            saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+            autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, opinionText, referenceLinks)
 
             _isImporting.value = false
             resourceEntryId
@@ -307,8 +308,7 @@ class GrayMatterViewModel(
             )
             opinionRepository.saveOpinion(opinion)
             
-            referenceLinkRepository.deleteReferenceLinksBySource(opinion.id)
-            saveReferenceLinksInternal(opinion.id, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+            autoLinkService.syncLinks(opinion.id, com.example.graymatter.domain.ReferenceType.OPINION, opinionText, referenceLinks)
             
             // Update resource entry metadata
             resourceEntryRepository.updateResourceEntryOpinionMetadata(resourceEntryId, finalCreatedAt)
@@ -329,8 +329,7 @@ class GrayMatterViewModel(
                 updatedAt = now
             )
             opinionRepository.updateOpinion(updated)
-            referenceLinkRepository.deleteReferenceLinksBySource(opinionId)
-            saveReferenceLinksInternal(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, referenceLinks)
+            autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, text, referenceLinks)
         }
     }
 
@@ -565,8 +564,7 @@ class GrayMatterViewModel(
     fun updateTopicNotes(topicId: String, notes: String, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         viewModelScope.launch {
             topicRepository.updateTopicNotes(topicId, notes)
-            referenceLinkRepository.deleteReferenceLinksBySource(topicId)
-            saveReferenceLinksInternal(topicId, com.example.graymatter.domain.ReferenceType.TOPIC, referenceLinks)
+            autoLinkService.syncLinks(topicId, com.example.graymatter.domain.ReferenceType.TOPIC, notes, referenceLinks)
         }
     }
 
@@ -597,9 +595,7 @@ class GrayMatterViewModel(
                 }
             }
             
-            if (referenceLinks.isNotEmpty()) {
-                saveReferenceLinksInternal(resourceId, com.example.graymatter.domain.ReferenceType.RESOURCE, referenceLinks)
-            }
+            autoLinkService.syncLinks(resourceId, com.example.graymatter.domain.ReferenceType.RESOURCE, newText, referenceLinks)
         }
     }
 

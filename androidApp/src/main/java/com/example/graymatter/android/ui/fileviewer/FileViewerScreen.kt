@@ -275,22 +275,69 @@ fun FileViewerScreen(
                             )
                         }
                         ResourceType.MARKDOWN -> {
-                            MarkdownEditor(
-                                title = res.title ?: "Markdown Note",
-                                initialText = res.extractedText ?: "",
-                                onBackClick = onBackClick,
-                                onTextChange = { currentEditorText = it },
-                                onTitleChange = { /* Rename logic if needed */ },
-                                onSave = { content -> viewModel.updateResourceText(content, editSelectedReferences) },
-                                initialPreviewMode = true,
-                                onShowReferenceSelector = { 
-                                    referenceSelectorViewModel?.clearSelection()
-                                    showEditReferenceSelector = true 
-                                },
-                                referenceToInsert = editReferenceToInsert,
-                                onReferenceInserted = { editReferenceToInsert = null },
-                                modifier = Modifier.fillMaxSize()
-                            )
+                            // Key on extractedText so MarkdownEditor reinitializes after save
+                            val noteText = res.extractedText ?: ""
+                            var showSavedFeedback by remember { mutableStateOf(false) }
+
+                            key(noteText) {
+                                MarkdownEditor(
+                                    title = res.title ?: "Markdown Note",
+                                    initialText = noteText,
+                                    onBackClick = onBackClick,
+                                    onTextChange = { currentEditorText = it },
+                                    onTitleChange = { /* Rename logic if needed */ },
+                                    onSave = { content ->
+                                        viewModel.updateResourceText(content, editSelectedReferences)
+                                        showSavedFeedback = true
+                                    },
+                                    initialPreviewMode = true,
+                                    onShowReferenceSelector = { 
+                                        referenceSelectorViewModel?.clearSelection()
+                                        showEditReferenceSelector = true 
+                                    },
+                                    referenceToInsert = editReferenceToInsert,
+                                    onReferenceInserted = { editReferenceToInsert = null },
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+
+                            // Save feedback snackbar
+                            if (showSavedFeedback) {
+                                LaunchedEffect(Unit) {
+                                    kotlinx.coroutines.delay(1500)
+                                    showSavedFeedback = false
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(bottom = 32.dp),
+                                    contentAlignment = Alignment.BottomCenter
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = GrayMatterColors.Success.copy(alpha = 0.9f),
+                                        tonalElevation = 8.dp
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                "Note saved",
+                                                color = Color.White,
+                                                style = MaterialTheme.typography.labelLarge
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                         else -> {
                             // Handled by LaunchedEffect - show loading while intent triggers

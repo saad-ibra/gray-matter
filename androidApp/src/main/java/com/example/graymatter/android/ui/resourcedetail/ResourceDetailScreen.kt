@@ -264,6 +264,7 @@ fun ResourceDetailScreen(
                                             is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> Icons.Default.FormatQuote
                                         }
                                         Surface(
+                                            onClick = { onNavigateToKnowledgeLink(link) },
                                             shape = RoundedCornerShape(10.dp),
                                             color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.10f),
                                             modifier = Modifier.border(
@@ -288,6 +289,13 @@ fun ResourceDetailScreen(
                                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
                                                     color = GrayMatterColors.KnowledgeBlue,
                                                     maxLines = 1
+                                                )
+                                                Spacer(Modifier.width(4.dp))
+                                                Icon(
+                                                    Icons.Default.OpenInNew,
+                                                    null,
+                                                    tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.5f),
+                                                    modifier = Modifier.size(12.dp)
                                                 )
                                             }
                                         }
