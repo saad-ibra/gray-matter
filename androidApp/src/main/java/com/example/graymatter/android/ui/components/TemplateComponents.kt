@@ -37,7 +37,7 @@ fun TemplateSelector(
             Icon(
                 Icons.Default.DashboardCustomize,
                 contentDescription = "Template",
-                tint = GrayMatterColors.CustomizedAccent,
+                tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )
         }
