@@ -23,8 +23,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
+import com.example.graymatter.domain.ResourceEntry
 import com.example.graymatter.domain.ResourceEntryWithDetails
 import com.example.graymatter.domain.ResourceType
+import com.example.graymatter.android.ui.components.TopicPickerSheet
+import kotlinx.coroutines.launch
 
 /**
  * Home Screen.
@@ -42,6 +45,11 @@ fun HomeScreen(
 ) {
     // Collect the reactive stream of the 4 most recent items with details
     val recentItems by viewModel.recentResourceEntryDetails.collectAsState()
+    val orphanEntries by viewModel.orphanResourceEntries.collectAsState()
+    val topics by viewModel.topicsStream.collectAsState()
+    
+    var selectedOrphan by remember { mutableStateOf<ResourceEntry?>(null) }
+    val scope = rememberCoroutineScope()
     
     LazyColumn(
         modifier = modifier
@@ -66,8 +74,48 @@ fun HomeScreen(
                 AddNewEntryCard(onClick = onCreateNewEntryClick)
             }
         }
-
-
+        // Orphan Resource Entries Banner
+        if (orphanEntries.isNotEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(GrayMatterColors.Error.copy(alpha = 0.1f))
+                        .border(1.dp, GrayMatterColors.Error.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Warning, null, tint = GrayMatterColors.Error, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                "Rogue Resources Detected",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color = GrayMatterColors.TextPrimary
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Some resources are not assigned to a topic. Please organize them to ensure data integrity.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = GrayMatterColors.TextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = { selectedOrphan = orphanEntries.first() },
+                            colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Error),
+                            modifier = Modifier.height(36.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Fix Now", style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                }
+            }
+        }
 
         // Recently Added Section (Limited to 4)
         if (recentItems.isNotEmpty()) {
@@ -99,6 +147,25 @@ fun HomeScreen(
                 )
             }
         }
+    }
+
+    if (selectedOrphan != null) {
+        TopicPickerSheet(
+            title = "Unorganized Entry",
+            topics = topics,
+            onDismiss = { selectedOrphan = null },
+            onSelectTopic = { topic ->
+                viewModel.assignTopicToResourceEntry(selectedOrphan!!.id, topic.id)
+                selectedOrphan = null
+            },
+            onCreateNewTopic = { name ->
+                scope.launch {
+                    val newId = viewModel.createTopic(name)
+                    viewModel.assignTopicToResourceEntry(selectedOrphan!!.id, newId)
+                    selectedOrphan = null
+                }
+            }
+        )
     }
 }
 

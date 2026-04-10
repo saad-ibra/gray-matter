@@ -78,18 +78,42 @@ class GrayMatterViewModel(
     private val _deletedBookmarks = MutableStateFlow<List<Bookmark>>(emptyList())
     val deletedBookmarks: StateFlow<List<Bookmark>> = _deletedBookmarks.asStateFlow()
 
+    // Data Integrity: orphan resource entries (no topic) detected on startup
+    private val _orphanResourceEntries = MutableStateFlow<List<ResourceEntry>>(emptyList())
+    val orphanResourceEntries: StateFlow<List<ResourceEntry>> = _orphanResourceEntries.asStateFlow()
+
+    // Restore flow: when non-null, the restored resource entry needs a topic assigned
+    private val _restoreNeedsTopicId = MutableStateFlow<String?>(null)
+    val restoreNeedsTopicId: StateFlow<String?> = _restoreNeedsTopicId.asStateFlow()
+
     init {
         purgeOldDeletedItems()
         loadRecentlyDeleted()
+        checkOrphanResourceEntries()
     }
 
     fun loadRecentlyDeleted() {
         viewModelScope.launch {
-            _deletedTopics.value = topicRepository.getDeletedTopics()
+            val deletedTopics = topicRepository.getDeletedTopics()
+            _deletedTopics.value = deletedTopics
+            val deletedTopicIds = deletedTopics.map { it.id }.toSet()
+
+            val allDeletedResourceEntries = resourceEntryRepository.getDeletedResourceEntries()
+            val allDeletedResourceEntryIds = allDeletedResourceEntries.map { it.id }.toSet()
+            val allDeletedResourceEntryResourceIds = allDeletedResourceEntries.map { it.resourceId }.toSet()
+
+            // Only show ResourceEntries in trash if their parent Topic is NOT in trash (or has no topic)
+            _deletedResourceEntries.value = allDeletedResourceEntries
+                .filter { it.topicId == null || it.topicId !in deletedTopicIds }
+                .mapNotNull { resourceEntryRepository.getResourceEntryWithDetails(it.id) }
+
+            // Only show Opinions if their parent ResourceEntry is NOT in trash
             _deletedOpinions.value = opinionRepository.getDeletedOpinions()
+                .filter { it.itemId !in allDeletedResourceEntryIds }
+
+            // Only show Bookmarks if their parent Resource is NOT in trash
             _deletedBookmarks.value = resourceRepository.getDeletedBookmarks()
-            val entries = resourceEntryRepository.getDeletedResourceEntries()
-            _deletedResourceEntries.value = entries.mapNotNull { resourceEntryRepository.getResourceEntryWithDetails(it.id) }
+                .filter { it.resourceId !in allDeletedResourceEntryResourceIds }
         }
     }
 
@@ -114,6 +138,43 @@ class GrayMatterViewModel(
                 val deletedAt = it.deletedAt
                 if (deletedAt != null && now - deletedAt > thirtyDaysInMillis) permanentlyDeleteBookmark(it.id)
             }
+
+            // Sweep orphans left behind by any data leak
+            resourceRepository.cleanOrphanResources()
+            resourceRepository.cleanOrphanReadingData()
+            referenceLinkRepository.cleanOrphanReferenceLinks()
+        }
+    }
+
+    /**
+     * Checks for resource entries that have no topic assigned (orphans).
+     */
+    private fun checkOrphanResourceEntries() {
+        viewModelScope.launch {
+            _orphanResourceEntries.value = resourceEntryRepository.getResourceEntriesWithoutTopic()
+        }
+    }
+
+    /**
+     * Called after assigning a topic to a resource entry (previously orphan or during creation).
+     */
+    fun assignTopicToResourceEntry(resourceEntryId: String, topicId: String) {
+        viewModelScope.launch {
+            resourceEntryRepository.updateResourceEntryTopic(resourceEntryId, topicId)
+            checkOrphanResourceEntries()
+        }
+    }
+
+    fun clearRestoreNeedsTopic() {
+        _restoreNeedsTopicId.value = null
+    }
+
+    fun cancelRestore(resourceEntryId: String) {
+        viewModelScope.launch {
+            // Put it back in trash since user declined to pick a topic
+            resourceEntryRepository.softDeleteResourceEntry(resourceEntryId)
+            _restoreNeedsTopicId.value = null
+            loadRecentlyDeleted()
         }
     }
 
@@ -352,6 +413,9 @@ class GrayMatterViewModel(
     
     fun permanentlyDeleteOpinion(opinionId: String) {
         viewModelScope.launch {
+            // Clean reference links before deleting
+            referenceLinkRepository.deleteReferenceLinksBySource(opinionId)
+            referenceLinkRepository.deleteReferenceLinksByTarget(opinionId)
             opinionRepository.deleteOpinion(opinionId)
             loadRecentlyDeleted()
         }
@@ -371,6 +435,23 @@ class GrayMatterViewModel(
         viewModelScope.launch {
             resourceEntryRepository.undoDeleteResourceEntry(resourceEntryId)
             loadRecentlyDeleted()
+
+            // Validate parent still exists — if not, prompt user to pick a topic
+            val entry = resourceEntryRepository.getResourceEntryById(resourceEntryId)
+            if (entry != null) {
+                val topicId = entry.topicId
+                if (topicId == null) {
+                    // No topic assigned — needs re-parenting
+                    _restoreNeedsTopicId.value = resourceEntryId
+                } else {
+                    // Check if the topic still exists (not permanently deleted)
+                    val topic = topicRepository.getTopicById(topicId)
+                    if (topic == null) {
+                        // Topic was permanently deleted — needs re-parenting
+                        _restoreNeedsTopicId.value = resourceEntryId
+                    }
+                }
+            }
         }
     }
 
@@ -382,7 +463,17 @@ class GrayMatterViewModel(
         viewModelScope.launch {
             val details = resourceEntryRepository.getResourceEntryWithDetails(resourceEntryId)
             val filePath = details?.resource?.filePath
-            
+
+            // Clean up reference links for all child opinions and the resource itself
+            if (details != null) {
+                details.opinions.forEach { opinion ->
+                    referenceLinkRepository.deleteReferenceLinksBySource(opinion.id)
+                    referenceLinkRepository.deleteReferenceLinksByTarget(opinion.id)
+                }
+                referenceLinkRepository.deleteReferenceLinksBySource(details.resource.id)
+                referenceLinkRepository.deleteReferenceLinksByTarget(details.resource.id)
+            }
+
             resourceEntryRepository.deleteResourceEntry(resourceEntryId)
 
             // Delete physical file if it exists and is in our app's private directory
@@ -468,14 +559,15 @@ class GrayMatterViewModel(
      * opinions, resource entries, and the topic record itself.
      */
     private suspend fun cascadeDeleteTopic(topicId: String) {
-        // 1. Get all resource entries belonging to this topic
-        val topicEntries = resourceEntryRepository.resourceEntriesStream.first().filter { it.topicId == topicId }
+        // 1. Get ALL resource entries belonging to this topic (including deleted ones)
+        val topicEntries = resourceEntryRepository.getAllResourceEntriesByTopicId(topicId)
 
         for (entry in topicEntries) {
-            // 2. Get all opinions for this entry and delete their reference links
-            val opinions = opinionRepository.getOpinionsByItemId(entry.id).first()
+            // 2. Get ALL opinions for this entry (including deleted ones) and delete their reference links
+            val opinions = opinionRepository.getAllOpinionsByItemId(entry.id)
             for (opinion in opinions) {
                 referenceLinkRepository.deleteReferenceLinksBySource(opinion.id)
+                referenceLinkRepository.deleteReferenceLinksByTarget(opinion.id)
             }
 
             // 3. Delete reference links where this resource is the target
@@ -515,15 +607,6 @@ class GrayMatterViewModel(
         }
     }
     
-    /**
-     * Assigns a topic to a resource entry.
-     */
-    fun assignTopicToResourceEntry(resourceEntryId: String, topicId: String) {
-        viewModelScope.launch {
-            resourceEntryRepository.updateResourceEntryTopic(resourceEntryId, topicId)
-        }
-    }
-
     /**
      * Updates a resource entry's description.
      */
@@ -721,6 +804,9 @@ class GrayMatterViewModel(
 
     fun permanentlyDeleteBookmark(bookmarkId: String) {
         viewModelScope.launch {
+            // Clean reference links before deleting
+            referenceLinkRepository.deleteReferenceLinksBySource(bookmarkId)
+            referenceLinkRepository.deleteReferenceLinksByTarget(bookmarkId)
             resourceRepository.deleteBookmark(bookmarkId)
             loadRecentlyDeleted()
         }

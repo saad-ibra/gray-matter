@@ -211,6 +211,17 @@ class DefaultResourceRepository(
     override suspend fun deleteTemplate(id: String) = withContext(dispatcher) {
         queries.deleteTemplate(id)
     }
+
+    // -- Data Integrity --
+
+    override suspend fun cleanOrphanResources() = withContext(dispatcher) {
+        queries.deleteOrphanResources()
+    }
+
+    override suspend fun cleanOrphanReadingData() = withContext(dispatcher) {
+        queries.deleteOrphanReadingProgress()
+        queries.deleteOrphanReadingSettings()
+    }
 }
 
 // -- Entity to Domain mappers (Enhanced with safety) --

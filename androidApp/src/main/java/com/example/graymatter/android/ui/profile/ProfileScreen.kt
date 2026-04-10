@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import com.example.graymatter.android.ui.components.TopicPickerSheet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.filled.*
@@ -211,6 +212,10 @@ fun RecentlyDeletedScreen(
     val deletedResources by viewModel.deletedResourceEntries.collectAsState()
     val deletedOpinions by viewModel.deletedOpinions.collectAsState()
     val deletedBookmarks by viewModel.deletedBookmarks.collectAsState()
+    val topics by viewModel.topicsStream.collectAsState()
+    val restoreNeedsTopicId by viewModel.restoreNeedsTopicId.collectAsState()
+    
+    val scope = rememberCoroutineScope()
 
     val combinedList = remember(deletedTopics, deletedResources, deletedOpinions, deletedBookmarks) {
         val list = mutableListOf<DeletedItemUiModel>()
@@ -301,6 +306,31 @@ fun RecentlyDeletedScreen(
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
                     Text("Cancel", color = Color.White)
+                }
+            }
+        )
+    }
+    
+    if (restoreNeedsTopicId != null) {
+        val entryWithDetails = remember(restoreNeedsTopicId, deletedResources) {
+            deletedResources.find { it.resourceEntry.id == restoreNeedsTopicId }
+        }
+
+        TopicPickerSheet(
+            title = entryWithDetails?.resource?.title ?: "Restore Item",
+            topics = topics,
+            onDismiss = {
+                viewModel.cancelRestore(restoreNeedsTopicId!!)
+            },
+            onSelectTopic = { topic ->
+                viewModel.assignTopicToResourceEntry(restoreNeedsTopicId!!, topic.id)
+                viewModel.clearRestoreNeedsTopic()
+            },
+            onCreateNewTopic = { name ->
+                scope.launch {
+                    val newId = viewModel.createTopic(name)
+                    viewModel.assignTopicToResourceEntry(restoreNeedsTopicId!!, newId)
+                    viewModel.clearRestoreNeedsTopic()
                 }
             }
         )

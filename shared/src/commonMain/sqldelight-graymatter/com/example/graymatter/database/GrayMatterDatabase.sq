@@ -158,6 +158,9 @@ UPDATE opinionEntity SET isDeleted = 1, deletedAt = ? WHERE itemId IN (SELECT id
 undoDeleteOpinionsByTopicId:
 UPDATE opinionEntity SET isDeleted = 0, deletedAt = NULL WHERE itemId IN (SELECT id FROM itemEntity WHERE topicId = ?) AND deletedAt = ?;
 
+getAllOpinionsByItemId:
+SELECT * FROM opinionEntity WHERE itemId = ?;
+
 -- Resource Entry (Item) queries
 insertResourceEntry:
 INSERT OR REPLACE INTO itemEntity(id, resourceId, topicId, description, firstOpinionAt, lastOpinionAt, opinionCount, isDeleted, deletedAt)
@@ -174,6 +177,9 @@ SELECT * FROM itemEntity WHERE isDeleted = 0 ORDER BY lastOpinionAt DESC;
 
 getResourceEntriesByTopicId:
 SELECT * FROM itemEntity WHERE topicId = ? AND isDeleted = 0 ORDER BY lastOpinionAt DESC;
+
+getAllResourceEntriesByTopicId:
+SELECT * FROM itemEntity WHERE topicId = ?;
 
 updateResourceEntryTopic:
 UPDATE itemEntity SET topicId = ? WHERE id = ?;
@@ -378,3 +384,40 @@ DELETE FROM referenceLinkEntity WHERE sourceId = ?;
 
 deleteReferenceLinksByTarget:
 DELETE FROM referenceLinkEntity WHERE targetId = ?;
+
+-- 10. Orphan Cleanup Queries (Data Integrity)
+
+-- Find resource entries with no topic assigned (rogue resources)
+getResourceEntriesWithoutTopic:
+SELECT * FROM itemEntity WHERE topicId IS NULL AND isDeleted = 0;
+
+-- Delete orphan resources that have no parent itemEntity
+deleteOrphanResources:
+DELETE FROM resourceEntity
+WHERE id NOT IN (SELECT resourceId FROM itemEntity);
+
+-- Delete orphan reference links where source or target no longer exists
+deleteOrphanReferenceLinks:
+DELETE FROM referenceLinkEntity
+WHERE sourceId NOT IN (
+    SELECT id FROM opinionEntity
+    UNION SELECT id FROM resourceEntity
+    UNION SELECT id FROM topicEntity
+    UNION SELECT id FROM bookmarkEntity
+)
+OR targetId NOT IN (
+    SELECT id FROM opinionEntity
+    UNION SELECT id FROM resourceEntity
+    UNION SELECT id FROM topicEntity
+    UNION SELECT id FROM bookmarkEntity
+);
+
+-- Delete reading progress for non-existent resources
+deleteOrphanReadingProgress:
+DELETE FROM readingProgressEntity
+WHERE resourceId NOT IN (SELECT id FROM resourceEntity);
+
+-- Delete reading settings for non-existent resources
+deleteOrphanReadingSettings:
+DELETE FROM readingSettingsEntity
+WHERE resourceId NOT IN (SELECT id FROM resourceEntity);

@@ -70,4 +70,9 @@ interface OpinionRepository {
      * Bulk undo soft delete opinions by item ID and timestamp.
      */
     suspend fun undoDeleteOpinionsByItemId(itemId: String, deletedAt: Long)
+
+    /**
+     * Get ALL opinions for an item, regardless of deletion status.
+     */
+    suspend fun getAllOpinionsByItemId(itemId: String): List<Opinion>
 }

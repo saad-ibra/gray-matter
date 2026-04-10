@@ -212,6 +212,14 @@ class DefaultResourceEntryRepository(
         }
         queries.undoDeleteResourceEntriesByTopicId(topicId, deletedAt)
     }
+
+    override suspend fun getResourceEntriesWithoutTopic(): List<ResourceEntry> = withContext(dispatcher) {
+        queries.getResourceEntriesWithoutTopic().executeAsList().map { it.toResourceEntry() }
+    }
+
+    override suspend fun getAllResourceEntriesByTopicId(topicId: String): List<ResourceEntry> = withContext(dispatcher) {
+        queries.getAllResourceEntriesByTopicId(topicId).executeAsList().map { it.toResourceEntry() }
+    }
 }
 
 private fun ItemEntity.toResourceEntry(): ResourceEntry = ResourceEntry(

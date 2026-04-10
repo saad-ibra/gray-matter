@@ -25,6 +25,12 @@ class CleanupWorker(
 ) : CoroutineWorker(appContext = appContext, params = workerParameters) {
 
     override suspend fun doWork(): Result = try {
+        // 1. Database Orphan Cleanup
+        appModule.resourceRepository.cleanOrphanResources()
+        appModule.resourceRepository.cleanOrphanReadingData()
+        appModule.referenceLinkRepository.cleanOrphanReferenceLinks()
+
+        // 2. File System Cleanup
         val resourceDir = File(applicationContext.filesDir, "resources")
         if (resourceDir.exists()) {
             val files = resourceDir.listFiles()

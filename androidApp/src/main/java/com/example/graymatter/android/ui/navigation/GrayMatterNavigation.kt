@@ -546,7 +546,6 @@ fun GrayMatterNavigation(
 
             AddToTopicScreen(
                 topics = topics,
-                onBackClick = { navController.popBackStack() },
                 onSelectTopic = { topic ->
                     resourceEntryId?.let { viewModel.assignTopicToResourceEntry(it, topic.id) }
                     navController.navigate(NavigationDestination.Home.route) {

@@ -11,4 +11,9 @@ interface ReferenceLinkRepository {
     suspend fun deleteReferenceLink(id: String)
     suspend fun deleteReferenceLinksBySource(sourceId: String)
     suspend fun deleteReferenceLinksByTarget(targetId: String)
+
+    /**
+     * Delete orphan reference links where source or target entity no longer exists.
+     */
+    suspend fun cleanOrphanReferenceLinks()
 }

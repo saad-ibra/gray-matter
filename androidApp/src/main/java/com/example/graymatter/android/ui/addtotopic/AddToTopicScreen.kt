@@ -1,5 +1,6 @@
 package com.example.graymatter.android.ui.addtotopic
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -53,11 +54,15 @@ import com.example.graymatter.domain.Topic
 @Composable
 fun AddToTopicScreen(
     topics: List<Topic>,
-    onBackClick: () -> Unit,
     onSelectTopic: (Topic) -> Unit,
     onCreateNewTopic: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Block back-navigation to enforce Topic > Resource hierarchy
+    BackHandler(enabled = true) {
+        // Do nothing, forcing user to pick a topic or finish creation
+    }
+
     var searchQuery by remember { mutableStateOf("") }
     var selectedTopicId by remember { mutableStateOf<String?>(null) }
     var newTopicName by remember { mutableStateOf("") }
@@ -69,7 +74,6 @@ fun AddToTopicScreen(
     ) {
         // Header
         AddToTopicHeader(
-            onBackClick = onBackClick,
             modifier = Modifier.statusBarsPadding()
         )
         
@@ -290,30 +294,17 @@ fun AddToTopicScreen(
 
 @Composable
 private fun AddToTopicHeader(
-    onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .background(GrayMatterColors.BackgroundDark.copy(alpha = 0.8f))
-            .padding(horizontal = 16.dp, vertical = 16.dp)
+            .padding(horizontal = 16.dp, vertical = 24.dp)
     ) {
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier.align(Alignment.CenterStart)
-        ) {
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowLeft,
-                contentDescription = "Back",
-                tint = GrayMatterColors.TextPrimary,
-                modifier = Modifier.size(28.dp)
-            )
-        }
-        
         Text(
             text = "Organize Entry",
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = GrayMatterColors.TextPrimary,
             modifier = Modifier.align(Alignment.Center)
         )

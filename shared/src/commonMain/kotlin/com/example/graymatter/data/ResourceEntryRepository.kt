@@ -104,4 +104,14 @@ interface ResourceEntryRepository {
      * Bulk undo soft delete resource entries by topic ID and timestamp.
      */
     suspend fun undoDeleteResourceEntriesByTopicId(topicId: String, deletedAt: Long)
+
+    /**
+     * Get all resource entries that have no topic assigned (orphans).
+     */
+    suspend fun getResourceEntriesWithoutTopic(): List<ResourceEntry>
+
+    /**
+     * Get ALL resource entries belonging to a topic, regardless of deletion status.
+     */
+    suspend fun getAllResourceEntriesByTopicId(topicId: String): List<ResourceEntry>
 }

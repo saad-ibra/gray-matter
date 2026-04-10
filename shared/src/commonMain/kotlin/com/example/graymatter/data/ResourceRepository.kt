@@ -170,4 +170,16 @@ interface ResourceRepository {
      * Delete a custom template.
      */
     suspend fun deleteTemplate(id: String)
+
+    // -- Data Integrity --
+
+    /**
+     * Delete orphan resource rows that have no parent resource entry.
+     */
+    suspend fun cleanOrphanResources()
+
+    /**
+     * Delete orphan reading progress and settings for non-existent resources.
+     */
+    suspend fun cleanOrphanReadingData()
 }
