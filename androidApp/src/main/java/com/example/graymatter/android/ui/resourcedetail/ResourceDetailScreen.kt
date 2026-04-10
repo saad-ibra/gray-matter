@@ -220,29 +220,37 @@ fun ResourceDetailScreen(
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(GrayMatterColors.KnowledgeBlue.copy(alpha = 0.06f))
-                                    .border(1.dp, GrayMatterColors.KnowledgeBlue.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .background(GrayMatterColors.KnowledgeBlue.copy(alpha = 0.05f))
+                                    .border(1.dp, GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
+                                    .padding(20.dp),
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    Icon(
-                                        Icons.Default.Link,
-                                        null,
-                                        tint = GrayMatterColors.KnowledgeBlue,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clip(CircleShape)
+                                            .background(GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Link,
+                                            null,
+                                            tint = GrayMatterColors.KnowledgeBlue,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
                                     Text(
                                         "RESOURCE LINKS",
                                         style = MaterialTheme.typography.labelLarge.copy(
-                                            letterSpacing = 1.5.sp,
-                                            fontWeight = FontWeight.Bold
+                                            letterSpacing = 1.2.sp,
+                                            fontWeight = FontWeight.ExtraBold
                                         ),
-                                        color = GrayMatterColors.TextSecondary
+                                        color = GrayMatterColors.TextPrimary.copy(alpha = 0.9f)
                                     )
                                 }
 
@@ -250,52 +258,49 @@ fun ResourceDetailScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     resourceLinks.forEach { link ->
                                         val linkText = when (link) {
                                             is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> link.name
                                             is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> link.title
-                                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> link.snippet.take(30)
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> link.snippet.take(35)
                                         }
                                         val linkIcon = when (link) {
                                             is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> Icons.Default.Folder
                                             is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> Icons.Default.Article
                                             is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> Icons.Default.FormatQuote
                                         }
-                                        Surface(
-                                            onClick = { onNavigateToKnowledgeLink(link) },
-                                            shape = RoundedCornerShape(10.dp),
-                                            color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.10f),
-                                            modifier = Modifier.border(
-                                                0.5.dp,
-                                                GrayMatterColors.KnowledgeBlue.copy(alpha = 0.25f),
-                                                RoundedCornerShape(10.dp)
-                                            )
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(CircleShape)
+                                                .background(GrayMatterColors.KnowledgeBlue.copy(alpha = 0.12f))
+                                                .border(1.dp, GrayMatterColors.KnowledgeBlue.copy(alpha = 0.25f), CircleShape)
+                                                .clickable { onNavigateToKnowledgeLink(link) }
                                         ) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
                                             ) {
                                                 Icon(
                                                     linkIcon,
                                                     null,
-                                                    tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.7f),
-                                                    modifier = Modifier.size(14.dp)
+                                                    tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.9f),
+                                                    modifier = Modifier.size(16.dp)
                                                 )
-                                                Spacer(Modifier.width(6.dp))
+                                                Spacer(Modifier.width(8.dp))
                                                 Text(
                                                     linkText,
-                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                                     color = GrayMatterColors.KnowledgeBlue,
                                                     maxLines = 1
                                                 )
-                                                Spacer(Modifier.width(4.dp))
+                                                Spacer(Modifier.width(6.dp))
                                                 Icon(
                                                     Icons.Default.OpenInNew,
                                                     null,
-                                                    tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.5f),
-                                                    modifier = Modifier.size(12.dp)
+                                                    tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.6f),
+                                                    modifier = Modifier.size(14.dp)
                                                 )
                                             }
                                         }
