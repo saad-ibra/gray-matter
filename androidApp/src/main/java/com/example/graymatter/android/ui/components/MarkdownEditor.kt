@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,30 +21,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import dev.jeziellago.compose.markdowntext.MarkdownText
 
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MarkdownEditor(
     title: String,
     initialText: String,
     onBackClick: () -> Unit,
     onSave: (String) -> Unit,
+    modifier: Modifier = Modifier,
     initialPreviewMode: Boolean = false,
     onTitleChange: ((String) -> Unit)? = null,
     onShowReferenceSelector: (() -> Unit)? = null,
     referenceToInsert: String? = null,
     onReferenceInserted: () -> Unit = {},
     onTextChange: (String) -> Unit = {},
-    onReferenceTap: ((String) -> Unit)? = null,
-    modifier: Modifier = Modifier
+    onReferenceTap: ((String) -> Unit)? = null
 ) {
     var textFieldValue by remember {
         mutableStateOf(TextFieldValue(initialText, selection = TextRange(initialText.length)))
@@ -53,10 +56,7 @@ fun MarkdownEditor(
     // Track the last-saved text so we can distinguish "dirty" from "saved"
     var lastSavedText by remember { mutableStateOf(initialText) }
 
-    // Pending reference tap — stored so we can auto-save before navigating
-    var pendingReferenceTap by remember { mutableStateOf<String?>(null) }
-
-    val hasUnsavedChanges = textFieldValue.text != lastSavedText || editableTitle != title
+    val hasUnsavedChanges = textFieldValue.text != lastSavedText || (onTitleChange != null && editableTitle != title)
 
     // Intercept Android back button
     BackHandler(enabled = true) {
@@ -84,11 +84,11 @@ fun MarkdownEditor(
             val txt = textFieldValue.text
             val cursor = textFieldValue.selection.start
             
-            val hasBracket = cursor >= 2 && txt.substring(cursor - 2, cursor) == "[["
-            val hasAt = cursor >= 1 && txt.substring(cursor - 1, cursor) == "@"
+            val hasBracket = cursor >= 2 && txt.take(cursor).endsWith("[[")
+            val hasAt = cursor >= 1 && txt.take(cursor).endsWith("@")
             
             val replaceLen = if (hasBracket) 2 else if (hasAt) 1 else 0
-            val newText = txt.substring(0, cursor - replaceLen) + referenceToInsert + txt.substring(cursor)
+            val newText = txt.take(cursor - replaceLen) + referenceToInsert + txt.substring(cursor)
             
             textFieldValue = TextFieldValue(newText, TextRange(cursor - replaceLen + referenceToInsert.length))
             onReferenceInserted()
@@ -97,7 +97,7 @@ fun MarkdownEditor(
 
     // Live-extracted [[references]] from note content
     val liveReferences = remember(textFieldValue.text) {
-        val regex = Regex("\\[\\[(.*?)\\]\\]")
+        val regex = Regex("\\[\\[(.*?)]]")
         regex.findAll(textFieldValue.text).map { it.groupValues[1] }.toList()
     }
 
@@ -105,19 +105,17 @@ fun MarkdownEditor(
         textFieldValue.text.split(Regex("\\s+")).count { it.isNotBlank() }
     }
 
-    val imeVisible = WindowInsets.isImeVisible
-
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(GrayMatterColors.BackgroundDark)
             .statusBarsPadding()
     ) {
-        // Header
+        // Immersive Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 8.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -131,7 +129,7 @@ fun MarkdownEditor(
                 Icon(Icons.Default.Close, "Close", tint = GrayMatterColors.TextPrimary)
             }
             
-            // Word count & mode label
+            // Mode Indicator / Word Count
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = if (isPreviewMode) "PREVIEW" else "EDITOR",
@@ -152,86 +150,88 @@ fun MarkdownEditor(
                     onSave(textFieldValue.text)
                     lastSavedText = textFieldValue.text
                 },
-                enabled = editableTitle.isNotBlank()
+                enabled = editableTitle.isNotBlank() && hasUnsavedChanges
             ) {
                 Text(
                     "Save", 
-                    color = if (editableTitle.isNotBlank()) GrayMatterColors.Primary else GrayMatterColors.Neutral700,
+                    color = if (editableTitle.isNotBlank() && hasUnsavedChanges) GrayMatterColors.Primary else GrayMatterColors.Neutral700,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
             }
         }
 
-        // Mode Switcher
-        TabRow(
-            selectedTabIndex = if (isPreviewMode) 1 else 0,
-            containerColor = GrayMatterColors.BackgroundDark,
-            contentColor = GrayMatterColors.Primary,
-            divider = { Divider(color = GrayMatterColors.Neutral800) }
+        // Premium Segmented Control (Mode Switcher)
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 12.dp)
+                .height(44.dp)
+                .clip(RoundedCornerShape(12.dp)),
+            color = GrayMatterColors.Neutral900.copy(alpha = 0.5f)
         ) {
-            Tab(selected = !isPreviewMode, onClick = { isPreviewMode = false }) {
-                Text("Write", modifier = Modifier.padding(12.dp), color = if (!isPreviewMode) GrayMatterColors.Primary else GrayMatterColors.Neutral500)
-            }
-            Tab(selected = isPreviewMode, onClick = { isPreviewMode = true }) {
-                Text("Preview", modifier = Modifier.padding(12.dp), color = if (isPreviewMode) GrayMatterColors.Primary else GrayMatterColors.Neutral500)
+            Row(
+                modifier = Modifier.fillMaxSize().padding(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Write Tab
+                Surface(
+                    onClick = { isPreviewMode = false },
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (!isPreviewMode) GrayMatterColors.Neutral800 else Color.Transparent
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            "Write",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = if (!isPreviewMode) Color.White else GrayMatterColors.Neutral500
+                        )
+                    }
+                }
+                
+                // Preview Tab
+                Surface(
+                    onClick = { isPreviewMode = true },
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (isPreviewMode) GrayMatterColors.Neutral800 else Color.Transparent
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            "Preview",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = if (isPreviewMode) Color.White else GrayMatterColors.Neutral500
+                        )
+                    }
+                }
             }
         }
 
-        Column(
-            modifier = Modifier.imePadding()
-        ) {
+        HorizontalDivider(color = GrayMatterColors.Neutral800.copy(alpha = 0.3f))
+
+        // Single flow scrollable container
         Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .navigationBarsPadding()
+                .imePadding()
         ) {
-            // Inline Editable Title
-            if (onTitleChange != null) {
-                BasicTextField(
-                    value = editableTitle,
-                    onValueChange = {
-                        editableTitle = it
-                        onTitleChange(it)
-                    },
-                    textStyle = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = GrayMatterColors.TextPrimary
-                    ),
-                    cursorBrush = SolidColor(GrayMatterColors.Primary),
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    decorationBox = { inner ->
-                        if (editableTitle.isEmpty()) {
-                            Text(
-                                "Note Title",
-                                style = MaterialTheme.typography.headlineMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = GrayMatterColors.Neutral800
-                                )
-                            )
-                        }
-                        inner()
-                    }
-                )
-            } else {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                    color = GrayMatterColors.TextPrimary,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
-            }
-
             if (isPreviewMode) {
-                // Preview mode with tappable [[references]]
+                // Preview Mode
                 Box(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                    Column(modifier = Modifier.fillMaxSize().padding(bottom = 32.dp)) {
+                    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 20.dp)) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.displaySmall,
+                            color = GrayMatterColors.TextPrimary,
+                            modifier = Modifier.padding(bottom = 24.dp)
+                        )
+                        
                         // Split text by [[...]] references for mixed rendering
                         val rawText = textFieldValue.text
-                        val refPattern = Regex("\\[\\[(.*?)\\]\\]")
+                        val refPattern = Regex("\\[\\[(.*?)]]")
                         val segments = remember(rawText) {
                             buildList {
                                 var lastEnd = 0
@@ -254,7 +254,10 @@ fun MarkdownEditor(
                                     if (segment.text.isNotBlank()) {
                                         MarkdownText(
                                             markdown = segment.text,
-                                            color = Color.White,
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                color = Color.White.copy(alpha = 0.9f),
+                                                lineHeight = 28.sp
+                                            ),
                                             modifier = Modifier.fillMaxWidth()
                                         )
                                     }
@@ -262,18 +265,17 @@ fun MarkdownEditor(
                                 is PreviewSegment.Reference -> {
                                     Surface(
                                         shape = RoundedCornerShape(8.dp),
-                                        color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f),
+                                        color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.12f),
                                         modifier = Modifier
                                             .padding(vertical = 4.dp)
                                             .border(
                                                 0.5.dp,
-                                                GrayMatterColors.KnowledgeBlue.copy(alpha = 0.4f),
+                                                GrayMatterColors.KnowledgeBlue.copy(alpha = 0.3f),
                                                 RoundedCornerShape(8.dp)
                                             )
                                             .clickable {
                                                 if (onReferenceTap != null) {
                                                     if (hasUnsavedChanges) {
-                                                        // Auto-save before navigating
                                                         onSave(textFieldValue.text)
                                                         lastSavedText = textFieldValue.text
                                                     }
@@ -294,20 +296,9 @@ fun MarkdownEditor(
                                             Spacer(Modifier.width(6.dp))
                                             Text(
                                                 segment.refText,
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    fontWeight = FontWeight.SemiBold
-                                                ),
+                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                                                 color = GrayMatterColors.KnowledgeBlue
                                             )
-                                            if (onReferenceTap != null) {
-                                                Spacer(Modifier.width(4.dp))
-                                                Icon(
-                                                    Icons.Default.OpenInNew,
-                                                    null,
-                                                    tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.6f),
-                                                    modifier = Modifier.size(12.dp)
-                                                )
-                                            }
                                         }
                                     }
                                 }
@@ -316,156 +307,165 @@ fun MarkdownEditor(
                     }
                 }
             } else {
-                Box(modifier = Modifier.weight(1f)) {
-                    BasicTextField(
-                        value = textFieldValue,
-                        onValueChange = { newValue -> 
-                            val oldTxt = textFieldValue.text
-                            val newTxt = newValue.text
-                            val cursor = newValue.selection.start
-                            
-                            if (newTxt.length > oldTxt.length) {
-                                if (cursor >= 2 && newTxt.substring(cursor-2, cursor) == "[[") {
-                                    onShowReferenceSelector?.invoke()
-                                } else if (cursor >= 1 && newTxt.substring(cursor-1, cursor) == "@") {
-                                    onShowReferenceSelector?.invoke()
-                                }
-                            }
-                            
-                            if (newTxt != oldTxt) {
-                                onTextChange(newTxt)
-                            }
-                            
-                            textFieldValue = newValue 
-                        },
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(
-                            color = GrayMatterColors.TextPrimary,
-                            lineHeight = 28.sp
-                        ),
-                        cursorBrush = SolidColor(GrayMatterColors.Primary),
-                        modifier = Modifier.fillMaxSize(),
-                        decorationBox = { inner ->
-                            if (textFieldValue.text.isEmpty()) {
-                                Text("Start writing your thoughts...", color = GrayMatterColors.Neutral700)
-                            }
-                            inner()
-                        }
-                    )
-                }
-
-                // Unified Footer Tooling (Glassmorphic Bar)
-                Surface(
+                // Editor Mode (Single Flow)
+                Column(
                     modifier = Modifier
+                        .weight(1f) // Fix: Use weight instead of fillMaxSize to allow toolbar to show
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 20.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .border(
-                            1.dp, 
-                            GrayMatterColors.Neutral800.copy(alpha = 0.5f), 
-                            RoundedCornerShape(20.dp)
-                        ),
-                    color = GrayMatterColors.SurfaceDark.copy(alpha = 0.92f),
-                    tonalElevation = 6.dp
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    Column {
-                        // Live Reference Chips (Top Section)
-                        if (liveReferences.isNotEmpty()) {
-                            Row(
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                    ) {
+                        // Title Section
+                        if (onTitleChange != null) {
+                            BasicTextField(
+                                value = editableTitle,
+                                onValueChange = {
+                                    editableTitle = it
+                                },
+                                textStyle = MaterialTheme.typography.displaySmall.copy(
+                                    color = GrayMatterColors.TextPrimary,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                cursorBrush = SolidColor(GrayMatterColors.Primary),
+                                singleLine = true,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                                    .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.Link,
-                                    contentDescription = null,
-                                    tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.7f),
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                liveReferences.forEach { ref ->
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.12f),
-                                        modifier = Modifier.border(
-                                            0.5.dp,
-                                            GrayMatterColors.KnowledgeBlue.copy(alpha = 0.3f),
-                                            RoundedCornerShape(8.dp)
-                                        )
-                                    ) {
+                                    .padding(top = 24.dp, bottom = 12.dp),
+                                decorationBox = { inner ->
+                                    if (editableTitle.isEmpty()) {
                                         Text(
-                                            text = ref,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = GrayMatterColors.KnowledgeBlue,
-                                            maxLines = 1,
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                            "Untitled Note",
+                                            style = MaterialTheme.typography.displaySmall.copy(
+                                                color = GrayMatterColors.Neutral800,
+                                                fontWeight = FontWeight.Bold
+                                            )
                                         )
                                     }
+                                    inner()
                                 }
-                            }
-                            
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(1.dp)
-                                    .background(GrayMatterColors.Neutral800.copy(alpha = 0.5f))
+                            )
+                        } else {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
+                                color = GrayMatterColors.TextPrimary,
+                                modifier = Modifier.padding(top = 24.dp, bottom = 12.dp)
                             )
                         }
 
-                        // Formatting Toolbar (Bottom Section)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                                .horizontalScroll(rememberScrollState()),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            MarkdownToolbarAction(Icons.Default.FormatBold) { textFieldValue = wrapSelection(textFieldValue, "**") }
-                            MarkdownToolbarAction(Icons.Default.FormatItalic) { textFieldValue = wrapSelection(textFieldValue, "_") }
-                            MarkdownToolbarAction(Icons.Default.Title) { textFieldValue = toggleLineStart(textFieldValue, "### ") }
-                            MarkdownToolbarAction(Icons.Default.FormatListBulleted) { textFieldValue = toggleLineStart(textFieldValue, "- ") }
-                            MarkdownToolbarAction(Icons.Default.FormatQuote) { textFieldValue = toggleLineStart(textFieldValue, "> ") }
-                            MarkdownToolbarAction(Icons.Default.Code) { textFieldValue = wrapSelection(textFieldValue, "`") }
-                            MarkdownToolbarAction(Icons.Default.Link) { textFieldValue = wrapSelection(textFieldValue, "[", "](url)") }
-                            
-                            if (onShowReferenceSelector != null) {
-                                VerticalDivider(
-                                    modifier = Modifier.height(24.dp).padding(horizontal = 8.dp),
-                                    color = GrayMatterColors.Neutral800
-                                )
+                        // Content Section
+                        Box(modifier = Modifier.fillMaxWidth().padding(bottom = 120.dp)) {
+                            BasicTextField(
+                                value = textFieldValue,
+                                onValueChange = { newValue -> 
+                                    val oldTxt = textFieldValue.text
+                                    val newTxt = newValue.text
+                                    val cursor = newValue.selection.start
+                                    
+                                    if (newTxt.length > oldTxt.length) {
+                                        if (cursor >= 2 && newTxt.take(cursor).endsWith("[[")) {
+                                            onShowReferenceSelector?.invoke()
+                                        } else if (cursor >= 1 && newTxt.take(cursor).endsWith("@")) {
+                                            onShowReferenceSelector?.invoke()
+                                        }
+                                    }
+                                    
+                                    textFieldValue = newValue 
+                                },
+                                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    lineHeight = 28.sp
+                                ),
+                                cursorBrush = SolidColor(GrayMatterColors.Primary),
+                                visualTransformation = MarkdownVisualTransformation(),
+                                modifier = Modifier.fillMaxWidth(),
+                                decorationBox = { inner ->
+                                    if (textFieldValue.text.isEmpty()) {
+                                        Text("Start writing your thoughts...", color = GrayMatterColors.Neutral700, style = MaterialTheme.typography.bodyLarge)
+                                    }
+                                    inner()
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Glassmorphic Floating Toolbar (Anchored above keyboard)
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp)
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(24.dp))
+                            .border(
+                                1.dp, 
+                                GrayMatterColors.Neutral800.copy(alpha = 0.4f), 
+                                RoundedCornerShape(24.dp)
+                            ),
+                        color = GrayMatterColors.SurfaceDark.copy(alpha = 0.85f),
+                        tonalElevation = 8.dp
+                    ) {
+                        Column {
+                            // Live References Header in Toolbar
+                            if (liveReferences.isNotEmpty()) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.Link, null, tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
+                                    liveReferences.forEach { ref ->
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.1f),
+                                            modifier = Modifier.border(0.5.dp, GrayMatterColors.KnowledgeBlue.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                                        ) {
+                                            Text(ref, style = MaterialTheme.typography.labelSmall, color = GrayMatterColors.KnowledgeBlue, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                                        }
+                                    }
+                                }
+                                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(GrayMatterColors.Neutral800.copy(alpha = 0.3f)))
+                            }
+
+                            // Actions
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                                    .horizontalScroll(rememberScrollState()),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                MarkdownToolbarAction(Icons.Default.FormatBold) { textFieldValue = wrapSelection(textFieldValue, "**") }
+                                MarkdownToolbarAction(Icons.Default.FormatItalic) { textFieldValue = wrapSelection(textFieldValue, "_") }
+                                MarkdownToolbarAction(Icons.Default.Title) { textFieldValue = toggleLineStart(textFieldValue, "### ") }
+                                MarkdownToolbarAction(Icons.AutoMirrored.Filled.FormatListBulleted) { textFieldValue = toggleLineStart(textFieldValue, "- ") }
+                                MarkdownToolbarAction(Icons.Default.FormatQuote) { textFieldValue = toggleLineStart(textFieldValue, "> ") }
+                                MarkdownToolbarAction(Icons.Default.Code) { textFieldValue = wrapSelection(textFieldValue, "`") }
                                 
-                                // Enhanced Reference button
-                                Surface(
-                                    onClick = { 
+                                VerticalDivider(modifier = Modifier.height(24.dp).padding(horizontal = 4.dp), color = GrayMatterColors.Neutral800)
+                                
+                                // Reference Trigger
+                                TextButton(
+                                    onClick = {
                                         val txt = textFieldValue.text
                                         val cursor = textFieldValue.selection.start
-                                        textFieldValue = TextFieldValue(
-                                            txt.substring(0, cursor) + "[[" + txt.substring(cursor),
-                                            TextRange(cursor + 2)
-                                        )
-                                        onShowReferenceSelector()
+                                        textFieldValue = TextFieldValue(txt.take(cursor) + "[[" + txt.substring(cursor), TextRange(cursor + 2))
+                                        onShowReferenceSelector?.invoke()
                                     },
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f),
-                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                    colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.KnowledgeBlue)
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Attachment,
-                                            null,
-                                            tint = GrayMatterColors.KnowledgeBlue,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Text(
-                                            "Reference",
-                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = GrayMatterColors.KnowledgeBlue
-                                        )
-                                    }
+                                    Icon(Icons.Default.Attachment, null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Reference", style = MaterialTheme.typography.labelLarge)
                                 }
                             }
                         }
@@ -473,19 +473,15 @@ fun MarkdownEditor(
                 }
             }
         }
-        if (!imeVisible) {
-            Spacer(modifier = Modifier.navigationBarsPadding().height(8.dp))
-        }
-        } // end imePadding wrapper
     }
 
-    // Three-option unsaved changes dialog
+    // Unsaved Changes Dialog
     if (showUnsavedDialog) {
         AlertDialog(
             onDismissRequest = { showUnsavedDialog = false },
             title = { Text("Unsaved Changes", color = Color.White) },
             text = { Text("You have unsaved changes. What would you like to do?", color = GrayMatterColors.TextSecondary) },
-            containerColor = Color(0xFF1A1A1E),
+            containerColor = Color(0xFF1E1E22),
             confirmButton = {
                 TextButton(onClick = {
                     showUnsavedDialog = false
@@ -498,17 +494,14 @@ fun MarkdownEditor(
             },
             dismissButton = {
                 Row {
-                    TextButton(onClick = {
-                        showUnsavedDialog = false
-                    }) {
-                        Text("Continue Editing", color = Color.White)
+                    TextButton(onClick = { showUnsavedDialog = false }) {
+                        Text("Cancel", color = Color.White)
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
                     TextButton(onClick = {
                         showUnsavedDialog = false
                         onBackClick()
                     }) {
-                        Text("Discard", color = GrayMatterColors.Error)
+                        Text("Discard", color = Color.Red.copy(alpha = 0.8f))
                     }
                 }
             }
@@ -516,7 +509,62 @@ fun MarkdownEditor(
     }
 }
 
-/** Preview segments: either plain markdown or a tappable [[reference]]. */
+/**
+ * Live Markdown syntax highlighting transformation.
+ */
+class MarkdownVisualTransformation : androidx.compose.ui.text.input.VisualTransformation {
+    override fun filter(text: androidx.compose.ui.text.AnnotatedString): androidx.compose.ui.text.input.TransformedText {
+        val s = text.text
+        val annotatedString = androidx.compose.ui.text.buildAnnotatedString {
+            append(s)
+            
+            // Highlight [[references]]
+            Regex("\\[\\[(.*?)]]").findAll(s).forEach { match ->
+                addStyle(
+                    style = androidx.compose.ui.text.SpanStyle(
+                        color = GrayMatterColors.KnowledgeBlue,
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    start = match.range.first,
+                    end = match.range.last + 1
+                )
+            }
+            
+            // Highlight **bold**
+            Regex("\\*\\*(.*?)\\*\\*").findAll(s).forEach { match ->
+                addStyle(
+                    style = androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold, color = Color.White),
+                    start = match.range.first,
+                    end = match.range.last + 1
+                )
+            }
+            
+            // Highlight _italic_
+            Regex("_(.*?)_").findAll(s).forEach { match ->
+                addStyle(
+                    style = androidx.compose.ui.text.SpanStyle(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = Color.White.copy(alpha = 0.9f)),
+                    start = match.range.first,
+                    end = match.range.last + 1
+                )
+            }
+            
+            // Highlight `inline code`
+            Regex("`(.*?)`").findAll(s).forEach { match ->
+                addStyle(
+                    style = androidx.compose.ui.text.SpanStyle(
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        background = Color.White.copy(alpha = 0.1f),
+                        color = GrayMatterColors.Neutral300
+                    ),
+                    start = match.range.first,
+                    end = match.range.last + 1
+                )
+            }
+        }
+        return androidx.compose.ui.text.input.TransformedText(annotatedString, androidx.compose.ui.text.input.OffsetMapping.Identity)
+    }
+}
+
 private sealed class PreviewSegment {
     data class Markdown(val text: String) : PreviewSegment()
     data class Reference(val refText: String) : PreviewSegment()
@@ -536,18 +584,16 @@ private fun wrapSelection(value: TextFieldValue, prefix: String, suffix: String 
     val end = selection.end
 
     return if (selection.collapsed) {
-        // If selection is collapsed, just insert markers and move cursor between them
         val newText = StringBuilder(text).insert(start, prefix + suffix).toString()
         TextFieldValue(newText, TextRange(start + prefix.length))
     } else {
         val selected = text.substring(start, end)
-        // Check if already wrapped
         if (selected.startsWith(prefix) && selected.endsWith(suffix)) {
             val unwrapped = selected.removePrefix(prefix).removeSuffix(suffix)
-            val newText = text.substring(0, start) + unwrapped + text.substring(end)
+            val newText = text.take(start) + unwrapped + text.substring(end)
             TextFieldValue(newText, TextRange(start, start + unwrapped.length))
         } else {
-            val newText = text.substring(0, start) + prefix + selected + suffix + text.substring(end)
+            val newText = text.take(start) + prefix + selected + suffix + text.substring(end)
             TextFieldValue(newText, TextRange(start, end + prefix.length + suffix.length))
         }
     }
@@ -556,20 +602,17 @@ private fun wrapSelection(value: TextFieldValue, prefix: String, suffix: String 
 private fun toggleLineStart(value: TextFieldValue, prefix: String): TextFieldValue {
     val text = value.text
     val selection = value.selection
-    // Find start of current line
     var lineStart = text.lastIndexOf('\n', selection.start - 1) + 1
     if (lineStart < 0) lineStart = 0
-    
-    // Find end of current line
     var lineEnd = text.indexOf('\n', selection.start)
     if (lineEnd < 0) lineEnd = text.length
     
     val line = text.substring(lineStart, lineEnd)
     return if (line.startsWith(prefix)) {
-        val newText = text.substring(0, lineStart) + line.removePrefix(prefix) + text.substring(lineEnd)
+        val newText = text.take(lineStart) + line.removePrefix(prefix) + text.substring(lineEnd)
         TextFieldValue(newText, TextRange(selection.start - prefix.length))
     } else {
-        val newText = text.substring(0, lineStart) + prefix + line + text.substring(lineEnd)
+        val newText = text.take(lineStart) + prefix + line + text.substring(lineEnd)
         TextFieldValue(newText, TextRange(selection.start + prefix.length))
     }
 }
