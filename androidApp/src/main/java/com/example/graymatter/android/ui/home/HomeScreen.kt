@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     viewModel: GrayMatterViewModel,
+    homeViewModel: com.example.graymatter.android.ui.viewmodel.HomeViewModel,
     continueReadingItem: ResourceEntryWithDetails?,
     continueReadingProgress: com.example.graymatter.domain.ReadingProgress?,
     onCreateNewEntryClick: () -> Unit,
@@ -44,8 +45,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     // Collect the reactive stream of the 4 most recent items with details
-    val recentItems by viewModel.recentResourceEntryDetails.collectAsState()
-    val orphanEntries by viewModel.orphanResourceEntries.collectAsState()
+    val recentItems by homeViewModel.recentResourceEntryDetails.collectAsState()
+    val orphanEntries by homeViewModel.orphanResourceEntries.collectAsState()
     val topics by viewModel.topicsStream.collectAsState()
     
     var selectedOrphan by remember { mutableStateOf<ResourceEntry?>(null) }
@@ -155,13 +156,13 @@ fun HomeScreen(
             topics = topics,
             onDismiss = { selectedOrphan = null },
             onSelectTopic = { topic ->
-                viewModel.assignTopicToResourceEntry(selectedOrphan!!.id, topic.id)
+                homeViewModel.assignTopicToResourceEntry(selectedOrphan!!.id, topic.id)
                 selectedOrphan = null
             },
             onCreateNewTopic = { name ->
                 scope.launch {
                     val newId = viewModel.createTopic(name)
-                    viewModel.assignTopicToResourceEntry(selectedOrphan!!.id, newId)
+                    homeViewModel.assignTopicToResourceEntry(selectedOrphan!!.id, newId)
                     selectedOrphan = null
                 }
             }

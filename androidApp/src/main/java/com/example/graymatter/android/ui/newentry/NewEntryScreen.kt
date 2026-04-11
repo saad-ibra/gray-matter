@@ -45,8 +45,8 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewEntryScreen(
-    viewModel: com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel,
     templateViewModel: com.example.graymatter.android.ui.viewmodel.TemplateViewModel,
+    draftingViewModel: com.example.graymatter.android.ui.viewmodel.DraftingViewModel,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel,
     preSelectedTopicId: String? = null,
     onNavigateBack: () -> Unit,
@@ -56,7 +56,7 @@ fun NewEntryScreen(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     
-    val isSaving by viewModel.isImporting.collectAsState()
+    val isSaving by draftingViewModel.isImporting.collectAsState()
     val templates by templateViewModel.templates.collectAsState()
     
     var entryType by remember { mutableStateOf(EntryType.LINK) } // 0 = Link, 1 = File, 2 = Note
@@ -557,7 +557,7 @@ fun NewEntryScreen(
                     }
 
                     val newItemId = when (entryType) {
-                        EntryType.LINK -> viewModel.createNewResourceEntry(
+                        EntryType.LINK -> draftingViewModel.createNewResourceEntry(
                             url = urlValue,
                             opinionText = finalOpinion,
                             confidence = (confidenceScore * 100).toInt(),
@@ -572,7 +572,7 @@ fun NewEntryScreen(
                                 if (ext.isNotEmpty()) "$title.$ext" else title
                             } else if (title.isNotBlank()) title else originalFileName ?: "Unknown"
 
-                            viewModel.createNewResourceEntryFromFile(
+                            draftingViewModel.createNewResourceEntryFromFile(
                                 context = context,
                                 fileName = originalFileName ?: "Unknown",
                                 uri = fileUri ?: Uri.EMPTY,
@@ -586,7 +586,7 @@ fun NewEntryScreen(
                         }
                         EntryType.NOTE -> {
                             val finalTitle = if (title.isNotBlank() && !title.endsWith(".md")) "$title.md" else (title.ifBlank { "Untitled.md" })
-                            viewModel.createNewNote(
+                            draftingViewModel.createNewNote(
                                 context = context,
                                 title = finalTitle,
                                 content = noteContent,

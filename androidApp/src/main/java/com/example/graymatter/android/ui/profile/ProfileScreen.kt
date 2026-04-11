@@ -328,13 +328,13 @@ fun RecentlyDeletedScreen(
                 trashViewModel.cancelRestore(restoreNeedsTopicId!!)
             },
             onSelectTopic = { topic ->
-                viewModel.assignTopicToResourceEntry(restoreNeedsTopicId!!, topic.id)
+                trashViewModel.assignTopicToResourceEntry(restoreNeedsTopicId!!, topic.id)
                 trashViewModel.clearRestoreNeedsTopic()
             },
             onCreateNewTopic = { name ->
                 scope.launch {
                     val newId = viewModel.createTopic(name)
-                    viewModel.assignTopicToResourceEntry(restoreNeedsTopicId!!, newId)
+                    trashViewModel.assignTopicToResourceEntry(restoreNeedsTopicId!!, newId)
                     trashViewModel.clearRestoreNeedsTopic()
                 }
             }

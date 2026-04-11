@@ -55,6 +55,8 @@ fun GrayMatterNavigation(
     val viewModel: GrayMatterViewModel = koinViewModel()
     val trashViewModel: com.example.graymatter.android.ui.viewmodel.TrashViewModel = koinViewModel()
     val templateViewModel: com.example.graymatter.android.ui.viewmodel.TemplateViewModel = koinViewModel()
+    val homeViewModel: com.example.graymatter.android.ui.viewmodel.HomeViewModel = koinViewModel()
+    val draftingViewModel: com.example.graymatter.android.ui.viewmodel.DraftingViewModel = koinViewModel()
     val opinionRepository: com.example.graymatter.data.OpinionRepository = koinInject()
 
     val topics by viewModel.topicsStream.collectAsState(initial = emptyList())
@@ -144,11 +146,12 @@ fun GrayMatterNavigation(
                 ) { page ->
                     when (page) {
                         0 -> {
-                            val continueReadingItem by viewModel.continueReadingResourceEntry.collectAsState()
-                            val lastOpenedProgress by viewModel.lastOpenedProgress.collectAsState()
+                            val continueReadingItem by homeViewModel.continueReadingResourceEntry.collectAsState()
+                            val lastOpenedProgress by homeViewModel.lastOpenedProgress.collectAsState()
 
                             HomeScreen(
                                 viewModel = viewModel,
+                                homeViewModel = homeViewModel,
                                 continueReadingItem = continueReadingItem,
                                 continueReadingProgress = lastOpenedProgress,
                                 onCreateNewEntryClick = {
@@ -266,8 +269,8 @@ fun GrayMatterNavigation(
         ) { backStackEntry ->
             val topicId = backStackEntry.arguments?.getString("topicId")
             NewEntryScreen(
-                viewModel = viewModel,
                 templateViewModel = templateViewModel,
+                draftingViewModel = draftingViewModel,
                 referenceSelectorViewModel = referenceSelectorViewModel,
                 preSelectedTopicId = topicId,
                 onNavigateBack = { navController.popBackStack() },
@@ -528,7 +531,7 @@ fun GrayMatterNavigation(
             AddToTopicScreen(
                 topics = topics,
                 onSelectTopic = { topic ->
-                    resourceEntryId?.let { viewModel.assignTopicToResourceEntry(it, topic.id) }
+                    resourceEntryId?.let { homeViewModel.assignTopicToResourceEntry(it, topic.id) }
                     navController.navigate(NavigationDestination.Home.route) {
                         popUpTo(NavigationDestination.Home.route)
                     }
@@ -536,7 +539,7 @@ fun GrayMatterNavigation(
                 onCreateNewTopic = { topicName ->
                     coroutineScope.launch {
                         val newTopicId = viewModel.createTopic(topicName)
-                        resourceEntryId?.let { viewModel.assignTopicToResourceEntry(it, newTopicId) }
+                        resourceEntryId?.let { homeViewModel.assignTopicToResourceEntry(it, newTopicId) }
                         navController.navigate(NavigationDestination.Home.route) {
                             popUpTo(NavigationDestination.Home.route)
                         }
@@ -549,6 +552,7 @@ fun GrayMatterNavigation(
         composable(NavigationDestination.Search.route) {
             HomeScreen(
                 viewModel = viewModel,
+                homeViewModel = homeViewModel,
                 continueReadingItem = null,
                 continueReadingProgress = null,
                 onCreateNewEntryClick = {},

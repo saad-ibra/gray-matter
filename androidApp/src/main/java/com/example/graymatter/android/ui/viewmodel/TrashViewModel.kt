@@ -182,6 +182,12 @@ class TrashViewModel(
         }
     }
 
+    fun assignTopicToResourceEntry(resourceEntryId: String, topicId: String) {
+        viewModelScope.launch {
+            resourceEntryRepository.updateResourceEntryTopic(resourceEntryId, topicId)
+        }
+    }
+
     fun permanentlyDeleteResourceEntry(resourceEntryId: String) {
         viewModelScope.launch {
             val details = resourceEntryRepository.getResourceEntryWithDetails(resourceEntryId)
