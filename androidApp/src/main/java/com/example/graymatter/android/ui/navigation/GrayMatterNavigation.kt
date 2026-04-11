@@ -29,7 +29,6 @@ import com.example.graymatter.android.ui.newentry.NewEntryScreen
 import com.example.graymatter.android.ui.topicsynthesis.TopicSynthesisScreen
 import com.example.graymatter.android.ui.components.MarkdownEditor
 import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
-import com.example.graymatter.di.AppModule
 import com.example.graymatter.domain.business.ExportService
 import android.content.Intent
 import android.content.ClipData
