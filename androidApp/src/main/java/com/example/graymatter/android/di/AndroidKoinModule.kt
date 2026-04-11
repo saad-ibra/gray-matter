@@ -20,6 +20,8 @@ val androidViewModelModule = module {
     
     viewModel { TrashViewModel(get(), get(), get(), get(), get()) }
     
+    viewModel { com.example.graymatter.android.ui.viewmodel.TemplateViewModel(get()) }
+    
     viewModel { FileViewerViewModel(get(), get(), get(), get(), get()) }
     
     viewModel { KnowledgeGraphViewModel(get(), get(), get(), get(), get()) }

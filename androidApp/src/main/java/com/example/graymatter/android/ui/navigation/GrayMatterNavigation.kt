@@ -54,11 +54,12 @@ fun GrayMatterNavigation(
 ) {
     val viewModel: GrayMatterViewModel = koinViewModel()
     val trashViewModel: com.example.graymatter.android.ui.viewmodel.TrashViewModel = koinViewModel()
+    val templateViewModel: com.example.graymatter.android.ui.viewmodel.TemplateViewModel = koinViewModel()
     val opinionRepository: com.example.graymatter.data.OpinionRepository = koinInject()
 
     val topics by viewModel.topicsStream.collectAsState(initial = emptyList())
     val items by viewModel.resourceEntriesStream.collectAsState(initial = emptyList())
-    val templates by viewModel.templates.collectAsState()
+    val templates by templateViewModel.templates.collectAsState()
     var editingResource by remember { mutableStateOf<com.example.graymatter.domain.Resource?>(null) }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -186,6 +187,7 @@ fun GrayMatterNavigation(
                             ProfileScreen(
                                 viewModel = viewModel,
                                 trashViewModel = trashViewModel,
+                                templateViewModel = templateViewModel,
                                 onNavigateToGraph = {
                                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute())
                                 }
@@ -265,6 +267,7 @@ fun GrayMatterNavigation(
             val topicId = backStackEntry.arguments?.getString("topicId")
             NewEntryScreen(
                 viewModel = viewModel,
+                templateViewModel = templateViewModel,
                 referenceSelectorViewModel = referenceSelectorViewModel,
                 preSelectedTopicId = topicId,
                 onNavigateBack = { navController.popBackStack() },
@@ -396,7 +399,7 @@ fun GrayMatterNavigation(
                         }
                     }
                 },
-                onSaveTemplate = { viewModel.saveTemplate(it) },
+                onSaveTemplate = { templateViewModel.saveTemplate(it) },
                 generateUuid = { viewModel.generateUuid() }
             )
 

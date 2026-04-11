@@ -46,6 +46,7 @@ import java.util.Locale
 @Composable
 fun NewEntryScreen(
     viewModel: com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel,
+    templateViewModel: com.example.graymatter.android.ui.viewmodel.TemplateViewModel,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel,
     preSelectedTopicId: String? = null,
     onNavigateBack: () -> Unit,
@@ -56,7 +57,7 @@ fun NewEntryScreen(
     val context = LocalContext.current
     
     val isSaving by viewModel.isImporting.collectAsState()
-    val templates by viewModel.templates.collectAsState()
+    val templates by templateViewModel.templates.collectAsState()
     
     var entryType by remember { mutableStateOf(EntryType.LINK) } // 0 = Link, 1 = File, 2 = Note
     var title by remember { mutableStateOf("") }
@@ -631,10 +632,10 @@ fun NewEntryScreen(
 
     if (showTemplateEditor) {
         com.example.graymatter.android.ui.components.TemplateEditorDialog(
-            template = com.example.graymatter.domain.CustomTemplate(viewModel.generateUuid(), "", listOf("")),
+            template = com.example.graymatter.domain.CustomTemplate(java.util.UUID.randomUUID().toString(), "", listOf("")),
             onDismiss = { showTemplateEditor = false },
             onSave = { updated ->
-                viewModel.saveTemplate(updated)
+                templateViewModel.saveTemplate(updated)
                 showTemplateEditor = false
             }
         )

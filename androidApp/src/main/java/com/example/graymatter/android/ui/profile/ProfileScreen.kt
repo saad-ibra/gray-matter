@@ -35,6 +35,7 @@ import com.example.graymatter.android.ui.components.TemplateEditorDialog
 fun ProfileScreen(
     viewModel: GrayMatterViewModel,
     trashViewModel: TrashViewModel,
+    templateViewModel: com.example.graymatter.android.ui.viewmodel.TemplateViewModel,
     onNavigateToGraph: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -44,7 +45,7 @@ fun ProfileScreen(
     if (showTemplatesScreen) {
         BackHandler { showTemplatesScreen = false }
         TemplatesManagementScreen(
-            viewModel = viewModel,
+            templateViewModel = templateViewModel,
             onBackClick = { showTemplatesScreen = false }
         )
     } else if (showRecentlyDeleted) {
@@ -131,10 +132,10 @@ sealed class DeletedItemUiModel(val id: String, val title: String, val deletedAt
 
 @Composable
 fun TemplatesManagementScreen(
-    viewModel: GrayMatterViewModel,
+    templateViewModel: com.example.graymatter.android.ui.viewmodel.TemplateViewModel,
     onBackClick: () -> Unit
 ) {
-    val templates by viewModel.templates.collectAsState()
+    val templates by templateViewModel.templates.collectAsState()
     var editingTemplate by remember { mutableStateOf<CustomTemplate?>(null) }
     var showEditor by remember { mutableStateOf(false) }
 
@@ -169,7 +170,7 @@ fun TemplatesManagementScreen(
                 item {
                     SectionHeader(title = "YOUR TEMPLATES") {
                         IconButton(onClick = {
-                            editingTemplate = CustomTemplate(viewModel.generateUuid(), "", listOf(""))
+                            editingTemplate = CustomTemplate(java.util.UUID.randomUUID().toString(), "", listOf(""))
                             showEditor = true
                         }) {
                             Icon(Icons.Default.Add, null, tint = GrayMatterColors.TextPrimary)
@@ -194,11 +195,11 @@ fun TemplatesManagementScreen(
                 template = editingTemplate!!,
                 onDismiss = { showEditor = false },
                 onSave = { updated ->
-                    viewModel.saveTemplate(updated)
+                    templateViewModel.saveTemplate(updated)
                     showEditor = false
                 },
                 onDelete = { id ->
-                    viewModel.deleteTemplate(id)
+                    templateViewModel.deleteTemplate(id)
                     showEditor = false
                 }
             )

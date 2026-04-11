@@ -93,9 +93,6 @@ class GrayMatterViewModel(
         }
     }
 
-    // Templates
-    val templates: StateFlow<List<CustomTemplate>> = resourceRepository.templatesStream
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /**
      * Verifies the integrity of all resources on app start.
@@ -547,48 +544,6 @@ class GrayMatterViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    // -- Bookmark Methods --
-
-    /**
-     * Gets bookmarks for a resource.
-     */
-    suspend fun getBookmarks(resourceId: String): List<Bookmark> {
-        return resourceRepository.getBookmarks(resourceId)
-    }
-
-    /**
-     * Saves a bookmark.
-     */
-    fun saveBookmark(resourceId: String, page: Int, totalPages: Int, title: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
-        viewModelScope.launch {
-            val bookmarkId = generateUuid()
-            val bookmark = Bookmark(
-                id = bookmarkId,
-                resourceId = resourceId,
-                page = page,
-                percentPosition = if (totalPages > 0) (page + 1).toDouble() / totalPages else 0.0,
-                title = title ?: "Page ${page + 1}",
-                createdAt = Clock.System.now().toEpochMilliseconds()
-            )
-            resourceRepository.saveBookmark(bookmark)
-            saveReferenceLinksInternal(bookmarkId, com.example.graymatter.domain.ReferenceType.BOOKMARK, referenceLinks)
-        }
-    }
-
-    /**
-     * Soft deletes a bookmark.
-     */
-    fun deleteBookmark(bookmarkId: String) {
-        viewModelScope.launch {
-            resourceRepository.softDeleteBookmark(bookmarkId)
-        }
-    }
-
-    fun undoDeleteBookmark(bookmarkId: String) {
-        viewModelScope.launch {
-            resourceRepository.undoDeleteBookmark(bookmarkId)
-        }
-    }
 
     /**
      * Exports backup of all data as JSON.
@@ -619,19 +574,6 @@ class GrayMatterViewModel(
         return sb.toString()
     }
     
-    // -- Custom Template Methods --
-
-    fun saveTemplate(template: CustomTemplate) {
-        viewModelScope.launch {
-            resourceRepository.saveTemplate(template)
-        }
-    }
-
-    fun deleteTemplate(id: String) {
-        viewModelScope.launch {
-            resourceRepository.deleteTemplate(id)
-        }
-    }
 
     /**
      * Determines the resource type from a file name's extension or path.
