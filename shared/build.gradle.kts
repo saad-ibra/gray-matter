@@ -35,6 +35,8 @@ kotlin {
                 implementation("app.cash.sqldelight:coroutines-extensions:2.0.0")
                 // date-time
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
+                // koin DI
+                implementation("io.insert-koin:koin-core:3.5.0")
             }
         }
 

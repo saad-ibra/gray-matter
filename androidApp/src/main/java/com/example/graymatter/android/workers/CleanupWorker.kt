@@ -14,21 +14,27 @@ import kotlinx.coroutines.flow.first
 import java.io.File
 import java.util.concurrent.TimeUnit
 
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+
 /**
  * A [CoroutineWorker] that performs background cleanup tasks for Gray Matter.
  * Deletes orphaned files in the internal resources directory that are no longer referenced in the database.
  */
 class CleanupWorker(
     appContext: Context,
-    workerParameters: WorkerParameters,
-    private val appModule: AppModule
-) : CoroutineWorker(appContext = appContext, params = workerParameters) {
+    workerParameters: WorkerParameters
+) : CoroutineWorker(appContext = appContext, params = workerParameters), KoinComponent {
+
+    private val resourceRepository: com.example.graymatter.data.ResourceRepository by inject()
+    private val referenceLinkRepository: com.example.graymatter.data.ReferenceLinkRepository by inject()
+    private val resourceEntryRepository: com.example.graymatter.data.ResourceEntryRepository by inject()
 
     override suspend fun doWork(): Result = try {
         // 1. Database Orphan Cleanup
-        appModule.resourceRepository.cleanOrphanResources()
-        appModule.resourceRepository.cleanOrphanReadingData()
-        appModule.referenceLinkRepository.cleanOrphanReferenceLinks()
+        resourceRepository.cleanOrphanResources()
+        resourceRepository.cleanOrphanReadingData()
+        referenceLinkRepository.cleanOrphanReferenceLinks()
 
         // 2. File System Cleanup
         val resourceDir = File(applicationContext.filesDir, "resources")
@@ -37,14 +43,14 @@ class CleanupWorker(
             if (files != null) {
                 // Fetch current resource entries from the database
                 // resourceEntriesStream is a Flow<List<ResourceEntry>>, so we use .first() to get the current snapshot
-                val resourceEntriesList = appModule.resourceEntryRepository.resourceEntriesStream.first()
+                val resourceEntriesList = resourceEntryRepository.resourceEntriesStream.first()
                 
                 // Collect all valid file paths currently tracked in the database
                 val validPaths = mutableSetOf<String>()
                 for (resourceEntry in resourceEntriesList) {
                     // getResourceEntryWithDetails is a suspend function, so we must call it within the suspend doWork()
                     // or another coroutine context. A simple for-loop is the safest way.
-                    val details = appModule.resourceEntryRepository.getResourceEntryWithDetails(resourceEntry.id)
+                    val details = resourceEntryRepository.getResourceEntryWithDetails(resourceEntry.id)
                     details?.resource?.filePath?.let { path ->
                         // Store the absolute path for reliable comparison
                         validPaths.add(File(path).absolutePath)
@@ -66,7 +72,7 @@ class CleanupWorker(
     }
 }
 
-class CleanupWorkerFactory(private val appModule: AppModule) : WorkerFactory() {
+class CleanupWorkerFactory : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
         workerClassName: String,
@@ -75,8 +81,7 @@ class CleanupWorkerFactory(private val appModule: AppModule) : WorkerFactory() {
         return when (workerClassName) {
             CleanupWorker::class.java.name -> CleanupWorker(
                 appContext = appContext,
-                workerParameters = workerParameters,
-                appModule = appModule
+                workerParameters = workerParameters
             )
             else -> null
         }

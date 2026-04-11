@@ -81,4 +81,8 @@ dependencies {
 
     // Markdown rendering
     implementation("com.github.jeziellago:compose-markdown:0.5.0")
+
+    // Koin
+    implementation("io.insert-koin:koin-android:3.5.0")
+    implementation("io.insert-koin:koin-androidx-compose:3.5.0")
 }

@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
+import com.example.graymatter.android.ui.viewmodel.TrashViewModel
 import com.example.graymatter.domain.CustomTemplate
 
 import com.example.graymatter.android.ui.components.TemplateEditorDialog
@@ -33,6 +34,7 @@ import com.example.graymatter.android.ui.components.TemplateEditorDialog
 @Composable
 fun ProfileScreen(
     viewModel: GrayMatterViewModel,
+    trashViewModel: TrashViewModel,
     onNavigateToGraph: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -49,6 +51,7 @@ fun ProfileScreen(
         BackHandler { showRecentlyDeleted = false }
         RecentlyDeletedScreen(
             viewModel = viewModel,
+            trashViewModel = trashViewModel,
             onBackClick = { showRecentlyDeleted = false }
         )
     } else {
@@ -206,14 +209,15 @@ fun TemplatesManagementScreen(
 @Composable
 fun RecentlyDeletedScreen(
     viewModel: GrayMatterViewModel,
+    trashViewModel: TrashViewModel,
     onBackClick: () -> Unit
 ) {
-    val deletedTopics by viewModel.deletedTopics.collectAsState()
-    val deletedResources by viewModel.deletedResourceEntries.collectAsState()
-    val deletedOpinions by viewModel.deletedOpinions.collectAsState()
-    val deletedBookmarks by viewModel.deletedBookmarks.collectAsState()
+    val deletedTopics by trashViewModel.deletedTopics.collectAsState()
+    val deletedResources by trashViewModel.deletedResourceEntries.collectAsState()
+    val deletedOpinions by trashViewModel.deletedOpinions.collectAsState()
+    val deletedBookmarks by trashViewModel.deletedBookmarks.collectAsState()
     val topics by viewModel.topicsStream.collectAsState()
-    val restoreNeedsTopicId by viewModel.restoreNeedsTopicId.collectAsState()
+    val restoreNeedsTopicId by trashViewModel.restoreNeedsTopicId.collectAsState()
     
     val scope = rememberCoroutineScope()
 
@@ -252,12 +256,12 @@ fun RecentlyDeletedScreen(
                     ids.forEach { id ->
                         val item = combinedList.find { it.id == id }
                         when (item) {
-                            is DeletedItemUiModel.TopicItem -> viewModel.undoDeleteTopic(id)
-                            is DeletedItemUiModel.ResourceItem -> viewModel.undoDeleteResourceEntry(id)
+                            is DeletedItemUiModel.TopicItem -> trashViewModel.undoDeleteTopic(id)
+                            is DeletedItemUiModel.ResourceItem -> trashViewModel.undoDeleteResourceEntry(id)
                             is DeletedItemUiModel.OpinionItem -> {
                                 // Check if it's a bookmark or opinion by looking at the deletedLists
-                                if (deletedBookmarks.any { it.id == id }) viewModel.undoDeleteBookmark(id)
-                                else viewModel.undoDeleteOpinion(id)
+                                if (deletedBookmarks.any { it.id == id }) trashViewModel.undoDeleteBookmark(id)
+                                else trashViewModel.undoDeleteOpinion(id)
                             }
                             else -> {}
                         }
@@ -288,11 +292,11 @@ fun RecentlyDeletedScreen(
                     ids.forEach { id ->
                         val item = combinedList.find { it.id == id }
                         when (item) {
-                            is DeletedItemUiModel.TopicItem -> viewModel.permanentlyDeleteTopic(id)
-                            is DeletedItemUiModel.ResourceItem -> viewModel.permanentlyDeleteResourceEntry(id)
+                            is DeletedItemUiModel.TopicItem -> trashViewModel.permanentlyDeleteTopic(id)
+                            is DeletedItemUiModel.ResourceItem -> trashViewModel.permanentlyDeleteResourceEntry(id)
                             is DeletedItemUiModel.OpinionItem -> {
-                                if (deletedBookmarks.any { it.id == id }) viewModel.permanentlyDeleteBookmark(id)
-                                else viewModel.permanentlyDeleteOpinion(id)
+                                if (deletedBookmarks.any { it.id == id }) trashViewModel.permanentlyDeleteBookmark(id)
+                                else trashViewModel.permanentlyDeleteOpinion(id)
                             }
                             else -> {}
                         }
@@ -320,17 +324,17 @@ fun RecentlyDeletedScreen(
             title = entryWithDetails?.resource?.title ?: "Restore Item",
             topics = topics,
             onDismiss = {
-                viewModel.cancelRestore(restoreNeedsTopicId!!)
+                trashViewModel.cancelRestore(restoreNeedsTopicId!!)
             },
             onSelectTopic = { topic ->
                 viewModel.assignTopicToResourceEntry(restoreNeedsTopicId!!, topic.id)
-                viewModel.clearRestoreNeedsTopic()
+                trashViewModel.clearRestoreNeedsTopic()
             },
             onCreateNewTopic = { name ->
                 scope.launch {
                     val newId = viewModel.createTopic(name)
                     viewModel.assignTopicToResourceEntry(restoreNeedsTopicId!!, newId)
-                    viewModel.clearRestoreNeedsTopic()
+                    trashViewModel.clearRestoreNeedsTopic()
                 }
             }
         )

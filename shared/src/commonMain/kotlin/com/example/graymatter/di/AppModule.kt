@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 /**
  * Simple dependency injection module for Gray Matter app.
  */
+@Deprecated("Use Koin for dependency injection instead. See KoinModule.kt")
 class AppModule(
     private val databaseDriverFactory: DatabaseDriverFactory
 ) {

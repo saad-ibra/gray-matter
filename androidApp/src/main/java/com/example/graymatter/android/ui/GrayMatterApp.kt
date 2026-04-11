@@ -33,11 +33,9 @@ import com.example.graymatter.di.AppModule
 
 @Composable
 fun GrayMatterApp(
-    appModule: AppModule,
     navController: NavHostController = rememberNavController()
 ) {
     GrayMatterNavigation(
-        appModule = appModule,
         navController = navController,
         modifier = Modifier.fillMaxSize()
     )

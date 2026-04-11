@@ -41,34 +41,21 @@ import com.example.graymatter.android.ui.profile.ProfileScreen
 import com.example.graymatter.android.util.FileUtils
 import kotlinx.coroutines.launch
 
+import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
+
 /**
  * Main navigation graph for Gray Matter app.
  */
 @kotlin.OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @androidx.compose.runtime.Composable
 fun GrayMatterNavigation(
-    appModule: AppModule,
     navController: NavHostController = rememberNavController(),
     modifier: Modifier = Modifier
 ) {
-    val autoLinkService = remember {
-        com.example.graymatter.domain.business.AutoLinkService(
-            topicRepository = appModule.topicRepository,
-            resourceRepository = appModule.resourceRepository,
-            referenceLinkRepository = appModule.referenceLinkRepository
-        )
-    }
-
-    val viewModel: GrayMatterViewModel = viewModel {
-        GrayMatterViewModel(
-            resourceEntryRepository = appModule.resourceEntryRepository,
-            resourceRepository = appModule.resourceRepository,
-            opinionRepository = appModule.opinionRepository,
-            topicRepository = appModule.topicRepository,
-            referenceLinkRepository = appModule.referenceLinkRepository,
-            autoLinkService = autoLinkService
-        )
-    }
+    val viewModel: GrayMatterViewModel = koinViewModel()
+    val trashViewModel: com.example.graymatter.android.ui.viewmodel.TrashViewModel = koinViewModel()
+    val opinionRepository: com.example.graymatter.data.OpinionRepository = koinInject()
 
     val topics by viewModel.topicsStream.collectAsState(initial = emptyList())
     val items by viewModel.resourceEntriesStream.collectAsState(initial = emptyList())
@@ -77,16 +64,7 @@ fun GrayMatterNavigation(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    val referenceSelectorViewModel = remember {
-        com.example.graymatter.viewmodel.ReferenceSelectorViewModel(
-            topicRepository = appModule.topicRepository,
-            resourceRepository = appModule.resourceRepository,
-            opinionRepository = appModule.opinionRepository,
-            resourceEntryRepository = appModule.resourceEntryRepository,
-            coroutineScope = null,
-            defaultDispatcher = kotlinx.coroutines.Dispatchers.Default
-        )
-    }
+    val referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel = koinInject()
 
     NavHost(
         navController = navController,
@@ -208,6 +186,7 @@ fun GrayMatterNavigation(
                         2 -> {
                             ProfileScreen(
                                 viewModel = viewModel,
+                                trashViewModel = trashViewModel,
                                 onNavigateToGraph = {
                                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute())
                                 }
@@ -590,15 +569,7 @@ fun GrayMatterNavigation(
             val resourceId = backStackEntry.arguments?.getString(NavigationDestination.FileViewer.ARG_RESOURCE_ID) ?: return@composable
             val initialPage = backStackEntry.arguments?.getInt(NavigationDestination.FileViewer.ARG_PAGE) ?: -1
             
-            val fileViewerViewModel: com.example.graymatter.android.ui.fileviewer.FileViewerViewModel = viewModel {
-                com.example.graymatter.android.ui.fileviewer.FileViewerViewModel(
-                    resourceRepository = appModule.resourceRepository,
-                    opinionRepository = appModule.opinionRepository,
-                    resourceEntryRepository = appModule.resourceEntryRepository,
-                    referenceLinkRepository = appModule.referenceLinkRepository,
-                    autoLinkService = autoLinkService
-                )
-            }
+            val fileViewerViewModel: com.example.graymatter.android.ui.fileviewer.FileViewerViewModel = koinViewModel()
 
             com.example.graymatter.android.ui.fileviewer.FileViewerScreen(
                 viewModel = fileViewerViewModel,
@@ -629,15 +600,7 @@ fun GrayMatterNavigation(
         ) { backStackEntry ->
             val nodeId = backStackEntry.arguments?.getString(NavigationDestination.KnowledgeGraph.ARG_NODE_ID)
             
-            val graphViewModel: com.example.graymatter.android.ui.graph.KnowledgeGraphViewModel = viewModel {
-                com.example.graymatter.android.ui.graph.KnowledgeGraphViewModel(
-                    topicRepository = appModule.topicRepository,
-                    resourceEntryRepository = appModule.resourceEntryRepository,
-                    resourceRepository = appModule.resourceRepository,
-                    opinionRepository = appModule.opinionRepository,
-                    referenceLinkRepository = appModule.referenceLinkRepository
-                )
-            }
+            val graphViewModel: com.example.graymatter.android.ui.graph.KnowledgeGraphViewModel = koinViewModel()
 
             // Force fresh data on every navigation — ViewModel is cached so init only runs once
             LaunchedEffect(Unit) {
@@ -666,7 +629,7 @@ fun GrayMatterNavigation(
                         else -> {
                             // Opinions open the ItemDetail for their parent item
                             coroutineScope.launch {
-                                val opinion = appModule.opinionRepository.getOpinionById(node.id)
+                                val opinion = opinionRepository.getOpinionById(node.id)
                                 if (opinion != null) {
                                     navController.navigate(NavigationDestination.ResourceDetail.buildRoute(opinion.itemId, opinion.id))
                                 }

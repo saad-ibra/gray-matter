@@ -22,11 +22,9 @@ class MainActivity : ComponentActivity() {
         // Enable edge-to-edge display
         enableEdgeToEdge()
         
-        val appModule = (application as GrayMatterApplication).appModule
-        
         setContent {
             GrayMatterTheme(darkTheme = true) {
-                GrayMatterApp(appModule = appModule)
+                GrayMatterApp()
             }
         }
     }
