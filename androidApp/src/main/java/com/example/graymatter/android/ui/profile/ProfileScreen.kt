@@ -3,6 +3,8 @@ package com.example.graymatter.android.ui.profile
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import com.example.graymatter.android.ui.components.TopicPickerSheet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.datetime.toLocalDateTime
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
@@ -138,6 +143,11 @@ fun TemplatesManagementScreen(
     val templates by templateViewModel.templates.collectAsState()
     var editingTemplate by remember { mutableStateOf<CustomTemplate?>(null) }
     var showEditor by remember { mutableStateOf(false) }
+    var templateToDeleteId by remember { mutableStateOf<String?>(null) }
+    var lastDeletedTemplate by remember { mutableStateOf<CustomTemplate?>(null) }
+    
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
@@ -199,14 +209,57 @@ fun TemplatesManagementScreen(
                     showEditor = false
                 },
                 onDelete = { id ->
-                    templateViewModel.deleteTemplate(id)
+                    templateToDeleteId = id
                     showEditor = false
                 }
             )
         }
+
+        if (templateToDeleteId != null) {
+            val template = templates.find { it.id == templateToDeleteId }
+            AlertDialog(
+                onDismissRequest = { templateToDeleteId = null },
+                title = { Text("Delete Template", color = Color.White) },
+                text = { Text("Are you sure you want to delete '${template?.name ?: "this template"}'? This cannot be undone once the undo window closes.", color = GrayMatterColors.TextSecondary) },
+                containerColor = Color(0xFF1A1A1E),
+                confirmButton = {
+                    TextButton(onClick = {
+                        val toDelete = templates.find { it.id == templateToDeleteId }
+                        if (toDelete != null) {
+                            lastDeletedTemplate = toDelete
+                            templateViewModel.deleteTemplate(toDelete.id)
+                            scope.launch {
+                                val result = snackbarHostState.showSnackbar(
+                                    message = "Template '${toDelete.name}' deleted",
+                                    actionLabel = "Undo",
+                                    duration = SnackbarDuration.Long
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    lastDeletedTemplate?.let { templateViewModel.saveTemplate(it) }
+                                }
+                            }
+                        }
+                        templateToDeleteId = null
+                    }) {
+                        Text("Delete", color = GrayMatterColors.Error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { templateToDeleteId = null }) {
+                        Text("Cancel", color = Color.White)
+                    }
+                }
+            )
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
+        )
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RecentlyDeletedScreen(
     viewModel: GrayMatterViewModel,
@@ -220,6 +273,7 @@ fun RecentlyDeletedScreen(
     val topics by viewModel.topicsStream.collectAsState()
     val restoreNeedsTopicId by trashViewModel.restoreNeedsTopicId.collectAsState()
     
+    val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
 
     val combinedList = remember(deletedTopics, deletedResources, deletedOpinions, deletedBookmarks) {
@@ -241,6 +295,8 @@ fun RecentlyDeletedScreen(
 
     var selectedIds by remember { mutableStateOf(setOf<String>()) }
     val isSelectionMode = selectedIds.isNotEmpty()
+    
+    var previewItem by remember { mutableStateOf<DeletedItemUiModel?>(null) }
 
     var showRestoreConfirm by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -449,13 +505,21 @@ fun RecentlyDeletedScreen(
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(if (isSelected) GrayMatterColors.Primary.copy(alpha=0.1f) else GrayMatterColors.SurfaceDark)
                                 .border(1.dp, if (isSelected) GrayMatterColors.Primary else GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
-                                .clickable {
-                                    if (isSelectionMode) {
-                                        selectedIds = if (isSelected) selectedIds - item.id else selectedIds + item.id
-                                    } else {
-                                        selectedIds = setOf(item.id)
+                                .combinedClickable(
+                                    onClick = {
+                                        if (isSelectionMode) {
+                                            selectedIds = if (isSelected) selectedIds - item.id else selectedIds + item.id
+                                        } else {
+                                            previewItem = item
+                                        }
+                                    },
+                                    onLongClick = {
+                                        if (!isSelectionMode) {
+                                            selectedIds = setOf(item.id)
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        }
                                     }
-                                }
+                                )
                                 .padding(16.dp)
                         ) {
                             Row(
@@ -516,8 +580,98 @@ fun RecentlyDeletedScreen(
                 }
             }
         }
+
+        if (previewItem != null) {
+            DeletedItemPreviewDialog(
+                item = previewItem!!,
+                onDismiss = { previewItem = null },
+                onRestore = {
+                    val id = previewItem!!.id
+                    when (previewItem) {
+                        is DeletedItemUiModel.TopicItem -> trashViewModel.undoDeleteTopic(id)
+                        is DeletedItemUiModel.ResourceItem -> trashViewModel.undoDeleteResourceEntry(id)
+                        is DeletedItemUiModel.OpinionItem -> {
+                            if (deletedBookmarks.any { it.id == id }) trashViewModel.undoDeleteBookmark(id)
+                            else trashViewModel.undoDeleteOpinion(id)
+                        }
+                        else -> {}
+                    }
+                    previewItem = null
+                }
+            )
+        }
     }
 }
+
+@Composable
+private fun DeletedItemPreviewDialog(
+    item: DeletedItemUiModel,
+    onDismiss: () -> Unit,
+    onRestore: () -> Unit
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { 
+            Text(
+                text = when(item) {
+                    is DeletedItemUiModel.TopicItem -> "Topic Details"
+                    is DeletedItemUiModel.ResourceItem -> "Resource Details"
+                    else -> "Opinion/Bookmark Details"
+                },
+                color = Color.White 
+            ) 
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = GrayMatterColors.TextPrimary
+                )
+                if (item is DeletedItemUiModel.OpinionItem) {
+                    Text(
+                        text = item.text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = GrayMatterColors.TextSecondary
+                    )
+                } else if (item is DeletedItemUiModel.ResourceItem) {
+                    Text(
+                        text = "Type: ${item.resourceType}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = GrayMatterColors.TextSecondary
+                    )
+                }
+                
+                val dateStr = remember(item.deletedAt) {
+                    val instant = kotlinx.datetime.Instant.fromEpochMilliseconds(item.deletedAt)
+                    val tz = kotlinx.datetime.TimeZone.currentSystemDefault()
+                    val dt = instant.toLocalDateTime(tz)
+                    "${dt.dayOfMonth}/${dt.monthNumber}/${dt.year}"
+                }
+                Text(
+                    text = "Deleted on $dateStr",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = GrayMatterColors.Neutral500
+                )
+            }
+        },
+        containerColor = Color(0xFF1A1A1E),
+        confirmButton = {
+            Button(
+                onClick = onRestore,
+                colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary)
+            ) {
+                Text("Restore", color = Color.Black)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close", color = Color.White)
+            }
+        }
+    )
+}
+
 
 @Composable
 private fun ProfileHeader() {

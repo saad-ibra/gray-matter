@@ -63,7 +63,6 @@ fun LibraryScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedTopics by remember { mutableStateOf<Set<String>>(emptySet()) }
     
-    var topicsToDelete by remember { mutableStateOf<List<String>?>(null) }
     var deletedTopicsInfo by remember { mutableStateOf<List<String>?>(null) }
     
     val selectionMode = selectedTopics.isNotEmpty()
@@ -242,7 +241,9 @@ fun LibraryScreen(
                                             val draggedId = draggedTopicId.value
                                             if (draggedId != null) {
                                                 if (isOverTrash.value) {
-                                                    topicsToDelete = listOf(draggedId)
+                                                    val ids = listOf(draggedId)
+                                                    currentOnDeleteTopics(ids)
+                                                    deletedTopicsInfo = ids
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                 } else {
                                                     currentOnUpdateOrder(filteredTopicsState.value.map { it.id })
@@ -288,6 +289,11 @@ fun LibraryScreen(
                                         } else if (draggedTopicId.value == null) {
                                             onTopicClick(topic)
                                         }
+                                    },
+                                    onDelete = {
+                                        val ids = listOf(topic.id)
+                                        currentOnDeleteTopics(ids)
+                                        deletedTopicsInfo = ids
                                     }
                                 )
                             }
@@ -300,7 +306,10 @@ fun LibraryScreen(
                 SelectionActionBar(
                     count = selectedTopics.size,
                     onDelete = {
-                        topicsToDelete = selectedTopics.toList()
+                        val ids = selectedTopics.toList()
+                        currentOnDeleteTopics(ids)
+                        deletedTopicsInfo = ids
+                        selectedTopics = emptySet()
                     },
                     onClear = { selectedTopics = emptySet() }
                 )
@@ -373,36 +382,13 @@ fun LibraryScreen(
                         romanNumeral = toRomanNumeral(filteredTopics.indexOf(topic) + 1),
                         isSelected = false,
                         onClick = {},
+                        onDelete = {},
                         enabled = false // Disable hits on replica to prevent pointer interference
                     )
                 }
             }
         }
 
-        if (topicsToDelete != null) {
-            AlertDialog(
-                onDismissRequest = { topicsToDelete = null },
-                title = { Text("Delete Topics", color = Color.White) },
-                text = { Text("Are you sure you want to delete ${topicsToDelete!!.size} topic(s)?", color = GrayMatterColors.TextSecondary) },
-                containerColor = Color(0xFF1A1A1E),
-                confirmButton = {
-                    TextButton(onClick = {
-                        val ids = topicsToDelete!!
-                        currentOnDeleteTopics(ids)
-                        deletedTopicsInfo = ids
-                        selectedTopics = emptySet()
-                        topicsToDelete = null
-                    }) {
-                        Text("Delete", color = GrayMatterColors.Error)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { topicsToDelete = null }) {
-                        Text("Cancel", color = Color.White)
-                    }
-                }
-            )
-        }
 
         if (deletedTopicsInfo != null) {
             com.example.graymatter.android.ui.components.UndoSnackbar(
@@ -488,9 +474,12 @@ private fun TopicCard(
     romanNumeral: String,
     isSelected: Boolean,
     onClick: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -505,22 +494,50 @@ private fun TopicCard(
             .padding(20.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(GrayMatterColors.BackgroundDark.copy(alpha = 0.4f))
-                    .border(1.dp, GrayMatterColors.Neutral700.copy(alpha = 0.5f), CircleShape),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
-                Text(
-                    text = romanNumeral,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = PlayfairDisplayFontFamily,
-                        fontWeight = FontWeight.Normal
-                    ),
-                    color = GrayMatterColors.TextPrimary
-                )
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(GrayMatterColors.BackgroundDark.copy(alpha = 0.4f))
+                        .border(1.dp, GrayMatterColors.Neutral700.copy(alpha = 0.5f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = romanNumeral,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = PlayfairDisplayFontFamily,
+                            fontWeight = FontWeight.Normal
+                        ),
+                        color = GrayMatterColors.TextPrimary
+                    )
+                }
+                
+                if (enabled) {
+                    Box {
+                        IconButton(onClick = { showMenu = true }, modifier = Modifier.size(24.dp).offset(x = 8.dp, y = (-8).dp)) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = GrayMatterColors.Neutral500)
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                            modifier = Modifier.background(GrayMatterColors.SurfaceDark)
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Delete", color = GrayMatterColors.Error) },
+                                onClick = {
+                                    showMenu = false
+                                    onDelete()
+                                },
+                                trailingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = GrayMatterColors.Error, modifier = Modifier.size(16.dp)) }
+                            )
+                        }
+                    }
+                }
             }
             
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
