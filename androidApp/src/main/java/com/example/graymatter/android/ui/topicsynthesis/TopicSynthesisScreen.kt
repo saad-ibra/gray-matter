@@ -30,7 +30,7 @@ import com.example.graymatter.android.ui.components.MarkdownEditor
 
 /**
  * Topic Synthesis Screen.
- * Lists resources and allows adding an overall opinion with a robust markdown editor.
+ * Lists resources and allows adding a topic overview with a robust markdown editor.
  */
 @Composable
 fun TopicSynthesisScreen(
@@ -39,7 +39,7 @@ fun TopicSynthesisScreen(
     onBackClick: () -> Unit,
     onAddResource: () -> Unit,
     onResourceClick: (Resource) -> Unit,
-    onSaveOverallOpinion: (String, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
+    onSaveTopicOverview: (String, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
     onDeleteTopic: () -> Unit,
     onRenameTopic: (String) -> Unit,
     onExport: () -> Unit,
@@ -90,7 +90,7 @@ fun TopicSynthesisScreen(
             initialText = topic.notes ?: "",
             onBackClick = { showEditor = false },
             onSave = { content -> 
-                onSaveOverallOpinion(content, selectedReferences)
+                onSaveTopicOverview(content, selectedReferences)
                 showEditor = false
             },
             onTextChange = { currentEditorText = it },
@@ -149,7 +149,7 @@ fun TopicSynthesisScreen(
                 ) {
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
-                        OverallOpinionSection(
+                        TopicOverviewSection(
                             hasOpinion = !topic.notes.isNullOrBlank(),
                             onClick = { showEditor = true }
                         )
@@ -227,7 +227,7 @@ private fun TopicHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBackClick, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.Default.KeyboardArrowLeft, "Back", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(28.dp))
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Back", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(28.dp))
         }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -290,7 +290,7 @@ private fun TopicHeader(
                     leadingIcon = { Icon(Icons.Default.Hub, null, tint = Color.White) }
                 )
                 
-                Divider(color = GrayMatterColors.Neutral800)
+                HorizontalDivider(color = GrayMatterColors.Neutral800)
                 
                 DropdownMenuItem(
                     text = { Text("Delete Topic", color = GrayMatterColors.Error) },
@@ -391,7 +391,7 @@ private fun ResourceItem(
     }
 }
 @Composable
-private fun OverallOpinionSection(
+private fun TopicOverviewSection(
     hasOpinion: Boolean,
     onClick: () -> Unit
 ) {
@@ -402,7 +402,7 @@ private fun OverallOpinionSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "OVERALL OPINION",
+                text = "TOPIC OVERVIEW",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                 color = GrayMatterColors.Neutral500
             )
@@ -425,7 +425,7 @@ private fun OverallOpinionSection(
                     tint = if (hasOpinion) GrayMatterColors.Neutral400 else GrayMatterColors.Primary
                 )
                 Text(
-                    text = if (hasOpinion) "Edit Overall Opinion" else "Add Overall Opinion",
+                    text = if (hasOpinion) "Edit Topic Overview" else "Add Topic Overview",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     color = if (hasOpinion) GrayMatterColors.Neutral400 else GrayMatterColors.Primary
                 )

@@ -205,9 +205,15 @@ class GrayMatterViewModel(
     /**
      * Updates a resource entry's description.
      */
-    fun updateResourceEntryDescription(resourceEntryId: String, description: String?) {
+    fun updateResourceEntryDescription(resourceEntryId: String, description: String?, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         viewModelScope.launch {
             resourceEntryRepository.updateResourceEntryDescription(resourceEntryId, description)
+            if (description != null) {
+                val details = resourceEntryRepository.getResourceEntryWithDetails(resourceEntryId)
+                details?.resource?.id?.let { resId ->
+                    autoLinkService.syncLinks(resId, com.example.graymatter.domain.ReferenceType.RESOURCE, description, referenceLinks)
+                }
+            }
         }
     }
     

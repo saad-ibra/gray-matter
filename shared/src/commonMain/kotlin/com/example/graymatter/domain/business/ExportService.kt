@@ -52,7 +52,7 @@ object ExportService {
         sb.append("# Topic Analysis: ${topic.name}\n\n")
         
         if (!topic.notes.isNullOrBlank()) {
-            sb.append("## Overall Opinion\n")
+            sb.append("## Topic Overview\n")
             sb.append("${topic.notes}\n\n")
         }
         
