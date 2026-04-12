@@ -37,6 +37,8 @@ import android.content.Context
 import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
 import com.example.graymatter.android.ui.profile.ProfileScreen
+import com.example.graymatter.android.ui.template.TemplatesManagementScreen
+import com.example.graymatter.android.ui.trash.RecentlyDeletedScreen
 import com.example.graymatter.android.util.FileUtils
 import kotlinx.coroutines.launch
 
@@ -199,11 +201,14 @@ fun GrayMatterNavigation(
                         }
                         2 -> {
                             ProfileScreen(
-                                viewModel = viewModel,
-                                trashViewModel = trashViewModel,
-                                templateViewModel = templateViewModel,
                                 onNavigateToGraph = {
                                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute())
+                                },
+                                onNavigateToTemplates = {
+                                    navController.navigate(NavigationDestination.TemplateManagement.route)
+                                },
+                                onNavigateToRecentlyDeleted = {
+                                    navController.navigate(NavigationDestination.RecentlyDeleted.route)
                                 }
                             )
                         }
@@ -654,6 +659,27 @@ fun GrayMatterNavigation(
                         }
                     }
                 }
+            )
+        }
+
+        // Template Management Screen
+        composable(
+            route = NavigationDestination.TemplateManagement.route
+        ) {
+            TemplatesManagementScreen(
+                templateViewModel = templateViewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // Recently Deleted Screen
+        composable(
+            route = NavigationDestination.RecentlyDeleted.route
+        ) {
+            RecentlyDeletedScreen(
+                viewModel = viewModel,
+                trashViewModel = trashViewModel,
+                onBackClick = { navController.popBackStack() }
             )
         }
     }

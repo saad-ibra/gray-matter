@@ -45,4 +45,8 @@ sealed class NavigationDestination(val route: String) {
         fun buildRoute(nodeId: String? = null) =
             if (nodeId != null) "knowledge_graph?nodeId=$nodeId" else "knowledge_graph"
     }
+
+    object TemplateManagement : NavigationDestination("template_management")
+    
+    object RecentlyDeleted : NavigationDestination("recently_deleted")
 }
