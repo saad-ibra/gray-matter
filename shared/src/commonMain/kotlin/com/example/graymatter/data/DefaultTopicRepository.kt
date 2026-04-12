@@ -23,6 +23,12 @@ class DefaultTopicRepository(
         .asFlow()
         .mapToList(dispatcher)
         .map { entities -> entities.map { it.toTopic() } }
+
+    override val deletedTopicsStream: Flow<List<Topic>> = queries
+        .getDeletedTopics()
+        .asFlow()
+        .mapToList(dispatcher)
+        .map { entities -> entities.map { it.toTopic() } }
     
     override suspend fun getTopicById(id: String): Topic? = withContext(dispatcher) {
         queries.getTopicById(id).executeAsOneOrNull()?.toTopic()

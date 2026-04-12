@@ -15,6 +15,11 @@ interface ResourceEntryRepository {
     val resourceEntriesStream: Flow<List<ResourceEntry>>
     
     /**
+     * A [Flow] of all deleted resource entries.
+     */
+    val deletedResourceEntriesStream: Flow<List<ResourceEntry>>
+    
+    /**
      * Get a resource entry by its ID.
      */
     suspend fun getResourceEntryById(id: String): ResourceEntry?

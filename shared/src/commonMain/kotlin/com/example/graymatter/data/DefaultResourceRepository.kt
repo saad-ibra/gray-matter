@@ -167,6 +167,12 @@ class DefaultResourceRepository(
         queries.getDeletedBookmarks().executeAsList().map { it.toBookmark() }
     }
 
+    override val deletedBookmarksStream: Flow<List<Bookmark>> = queries
+        .getDeletedBookmarks()
+        .asFlow()
+        .mapToList(dispatcher)
+        .map { entities -> entities.map { it.toBookmark() } }
+
     // -- Reading Settings --
 
     override suspend fun getReadingSettings(resourceId: String): ReadingSettings? = withContext(dispatcher) {

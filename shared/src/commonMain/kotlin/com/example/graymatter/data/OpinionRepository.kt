@@ -24,6 +24,11 @@ interface OpinionRepository {
     fun getAllOpinions(): Flow<List<Opinion>>
     
     /**
+     * Get all deleted opinions as a Flow.
+     */
+    val deletedOpinionsStream: Flow<List<Opinion>>
+    
+    /**
      * Save a new opinion.
      */
     suspend fun saveOpinion(opinion: Opinion)

@@ -14,6 +14,11 @@ interface TopicRepository {
     val topicsStream: Flow<List<Topic>>
     
     /**
+     * A [Flow] of all deleted topics.
+     */
+    val deletedTopicsStream: Flow<List<Topic>>
+    
+    /**
      * Get a topic by its ID.
      */
     suspend fun getTopicById(id: String): Topic?

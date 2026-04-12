@@ -137,6 +137,11 @@ interface ResourceRepository {
      */
     suspend fun getDeletedBookmarks(): List<Bookmark>
 
+    /**
+     * Get all deleted bookmarks as a Flow.
+     */
+    val deletedBookmarksStream: Flow<List<Bookmark>>
+
     // -- Reading Settings --
 
     /**

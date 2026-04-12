@@ -33,6 +33,12 @@ class DefaultResourceEntryRepository(
         .asFlow()
         .mapToList(dispatcher)
         .map { entities: List<ItemEntity> -> entities.map { it.toResourceEntry() } }
+
+    override val deletedResourceEntriesStream: Flow<List<ResourceEntry>> = queries
+        .getDeletedResourceEntries()
+        .asFlow()
+        .mapToList(dispatcher)
+        .map { entities: List<ItemEntity> -> entities.map { it.toResourceEntry() } }
     
     override suspend fun getResourceEntryById(id: String): ResourceEntry? = withContext(dispatcher) {
         queries.getResourceEntryById(id).executeAsOneOrNull()?.toResourceEntry()

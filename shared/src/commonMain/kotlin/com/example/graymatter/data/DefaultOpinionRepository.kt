@@ -33,6 +33,12 @@ class DefaultOpinionRepository(
         .asFlow()
         .mapToList(dispatcher)
         .map { entities: List<OpinionEntity> -> entities.map { it.toOpinion() } }
+
+    override val deletedOpinionsStream: Flow<List<Opinion>> = queries
+        .getDeletedOpinions()
+        .asFlow()
+        .mapToList(dispatcher)
+        .map { entities: List<OpinionEntity> -> entities.map { it.toOpinion() } }
     
     override suspend fun saveOpinion(opinion: Opinion) = withContext(dispatcher) {
         queries.insertOpinion(

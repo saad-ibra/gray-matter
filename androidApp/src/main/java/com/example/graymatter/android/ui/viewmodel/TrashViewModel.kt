@@ -29,19 +29,35 @@ class TrashViewModel(
     private val referenceLinkRepository: ReferenceLinkRepository
 ) : ViewModel() {
 
-    // -- Deleted items state --
+    // -- Deleted items state (Reactive) --
+    
+    val deletedTopics: StateFlow<List<Topic>> = topicRepository.deletedTopicsStream
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val _deletedTopics = MutableStateFlow<List<Topic>>(emptyList())
-    val deletedTopics: StateFlow<List<Topic>> = _deletedTopics.asStateFlow()
+    val deletedResourceEntries: StateFlow<List<ResourceEntryWithDetails>> = combine(
+        resourceEntryRepository.deletedResourceEntriesStream,
+        deletedTopics
+    ) { entries, topics ->
+        val deletedTopicIds = topics.map { it.id }.toSet()
+        entries.filter { it.topicId == null || it.topicId !in deletedTopicIds }
+            .mapNotNull { resourceEntryRepository.getResourceEntryWithDetails(it.id) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val _deletedOpinions = MutableStateFlow<List<Opinion>>(emptyList())
-    val deletedOpinions: StateFlow<List<Opinion>> = _deletedOpinions.asStateFlow()
+    val deletedOpinions: StateFlow<List<Opinion>> = combine(
+        opinionRepository.deletedOpinionsStream,
+        resourceEntryRepository.deletedResourceEntriesStream
+    ) { opinions, entries ->
+        val deletedEntryIds = entries.map { it.id }.toSet()
+        opinions.filter { it.itemId !in deletedEntryIds }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val _deletedResourceEntries = MutableStateFlow<List<ResourceEntryWithDetails>>(emptyList())
-    val deletedResourceEntries: StateFlow<List<ResourceEntryWithDetails>> = _deletedResourceEntries.asStateFlow()
-
-    private val _deletedBookmarks = MutableStateFlow<List<Bookmark>>(emptyList())
-    val deletedBookmarks: StateFlow<List<Bookmark>> = _deletedBookmarks.asStateFlow()
+    val deletedBookmarks: StateFlow<List<Bookmark>> = combine(
+        resourceRepository.deletedBookmarksStream,
+        resourceEntryRepository.deletedResourceEntriesStream
+    ) { bookmarks, entries ->
+        val deletedResourceIds = entries.map { it.resourceId }.toSet()
+        bookmarks.filter { it.resourceId !in deletedResourceIds }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Restore flow: when non-null, the restored resource entry needs a topic assigned
     private val _restoreNeedsTopicId = MutableStateFlow<String?>(null)
@@ -49,35 +65,9 @@ class TrashViewModel(
 
     init {
         purgeOldDeletedItems()
-        loadRecentlyDeleted()
     }
 
-    // -- Load & Refresh --
-
-    fun loadRecentlyDeleted() {
-        viewModelScope.launch {
-            val deletedTopics = topicRepository.getDeletedTopics()
-            _deletedTopics.value = deletedTopics
-            val deletedTopicIds = deletedTopics.map { it.id }.toSet()
-
-            val allDeletedResourceEntries = resourceEntryRepository.getDeletedResourceEntries()
-            val allDeletedResourceEntryIds = allDeletedResourceEntries.map { it.id }.toSet()
-            val allDeletedResourceEntryResourceIds = allDeletedResourceEntries.map { it.resourceId }.toSet()
-
-            // Only show ResourceEntries in trash if their parent Topic is NOT in trash (or has no topic)
-            _deletedResourceEntries.value = allDeletedResourceEntries
-                .filter { it.topicId == null || it.topicId !in deletedTopicIds }
-                .mapNotNull { resourceEntryRepository.getResourceEntryWithDetails(it.id) }
-
-            // Only show Opinions if their parent ResourceEntry is NOT in trash
-            _deletedOpinions.value = opinionRepository.getDeletedOpinions()
-                .filter { it.itemId !in allDeletedResourceEntryIds }
-
-            // Only show Bookmarks if their parent Resource is NOT in trash
-            _deletedBookmarks.value = resourceRepository.getDeletedBookmarks()
-                .filter { it.resourceId !in allDeletedResourceEntryResourceIds }
-        }
-    }
+    // -- Load & Refresh (Removed in favor of reactive streams) --
 
     fun purgeOldDeletedItems() {
         viewModelScope.launch {
@@ -119,7 +109,6 @@ class TrashViewModel(
             // Put it back in trash since user declined to pick a topic
             resourceEntryRepository.softDeleteResourceEntry(resourceEntryId)
             _restoreNeedsTopicId.value = null
-            loadRecentlyDeleted()
         }
     }
 
@@ -128,14 +117,12 @@ class TrashViewModel(
     fun deleteOpinion(opinionId: String) {
         viewModelScope.launch {
             opinionRepository.softDeleteOpinion(opinionId)
-            loadRecentlyDeleted()
         }
     }
 
     fun undoDeleteOpinion(opinionId: String) {
         viewModelScope.launch {
             opinionRepository.undoDeleteOpinion(opinionId)
-            loadRecentlyDeleted()
         }
     }
 
@@ -145,7 +132,6 @@ class TrashViewModel(
             referenceLinkRepository.deleteReferenceLinksBySource(opinionId)
             referenceLinkRepository.deleteReferenceLinksByTarget(opinionId)
             opinionRepository.deleteOpinion(opinionId)
-            loadRecentlyDeleted()
         }
     }
 
@@ -154,14 +140,12 @@ class TrashViewModel(
     fun deleteResourceEntry(resourceEntryId: String) {
         viewModelScope.launch {
             resourceEntryRepository.softDeleteResourceEntry(resourceEntryId)
-            loadRecentlyDeleted()
         }
     }
 
     fun undoDeleteResourceEntry(resourceEntryId: String) {
         viewModelScope.launch {
             resourceEntryRepository.undoDeleteResourceEntry(resourceEntryId)
-            loadRecentlyDeleted()
 
             // Validate parent still exists — if not, prompt user to pick a topic
             val entry = resourceEntryRepository.getResourceEntryById(resourceEntryId)
@@ -212,7 +196,6 @@ class TrashViewModel(
                     file.delete()
                 }
             }
-            loadRecentlyDeleted()
         }
     }
 
@@ -221,35 +204,30 @@ class TrashViewModel(
     fun deleteTopic(topicId: String) {
         viewModelScope.launch {
             topicRepository.softDeleteTopic(topicId)
-            loadRecentlyDeleted()
         }
     }
 
     fun deleteTopics(topicIds: List<String>) {
         viewModelScope.launch {
             topicIds.forEach { topicRepository.softDeleteTopic(it) }
-            loadRecentlyDeleted()
         }
     }
 
     fun undoDeleteTopics(topicIds: List<String>) {
         viewModelScope.launch {
             topicIds.forEach { topicRepository.undoDeleteTopic(it) }
-            loadRecentlyDeleted()
         }
     }
 
     fun undoDeleteTopic(topicId: String) {
         viewModelScope.launch {
             topicRepository.undoDeleteTopic(topicId)
-            loadRecentlyDeleted()
         }
     }
 
     fun permanentlyDeleteTopic(topicId: String) {
         viewModelScope.launch {
             cascadeDeleteTopic(topicId)
-            loadRecentlyDeleted()
         }
     }
 
@@ -259,7 +237,6 @@ class TrashViewModel(
     fun deleteTopicsPermanently(topicIds: List<String>) {
         viewModelScope.launch {
             topicIds.forEach { cascadeDeleteTopic(it) }
-            loadRecentlyDeleted()
         }
     }
 
@@ -303,14 +280,12 @@ class TrashViewModel(
     fun deleteBookmark(bookmarkId: String) {
         viewModelScope.launch {
             resourceRepository.softDeleteBookmark(bookmarkId)
-            loadRecentlyDeleted()
         }
     }
 
     fun undoDeleteBookmark(bookmarkId: String) {
         viewModelScope.launch {
             resourceRepository.undoDeleteBookmark(bookmarkId)
-            loadRecentlyDeleted()
         }
     }
 
@@ -320,7 +295,6 @@ class TrashViewModel(
             referenceLinkRepository.deleteReferenceLinksBySource(bookmarkId)
             referenceLinkRepository.deleteReferenceLinksByTarget(bookmarkId)
             resourceRepository.deleteBookmark(bookmarkId)
-            loadRecentlyDeleted()
         }
     }
 }
