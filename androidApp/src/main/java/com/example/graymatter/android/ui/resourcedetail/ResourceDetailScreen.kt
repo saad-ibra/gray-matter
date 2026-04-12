@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,6 +43,11 @@ import com.example.graymatter.domain.Bookmark
 import com.example.graymatter.domain.CustomTemplate
 import java.text.SimpleDateFormat
 import java.util.*
+
+private sealed class DescriptionSegment {
+    data class Markdown(val text: String) : DescriptionSegment()
+    data class Reference(val refText: String) : DescriptionSegment()
+}
 
 /**
  * Resource Details Screen.
@@ -84,19 +90,12 @@ fun ResourceDetailScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var description by remember(resourceEntryDetails?.resourceEntry?.description) { mutableStateOf(resourceEntryDetails?.resourceEntry?.description ?: "") }
 
-    private sealed class DescriptionSegment {
-        data class Markdown(val text: String) : DescriptionSegment()
-        data class Reference(val refText: String) : DescriptionSegment()
-    }
-    
     var deletedResourceInfo by remember { mutableStateOf<Pair<String, String>?>(null) } // ID and Title
     var deletedOpinionInfo by remember { mutableStateOf<String?>(null) } // Opinion ID
     
     // Description Markdown Editor State
     var showDescriptionEditor by remember { mutableStateOf(false) }
     var descriptionReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
-    var descriptionReferenceToInsert by remember { mutableStateOf<String?>(null) }
-    var descriptionPulseTrigger by remember { mutableLongStateOf(0L) }
     var isInitialDescriptionLoad by remember { mutableStateOf(true) }
 
     // Load existing description references on startup
@@ -411,7 +410,7 @@ fun ResourceDetailScreen(
                                                 )
                                                 Spacer(Modifier.width(6.dp))
                                                 Icon(
-                                                    Icons.Default.OpenInNew,
+                                                    Icons.AutoMirrored.Filled.OpenInNew,
                                                     null,
                                                     tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.6f),
                                                     modifier = Modifier.size(14.dp)
@@ -740,8 +739,8 @@ private fun ResourceDetailHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onBackClick) {
-            Icon(Icons.Default.KeyboardArrowLeft, "Back", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(32.dp))
+        IconButton(onClick = onBackClick, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Back", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(28.dp))
         }
         Text("Resource Details", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
         Row {
@@ -792,7 +791,7 @@ private fun ResourceDetailHeader(
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        Icon(Icons.Default.Share, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                        Icon(Icons.AutoMirrored.Filled.OpenInNew, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(18.dp))
                                         Text("Export History", color = Color.White)
                                     }
                                 },
@@ -810,7 +809,7 @@ private fun ResourceDetailHeader(
                                 onClick = { menuExpanded = false; onViewInRelatrixClick() }
                             )
                         }
-                        Divider(color = GrayMatterColors.Neutral800, modifier = Modifier.padding(vertical = 4.dp))
+                        HorizontalDivider(color = GrayMatterColors.Neutral800.copy(alpha = 0.5f), thickness = 0.5.dp)
                         DropdownMenuItem(
                             text = {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -873,7 +872,7 @@ private fun ResourceCard(
             Text(url, style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500, maxLines = 2)
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Default.Schedule, null, tint = GrayMatterColors.Neutral600, modifier = Modifier.size(16.dp))
+                Icon(Icons.AutoMirrored.Filled.Article, null, tint = GrayMatterColors.Neutral400, modifier = Modifier.size(16.dp))
                 Text(savedTimeAgo, style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral600)
             }
 
