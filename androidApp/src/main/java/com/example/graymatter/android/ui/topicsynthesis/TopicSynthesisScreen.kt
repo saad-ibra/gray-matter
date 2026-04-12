@@ -83,7 +83,6 @@ fun TopicSynthesisScreen(
     }
     
     var showRenameDialog by remember { mutableStateOf(false) }
-    var newTopicName by remember { mutableStateOf(topic.name) }
 
     if (showEditor) {
         MarkdownEditor(
@@ -197,36 +196,12 @@ fun TopicSynthesisScreen(
     }
 
     if (showRenameDialog) {
-        AlertDialog(
-            onDismissRequest = { showRenameDialog = false },
-            title = { Text("Rename Topic", color = Color.White) },
-            text = {
-                OutlinedTextField(
-                    value = newTopicName,
-                    onValueChange = { newTopicName = it },
-                    label = { Text("Topic Name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        cursorColor = GrayMatterColors.Primary
-                    )
-                )
-            },
-            containerColor = Color(0xFF1A1A1E),
-            confirmButton = {
-                TextButton(onClick = {
-                    onRenameTopic(newTopicName)
-                    showRenameDialog = false
-                }) {
-                    Text("Rename", color = GrayMatterColors.Primary)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRenameDialog = false }) {
-                    Text("Cancel", color = Color.White)
-                }
+        com.example.graymatter.android.ui.components.RenameTopicDialog(
+            initialName = topic.name,
+            onDismiss = { showRenameDialog = false },
+            onConfirm = { newName ->
+                onRenameTopic(newName)
+                showRenameDialog = false
             }
         )
     }

@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
+import kotlinx.coroutines.flow.first
 
 /**
  * Main navigation graph for Gray Matter app.
@@ -183,6 +184,16 @@ fun GrayMatterNavigation(
                                 onDeleteTopics = { ids -> viewModel.deleteTopics(ids) },
                                 onUndoDeleteTopics = { ids -> viewModel.undoDeleteTopics(ids) },
                                 onRenameTopic = { id, name -> viewModel.renameTopic(id, name) },
+                                onExportTopic = { topic ->
+                                    coroutineScope.launch {
+                                        val topicItems = viewModel.getResourceEntriesByTopic(topic.id).first()
+                                        val markdown = ExportService.exportTopicSummary(topic, topicItems)
+                                        shareText(context, markdown, "Topic Analysis: ${topic.name}")
+                                    }
+                                },
+                                onViewTopicInRelatrix = { topicId ->
+                                    navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute(topicId))
+                                },
                                 onUpdateOrder = { ids -> viewModel.updateTopicOrder(ids) }
                             )
                         }

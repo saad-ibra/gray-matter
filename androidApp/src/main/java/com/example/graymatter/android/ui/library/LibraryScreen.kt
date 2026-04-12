@@ -56,7 +56,9 @@ fun LibraryScreen(
     @Suppress("UNUSED_PARAMETER") onNavigateToGraph: () -> Unit,
     onDeleteTopics: (List<String>) -> Unit,
     onUndoDeleteTopics: (List<String>) -> Unit,
-    @Suppress("UNUSED_PARAMETER") onRenameTopic: (String, String) -> Unit,
+    onRenameTopic: (String, String) -> Unit,
+    onExportTopic: (Topic) -> Unit,
+    onViewTopicInRelatrix: (String) -> Unit,
     onUpdateOrder: (List<String>) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -64,6 +66,7 @@ fun LibraryScreen(
     var selectedTopics by remember { mutableStateOf<Set<String>>(emptySet()) }
     
     var deletedTopicsInfo by remember { mutableStateOf<List<String>?>(null) }
+    var renamingTopic by remember { mutableStateOf<Topic?>(null) }
     
     val selectionMode = selectedTopics.isNotEmpty()
     val haptic = LocalHapticFeedback.current
@@ -294,7 +297,10 @@ fun LibraryScreen(
                                         val ids = listOf(topic.id)
                                         currentOnDeleteTopics(ids)
                                         deletedTopicsInfo = ids
-                                    }
+                                    },
+                                    onRename = { renamingTopic = topic },
+                                    onExport = { onExportTopic(topic) },
+                                    onViewInRelatrix = { onViewTopicInRelatrix(topic.id) }
                                 )
                             }
                         }
@@ -383,6 +389,9 @@ fun LibraryScreen(
                         isSelected = false,
                         onClick = {},
                         onDelete = {},
+                        onRename = {},
+                        onExport = {},
+                        onViewInRelatrix = {},
                         enabled = false // Disable hits on replica to prevent pointer interference
                     )
                 }
@@ -404,6 +413,17 @@ fun LibraryScreen(
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 100.dp)
                     .imePadding()
+            )
+        }
+
+        if (renamingTopic != null) {
+            com.example.graymatter.android.ui.components.RenameTopicDialog(
+                initialName = renamingTopic!!.name,
+                onDismiss = { renamingTopic = null },
+                onConfirm = { newName ->
+                    onRenameTopic(renamingTopic!!.id, newName)
+                    renamingTopic = null
+                }
             )
         }
     }
@@ -475,6 +495,9 @@ private fun TopicCard(
     isSelected: Boolean,
     onClick: () -> Unit,
     onDelete: () -> Unit,
+    onRename: () -> Unit,
+    onExport: () -> Unit,
+    onViewInRelatrix: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
@@ -528,12 +551,41 @@ private fun TopicCard(
                             modifier = Modifier.background(GrayMatterColors.SurfaceDark)
                         ) {
                             DropdownMenuItem(
+                                text = { Text("Rename Topic", color = GrayMatterColors.TextPrimary) },
+                                onClick = {
+                                    showMenu = false
+                                    onRename()
+                                },
+                                leadingIcon = { Icon(Icons.Default.Edit, null, tint = GrayMatterColors.Primary) }
+                            )
+
+                            DropdownMenuItem(
+                                text = { Text("Export Topic", color = GrayMatterColors.TextPrimary) },
+                                onClick = {
+                                    showMenu = false
+                                    onExport()
+                                },
+                                leadingIcon = { Icon(Icons.Default.Share, null, tint = GrayMatterColors.Primary) }
+                            )
+
+                            DropdownMenuItem(
+                                text = { Text("View in Relatrix", color = GrayMatterColors.TextPrimary) },
+                                onClick = {
+                                    showMenu = false
+                                    onViewInRelatrix()
+                                },
+                                leadingIcon = { Icon(Icons.Default.Hub, null, tint = Color.White) }
+                            )
+
+                            Divider(color = GrayMatterColors.Neutral800, modifier = Modifier.padding(vertical = 4.dp))
+
+                            DropdownMenuItem(
                                 text = { Text("Delete", color = GrayMatterColors.Error) },
                                 onClick = {
                                     showMenu = false
                                     onDelete()
                                 },
-                                trailingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = GrayMatterColors.Error, modifier = Modifier.size(16.dp)) }
+                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = GrayMatterColors.Error) }
                             )
                         }
                     }
