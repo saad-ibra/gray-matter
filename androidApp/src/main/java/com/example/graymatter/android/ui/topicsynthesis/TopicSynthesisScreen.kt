@@ -148,6 +148,15 @@ fun TopicSynthesisScreen(
                     contentPadding = PaddingValues(bottom = 32.dp)
                 ) {
                     item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OverallOpinionSection(
+                            hasOpinion = !topic.notes.isNullOrBlank(),
+                            onClick = { showEditor = true }
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+
+                    item {
                         ResourcesHeader(
                             count = resources.size,
                             onAddClick = onAddResource
@@ -158,14 +167,6 @@ fun TopicSynthesisScreen(
                         ResourceItem(
                             resource = resource,
                             onClick = { onResourceClick(resource) }
-                        )
-                    }
-
-                    item {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        OverallOpinionSection(
-                            hasOpinion = !topic.notes.isNullOrBlank(),
-                            onClick = { showEditor = true }
                         )
                     }
                 }
