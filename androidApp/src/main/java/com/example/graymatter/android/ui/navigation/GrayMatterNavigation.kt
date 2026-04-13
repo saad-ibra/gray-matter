@@ -247,8 +247,8 @@ fun GrayMatterNavigation(
                         navController.navigate(NavigationDestination.ResourceDetail.buildRoute(it.id))
                     }
                 },
-                onSaveTopicOverview = { content, links ->
-                    topicId?.let { viewModel.updateTopicNotes(it, content, links) }
+                onSaveOverallOpinion = { notes, selectedReferences ->
+                    topic?.id?.let { viewModel.updateTopicNotes(it, notes, selectedReferences) }
                 },
                 onDeleteTopic = {
                     topicId?.let { 
@@ -321,6 +321,8 @@ fun GrayMatterNavigation(
             ResourceDetailScreen(
                 resourceEntryDetails = itemDetails,
                 readingProgress = readingProgress,
+                focusOpinionId = focusOpinionId,
+                templates = templates,
                 referenceSelectorViewModel = referenceSelectorViewModel,
                 onBackClick = { navController.popBackStack() },
                 onOpenResource = {
@@ -351,8 +353,8 @@ fun GrayMatterNavigation(
                 onOpenBookmark = { bookmark ->
                     navController.navigate(NavigationDestination.FileViewer.buildRoute(bookmark.resourceId, bookmark.page))
                 },
-                onUpdateDescription = { desc, links ->
-                    viewModel.updateResourceEntryDescription(resourceEntryId, desc, links)
+                onUpdateDescription = { desc, refs ->
+                    viewModel.updateResourceEntryDescription(resourceEntryId, desc, refs)
                 },
                 onAddOpinion = { text, confidence, selectedLinks ->
                     viewModel.addOpinion(resourceEntryId, text, confidence, referenceLinks = selectedLinks)

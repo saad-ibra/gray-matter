@@ -208,12 +208,10 @@ class GrayMatterViewModel(
     fun updateResourceEntryDescription(resourceEntryId: String, description: String?, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         viewModelScope.launch {
             resourceEntryRepository.updateResourceEntryDescription(resourceEntryId, description)
-            if (description != null) {
-                val details = resourceEntryRepository.getResourceEntryWithDetails(resourceEntryId)
-                details?.resource?.id?.let { resId ->
-                    autoLinkService.syncLinks(resId, com.example.graymatter.domain.ReferenceType.RESOURCE, description, referenceLinks)
-                }
-            }
+            // Use the resource ID (not the entry ID) for Relatrix graph sync
+            val details = resourceEntryRepository.getResourceEntryWithDetails(resourceEntryId)
+            val resourceId = details?.resource?.id ?: resourceEntryId
+            autoLinkService.syncLinks(resourceId, com.example.graymatter.domain.ReferenceType.RESOURCE, description ?: "", referenceLinks)
         }
     }
     

@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,7 +39,7 @@ fun TopicSynthesisScreen(
     onBackClick: () -> Unit,
     onAddResource: () -> Unit,
     onResourceClick: (Resource) -> Unit,
-    onSaveTopicOverview: (String, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
+    onSaveOverallOpinion: (String, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
     onDeleteTopic: () -> Unit,
     onRenameTopic: (String) -> Unit,
     onExport: () -> Unit,
@@ -91,7 +90,7 @@ fun TopicSynthesisScreen(
             initialText = topic.notes ?: "",
             onBackClick = { showEditor = false },
             onSave = { content -> 
-                onSaveTopicOverview(content, selectedReferences)
+                onSaveOverallOpinion(content, selectedReferences)
                 showEditor = false
             },
             onTextChange = { currentEditorText = it },
@@ -150,7 +149,7 @@ fun TopicSynthesisScreen(
                 ) {
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
-                        TopicOverviewSection(
+                        OverallOpinionSection(
                             hasOpinion = !topic.notes.isNullOrBlank(),
                             onClick = { showEditor = true }
                         )
@@ -228,7 +227,7 @@ private fun TopicHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBackClick, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Back", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(28.dp))
+            Icon(Icons.Default.KeyboardArrowLeft, "Back", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(28.dp))
         }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -291,7 +290,7 @@ private fun TopicHeader(
                     leadingIcon = { Icon(Icons.Default.Hub, null, tint = Color.White) }
                 )
                 
-                HorizontalDivider(color = GrayMatterColors.Neutral800)
+                Divider(color = GrayMatterColors.Neutral800)
                 
                 DropdownMenuItem(
                     text = { Text("Delete Topic", color = GrayMatterColors.Error) },
@@ -392,7 +391,7 @@ private fun ResourceItem(
     }
 }
 @Composable
-private fun TopicOverviewSection(
+private fun OverallOpinionSection(
     hasOpinion: Boolean,
     onClick: () -> Unit
 ) {

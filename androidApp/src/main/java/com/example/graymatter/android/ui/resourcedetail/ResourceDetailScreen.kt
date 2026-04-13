@@ -19,11 +19,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,19 +33,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
-import dev.jeziellago.compose.markdowntext.MarkdownText
-import com.example.graymatter.android.ui.components.MarkdownEditor
 import com.example.graymatter.domain.ResourceEntryWithDetails
 import com.example.graymatter.domain.Opinion
 import com.example.graymatter.domain.Bookmark
 import com.example.graymatter.domain.CustomTemplate
 import java.text.SimpleDateFormat
 import java.util.*
-
-private sealed class DescriptionSegment {
-    data class Markdown(val text: String) : DescriptionSegment()
-    data class Reference(val refText: String) : DescriptionSegment()
-}
 
 /**
  * Resource Details Screen.
@@ -90,25 +81,39 @@ fun ResourceDetailScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var description by remember(resourceEntryDetails?.resourceEntry?.description) { mutableStateOf(resourceEntryDetails?.resourceEntry?.description ?: "") }
 
-    var deletedResourceInfo by remember { mutableStateOf<Pair<String, String>?>(null) } // ID and Title
-    var deletedOpinionInfo by remember { mutableStateOf<String?>(null) } // Opinion ID
-    
-    // Description Markdown Editor State
+    // Description Markdown Editor state
     var showDescriptionEditor by remember { mutableStateOf(false) }
-    var descriptionReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
-    var isInitialDescriptionLoad by remember { mutableStateOf(true) }
+    var showDescRefSelector by remember { mutableStateOf(false) }
+    var descReferenceToInsert by remember { mutableStateOf<String?>(null) }
+    var descSelectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
+    var currentDescEditorText by remember { mutableStateOf(description) }
 
-    // Load existing description references on startup
-    if (resourceEntryDetails != null && isInitialDescriptionLoad) {
-        val linksFlow = remember(resourceEntryDetails.resource.id) { onLoadResourceLinks(resourceEntryDetails.resource.id) }
-        val links by linksFlow.collectAsState(initial = emptyList())
-        LaunchedEffect(links) {
-            if (links.isNotEmpty()) {
-                descriptionReferences = links
-                isInitialDescriptionLoad = false
+    // Load existing references for the description (use resource.id to match Relatrix graph)
+    LaunchedEffect(resourceEntryDetails?.resource?.id) {
+        resourceEntryDetails?.resource?.id?.let { resId ->
+            onLoadResourceLinks(resId).collect { links ->
+                descSelectedReferences = links
             }
         }
     }
+
+    // Robust reference synchronizer for description editor
+    LaunchedEffect(currentDescEditorText) {
+        val regex = Regex("\\[\\[(.*?)\\]\\]")
+        val foundTexts = regex.findAll(currentDescEditorText).map { it.groupValues[1] }.toSet()
+
+        descSelectedReferences = descSelectedReferences.filter { ref ->
+            val refText = when (ref) {
+                is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+            }
+            foundTexts.contains(refText) || foundTexts.any { it.endsWith(refText) }
+        }.distinctBy { it.id }
+    }
+
+    var deletedResourceInfo by remember { mutableStateOf<Pair<String, String>?>(null) } // ID and Title
+    var deletedOpinionInfo by remember { mutableStateOf<String?>(null) } // Opinion ID
 
     Box(modifier = modifier.fillMaxSize()) {
         Scaffold(
@@ -117,7 +122,7 @@ fun ResourceDetailScreen(
             .background(GrayMatterColors.BackgroundDark),
         containerColor = GrayMatterColors.BackgroundDark,
         floatingActionButton = {
-            if (!isEditing) {
+            if (!isEditing && !showDescriptionEditor) {
                 FloatingActionButton(
                     onClick = { showAddDialog = true },
                     containerColor = GrayMatterColors.TextPrimary,
@@ -183,7 +188,7 @@ fun ResourceDetailScreen(
                     isEditing = isEditing,
                     onToggleEdit = {
                         if (isEditing) {
-                            onUpdateDescription(description, descriptionReferences)
+                            onUpdateDescription(description, descSelectedReferences)
                         }
                         isEditing = !isEditing
                     },
@@ -215,119 +220,52 @@ fun ResourceDetailScreen(
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    // Optional Description Section - Hidden for Notes
+                    // Description Section — hidden for notes (MARKDOWN), enhanced for files & URLs
                     if (resourceEntryDetails.resource.type != com.example.graymatter.domain.ResourceType.MARKDOWN) {
                         SectionHeader(text = "DESCRIPTION")
                         Spacer(modifier = Modifier.height(12.dp))
-                        if (isEditing) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(GrayMatterColors.SurfaceDark)
-                                    .border(1.2.dp, GrayMatterColors.Primary.copy(alpha=0.5f), RoundedCornerShape(12.dp))
-                                    .clickable { showDescriptionEditor = true }
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    Icon(Icons.Default.EditNote, null, tint = GrayMatterColors.Primary)
-                                    Text("Edit Markdown Description", color = GrayMatterColors.Primary, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        } else if (description.isNotEmpty()) {
-                            // Split text by [[...]] references for mixed rendering
-                            val rawText = description
-                            val refPattern = Regex("\\[\\[(.*?)]]")
-                            val segments = remember(rawText) {
-                                buildList {
-                                    var lastEnd = 0
-                                    for (match in refPattern.findAll(rawText)) {
-                                        if (match.range.first > lastEnd) {
-                                            add(DescriptionSegment.Markdown(rawText.substring(lastEnd, match.range.first)))
-                                        }
-                                        add(DescriptionSegment.Reference(match.groupValues[1]))
-                                        lastEnd = match.range.last + 1
-                                    }
-                                    if (lastEnd < rawText.length) {
-                                        add(DescriptionSegment.Markdown(rawText.substring(lastEnd)))
-                                    }
-                                }
-                            }
 
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                segments.forEach { segment ->
-                                    when (segment) {
-                                        is DescriptionSegment.Reference -> {
-                                            Surface(
-                                                shape = RoundedCornerShape(8.dp),
-                                                color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.12f),
-                                                modifier = Modifier
-                                                    .padding(vertical = 4.dp)
-                                                    .border(
-                                                        0.5.dp,
-                                                        GrayMatterColors.KnowledgeBlue.copy(alpha = 0.3f),
-                                                        RoundedCornerShape(8.dp)
-                                                    )
-                                                    .clickable {
-                                                        val link = descriptionReferences.find { 
-                                                            when(it) {
-                                                                is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> it.name == segment.refText
-                                                                is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> it.title == segment.refText
-                                                                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> it.snippet == segment.refText
-                                                                else -> false
-                                                            }
-                                                        }
-                                                        if (link != null) onNavigateToKnowledgeLink(link)
-                                                    }
-                                            ) {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                                                ) {
-                                                    Icon(
-                                                        Icons.Default.Link,
-                                                        null,
-                                                        tint = GrayMatterColors.KnowledgeBlue,
-                                                        modifier = Modifier.size(14.dp)
-                                                    )
-                                                    Spacer(Modifier.width(6.dp))
-                                                    Text(
-                                                        segment.refText,
-                                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                                        color = GrayMatterColors.KnowledgeBlue
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        is DescriptionSegment.Markdown -> {
-                                            if (segment.text.isNotBlank()) {
-                                                MarkdownText(
-                                                    markdown = segment.text,
-                                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                                        color = GrayMatterColors.TextSecondary,
-                                                        lineHeight = 26.sp
-                                                    ),
-                                                    modifier = Modifier.fillMaxWidth()
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
+                        // Clickable card to open the Markdown description editor
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(
+                                    if (description.isNotEmpty()) GrayMatterColors.Neutral800.copy(alpha = 0.6f)
+                                    else GrayMatterColors.SurfaceDark
+                                )
+                                .border(
+                                    1.5.dp,
+                                    if (description.isNotEmpty()) GrayMatterColors.Neutral600
+                                    else GrayMatterColors.Neutral800,
+                                    RoundedCornerShape(16.dp)
+                                )
+                                .clickable { showDescriptionEditor = true }
+                                .padding(20.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (description.isNotEmpty()) Icons.Default.EditNote else Icons.Default.Edit,
+                                    contentDescription = null,
+                                    tint = if (description.isNotEmpty()) GrayMatterColors.Neutral400 else GrayMatterColors.Primary
+                                )
+                                Text(
+                                    text = if (description.isNotEmpty()) "Edit Resource Description" else "Add Resource Description",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = if (description.isNotEmpty()) GrayMatterColors.Neutral400 else GrayMatterColors.Primary
+                                )
                             }
-                        } else {
-                            Text(
-                                text = "No description provided.",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
-                                color = GrayMatterColors.Neutral700
-                            )
                         }
 
                         Spacer(modifier = Modifier.height(32.dp))
                     }
 
-                    // RESOURCE LINKS section — Enabled for all resource types
-                    if (true) {
+                    // RESOURCE LINKS section — visible for ALL resource types
+                    run {
                         val resourceLinks by onLoadResourceLinks(resourceEntryDetails.resource.id).collectAsState(initial = emptyList())
                         if (resourceLinks.isNotEmpty()) {
                             Column(
@@ -410,7 +348,7 @@ fun ResourceDetailScreen(
                                                 )
                                                 Spacer(Modifier.width(6.dp))
                                                 Icon(
-                                                    Icons.AutoMirrored.Filled.OpenInNew,
+                                                    Icons.Default.OpenInNew,
                                                     null,
                                                     tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.6f),
                                                     modifier = Modifier.size(14.dp)
@@ -612,6 +550,48 @@ fun ResourceDetailScreen(
                 }
             )
         }
+        // Description Markdown Editor Overlay
+        if (showDescriptionEditor && resourceEntryDetails != null) {
+            com.example.graymatter.android.ui.components.MarkdownEditor(
+                title = resourceEntryDetails.resource.title ?: "Description",
+                initialText = description,
+                onBackClick = { showDescriptionEditor = false },
+                onSave = { content ->
+                    description = content
+                    currentDescEditorText = content
+                    onUpdateDescription(content, descSelectedReferences)
+                    showDescriptionEditor = false
+                },
+                onTextChange = { currentDescEditorText = it },
+                initialPreviewMode = description.isNotBlank(),
+                onShowReferenceSelector = {
+                    referenceSelectorViewModel?.clearSelection()
+                    showDescRefSelector = true
+                },
+                referenceToInsert = descReferenceToInsert,
+                onReferenceInserted = { descReferenceToInsert = null }
+            )
+
+            if (showDescRefSelector && referenceSelectorViewModel != null) {
+                com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
+                    viewModel = referenceSelectorViewModel,
+                    onDismissRequest = { showDescRefSelector = false },
+                    onConfirm = { items ->
+                        showDescRefSelector = false
+                        if (items.isNotEmpty()) {
+                            descSelectedReferences = (descSelectedReferences + items).distinctBy { it.id }
+                            val item = items.first()
+                            val text = when (item) {
+                                is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> "Topic: ${item.name}"
+                                is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> "Resource: ${item.title}"
+                                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> "Opinion: ${item.snippet.take(15)}..."
+                            }
+                            descReferenceToInsert = "[[$text]]"
+                        }
+                    }
+                )
+            }
+        }
 
         // Overlay Undo Snackbars
         if (deletedResourceInfo != null) {
@@ -739,8 +719,8 @@ private fun ResourceDetailHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onBackClick, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Back", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(28.dp))
+        IconButton(onClick = onBackClick) {
+            Icon(Icons.Default.KeyboardArrowLeft, "Back", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(32.dp))
         }
         Text("Resource Details", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
         Row {
@@ -791,7 +771,7 @@ private fun ResourceDetailHeader(
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        Icon(Icons.AutoMirrored.Filled.OpenInNew, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.Default.Share, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
                                         Text("Export History", color = Color.White)
                                     }
                                 },
@@ -809,7 +789,7 @@ private fun ResourceDetailHeader(
                                 onClick = { menuExpanded = false; onViewInRelatrixClick() }
                             )
                         }
-                        HorizontalDivider(color = GrayMatterColors.Neutral800.copy(alpha = 0.5f), thickness = 0.5.dp)
+                        Divider(color = GrayMatterColors.Neutral800, modifier = Modifier.padding(vertical = 4.dp))
                         DropdownMenuItem(
                             text = {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -872,7 +852,7 @@ private fun ResourceCard(
             Text(url, style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500, maxLines = 2)
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.AutoMirrored.Filled.Article, null, tint = GrayMatterColors.Neutral400, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Schedule, null, tint = GrayMatterColors.Neutral600, modifier = Modifier.size(16.dp))
                 Text(savedTimeAgo, style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral600)
             }
 
