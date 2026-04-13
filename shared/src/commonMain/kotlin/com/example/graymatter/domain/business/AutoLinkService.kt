@@ -1,5 +1,6 @@
 package com.example.graymatter.domain.business
 
+import com.example.graymatter.data.OpinionRepository
 import com.example.graymatter.data.ReferenceLinkRepository
 import com.example.graymatter.data.ResourceRepository
 import com.example.graymatter.data.TopicRepository
@@ -15,6 +16,7 @@ import kotlin.random.Random
 class AutoLinkService(
     private val topicRepository: TopicRepository,
     private val resourceRepository: ResourceRepository,
+    private val opinionRepository: OpinionRepository,
     private val referenceLinkRepository: ReferenceLinkRepository
 ) {
     private val referenceRegex = Regex("\\[\\[(.*?)\\]\\]")
@@ -46,12 +48,22 @@ class AutoLinkService(
         }
 
         // 3. Extract and add auto links from [[Title]] markers
-        val titles = extractTitles(text)
-        if (titles.isNotEmpty()) {
+        val rawTitles = extractTitles(text)
+        if (rawTitles.isNotEmpty()) {
             val allTopics = topicRepository.getAllTopics()
             val allResources = resourceRepository.resourcesStream.first()
+            val allOpinions = opinionRepository.getAllOpinions().first()
+            val prefixes = listOf("Topic: ", "Resource: ", "Opinion: ", "Knowledge: ")
 
-            titles.forEach { title ->
+            rawTitles.forEach { rawTitle ->
+                // Strip known prefixes for better matching
+                var title = rawTitle
+                prefixes.forEach { prefix ->
+                    if (title.startsWith(prefix, ignoreCase = true)) {
+                        title = title.substring(prefix.length).trim()
+                    }
+                }
+
                 // Try to find a matching Topic
                 val topicMatch = allTopics.find { it.name.equals(title, ignoreCase = true) }
                 if (topicMatch != null) {
@@ -65,6 +77,14 @@ class AutoLinkService(
                 if (resourceMatch != null) {
                     if (finalLinks.none { it.targetId == resourceMatch.id }) {
                         finalLinks.add(createLink(sourceId, sourceType, resourceMatch.id, ReferenceType.RESOURCE, now))
+                    }
+                }
+
+                // Try to find a matching Opinion (Substring match since titles are snippets)
+                val opinionMatch = allOpinions.find { it.text.contains(title, ignoreCase = true) }
+                if (opinionMatch != null) {
+                    if (finalLinks.none { it.targetId == opinionMatch.id }) {
+                        finalLinks.add(createLink(sourceId, sourceType, opinionMatch.id, ReferenceType.OPINION, now))
                     }
                 }
             }

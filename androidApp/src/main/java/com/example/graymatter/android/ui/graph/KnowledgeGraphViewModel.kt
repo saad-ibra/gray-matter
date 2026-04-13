@@ -154,8 +154,9 @@ class KnowledgeGraphViewModel(
             }
 
             // 4. Setup Reference Links
+            val existingRefEdges = mutableSetOf<Pair<String, String>>()
             allReferenceLinks.forEach { link ->
-                // Links are created from Opinions to other Types
+                // Links are created from Opinions, Topics, or Resources to other Types
                 val sourceNode = nodes.find { it.id == link.sourceId }
                 
                 val targetNodeId = when (link.targetType) {
@@ -168,7 +169,8 @@ class KnowledgeGraphViewModel(
                 
                 val targetNode = nodes.find { it.id == targetNodeId }
 
-                if (sourceNode != null && targetNode != null && existingEdgePairs.add(sourceNode.id to targetNode.id)) {
+                // Allow reference edges even if a containment edge exists, but deduplicate within the reference layer
+                if (sourceNode != null && targetNode != null && existingRefEdges.add(sourceNode.id to targetNode.id)) {
                     edges.add(
                         GraphEdge(
                             id = "${sourceNode.id}_${targetNode.id}_ref",

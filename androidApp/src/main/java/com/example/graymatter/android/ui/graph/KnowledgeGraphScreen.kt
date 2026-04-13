@@ -527,14 +527,51 @@ fun KnowledgeGraphScreen(
                         // Animate dashed lines: dash phase moves towards the referencing (source) node
                         val dashPhase = if (isExplicit) (ticks * 2f) else 0f
                         
-                        // Draw clean 3D straight line
-                        drawLine(
-                            start = start,
-                            end = end,
-                            color = if (isHighlighted) GrayMatterColors.Primary else Color(0xFF42A5F5).copy(alpha = opacity),
-                            strokeWidth = if (isHighlighted) 4.5f * scale else 2.2f * scale,
-                            pathEffect = if (isExplicit) PathEffect.dashPathEffect(floatArrayOf(20f * scale, 15f * scale), dashPhase) else null
-                        )
+                        val edgeColor = if (isHighlighted) GrayMatterColors.Primary else Color(0xFF42A5F5).copy(alpha = opacity)
+                        val strokeW = if (isHighlighted) 4.5f * scale else 2.2f * scale
+
+                        if (isExplicit) {
+                            // Draw dynamic bezier curve for explicit reference edges so they "bow out" from straight containment edges
+                            val path = androidx.compose.ui.graphics.Path().apply {
+                                moveTo(start.x, start.y)
+                                
+                                val midX = (start.x + end.x) / 2f
+                                val midY = (start.y + end.y) / 2f
+                                val dx = end.x - start.x
+                                val dy = end.y - start.y
+                                val length = kotlin.math.sqrt(dx * dx + dy * dy)
+                                
+                                // Prevent division by zero
+                                val nx = if (length > 0f) -dy / length else 0f
+                                val ny = if (length > 0f) dx / length else 0f
+                                
+                                // Curve magnitude scales with line length and zoom, capped to look natural
+                                val curveOffset = (length * 0.2f).coerceIn(20f * scale, 60f * scale)
+                                
+                                quadraticBezierTo(
+                                    x1 = midX + nx * curveOffset,
+                                    y1 = midY + ny * curveOffset,
+                                    x2 = end.x,
+                                    y2 = end.y
+                                )
+                            }
+                            drawPath(
+                                path = path,
+                                color = edgeColor,
+                                style = Stroke(
+                                    width = strokeW,
+                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f * scale, 15f * scale), dashPhase)
+                                )
+                            )
+                        } else {
+                            // Draw clean 3D straight line for standard edges
+                            drawLine(
+                                start = start,
+                                end = end,
+                                color = edgeColor,
+                                strokeWidth = strokeW
+                            )
+                        }
                     }
                 }
 

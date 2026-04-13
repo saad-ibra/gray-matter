@@ -21,5 +21,5 @@ val sharedModule = module {
         DefaultResourceEntryRepository(get(), get(), get(), get(), get()) 
     }
     
-    single { AutoLinkService(get(), get(), get()) }
+    single { AutoLinkService(get(), get(), get(), get()) }
 }
