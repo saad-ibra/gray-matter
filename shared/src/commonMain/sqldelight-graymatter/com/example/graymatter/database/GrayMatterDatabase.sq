@@ -161,6 +161,12 @@ UPDATE opinionEntity SET isDeleted = 0, deletedAt = NULL WHERE itemId IN (SELECT
 getAllOpinionsByItemId:
 SELECT * FROM opinionEntity WHERE itemId = ?;
 
+deleteOpinionsByItemId:
+DELETE FROM opinionEntity WHERE itemId = ?;
+
+deleteOpinionsByTopicId:
+DELETE FROM opinionEntity WHERE itemId IN (SELECT id FROM itemEntity WHERE topicId = ?);
+
 -- Resource Entry (Item) queries
 insertResourceEntry:
 INSERT OR REPLACE INTO itemEntity(id, resourceId, topicId, description, firstOpinionAt, lastOpinionAt, opinionCount, isDeleted, deletedAt)

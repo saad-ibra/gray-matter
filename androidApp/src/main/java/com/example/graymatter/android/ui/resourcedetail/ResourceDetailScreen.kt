@@ -1278,10 +1278,10 @@ private fun OpinionTimelineItem(
                 }
             } else {
                 if (isDictionary) {
-                    val phrase = if (text.startsWith("[DICT:")) {
-                        text.substringAfter("] ").trim()
-                    } else {
-                        text.removePrefix("[DICT] ").trim()
+                    val phrase = when {
+                        text.startsWith("[DICT:") -> text.substringAfter("]").trim()
+                        text.startsWith("[DICT]") -> text.substringAfter("]").trim()
+                        else -> text.removePrefix("[DICT]").trim()
                     }
                     Box(
                         modifier = Modifier
@@ -1292,8 +1292,8 @@ private fun OpinionTimelineItem(
                     ) {
                         Text(
                             text = phrase,
-                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
-                            color = GrayMatterColors.TextPrimary
+                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp, fontWeight = FontWeight.Medium),
+                            color = Color(0xFFC6280B) // Use red text for dictionary entries
                         )
                     }
                 } else if (isAnnotation) {

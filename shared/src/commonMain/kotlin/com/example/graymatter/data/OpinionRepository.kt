@@ -80,4 +80,9 @@ interface OpinionRepository {
      * Get ALL opinions for an item, regardless of deletion status.
      */
     suspend fun getAllOpinionsByItemId(itemId: String): List<Opinion>
+
+    /**
+     * Bulk hard delete opinions by item ID.
+     */
+    suspend fun deleteOpinionsByItemId(itemId: String)
 }

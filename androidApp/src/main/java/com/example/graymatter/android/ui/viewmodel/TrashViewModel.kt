@@ -249,17 +249,18 @@ class TrashViewModel(
         val topicEntries = resourceEntryRepository.getAllResourceEntriesByTopicId(topicId)
 
         for (entry in topicEntries) {
-            // 2. Get ALL opinions for this entry (including deleted ones) and delete their reference links
-            val opinions = opinionRepository.getAllOpinionsByItemId(entry.id)
-            for (opinion in opinions) {
-                referenceLinkRepository.deleteReferenceLinksBySource(opinion.id)
-                referenceLinkRepository.deleteReferenceLinksByTarget(opinion.id)
-            }
+            // 2. Hard delete all opinions for this entry
+            opinionRepository.deleteOpinionsByItemId(entry.id)
 
-            // 3. Delete reference links where this resource is the target
+            // 3. Hard delete all bookmarks and reading data for the associated resource
+            resourceRepository.deleteBookmarksByResourceId(entry.resourceId)
+            resourceRepository.deleteReadingProgress(entry.resourceId)
+            resourceRepository.deleteReadingSettings(entry.resourceId)
+
+            // 4. Delete reference links where this resource is the target
             referenceLinkRepository.deleteReferenceLinksByTarget(entry.resourceId)
 
-            // 4. Delete physical file if it lives in our private storage
+            // 5. Delete physical file if it lives in our private storage
             val resource = resourceRepository.getResourceById(entry.resourceId)
             val filePath = resource?.filePath
             if (filePath != null && filePath.contains("/files/resources/")) {
@@ -267,12 +268,20 @@ class TrashViewModel(
                 if (file.exists()) file.delete()
             }
 
-            // 5. Delete the resource entry (DB cascade deletes opinions + bookmarks + reading progress)
+            // 6. Delete the resource entry record
             resourceEntryRepository.deleteResourceEntry(entry.id)
+            
+            // 7. Finally, if the resource record itself is now orphan (no other items point to it), 
+            // the cleanOrphanResources call later will handle it.
         }
 
-        // 6. Finally delete the topic record itself
+        // 8. Finally delete the topic record itself
         topicRepository.deleteTopic(topicId)
+
+        // 9. Run global cleanups to remove orphan resources and dead reference links
+        resourceRepository.cleanOrphanResources()
+        resourceRepository.cleanOrphanReadingData()
+        referenceLinkRepository.cleanOrphanReferenceLinks()
     }
 
     // -- Bookmark delete/undo/permanent --

@@ -96,6 +96,10 @@ class DefaultOpinionRepository(
     override suspend fun getAllOpinionsByItemId(itemId: String): List<Opinion> = withContext(dispatcher) {
         queries.getAllOpinionsByItemId(itemId).executeAsList().map { it.toOpinion() }
     }
+
+    override suspend fun deleteOpinionsByItemId(itemId: String) = withContext(dispatcher) {
+        queries.deleteOpinionsByItemId(itemId)
+    }
 }
 
 private fun OpinionEntity.toOpinion(): Opinion = Opinion(
