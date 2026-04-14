@@ -181,10 +181,6 @@ class DefaultResourceEntryRepository(
         }
     }
     
-    override suspend fun deleteResourceEntry(id: String) = withContext(dispatcher) {
-        queries.deleteResourceEntry(id)
-    }
-
     override suspend fun softDeleteResourceEntry(id: String) = withContext(dispatcher) {
         val entry = getResourceEntryById(id) ?: return@withContext
         val now = Clock.System.now().toEpochMilliseconds()
