@@ -1206,25 +1206,6 @@ private fun OpinionTimelineItem(
             val isCustomTitle = text.startsWith("[CUSTOM: ")
             val hasPageNumber = opinion.pageNumber != null
 
-            if (hasPageNumber && !isEditing) {
-                Spacer(modifier = Modifier.height(4.dp))
-                val tagColor = when {
-                    isDictionary -> GrayMatterColors.TypeLookupMain
-                    isAnnotation -> GrayMatterColors.TypeAnnotation
-                    else -> GrayMatterColors.TypeBookmark
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(tagColor.copy(alpha = 0.1f))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(if (isDictionary) Icons.Default.Book else if (isAnnotation) Icons.Default.FormatQuote else Icons.Default.Bookmark, null, tint = tagColor, modifier = Modifier.size(10.dp))
-                        Text("PAGE ${opinion.pageNumber!! + 1}", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = tagColor, maxLines = 1, softWrap = false)
-                    }
-                }
-            }
             
             Spacer(modifier = Modifier.height(12.dp))
             
@@ -1510,6 +1491,39 @@ private fun OpinionTimelineItem(
                                     leadingIconContentColor = GrayMatterColors.Primary
                                 ),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, GrayMatterColors.Neutral700)
+                            )
+                        }
+                    }
+                }
+                if (hasPageNumber && !isEditing) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    val tagColor = when {
+                        opinion.text.startsWith("[DICT") -> GrayMatterColors.TypeLookupMain
+                        opinion.text.startsWith("> ") -> GrayMatterColors.TypeAnnotation
+                        else -> GrayMatterColors.TypeBookmark
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(tagColor.copy(alpha = 0.1f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(
+                                imageVector = if (opinion.text.startsWith("[DICT")) Icons.Default.Book 
+                                              else if (opinion.text.startsWith("> ")) Icons.Default.FormatQuote 
+                                              else Icons.Default.Bookmark, 
+                                contentDescription = null, 
+                                tint = tagColor, 
+                                modifier = Modifier.size(10.dp)
+                            )
+                            Text(
+                                "PAGE ${opinion.pageNumber!! + 1}", 
+                                fontSize = 9.sp, 
+                                fontWeight = FontWeight.Bold, 
+                                color = tagColor, 
+                                maxLines = 1, 
+                                softWrap = false
                             )
                         }
                     }
