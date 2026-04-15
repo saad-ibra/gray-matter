@@ -483,6 +483,7 @@ fun ResourceDetailScreen(
                                 onNavigateToKnowledgeLink(link)
                             }
                         },
+                        onStartEditing = { isEditing = true },
                         pulseTrigger = pulseTrigger
                     )
 
@@ -929,6 +930,7 @@ private fun OpinionTimeline(
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     onViewInGraph: (String) -> Unit,
     onNavigateToKnowledgeLink: (com.example.graymatter.domain.ReferenceSelectorItem) -> Unit,
+    onStartEditing: () -> Unit = {},
     pulseTrigger: Long = 0L
 ) {
     Column {
@@ -952,6 +954,7 @@ private fun OpinionTimeline(
                 onLoadLinks = onLoadLinks,
                 onViewInGraph = onViewInGraph,
                 onNavigateToKnowledgeLink = onNavigateToKnowledgeLink,
+                onStartEditing = onStartEditing,
                 pulseTrigger = pulseTrigger
             )
         }
@@ -975,11 +978,13 @@ private fun OpinionTimelineItem(
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     onViewInGraph: (String) -> Unit,
     onNavigateToKnowledgeLink: (com.example.graymatter.domain.ReferenceSelectorItem) -> Unit,
+    onStartEditing: () -> Unit = {},
     pulseTrigger: Long = 0L
 ) {
     var text by remember(opinion.text) { mutableStateOf(opinion.text) }
     var confidence by remember(opinion.confidenceScore) { mutableStateOf(opinion.confidenceScore.toFloat() / 100f) }
     var showDateTimePicker by remember { mutableStateOf(false) }
+    var showItemMenu by remember { mutableStateOf(false) }
     
     // Load initial reference links to pre-populate selection
     val flowLinks by onLoadLinks(opinion.id).collectAsState(initial = emptyList())
@@ -1058,41 +1063,32 @@ private fun OpinionTimelineItem(
             )
         }
         
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         
-        Column(
+        // Card container for entire entry content
+        Box(
             modifier = Modifier
                 .weight(1f)
-                .padding(bottom = if (isLast) 16.dp else 48.dp)
-                .then(if (hasPageNumber && !isEditing) Modifier.clickable { onJump() } else Modifier)
+                .padding(bottom = if (isLast) 16.dp else 24.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(GrayMatterColors.SurfaceDark)
+                .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
         ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
             // Header: Serial Number, Title, Date & Confidence Badge
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                 Row(modifier = Modifier.weight(1f).padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    // Tactile History Node: High-Contrast "Pressable" Serial Number
-                    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .background(GrayMatterColors.Neutral600)
-                            .clickable {
-                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                onViewInGraph(opinion.id)
-                            }
-                            .border(1.2.dp, Color.White.copy(alpha = 0.8f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = serialNumber.toString(),
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold, 
-                                fontSize = 10.sp,
-                                fontFamily = com.example.graymatter.android.ui.theme.InterFontFamily
-                            ),
-                            color = Color.White
-                        )
-                    }
+                    // Plain serial number
+                    Text(
+                        text = serialNumber.toString(),
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = com.example.graymatter.android.ui.theme.InterFontFamily
+                        ),
+                        color = GrayMatterColors.Neutral500
+                    )
                     
                     Spacer(modifier = Modifier.width(12.dp))
 
@@ -1141,11 +1137,60 @@ private fun OpinionTimelineItem(
                     }
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     ConfidenceBadge(score = opinion.confidenceScore)
-                    if (isEditing) {
-                        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.Delete, null, tint = GrayMatterColors.Error, modifier = Modifier.size(18.dp))
+                    // 3-dot overflow menu
+                    val isDictionary = opinion.text.startsWith("[DICT")
+                    Box {
+                        IconButton(onClick = { showItemMenu = true }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.MoreVert, "More options", tint = GrayMatterColors.Neutral500, modifier = Modifier.size(18.dp))
+                        }
+                        DropdownMenu(
+                            expanded = showItemMenu,
+                            onDismissRequest = { showItemMenu = false },
+                            modifier = Modifier.background(GrayMatterColors.SurfaceDark)
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        Icon(Icons.Default.Hub, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(18.dp))
+                                        Text("View in Relatrix", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                },
+                                onClick = { showItemMenu = false; onViewInGraph(opinion.id) }
+                            )
+                            if (!isDictionary) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Icon(Icons.Default.Edit, null, tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(18.dp))
+                                            Text("Edit Entry", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                        }
+                                    },
+                                    onClick = { showItemMenu = false; onStartEditing() }
+                                )
+                            }
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        Icon(Icons.Default.Delete, null, tint = GrayMatterColors.Error, modifier = Modifier.size(18.dp))
+                                        Text("Delete", color = GrayMatterColors.Error, style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                },
+                                onClick = { showItemMenu = false; onDelete() }
+                            )
+                            if (opinion.pageNumber != null) {
+                                Divider(color = GrayMatterColors.Neutral800, modifier = Modifier.padding(vertical = 4.dp))
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Icon(Icons.Default.Launch, null, tint = GrayMatterColors.TypeBookmark, modifier = Modifier.size(18.dp))
+                                            Text("Jump to Page ${opinion.pageNumber!! + 1}", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                        }
+                                    },
+                                    onClick = { showItemMenu = false; onJump() }
+                                )
+                            }
                         }
                     }
                 }
@@ -1465,16 +1510,8 @@ private fun OpinionTimelineItem(
                         }
                     }
                 }
-                
-                if (hasPageNumber && !isEditing) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Launch, null, tint = GrayMatterColors.Primary.copy(alpha = 0.6f), modifier = Modifier.size(12.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Tap to jump back to page", fontSize = 11.sp, color = GrayMatterColors.Primary.copy(alpha = 0.6f))
-                    }
-                }
             }
+            } // end Card Box
         }
     }
 

@@ -84,10 +84,104 @@ fun AddToTopicScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Add to Existing Topic section
+            // Create New Topic section - NOW ON TOP
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 
+                Text(
+                    text = "CREATE NEW TOPIC",
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        letterSpacing = 1.5.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = GrayMatterColors.TextSecondary
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(GrayMatterColors.Neutral900)
+                        .border(2.dp, GrayMatterColors.SurfaceBorder, RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BasicTextField(
+                            value = newTopicName,
+                            onValueChange = { 
+                                newTopicName = it
+                                if (it.isNotBlank()) selectedTopicId = null
+                            },
+                            textStyle = MaterialTheme.typography.titleMedium.copy(
+                                color = GrayMatterColors.TextPrimary,
+                                fontWeight = FontWeight.Medium
+                            ),
+                            cursorBrush = SolidColor(GrayMatterColors.TextPrimary),
+                            modifier = Modifier.weight(1f),
+                            decorationBox = { innerTextField ->
+                                Box {
+                                    if (newTopicName.isEmpty()) {
+                                        Text(
+                                            text = "New Topic Title",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = GrayMatterColors.Neutral600
+                                        )
+                                    }
+                                    innerTextField()
+                                }
+                            }
+                        )
+                        
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = GrayMatterColors.Neutral600,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
+
+            // OR divider
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(1.dp)
+                            .background(GrayMatterColors.SurfaceBorder)
+                    )
+                    Text(
+                        text = "OR",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
+                        color = GrayMatterColors.Neutral700
+                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(1.dp)
+                            .background(GrayMatterColors.SurfaceBorder)
+                    )
+                }
+            }
+
+            // Add to Existing Topic section
+            item {
                 Text(
                     text = "ADD TO EXISTING TOPIC",
                     style = MaterialTheme.typography.labelLarge.copy(
@@ -156,103 +250,14 @@ fun AddToTopicScreen(
                     topic = topic,
                     romanNumeral = toRomanNumeral(index + 1),
                     isSelected = selectedTopicId == topic.id,
-                    onClick = { selectedTopicId = topic.id }
-                )
-            }
-            
-            // OR divider
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(1.dp)
-                            .background(GrayMatterColors.SurfaceBorder)
-                    )
-                    Text(
-                        text = "OR",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
-                        ),
-                        color = GrayMatterColors.Neutral700
-                    )
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(1.dp)
-                            .background(GrayMatterColors.SurfaceBorder)
-                    )
-                }
-            }
-            
-            // Create New Topic section
-            item {
-                Text(
-                    text = "CREATE NEW TOPIC",
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        letterSpacing = 1.5.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = GrayMatterColors.TextSecondary
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(GrayMatterColors.Neutral900)
-                        .border(2.dp, GrayMatterColors.SurfaceBorder, RoundedCornerShape(12.dp))
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        BasicTextField(
-                            value = newTopicName,
-                            onValueChange = { 
-                                newTopicName = it
-                                if (it.isNotBlank()) selectedTopicId = null
-                            },
-                            textStyle = MaterialTheme.typography.titleMedium.copy(
-                                color = GrayMatterColors.TextPrimary,
-                                fontWeight = FontWeight.Medium
-                            ),
-                            cursorBrush = SolidColor(GrayMatterColors.TextPrimary),
-                            modifier = Modifier.weight(1f),
-                            decorationBox = { innerTextField ->
-                                Box {
-                                    if (newTopicName.isEmpty()) {
-                                        Text(
-                                            text = "New Topic Title",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = GrayMatterColors.Neutral600
-                                        )
-                                    }
-                                    innerTextField()
-                                }
-                            }
-                        )
-                        
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            tint = GrayMatterColors.Neutral600,
-                            modifier = Modifier.size(24.dp)
-                        )
+                    onClick = { 
+                        selectedTopicId = topic.id
+                        newTopicName = "" // Clear new topic name if existing topic is picked
                     }
-                }
-                
+                )
+            }
+            
+            item {
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
