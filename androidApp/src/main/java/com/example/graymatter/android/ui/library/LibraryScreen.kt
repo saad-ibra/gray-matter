@@ -39,6 +39,7 @@ import androidx.compose.ui.zIndex
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.theme.PlayfairDisplayFontFamily
 import com.example.graymatter.domain.Topic
+import java.util.TreeMap
 import kotlin.math.roundToInt
 
 /**
@@ -522,19 +523,23 @@ private fun TopicCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
+                // Roman Numeral Container - Variable size curved rectangle
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
+                        .wrapContentWidth()
+                        .height(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
                         .background(GrayMatterColors.BackgroundDark.copy(alpha = 0.4f))
-                        .border(1.dp, GrayMatterColors.Neutral700.copy(alpha = 0.5f), CircleShape),
+                        .border(1.dp, GrayMatterColors.Neutral700.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                        .padding(horizontal = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = romanNumeral,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontFamily = PlayfairDisplayFontFamily,
-                            fontWeight = FontWeight.Normal
+                            fontWeight = FontWeight.Normal,
+                            letterSpacing = 1.sp
                         ),
                         color = GrayMatterColors.TextPrimary
                     )
@@ -659,9 +664,32 @@ private fun SelectionActionBar(
     }
 }
 
-private fun toRomanNumeral(num: Int): String {
-    val romanNumerals = listOf("I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X")
-    return if (num in 1..10) romanNumerals[num - 1] else num.toString()
+private fun toRomanNumeral(number: Int): String {
+    if (number < 1) return number.toString()
+    val map = TreeMap<Int, String>(Comparator.reverseOrder())
+    map[1000] = "M"
+    map[900] = "CM"
+    map[500] = "D"
+    map[400] = "CD"
+    map[100] = "C"
+    map[90] = "XC"
+    map[50] = "L"
+    map[40] = "XL"
+    map[10] = "X"
+    map[9] = "IX"
+    map[5] = "V"
+    map[4] = "IV"
+    map[1] = "I"
+    
+    var n = number
+    val sb = StringBuilder()
+    for ((value, symbol) in map) {
+        while (n >= value) {
+            sb.append(symbol)
+            n -= value
+        }
+    }
+    return sb.toString()
 }
 
 private fun formatTimeAgo(timestamp: Long): String {
