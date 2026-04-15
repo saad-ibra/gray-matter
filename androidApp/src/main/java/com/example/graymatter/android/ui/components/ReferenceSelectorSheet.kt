@@ -250,11 +250,11 @@ fun ReferenceSelectorSheet(
                                     is ReferenceSelectorItem.ResourceItem -> GrayMatterColors.Neutral300
                                     is ReferenceSelectorItem.DetailItem -> {
                                         when (item.typeLabel) {
-                                            "Lookup" -> Color(0xFFC6280B)
-                                            "Annotation" -> GrayMatterColors.Gamboge
-                                            "Template", "Custom" -> GrayMatterColors.CustomizedAccent
-                                            "Bookmark" -> GrayMatterColors.Jonquil
-                                            else -> GrayMatterColors.Success
+                                            "Lookup" -> GrayMatterColors.TypeLookupMain
+                                            "Annotation" -> GrayMatterColors.TypeAnnotation
+                                            "Template", "Custom" -> GrayMatterColors.TypeTemplate
+                                            "Bookmark" -> GrayMatterColors.TypeBookmark
+                                            else -> GrayMatterColors.TypeOpinion
                                         }
                                     }
                                 }
@@ -299,11 +299,11 @@ fun ReferenceSelectorSheet(
                                         val label = item.typeLabel
                                         if (label != null) {
                                             val labelColor = when (label) {
-                                                "Lookup" -> Color(0xFFC6280B)
-                                                "Annotation" -> GrayMatterColors.Gamboge
-                                                "Template", "Custom" -> GrayMatterColors.CustomizedAccent
-                                                "Bookmark" -> GrayMatterColors.Jonquil
-                                                else -> GrayMatterColors.Success
+                                                "Lookup" -> GrayMatterColors.TypeLookupMain
+                                                "Annotation" -> GrayMatterColors.TypeAnnotation
+                                                "Template", "Custom" -> GrayMatterColors.TypeTemplate
+                                                "Bookmark" -> GrayMatterColors.TypeBookmark
+                                                else -> GrayMatterColors.TypeOpinion
                                             }
                                             Text(
                                                 text = label,

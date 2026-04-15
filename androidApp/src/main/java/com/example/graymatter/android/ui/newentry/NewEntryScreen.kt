@@ -410,17 +410,17 @@ fun NewEntryScreen(
                                 }
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = GrayMatterColors.Gamboge.copy(alpha = 0.12f),
+                                    color = GrayMatterColors.TypeLink.copy(alpha = 0.12f),
                                     modifier = Modifier.border(
                                         0.5.dp,
-                                        GrayMatterColors.Gamboge.copy(alpha = 0.3f),
+                                        GrayMatterColors.TypeLink.copy(alpha = 0.3f),
                                         RoundedCornerShape(8.dp)
                                     )
                                 ) {
                                     Text(
                                         text,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = GrayMatterColors.Gamboge,
+                                        color = GrayMatterColors.TypeLink,
                                         maxLines = 1,
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                     )
@@ -444,13 +444,13 @@ fun NewEntryScreen(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
                     .background(
-                        if (selectedTemplate != null) GrayMatterColors.CustomizedAccent.copy(alpha = 0.1f)
-                        else GrayMatterColors.Success.copy(alpha = 0.1f)
+                        if (selectedTemplate != null) GrayMatterColors.TypeTemplate.copy(alpha = 0.1f)
+                        else GrayMatterColors.TypeOpinion.copy(alpha = 0.1f)
                     )
                     .border(
                         1.dp, 
-                        if (selectedTemplate != null) GrayMatterColors.CustomizedAccent.copy(alpha = 0.3f)
-                        else GrayMatterColors.Success.copy(alpha = 0.3f), 
+                        if (selectedTemplate != null) GrayMatterColors.TypeTemplate.copy(alpha = 0.3f)
+                        else GrayMatterColors.TypeOpinion.copy(alpha = 0.3f), 
                         RoundedCornerShape(16.dp)
                     )
                     .padding(20.dp),
@@ -519,7 +519,7 @@ fun NewEntryScreen(
                 ConfidenceLevelSection(
                     confidence = confidenceScore,
                     onConfidenceChange = { confidenceScore = it },
-                    accentColor = if (selectedTemplate != null) GrayMatterColors.CustomizedAccent else GrayMatterColors.Success
+                    accentColor = if (selectedTemplate != null) GrayMatterColors.TypeTemplate else GrayMatterColors.TypeOpinion
                 )
             }
         }
@@ -914,7 +914,7 @@ private fun CustomizedOpinionSection(
     onFieldValueChange: (String, String) -> Unit,
     onCreateTemplate: () -> Unit
 ) {
-    val accentColor = if (selectedTemplate != null) GrayMatterColors.CustomizedAccent else GrayMatterColors.Success
+    val accentColor = if (selectedTemplate != null) GrayMatterColors.TypeTemplate else GrayMatterColors.TypeOpinion
     val bgColor = accentColor.copy(alpha = 0.08f)
     val borderColor = accentColor.copy(alpha = 0.2f)
     
@@ -954,7 +954,7 @@ private fun CustomizedOpinionSection(
                     onValueChange = onOpinionChange, 
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary, lineHeight = 24.sp), 
                     modifier = Modifier.fillMaxSize(), 
-                    cursorBrush = SolidColor(GrayMatterColors.Success), 
+                    cursorBrush = SolidColor(GrayMatterColors.TypeOpinion), 
                     decorationBox = { inner -> 
                         if (opinionInput.isEmpty()) Text("Type your understanding here...", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyLarge)
                         inner() 

@@ -37,6 +37,16 @@ object GrayMatterColors {
     val Gamboge = Color(0xFFF49F0A)
     val CocoaBrown = Color(0xFFD96C06)
 
+    // Semantic Type Colors (User Requested)
+    val TypeOpinion = Color(0xFF8E9E5A)
+    val TypeBookmark = Color(0xFFC4A84E)
+    val TypeLink = Color(0xFF5A9AB8)
+    val TypeAnnotation = Color(0xFFB07A5A)
+    val TypeLookupMain = Color(0xFFBF5A6A)
+    val TypeLookupSavedElsewhere = Color(0xFFC47A8A)
+    val TypeTemplate = Color(0xFF7E6A8C)
+    val TypeNoteDescription = Color(0xFF9E8A6A)
+
     // Neutral grays
     val Neutral100 = Color(0xFFF4F4F5)
     val Neutral200 = Color(0xFFE4E4E7)

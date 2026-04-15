@@ -231,12 +231,12 @@ fun ResourceDetailScreen(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(
-                                    if (description.isNotEmpty()) GrayMatterColors.Neutral800.copy(alpha = 0.6f)
+                                    if (description.isNotEmpty()) GrayMatterColors.TypeNoteDescription.copy(alpha = 0.12f)
                                     else GrayMatterColors.SurfaceDark
                                 )
                                 .border(
                                     1.5.dp,
-                                    if (description.isNotEmpty()) GrayMatterColors.Neutral600
+                                    if (description.isNotEmpty()) GrayMatterColors.TypeNoteDescription.copy(alpha = 0.4f)
                                     else GrayMatterColors.Neutral800,
                                     RoundedCornerShape(16.dp)
                                 )
@@ -251,12 +251,12 @@ fun ResourceDetailScreen(
                                 Icon(
                                     imageVector = if (description.isNotEmpty()) Icons.Default.EditNote else Icons.Default.Edit,
                                     contentDescription = null,
-                                    tint = if (description.isNotEmpty()) GrayMatterColors.Neutral400 else GrayMatterColors.Primary
+                                    tint = GrayMatterColors.TypeNoteDescription
                                 )
                                 Text(
                                     text = if (description.isNotEmpty()) "Edit Resource Description" else "Add Resource Description",
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = if (description.isNotEmpty()) GrayMatterColors.Neutral400 else GrayMatterColors.Primary
+                                    color = GrayMatterColors.TypeNoteDescription
                                 )
                             }
                         }
@@ -272,8 +272,8 @@ fun ResourceDetailScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(24.dp))
-                                    .background(GrayMatterColors.KnowledgeBlue.copy(alpha = 0.05f))
-                                    .border(1.dp, GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
+                                    .background(GrayMatterColors.TypeLink.copy(alpha = 0.05f))
+                                    .border(1.dp, GrayMatterColors.TypeLink.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
                                     .padding(20.dp),
                                 verticalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
@@ -285,13 +285,13 @@ fun ResourceDetailScreen(
                                         modifier = Modifier
                                             .size(32.dp)
                                             .clip(CircleShape)
-                                            .background(GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f)),
+                                            .background(GrayMatterColors.TypeLink.copy(alpha = 0.15f)),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             Icons.Default.Link,
                                             null,
-                                            tint = GrayMatterColors.KnowledgeBlue,
+                                            tint = GrayMatterColors.TypeLink,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
@@ -325,8 +325,8 @@ fun ResourceDetailScreen(
                                         Box(
                                             modifier = Modifier
                                                 .clip(CircleShape)
-                                                .background(GrayMatterColors.KnowledgeBlue.copy(alpha = 0.12f))
-                                                .border(1.dp, GrayMatterColors.KnowledgeBlue.copy(alpha = 0.25f), CircleShape)
+                                                .background(GrayMatterColors.TypeLink.copy(alpha = 0.12f))
+                                                .border(1.dp, GrayMatterColors.TypeLink.copy(alpha = 0.25f), CircleShape)
                                                 .clickable { onNavigateToKnowledgeLink(link) }
                                         ) {
                                             Row(
@@ -336,21 +336,21 @@ fun ResourceDetailScreen(
                                                 Icon(
                                                     linkIcon,
                                                     null,
-                                                    tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.9f),
+                                                    tint = GrayMatterColors.TypeLink.copy(alpha = 0.9f),
                                                     modifier = Modifier.size(16.dp)
                                                 )
                                                 Spacer(Modifier.width(8.dp))
                                                 Text(
                                                     linkText,
                                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                                    color = GrayMatterColors.KnowledgeBlue,
+                                                    color = GrayMatterColors.TypeLink,
                                                     maxLines = 1
                                                 )
                                                 Spacer(Modifier.width(6.dp))
                                                 Icon(
                                                     Icons.Default.OpenInNew,
                                                     null,
-                                                    tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.6f),
+                                                    tint = GrayMatterColors.TypeLink.copy(alpha = 0.6f),
                                                     modifier = Modifier.size(14.dp)
                                                 )
                                             }
@@ -1110,12 +1110,12 @@ private fun OpinionTimelineItem(
                         }
                         
                         val (title, icon, color) = when {
-                            isDictionary -> Triple("LOOKUP", Icons.Default.MenuBook, Color(0xFFC6280B))
-                            isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.Gamboge)
-                            isTemplate -> Triple("TEMPLATE", Icons.Default.DashboardCustomize, GrayMatterColors.CustomizedAccent)
-                            isCustomTitle -> Triple(dynamicTitle.uppercase(), Icons.Default.EditNote, GrayMatterColors.Success)
-                            hasPageNumber -> Triple("BOOKMARK", Icons.Default.Bookmark, GrayMatterColors.Jonquil)
-                            else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.Success)
+                            isDictionary -> Triple("LOOKUP", Icons.Default.MenuBook, GrayMatterColors.TypeLookupMain)
+                            isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.TypeAnnotation)
+                            isTemplate -> Triple("TEMPLATE", Icons.Default.DashboardCustomize, GrayMatterColors.TypeTemplate)
+                            isCustomTitle -> Triple(dynamicTitle.uppercase(), Icons.Default.EditNote, GrayMatterColors.TypeOpinion)
+                            hasPageNumber -> Triple("BOOKMARK", Icons.Default.Bookmark, GrayMatterColors.TypeBookmark)
+                            else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.TypeOpinion)
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1160,9 +1160,9 @@ private fun OpinionTimelineItem(
             if (hasPageNumber && !isEditing) {
                 Spacer(modifier = Modifier.height(4.dp))
                 val tagColor = when {
-                    isDictionary -> Color(0xFFC6280B)
-                    isAnnotation -> GrayMatterColors.Gamboge
-                    else -> GrayMatterColors.Jonquil
+                    isDictionary -> GrayMatterColors.TypeLookupMain
+                    isAnnotation -> GrayMatterColors.TypeAnnotation
+                    else -> GrayMatterColors.TypeBookmark
                 }
                 Box(
                     modifier = Modifier
@@ -1286,8 +1286,8 @@ private fun OpinionTimelineItem(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFFC6280B).copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .border(1.dp, Color(0xFFC6280B).copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.TypeLookupMain.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.TypeLookupMain.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                             .padding(16.dp)
                     ) {
                         Text(
@@ -1305,8 +1305,8 @@ private fun OpinionTimelineItem(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(GrayMatterColors.Gamboge.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .border(1.dp, GrayMatterColors.Gamboge.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.TypeAnnotation.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.TypeAnnotation.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -1318,7 +1318,7 @@ private fun OpinionTimelineItem(
                                 .background(Color.White.copy(alpha = 0.05f))
                         ) {
                             Row(modifier = Modifier.fillMaxWidth()) {
-                                Box(modifier = Modifier.width(4.dp).height(IntrinsicSize.Min).background(GrayMatterColors.Gamboge)) // Orange accent
+                                Box(modifier = Modifier.width(4.dp).height(IntrinsicSize.Min).background(GrayMatterColors.TypeAnnotation)) // Orange accent
                                 Text(
                                     text = "\"$quote\"",
                                     style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic, lineHeight = 24.sp),
@@ -1343,15 +1343,15 @@ private fun OpinionTimelineItem(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(GrayMatterColors.CustomizedAccent.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .border(1.dp, GrayMatterColors.CustomizedAccent.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.TypeTemplate.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.TypeTemplate.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
                             text = templateName.uppercase(),
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                            color = GrayMatterColors.CustomizedAccent
+                            color = GrayMatterColors.TypeTemplate
                         )
                         
                         // Parse markdown-ish structure
@@ -1380,8 +1380,8 @@ private fun OpinionTimelineItem(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(GrayMatterColors.Success.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .border(1.dp, GrayMatterColors.Success.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.TypeOpinion.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.TypeOpinion.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                             .padding(16.dp)
                     ) {
                         Text(
@@ -1397,8 +1397,8 @@ private fun OpinionTimelineItem(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(GrayMatterColors.Jonquil.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .border(1.dp, GrayMatterColors.Jonquil.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.TypeBookmark.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.TypeBookmark.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                             .padding(16.dp)
                     ) {
                         Text(
@@ -1412,8 +1412,8 @@ private fun OpinionTimelineItem(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(GrayMatterColors.Success.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .border(1.dp, GrayMatterColors.Success.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.TypeOpinion.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.TypeOpinion.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                             .padding(16.dp)
                     ) {
                         Text(
@@ -1527,7 +1527,7 @@ private fun DynamicEntryEditor(
                         onValueChange = { onFieldChange(heading, it) },
                         textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary),
                         modifier = Modifier.fillMaxWidth(),
-                        cursorBrush = SolidColor(GrayMatterColors.CustomizedAccent)
+                        cursorBrush = SolidColor(GrayMatterColors.TypeTemplate)
                     )
                 }
             }
@@ -1555,14 +1555,14 @@ private fun DynamicEntryEditor(
                             onValueChange = { onFieldChange(heading, it) },
                             textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary),
                             modifier = Modifier.fillMaxWidth(),
-                            cursorBrush = SolidColor(GrayMatterColors.CustomizedAccent)
+                            cursorBrush = SolidColor(GrayMatterColors.TypeTemplate)
                         )
                     }
                 }
             }
         }
         
-        Slider(value = confidence, onValueChange = onConfidenceChange, colors = SliderDefaults.colors(thumbColor = GrayMatterColors.CustomizedAccent, activeTrackColor = GrayMatterColors.CustomizedAccent))
+        Slider(value = confidence, onValueChange = onConfidenceChange, colors = SliderDefaults.colors(thumbColor = GrayMatterColors.TypeTemplate, activeTrackColor = GrayMatterColors.TypeTemplate))
     }
 }
 

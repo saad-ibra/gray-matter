@@ -594,13 +594,13 @@ fun KnowledgeGraphScreen(
                     if (isVisible) {
                         val nodeColor = when (node.type) {
                             NodeType.TOPIC -> Color.White
-                            NodeType.RESOURCE -> Color.LightGray
-                            NodeType.ANNOTATION -> GrayMatterColors.Gamboge
-                            NodeType.BOOKMARK -> GrayMatterColors.Jonquil
-                            NodeType.TEMPLATE -> GrayMatterColors.CustomizedAccent
-                            NodeType.CUSTOM -> GrayMatterColors.CustomizedAccent
-                            NodeType.LOOKUP -> Color(0xFFC6280B)
-                            NodeType.OPINION -> GrayMatterColors.Success
+                            NodeType.RESOURCE -> Color.White
+                            NodeType.ANNOTATION -> GrayMatterColors.TypeAnnotation
+                            NodeType.BOOKMARK -> GrayMatterColors.TypeBookmark
+                            NodeType.TEMPLATE -> GrayMatterColors.TypeTemplate
+                            NodeType.CUSTOM -> GrayMatterColors.TypeTemplate
+                            NodeType.LOOKUP -> GrayMatterColors.TypeLookupMain
+                            NodeType.OPINION -> GrayMatterColors.TypeOpinion
                         }
                         // 3D Perspective Scale & Position
                         val pNode = project3D(node.x, node.y, node.z)
@@ -851,25 +851,25 @@ fun KnowledgeGraphScreen(
                                     "Lookup" -> showLookup = !showLookup
                                 }
                             },
-                            label = { Text(name, color = if ((name == "Topics" || name == "Resources") && isSelected) Color.Black else Color.Unspecified) },
+                            label = { Text(name, color = Color.Unspecified) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = when(name) {
-                                    "Topics" -> Color.White
-                                    "Resources" -> Color.LightGray
-                                    "Annotations" -> GrayMatterColors.Gamboge.copy(alpha = 0.3f)
-                                    "Bookmarks" -> GrayMatterColors.Jonquil.copy(alpha = 0.3f)
-                                    "Templates" -> GrayMatterColors.CustomizedAccent.copy(alpha = 0.3f)
-                                    "Dict" -> Color(0xFFC6280B).copy(alpha = 0.3f)
-                                    else -> GrayMatterColors.Success.copy(alpha = 0.3f)
+                                    "Topics" -> Color.White.copy(alpha = 0.3f)
+                                    "Resources" -> Color.White.copy(alpha = 0.3f)
+                                    "Annotations" -> GrayMatterColors.TypeAnnotation.copy(alpha = 0.3f)
+                                    "Bookmarks" -> GrayMatterColors.TypeBookmark.copy(alpha = 0.3f)
+                                    "Templates" -> GrayMatterColors.TypeTemplate.copy(alpha = 0.3f)
+                                    "Dict" -> GrayMatterColors.TypeLookupMain.copy(alpha = 0.3f)
+                                    else -> GrayMatterColors.TypeOpinion.copy(alpha = 0.3f)
                                 },
                                 selectedLabelColor = when(name) {
-                                    "Topics" -> Color.Black
-                                    "Resources" -> Color.Black
-                                    "Annotations" -> GrayMatterColors.Gamboge
-                                    "Bookmarks" -> GrayMatterColors.Jonquil
-                                    "Templates" -> GrayMatterColors.CustomizedAccent
-                                    "Dict" -> Color(0xFFC6280B)
-                                    else -> GrayMatterColors.Success
+                                    "Topics" -> Color.White
+                                    "Resources" -> Color.White
+                                    "Annotations" -> GrayMatterColors.TypeAnnotation
+                                    "Bookmarks" -> GrayMatterColors.TypeBookmark
+                                    "Templates" -> GrayMatterColors.TypeTemplate
+                                    "Dict" -> GrayMatterColors.TypeLookupMain
+                                    else -> GrayMatterColors.TypeOpinion
                                 }
                             )
                         )
@@ -897,12 +897,12 @@ fun KnowledgeGraphScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             val nodeColor = when (node.type) {
                                 NodeType.TOPIC -> Color.White
-                                NodeType.RESOURCE -> Color.LightGray
-                                NodeType.ANNOTATION -> GrayMatterColors.Gamboge
-                                NodeType.BOOKMARK -> GrayMatterColors.Jonquil
-                                NodeType.TEMPLATE, NodeType.CUSTOM -> GrayMatterColors.CustomizedAccent
-                                NodeType.LOOKUP -> Color(0xFFC6280B)
-                                NodeType.OPINION -> GrayMatterColors.Success
+                                NodeType.RESOURCE -> Color.White
+                                NodeType.ANNOTATION -> GrayMatterColors.TypeAnnotation
+                                NodeType.BOOKMARK -> GrayMatterColors.TypeBookmark
+                                NodeType.TEMPLATE, NodeType.CUSTOM -> GrayMatterColors.TypeTemplate
+                                NodeType.LOOKUP -> GrayMatterColors.TypeLookupMain
+                                NodeType.OPINION -> GrayMatterColors.TypeOpinion
                             }
                             Box(
                                 modifier = Modifier

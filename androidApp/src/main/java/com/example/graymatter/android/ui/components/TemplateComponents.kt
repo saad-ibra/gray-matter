@@ -70,9 +70,9 @@ fun TemplateSelector(
             DropdownMenuItem(
                 text = { 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Add, null, tint = GrayMatterColors.CustomizedAccent, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Add, null, tint = GrayMatterColors.TypeTemplate, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("New Template", color = GrayMatterColors.CustomizedAccent)
+                        Text("New Template", color = GrayMatterColors.TypeTemplate)
                     }
                 },
                 onClick = {
@@ -116,7 +116,7 @@ fun DynamicEntryForm(
                         onValueChange = { onFieldValueChange(heading, it) },
                         textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.White),
                         modifier = Modifier.fillMaxWidth(),
-                        cursorBrush = SolidColor(GrayMatterColors.CustomizedAccent),
+                        cursorBrush = SolidColor(GrayMatterColors.TypeTemplate),
                         decorationBox = { inner ->
                             if ((fieldValues[heading] ?: "").isEmpty()) {
                                 Text("Enter $heading...", color = GrayMatterColors.Neutral700)

@@ -88,8 +88,8 @@ fun TemplateEditorDialog(
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedTextColor = Color.White,
                         focusedTextColor = Color.White,
-                        cursorColor = GrayMatterColors.CustomizedAccent,
-                        focusedLabelColor = GrayMatterColors.CustomizedAccent,
+                        cursorColor = GrayMatterColors.TypeTemplate,
+                        focusedLabelColor = GrayMatterColors.TypeTemplate,
                         unfocusedLabelColor = GrayMatterColors.Neutral500
                     ),
                     shape = RoundedCornerShape(12.dp)
@@ -128,7 +128,7 @@ fun TemplateEditorDialog(
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedTextColor = Color.White,
                                 focusedTextColor = Color.White,
-                                cursorColor = GrayMatterColors.CustomizedAccent
+                                cursorColor = GrayMatterColors.TypeTemplate
                             ),
                             shape = RoundedCornerShape(12.dp)
                         )
@@ -149,7 +149,7 @@ fun TemplateEditorDialog(
                         }
                     },
                     modifier = Modifier.padding(top = 8.dp),
-                    colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.CustomizedAccent)
+                    colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.TypeTemplate)
                 ) {
                     Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -162,7 +162,7 @@ fun TemplateEditorDialog(
                     onClick = { onSave(template.copy(name = name, headings = headings.filter { it.isNotBlank() })) },
                     enabled = name.isNotBlank() && headings.any { it.isNotBlank() },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.CustomizedAccent),
+                    colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.TypeTemplate),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text("Save Template", fontWeight = FontWeight.Bold, fontSize = 16.sp)

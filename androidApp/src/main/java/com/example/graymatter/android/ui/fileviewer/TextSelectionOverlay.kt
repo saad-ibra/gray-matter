@@ -504,9 +504,9 @@ fun TextSelectionOverlay(
                 val isDictionary = opinion?.text?.startsWith("[DICT") == true
                 val isAnnotation = opinion?.text?.startsWith("> ") == true
                 val color = when {
-                    isDictionary -> Color(0xFFD32F2F).copy(alpha = 0.4f)
-                    isAnnotation -> GrayMatterColors.Gamboge.copy(alpha = 0.4f)
-                    else -> GrayMatterColors.Success.copy(alpha = 0.4f) // opinion = green
+                    isDictionary -> GrayMatterColors.TypeLookupMain.copy(alpha = 0.4f)
+                    isAnnotation -> GrayMatterColors.TypeAnnotation.copy(alpha = 0.4f)
+                    else -> GrayMatterColors.TypeOpinion.copy(alpha = 0.4f) // opinion = green
                 }
                 val lineRects = groupCharactersIntoRects(chars)
                 for (rect in lineRects) {
@@ -653,7 +653,7 @@ fun TextSelectionOverlay(
                         showPopup = false
                         onActionCompleted("dictionary", text, null, startIndex)
                     }) {
-                        Text("Look Up", color = Color(0xFFC6280B))
+                        Text("Look Up", color = GrayMatterColors.TypeLookupMain)
                     }
                 }
             }
@@ -707,7 +707,7 @@ fun TextSelectionOverlay(
                             annotationPopupOffset = null
                             onActionCompleted("dictionary", text, pId, null)
                         }) {
-                            Text("Look Up", color = Color(0xFFC6280B))
+                            Text("Look Up", color = GrayMatterColors.TypeLookupMain)
                         }
                     } else {
                         // For non-dictionary entries (Opinions, Annotations)
@@ -792,7 +792,7 @@ fun TextSelectionOverlay(
                             val originOp = globalDictItem.third
                             onActionCompleted("dictionary", text, originOp.id, startIndex)
                         }) {
-                            Text("Look Up", color = Color(0xFFC6280B))
+                            Text("Look Up", color = GrayMatterColors.TypeLookupMain)
                         }
 
                         TextButton(onClick = {

@@ -315,7 +315,7 @@ fun FileViewerScreen(
                                 ) {
                                     Surface(
                                         shape = RoundedCornerShape(12.dp),
-                                        color = GrayMatterColors.Success.copy(alpha = 0.9f),
+                                        color = GrayMatterColors.TypeOpinion.copy(alpha = 0.9f),
                                         tonalElevation = 8.dp
                                     ) {
                                         Row(
@@ -573,7 +573,7 @@ fun FileViewerScreen(
                     
                     ListItem(
                         headlineContent = { Text("General Opinion", color = Color.White) },
-                        leadingContent = { Icon(Icons.Default.EditNote, null, tint = GrayMatterColors.Success) },
+                        leadingContent = { Icon(Icons.Default.EditNote, null, tint = GrayMatterColors.TypeOpinion) },
                         modifier = Modifier.clickable { 
                             viewModel.toggleAddEntrySheet()
                             viewModel.toggleCustomOpinionDialog()
@@ -583,7 +583,7 @@ fun FileViewerScreen(
                     
                     ListItem(
                         headlineContent = { Text("Template Entry", color = Color.White) },
-                        leadingContent = { Icon(Icons.Default.DashboardCustomize, null, tint = GrayMatterColors.CustomizedAccent) },
+                        leadingContent = { Icon(Icons.Default.DashboardCustomize, null, tint = GrayMatterColors.TypeTemplate) },
                         modifier = Modifier.clickable { 
                             viewModel.toggleAddEntrySheet()
                             viewModel.toggleTemplateSelectionDialog()
@@ -631,7 +631,7 @@ fun FileViewerScreen(
                                 showTemplateEditor = true 
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.CustomizedAccent)
+                            colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.TypeTemplate)
                         ) {
                             Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
@@ -761,7 +761,7 @@ fun FileViewerScreen(
                                             },
                                             textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary),
                                             modifier = Modifier.fillMaxWidth(),
-                                            cursorBrush = SolidColor(GrayMatterColors.CustomizedAccent)
+                                            cursorBrush = SolidColor(GrayMatterColors.TypeTemplate)
                                         )
                                     }
                                 }
@@ -773,7 +773,7 @@ fun FileViewerScreen(
                             Slider(
                                 value = confidence, 
                                 onValueChange = { confidence = it }, 
-                                colors = SliderDefaults.colors(thumbColor = GrayMatterColors.CustomizedAccent, activeTrackColor = GrayMatterColors.CustomizedAccent)
+                                colors = SliderDefaults.colors(thumbColor = GrayMatterColors.TypeTemplate, activeTrackColor = GrayMatterColors.TypeTemplate)
                             )
                         }
                         
@@ -794,7 +794,7 @@ fun FileViewerScreen(
                                     viewModel.selectTemplateForNewEntry(null)
                                 },
                                 enabled = fieldValues.values.any { it.isNotBlank() },
-                                colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.CustomizedAccent, contentColor = Color.White)
+                                colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.TypeTemplate, contentColor = Color.White)
                             ) { 
                                 Text("Save") 
                             }
@@ -894,7 +894,7 @@ fun FileViewerScreen(
                                 .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
                                 .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
                                 .padding(12.dp),
-                            cursorBrush = SolidColor(GrayMatterColors.Success),
+                            cursorBrush = SolidColor(GrayMatterColors.TypeOpinion),
                             decorationBox = { inner ->
                                 if (text.isEmpty()) {
                                     Text("Type your reflection here...", color = GrayMatterColors.Neutral600)
@@ -913,8 +913,8 @@ fun FileViewerScreen(
                                 value = confidence,
                                 onValueChange = { confidence = it },
                                 colors = SliderDefaults.colors(
-                                    thumbColor = GrayMatterColors.Success,
-                                    activeTrackColor = GrayMatterColors.Success
+                                    thumbColor = GrayMatterColors.TypeOpinion,
+                                    activeTrackColor = GrayMatterColors.TypeOpinion
                                 )
                             )
                         }
@@ -930,7 +930,7 @@ fun FileViewerScreen(
                                 },
                                 enabled = text.isNotBlank(),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = GrayMatterColors.Success,
+                                    containerColor = GrayMatterColors.TypeOpinion,
                                     contentColor = Color.Black
                                 )
                             ) {
