@@ -1127,11 +1127,14 @@ private fun OpinionTimelineItem(
                             DateChip(timestamp = opinion.createdAt, onClick = { showDateTimePicker = true })
                         } else {
                             Text(
-                                text = formatFullDate(opinion.createdAt).uppercase(), 
+                                text = formatDate(opinion.createdAt).uppercase(), 
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp), 
-                                color = GrayMatterColors.Neutral600,
-                                maxLines = 1,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                color = GrayMatterColors.Neutral600
+                            )
+                            Text(
+                                text = formatTime(opinion.createdAt).uppercase(), 
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp), 
+                                color = GrayMatterColors.Neutral600.copy(alpha = 0.8f)
                             )
                         }
                     }
@@ -1655,9 +1658,18 @@ private fun DateChip(timestamp: Long, onClick: () -> Unit) {
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(formatFullDate(timestamp).uppercase(), style = MaterialTheme.typography.labelSmall.copy(color = GrayMatterColors.Primary, fontWeight = FontWeight.Bold))
-            Icon(Icons.Default.CalendarToday, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(12.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column {
+                Text(
+                    text = formatDate(timestamp).uppercase(), 
+                    style = MaterialTheme.typography.labelSmall.copy(color = GrayMatterColors.Primary, fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = formatTime(timestamp).uppercase(), 
+                    style = MaterialTheme.typography.labelSmall.copy(color = GrayMatterColors.Primary.copy(alpha = 0.7f), fontWeight = FontWeight.Medium, fontSize = 10.sp)
+                )
+            }
+            Icon(Icons.Default.CalendarToday, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(14.dp))
         }
     }
 }
@@ -1884,6 +1896,14 @@ private fun formatTimeAgo(timestamp: Long): String {
         days < 30 -> "$days days ago"
         else -> "${days / 30} months ago"
     }
+}
+
+private fun formatDate(timestamp: Long): String {
+    return SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(timestamp))
+}
+
+private fun formatTime(timestamp: Long): String {
+    return SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(timestamp))
 }
 
 private fun formatFullDate(timestamp: Long): String {
