@@ -155,7 +155,7 @@ fun ResourceDetailScreen(
             }
 
             if (resourceEntryDetails != null) {
-                var selectedFilters by remember { mutableStateOf(setOf("Dictionary", "Annotation", "Custom", "Bookmark", "Opinion")) }
+                var selectedFilters by remember { mutableStateOf(setOf("Lookups", "Annotation", "Custom", "Bookmark", "Opinion")) }
                 var showFilterMenu by remember { mutableStateOf(false) }
                 var localFocusOpinionId by remember(focusOpinionId) { mutableStateOf(focusOpinionId) }
                 var pulseTrigger by remember { mutableLongStateOf(0L) }
@@ -171,7 +171,7 @@ fun ResourceDetailScreen(
                             val hasPageNumber = opinion.pageNumber != null
                             
                             val type = when {
-                                isDictionary -> "Dictionary"
+                                isDictionary -> "Lookups"
                                 isAnnotation -> "Annotation"
                                 isTemplate || isCustomTitle -> "Custom"
                                 hasPageNumber -> "Bookmark"
@@ -374,7 +374,7 @@ fun ResourceDetailScreen(
                     // Filter bottom sheet / dropdown
                     if (showFilterMenu) {
                         val availableFilters = listOf(
-                            "Dictionary" to Icons.Default.MenuBook,
+                            "Lookups" to Icons.Default.MenuBook,
                             "Annotation" to Icons.Default.FormatQuote,
                             "Custom" to Icons.Default.DashboardCustomize,
                             "Bookmark" to Icons.Default.Bookmark,
@@ -1110,7 +1110,7 @@ private fun OpinionTimelineItem(
                         }
                         
                         val (title, icon, color) = when {
-                            isDictionary -> Triple("DICTIONARY", Icons.Default.Book, Color(0xFFC6280B))
+                            isDictionary -> Triple("LOOKUP", Icons.Default.MenuBook, Color(0xFFC6280B))
                             isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.Gamboge)
                             isTemplate -> Triple("TEMPLATE", Icons.Default.DashboardCustomize, GrayMatterColors.CustomizedAccent)
                             isCustomTitle -> Triple(dynamicTitle.uppercase(), Icons.Default.EditNote, GrayMatterColors.Success)
@@ -1255,6 +1255,28 @@ private fun OpinionTimelineItem(
                                 }
                             )
                         }
+                    } else if (isDictionary) {
+                        OpinionEditor(
+                            text = when {
+                                text.startsWith("[DICT:") -> text.substringAfter("]").trim()
+                                text.startsWith("[DICT]") -> text.substringAfter("]").trim()
+                                else -> text.removePrefix("[DICT]").trim()
+                            },
+                            confidence = confidence,
+                            onTextChange = { 
+                                val prefix = when {
+                                    text.startsWith("[DICT:") -> text.substringBefore("]") + "]"
+                                    else -> "[DICT]"
+                                }
+                                val newFullText = "$prefix $it"
+                                text = newFullText 
+                                onUpdate(newFullText, (confidence * 100).toInt(), opinion.createdAt, selectedReferences)
+                            },
+                            onConfidenceChange = { 
+                                confidence = it 
+                                onUpdate(text, (it * 100).toInt(), opinion.createdAt, selectedReferences)
+                            }
+                        )
                     } else {
                         OpinionEditor(
                             text = if (isCustomTitle) text.substringAfter("]\n").trim() else text,
@@ -1293,7 +1315,7 @@ private fun OpinionTimelineItem(
                         Text(
                             text = phrase,
                             style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp, fontWeight = FontWeight.Medium),
-                            color = Color(0xFFC6280B) // Use red text for dictionary entries
+                            color = Color.White // Dictionary text is now white
                         )
                     }
                 } else if (isAnnotation) {

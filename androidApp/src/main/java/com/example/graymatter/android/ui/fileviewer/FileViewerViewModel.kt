@@ -59,9 +59,9 @@ class FileViewerViewModel(
     private val _opinions = MutableStateFlow<List<Opinion>>(emptyList())
     val opinions: StateFlow<List<Opinion>> = _opinions.asStateFlow()
 
-    // Global dictionary words from ALL resources (phrase → origin Opinion)
-    private val _globalDictionaryWords = MutableStateFlow<Map<String, Opinion>>(emptyMap())
-    val globalDictionaryWords: StateFlow<Map<String, Opinion>> = _globalDictionaryWords.asStateFlow()
+    // Global lookup words from ALL resources (phrase → origin Opinion)
+    private val _globalLookupWords = MutableStateFlow<Map<String, Opinion>>(emptyMap())
+    val globalLookupWords: StateFlow<Map<String, Opinion>> = _globalLookupWords.asStateFlow()
 
     private val _templates = MutableStateFlow<List<CustomTemplate>>(emptyList())
     val templates: StateFlow<List<CustomTemplate>> = _templates.asStateFlow()
@@ -170,7 +170,7 @@ class FileViewerViewModel(
                                 dictMap[phrase] = op
                             }
                         }
-                        _globalDictionaryWords.value = dictMap
+                        _globalLookupWords.value = dictMap
                     }
                 }
             }

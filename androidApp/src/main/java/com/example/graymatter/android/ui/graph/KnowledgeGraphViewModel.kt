@@ -103,7 +103,7 @@ class KnowledgeGraphViewModel(
             // 3. Process Opinions
             allOpinions.forEach { opinion ->
                 val nodeType = when {
-                    opinion.text.startsWith("[DICT") -> NodeType.DICTIONARY
+                    opinion.text.startsWith("[DICT") -> NodeType.LOOKUP
                     opinion.text.startsWith("[TEMPLATE:") -> NodeType.TEMPLATE
                     opinion.text.startsWith("[CUSTOM:") -> NodeType.CUSTOM
                     opinion.pageNumber != null && opinion.text.startsWith(">") -> NodeType.ANNOTATION
@@ -112,7 +112,7 @@ class KnowledgeGraphViewModel(
                 }
                 
                 val displayLabel = when (nodeType) {
-                    NodeType.DICTIONARY -> opinion.text.substringAfter("]").trim().take(20) + "..."
+                    NodeType.LOOKUP -> opinion.text.substringAfter("]").trim().take(20) + "..."
                     NodeType.TEMPLATE -> opinion.text.substringAfter("]\n").replace("### ", "").replace("|", ": ").replace("\n", " • ").trim().take(40) + "..."
                     NodeType.CUSTOM -> opinion.text.substringAfter("]\n").replace("### ", "").replace("|", ": ").replace("\n", " • ").trim().take(40) + "..."
                     NodeType.ANNOTATION -> opinion.text.substringAfter(">").trim().take(20) + "..."
@@ -201,7 +201,7 @@ class KnowledgeGraphViewModel(
                 NodeType.OPINION,
                 NodeType.ANNOTATION,
                 NodeType.BOOKMARK,
-                NodeType.DICTIONARY,
+                NodeType.LOOKUP,
                 NodeType.TEMPLATE,
                 NodeType.CUSTOM -> {
                     opinionRepository.softDeleteOpinion(node.id)
@@ -224,7 +224,7 @@ class KnowledgeGraphViewModel(
                 NodeType.OPINION,
                 NodeType.ANNOTATION,
                 NodeType.BOOKMARK,
-                NodeType.DICTIONARY,
+                NodeType.LOOKUP,
                 NodeType.TEMPLATE,
                 NodeType.CUSTOM -> {
                     opinionRepository.undoDeleteOpinion(node.id)

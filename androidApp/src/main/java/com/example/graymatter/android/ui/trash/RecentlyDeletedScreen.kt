@@ -249,7 +249,7 @@ fun RecentlyDeletedScreen(
                             is DeletedItemUiModel.OpinionItem -> {
                                 val text = item.text
                                 when {
-                                    text.startsWith("[DICT") -> "Dictionary"
+                                    text.startsWith("[DICT") -> "Lookup"
                                     text.startsWith("> ") -> "Annotation"
                                     text.startsWith("[TEMPLATE:") || text.startsWith("[CUSTOM:") -> "Template/Custom"
                                     item.hasPage -> "Bookmark"
@@ -261,7 +261,7 @@ fun RecentlyDeletedScreen(
                         val icon = when (typeName) {
                             "Topic" -> Icons.Default.Folder
                             "Resource" -> Icons.AutoMirrored.Filled.Article
-                            "Dictionary" -> Icons.AutoMirrored.Filled.MenuBook
+                            "Lookup" -> Icons.AutoMirrored.Filled.MenuBook
                             "Annotation" -> Icons.Default.FormatQuote
                             "Template/Custom" -> Icons.Default.DashboardCustomize
                             "Bookmark" -> Icons.Default.Bookmark

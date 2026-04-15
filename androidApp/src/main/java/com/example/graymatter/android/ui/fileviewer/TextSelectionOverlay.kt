@@ -40,13 +40,13 @@ fun TextSelectionOverlay(
     autoCropRect: android.graphics.RectF?,
     cropPadding: Int,
     opinions: List<com.example.graymatter.domain.Opinion> = emptyList(),
-    globalDictionaryWords: Map<String, com.example.graymatter.domain.Opinion> = emptyMap(),
+    globalLookupWords: Map<String, com.example.graymatter.domain.Opinion> = emptyMap(),
     zoomScale: Float = 1f,
     panOffset: Offset = Offset.Zero,
     renderScale: Float = density * 1.5f,
     onEmptyTap: (Offset, Float) -> Unit = {_, _ -> },
     onSelectionChange: (Boolean) -> Unit = {},
-    onNavigateToDictionaryOrigin: (opinionId: String, itemId: String) -> Unit = { _, _ -> },
+    onNavigateToLookupOrigin: (opinionId: String, itemId: String) -> Unit = { _, _ -> },
     onActionCompleted: (action: String, selectedText: String?, id: String?, startIndex: Int?) -> Unit
 ) {
     val offsetSaver = Saver<Offset?, String>(
@@ -266,12 +266,12 @@ fun TextSelectionOverlay(
 
     // Global dictionary highlights: find all instances of dictionary phrases
     // that are NOT already covered by local persistentHighlights
-    val globalDictHighlights = remember(globalDictionaryWords, characters, persistentHighlights) {
-        if (globalDictionaryWords.isEmpty() || characters.isEmpty()) return@remember emptyList<Triple<String, List<PdfCharacter>, com.example.graymatter.domain.Opinion>>()
+    val globalLookupHighlights = remember(globalLookupWords, characters, persistentHighlights) {
+        if (globalLookupWords.isEmpty() || characters.isEmpty()) return@remember emptyList<Triple<String, List<PdfCharacter>, com.example.graymatter.domain.Opinion>>()
         
         val results = mutableListOf<Triple<String, List<PdfCharacter>, com.example.graymatter.domain.Opinion>>()
         
-        for ((phrase, originOpinion) in globalDictionaryWords) {
+        for ((phrase, originOpinion) in globalLookupWords) {
             // Find all instances of this phrase in pageText (case-insensitive)
             val lowerPageText = pageText.lowercase()
             var searchStart = 0
@@ -338,7 +338,7 @@ fun TextSelectionOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(persistentHighlights, globalDictHighlights, zoomScale, panOffset) {
+            .pointerInput(persistentHighlights, globalLookupHighlights, zoomScale, panOffset) {
                 detectTapGestures(
                     onTap = { offset ->
                         val pdfOffset = screenToPdf(offset)
@@ -379,7 +379,7 @@ fun TextSelectionOverlay(
                             showPopup = false
                         } else {
                             // Check global dictionary highlights
-                            val tappedGlobalDict = globalDictHighlights.find { (_, chars, _) ->
+                            val tappedGlobalDict = globalLookupHighlights.find { (_, chars, _) ->
                                 if (tappedCharIdx != -1) {
                                     chars.any { it === characters[tappedCharIdx] }
                                 } else {
@@ -527,8 +527,8 @@ fun TextSelectionOverlay(
                 }
             }
 
-            // Draw Global Dictionary Highlights (pink)
-            for ((_, chars, _) in globalDictHighlights) {
+            // Draw Global Lookup Highlights (pink)
+            for ((_, chars, _) in globalLookupHighlights) {
                 val lineRects = groupCharactersIntoRects(chars)
                 for (rect in lineRects) {
                     val pScreen = pdfToScreen(rect.left, rect.top)
@@ -653,7 +653,7 @@ fun TextSelectionOverlay(
                         showPopup = false
                         onActionCompleted("dictionary", text, null, startIndex)
                     }) {
-                        Text("Save & Search", color = Color(0xFFC6280B))
+                        Text("Look Up", color = Color(0xFFC6280B))
                     }
                 }
             }
@@ -715,7 +715,7 @@ fun TextSelectionOverlay(
                             annotationPopupOffset = null
                             onActionCompleted("dictionary", text, pId, null)
                         }) {
-                            Text("Search", color = Color(0xFFC6280B))
+                            Text("Look Up", color = Color(0xFFC6280B))
                         }
                     }
 
@@ -734,11 +734,11 @@ fun TextSelectionOverlay(
             }
         }
 
-        // Tapped Global Dictionary Popup
+        // Tapped Global Lookup Popup
         val gdId = showGlobalDictPopupId
         val gdOffset = globalDictPopupOffset
         if (gdId != null && gdOffset != null) {
-            val globalDictItem = globalDictHighlights.find { it.first == gdId }
+            val globalDictItem = globalLookupHighlights.find { it.first == gdId }
             if (globalDictItem != null) {
                 val highlightChars = globalDictItem.second
                 val minX = highlightChars.minOf { pdfToScreen(it.x, it.y).x }
@@ -775,7 +775,7 @@ fun TextSelectionOverlay(
                             showGlobalDictPopupId = null
                             globalDictPopupOffset = null
                             val originOp = globalDictItem.third
-                            onNavigateToDictionaryOrigin(originOp.id, originOp.itemId)
+                            onNavigateToLookupOrigin(originOp.id, originOp.itemId)
                         }) {
                             Text("Source", color = Color.White)
                         }
@@ -789,7 +789,7 @@ fun TextSelectionOverlay(
                             val originOp = globalDictItem.third
                             onActionCompleted("dictionary", text, originOp.id, startIndex)
                         }) {
-                            Text("Search", color = Color(0xFFC6280B))
+                            Text("Look Up", color = Color(0xFFC6280B))
                         }
 
                         TextButton(onClick = {

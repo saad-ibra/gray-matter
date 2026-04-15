@@ -95,7 +95,7 @@ fun KnowledgeGraphScreen(
     var showBookmarks by remember { mutableStateOf(true) }
     var showTemplates by remember { mutableStateOf(true) }
     var showCustom by remember { mutableStateOf(true) }
-    var showDictionary by remember { mutableStateOf(true) }
+    var showLookup by remember { mutableStateOf(true) }
     
     // Simulation
     val simulator = remember { ForceSimulator() }
@@ -244,7 +244,7 @@ fun KnowledgeGraphScreen(
                     NodeType.BOOKMARK -> showBookmarks
                     NodeType.TEMPLATE -> showTemplates
                     NodeType.CUSTOM -> showCustom
-                    NodeType.DICTIONARY -> showDictionary
+                    NodeType.LOOKUP -> showLookup
                     NodeType.OPINION -> showOpinions
                 }
             }.toSet()
@@ -485,7 +485,7 @@ fun KnowledgeGraphScreen(
                         NodeType.BOOKMARK -> showBookmarks
                         NodeType.TEMPLATE -> showTemplates
                         NodeType.CUSTOM -> showCustom
-                        NodeType.DICTIONARY -> showDictionary
+                        NodeType.LOOKUP -> showLookup
                         NodeType.OPINION -> showOpinions
                     }
                     val tgtVisible = when (edge.target.type) {
@@ -495,7 +495,7 @@ fun KnowledgeGraphScreen(
                         NodeType.BOOKMARK -> showBookmarks
                         NodeType.TEMPLATE -> showTemplates
                         NodeType.CUSTOM -> showCustom
-                        NodeType.DICTIONARY -> showDictionary
+                        NodeType.LOOKUP -> showLookup
                         NodeType.OPINION -> showOpinions
                     }
 
@@ -587,7 +587,7 @@ fun KnowledgeGraphScreen(
                         NodeType.BOOKMARK -> showBookmarks
                         NodeType.TEMPLATE -> showTemplates
                         NodeType.CUSTOM -> showTemplates
-                        NodeType.DICTIONARY -> showDictionary
+                        NodeType.LOOKUP -> showLookup
                         NodeType.OPINION -> showOpinions
                     }
 
@@ -599,7 +599,7 @@ fun KnowledgeGraphScreen(
                             NodeType.BOOKMARK -> GrayMatterColors.Jonquil
                             NodeType.TEMPLATE -> GrayMatterColors.CustomizedAccent
                             NodeType.CUSTOM -> GrayMatterColors.CustomizedAccent
-                            NodeType.DICTIONARY -> Color(0xFFC6280B)
+                            NodeType.LOOKUP -> Color(0xFFC6280B)
                             NodeType.OPINION -> GrayMatterColors.Success
                         }
                         // 3D Perspective Scale & Position
@@ -827,7 +827,7 @@ fun KnowledgeGraphScreen(
                     "Opinions" to (showOpinions || showAnnotations),
                     "Bookmarks" to showBookmarks,
                     "Templates" to showTemplates,
-                    "Dict" to showDictionary
+                    "Lookup" to showLookup
                 )
                 
                 LazyRow(
@@ -848,7 +848,7 @@ fun KnowledgeGraphScreen(
                                     }
                                     "Bookmarks" -> showBookmarks = !showBookmarks
                                     "Templates" -> showTemplates = !showTemplates
-                                    "Dict" -> showDictionary = !showDictionary
+                                    "Lookup" -> showLookup = !showLookup
                                 }
                             },
                             label = { Text(name, color = if ((name == "Topics" || name == "Resources") && isSelected) Color.Black else Color.Unspecified) },
@@ -901,7 +901,7 @@ fun KnowledgeGraphScreen(
                                 NodeType.ANNOTATION -> GrayMatterColors.Gamboge
                                 NodeType.BOOKMARK -> GrayMatterColors.Jonquil
                                 NodeType.TEMPLATE, NodeType.CUSTOM -> GrayMatterColors.CustomizedAccent
-                                NodeType.DICTIONARY -> Color(0xFFC6280B)
+                                NodeType.LOOKUP -> Color(0xFFC6280B)
                                 NodeType.OPINION -> GrayMatterColors.Success
                             }
                             Box(

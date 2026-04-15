@@ -69,7 +69,7 @@ fun FileViewerScreen(
     initialPage: Int? = null,
     onBackClick: () -> Unit,
     onViewInGraph: (String) -> Unit,
-    onNavigateToDictionaryOrigin: (opinionId: String, itemId: String) -> Unit = { _, _ -> },
+    onNavigateToLookupOrigin: (opinionId: String, itemId: String) -> Unit = { _, _ -> },
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null
 ) {
     val resource by viewModel.resource.collectAsState()
@@ -77,7 +77,7 @@ fun FileViewerScreen(
     val bookmarks by viewModel.bookmarks.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val opinions by viewModel.opinions.collectAsState()
-    val globalDictionaryWords by viewModel.globalDictionaryWords.collectAsState()
+    val globalLookupWords by viewModel.globalLookupWords.collectAsState()
     val context = LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     var lastHapticTime by remember { mutableLongStateOf(0L) }
@@ -229,7 +229,7 @@ fun FileViewerScreen(
                                 onTotalPages = { viewModel.updatePageCount(it) },
                                 onChaptersFound = { viewModel.setChapters(it) },
                                 opinions = opinions,
-                                globalDictionaryWords = globalDictionaryWords,
+                                globalLookupWords = globalLookupWords,
                                 onEmptyTap = { offset, width ->
                                     if (offset.x < width * 0.15f) {
                                         viewModel.previousPage()
@@ -263,7 +263,7 @@ fun FileViewerScreen(
                                         }
                                     }
                                 },
-                                onNavigateToDictionaryOrigin = onNavigateToDictionaryOrigin,
+                                onNavigateToLookupOrigin = onNavigateToLookupOrigin,
                                 onRequestPreviousPage = {
                                     viewModel.previousPage()
                                     performThrottledHaptic()

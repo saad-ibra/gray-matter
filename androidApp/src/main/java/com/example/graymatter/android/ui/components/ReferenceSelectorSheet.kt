@@ -235,7 +235,7 @@ fun ReferenceSelectorSheet(
                                     }
                                     is ReferenceSelectorItem.DetailItem -> {
                                         when (item.typeLabel) {
-                                            "Dictionary" -> Icons.Default.Book
+                                            "Lookup" -> Icons.Default.MenuBook
                                             "Annotation" -> Icons.Default.FormatQuote
                                             "Template" -> Icons.Default.DashboardCustomize
                                             "Custom" -> Icons.Default.EditNote
@@ -250,7 +250,7 @@ fun ReferenceSelectorSheet(
                                     is ReferenceSelectorItem.ResourceItem -> GrayMatterColors.Neutral300
                                     is ReferenceSelectorItem.DetailItem -> {
                                         when (item.typeLabel) {
-                                            "Dictionary" -> Color(0xFFC6280B)
+                                            "Lookup" -> Color(0xFFC6280B)
                                             "Annotation" -> GrayMatterColors.Gamboge
                                             "Template", "Custom" -> GrayMatterColors.CustomizedAccent
                                             "Bookmark" -> GrayMatterColors.Jonquil
@@ -299,7 +299,7 @@ fun ReferenceSelectorSheet(
                                         val label = item.typeLabel
                                         if (label != null) {
                                             val labelColor = when (label) {
-                                                "Dictionary" -> Color(0xFFC6280B)
+                                                "Lookup" -> Color(0xFFC6280B)
                                                 "Annotation" -> GrayMatterColors.Gamboge
                                                 "Template", "Custom" -> GrayMatterColors.CustomizedAccent
                                                 "Bookmark" -> GrayMatterColors.Jonquil
