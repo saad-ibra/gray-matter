@@ -100,6 +100,12 @@ class DefaultResourceRepository(
         queries.getLastOpenedProgress().executeAsOneOrNull()?.toReadingProgress()
     }
 
+    override fun getAllReadingProgressStream(): Flow<List<ReadingProgress>> = queries
+        .getAllReadingProgress()
+        .asFlow()
+        .mapToList(dispatcher)
+        .map { entities -> entities.map { it.toReadingProgress() } }
+
     override suspend fun getAllReadingProgress(): List<ReadingProgress> = withContext(dispatcher) {
         queries.getAllReadingProgress().executeAsList().map { it.toReadingProgress() }
     }

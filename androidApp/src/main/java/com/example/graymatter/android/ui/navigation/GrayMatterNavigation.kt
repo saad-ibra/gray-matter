@@ -21,8 +21,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.graymatter.android.ui.addtotopic.AddToTopicScreen
-import com.example.graymatter.android.ui.home.HomeScreen
 import com.example.graymatter.android.ui.resourcedetail.ResourceDetailScreen
+import com.example.graymatter.android.ui.home.HomeScreen
+import com.example.graymatter.android.ui.home.RecentResourcesScreen
 import com.example.graymatter.android.ui.library.LibraryScreen
 import com.example.graymatter.android.ui.newentry.EntryType
 import com.example.graymatter.android.ui.newentry.NewEntryScreen
@@ -165,6 +166,9 @@ fun GrayMatterNavigation(
                                 },
                                 onItemClick = { resourceEntryId ->
                                     navController.navigate(NavigationDestination.ResourceDetail.buildRoute(resourceEntryId))
+                                },
+                                onNavigateToRecentResources = {
+                                    navController.navigate(NavigationDestination.RecentResources.route)
                                 }
                             )
                         }
@@ -573,6 +577,7 @@ fun GrayMatterNavigation(
                 continueReadingProgress = null,
                 onCreateNewEntryClick = {},
                 onNavigateToLibrary = { navController.navigate(NavigationDestination.Home.route) },
+                onNavigateToRecentResources = {},
                 onItemClick = {}
             )
         }
@@ -680,6 +685,19 @@ fun GrayMatterNavigation(
                 viewModel = viewModel,
                 trashViewModel = trashViewModel,
                 onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // Recent Resources Screen
+        composable(
+            route = NavigationDestination.RecentResources.route
+        ) {
+            RecentResourcesScreen(
+                homeViewModel = homeViewModel,
+                onBackClick = { navController.popBackStack() },
+                onItemClick = { resourceEntryId ->
+                    navController.navigate(NavigationDestination.ResourceDetail.buildRoute(resourceEntryId))
+                }
             )
         }
     }

@@ -12,9 +12,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -30,20 +32,41 @@ class HomeViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /**
-     * Stream of the most recent resource entries with full details.
+     * Stream of all resource entries with details, sorted by most recent interaction
+     * (either last opened or first opinion timestamp).
      */
-    val recentResourceEntryDetails: StateFlow<List<ResourceEntryWithDetails>> = resourceEntriesStream
-        .flatMapLatest { entries ->
-            if (entries.isEmpty()) return@flatMapLatest flowOf(emptyList())
+    val allRecentResourceEntryDetails: StateFlow<List<ResourceEntryWithDetails>> = combine(
+        resourceEntriesStream,
+        resourceRepository.getAllReadingProgressStream()
+    ) { entries, progressList ->
+        if (entries.isEmpty()) return@combine emptyList()
 
-            // Take 4 most recent entries
-            val recentEntries = entries.sortedByDescending { it.firstOpinionAt }.take(4)
+        val progressMap = progressList.associateBy { it.resourceId }
 
-            // Combine their individual details streams into one list
-            combine(recentEntries.map { resourceEntryRepository.getResourceEntryWithDetailsStream(it.id) }) { detailsArray ->
-                detailsArray.filterNotNull()
-            }
+        val entriesWithInteractionTime = entries.map { entry ->
+            val progress = progressMap[entry.resourceId]
+            // Use lastOpenedAt if available, otherwise fallback to firstOpinionAt
+            val interactionTime = maxOf(progress?.lastOpenedAt ?: 0L, entry.firstOpinionAt)
+            entry to interactionTime
         }
+
+        val sortedEntries = entriesWithInteractionTime
+            .sortedByDescending { it.second }
+            .map { it.first }
+
+        // Fetch details for all sorted entries
+        // Note: In a large DB, we might want to paginate this, but for now we'll fetch all
+        // to support the "Recent Activity" screen.
+        combine(sortedEntries.map { resourceEntryRepository.getResourceEntryWithDetailsStream(it.id) }) { detailsArray ->
+            detailsArray.filterNotNull()
+        }.first()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /**
+     * Stream of the 4 most recent resource entries.
+     */
+    val recentResourceEntryDetails: StateFlow<List<ResourceEntryWithDetails>> = allRecentResourceEntryDetails
+        .map { it.take(4) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
 

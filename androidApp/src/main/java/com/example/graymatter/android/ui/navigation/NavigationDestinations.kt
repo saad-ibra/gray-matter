@@ -49,4 +49,6 @@ sealed class NavigationDestination(val route: String) {
     object TemplateManagement : NavigationDestination("template_management")
     
     object RecentlyDeleted : NavigationDestination("recently_deleted")
+
+    object RecentResources : NavigationDestination("recent_resources")
 }

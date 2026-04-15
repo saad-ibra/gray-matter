@@ -27,6 +27,7 @@ import com.example.graymatter.domain.ResourceEntry
 import com.example.graymatter.domain.ResourceEntryWithDetails
 import com.example.graymatter.domain.ResourceType
 import com.example.graymatter.android.ui.components.TopicPickerSheet
+import com.example.graymatter.android.ui.components.RecentItemCard
 import kotlinx.coroutines.launch
 
 /**
@@ -41,6 +42,7 @@ fun HomeScreen(
     continueReadingProgress: com.example.graymatter.domain.ReadingProgress?,
     onCreateNewEntryClick: () -> Unit,
     onNavigateToLibrary: () -> Unit,
+    onNavigateToRecentResources: () -> Unit,
     onItemClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -129,13 +131,23 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Recent Resources",
+                        text = "Recent Activity",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp
                         ),
                         color = GrayMatterColors.TextPrimary
                     )
+                    IconButton(
+                        onClick = onNavigateToRecentResources,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = "View All",
+                            tint = GrayMatterColors.Neutral700
+                        )
+                    }
                 }
             }
 
@@ -144,7 +156,8 @@ fun HomeScreen(
                     title = details.resource.title ?: "Untitled Resource",
                     time = formatTime(details.resourceEntry.firstOpinionAt),
                     type = details.resource.type,
-                    onClick = { onItemClick(details.resourceEntry.id) }
+                    onClick = { onItemClick(details.resourceEntry.id) },
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 6.dp)
                 )
             }
         }
@@ -170,74 +183,7 @@ fun HomeScreen(
     }
 }
 
-@Composable
-private fun RecentItemCard(
-    title: String, 
-    time: String, 
-    type: ResourceType,
-    onClick: () -> Unit
-) {
-    val icon = when (type) {
-        ResourceType.WEB_LINK -> Icons.Default.Language
-        ResourceType.MARKDOWN -> Icons.Default.EditNote
-        ResourceType.PDF -> Icons.Default.PictureAsPdf
-        ResourceType.IMAGE -> Icons.Default.Image
-        else -> Icons.Default.Description
-    }
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 6.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(GrayMatterColors.SurfaceDark)
-            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
-            .padding(20.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically, 
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(GrayMatterColors.BackgroundDark)
-                        .border(1.dp, GrayMatterColors.Neutral700, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon, 
-                        contentDescription = null, 
-                        tint = if (type == ResourceType.MARKDOWN) GrayMatterColors.Primary else GrayMatterColors.Neutral500, 
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = title, 
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), 
-                        color = GrayMatterColors.TextPrimary, 
-                        maxLines = 1
-                    )
-                    Text(
-                        text = time, 
-                        style = MaterialTheme.typography.labelSmall, 
-                        color = GrayMatterColors.Neutral600
-                    )
-                }
-            }
-            Icon(Icons.Default.ChevronRight, null, tint = GrayMatterColors.Neutral700, modifier = Modifier.size(20.dp))
-        }
-    }
-}
 
 @Composable
 private fun AddNewEntryCard(

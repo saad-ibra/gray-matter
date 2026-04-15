@@ -71,6 +71,11 @@ interface ResourceRepository {
     suspend fun getLastOpenedProgress(): ReadingProgress?
 
     /**
+     * Get all reading progress entries as a stream.
+     */
+    fun getAllReadingProgressStream(): Flow<List<ReadingProgress>>
+
+    /**
      * Get all reading progress entries.
      */
     suspend fun getAllReadingProgress(): List<ReadingProgress>
