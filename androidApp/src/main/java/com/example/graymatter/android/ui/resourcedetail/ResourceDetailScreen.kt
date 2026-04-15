@@ -1180,7 +1180,7 @@ private fun OpinionTimelineItem(
             Spacer(modifier = Modifier.height(12.dp))
             
             // Opinion Content
-            if (isEditing) {
+            if (isEditing && !isDictionary) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     // Knowledge Connections in Edit Mode
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -1255,28 +1255,6 @@ private fun OpinionTimelineItem(
                                 }
                             )
                         }
-                    } else if (isDictionary) {
-                        OpinionEditor(
-                            text = when {
-                                text.startsWith("[DICT:") -> text.substringAfter("]").trim()
-                                text.startsWith("[DICT]") -> text.substringAfter("]").trim()
-                                else -> text.removePrefix("[DICT]").trim()
-                            },
-                            confidence = confidence,
-                            onTextChange = { 
-                                val prefix = when {
-                                    text.startsWith("[DICT:") -> text.substringBefore("]") + "]"
-                                    else -> "[DICT]"
-                                }
-                                val newFullText = "$prefix $it"
-                                text = newFullText 
-                                onUpdate(newFullText, (confidence * 100).toInt(), opinion.createdAt, selectedReferences)
-                            },
-                            onConfidenceChange = { 
-                                confidence = it 
-                                onUpdate(text, (it * 100).toInt(), opinion.createdAt, selectedReferences)
-                            }
-                        )
                     } else {
                         OpinionEditor(
                             text = if (isCustomTitle) text.substringAfter("]\n").trim() else text,

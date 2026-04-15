@@ -696,18 +696,10 @@ fun TextSelectionOverlay(
                         Text("Copy", color = Color.White)
                     }
                     
-                    val isDictionary = opinions.find { it.id == pId }?.text?.startsWith("[DICT] ") == true
-                    if (!isDictionary) {
-                        TextButton(onClick = {
-                            val chars = persistentHighlights.find { it.first == pId }?.second ?: emptyList()
-                            val text = chars.joinToString("") { it.unicode }
-                            showAnnotationPopupId = null
-                            annotationPopupOffset = null
-                            onActionCompleted("edit", text, pId, null)
-                        }) {
-                            Text("Edit", color = Color.White)
-                        }
-                    } else {
+                    // Check if it's a lookup/dictionary entry (robust prefix check)
+                    val isDictionary = opinions.find { it.id == pId }?.text?.startsWith("[DICT") == true
+                    
+                    if (isDictionary) {
                         TextButton(onClick = {
                             val chars = persistentHighlights.find { it.first == pId }?.second ?: emptyList()
                             val text = chars.joinToString("") { it.unicode }
@@ -716,6 +708,17 @@ fun TextSelectionOverlay(
                             onActionCompleted("dictionary", text, pId, null)
                         }) {
                             Text("Look Up", color = Color(0xFFC6280B))
+                        }
+                    } else {
+                        // For non-dictionary entries (Opinions, Annotations)
+                        TextButton(onClick = {
+                            val chars = persistentHighlights.find { it.first == pId }?.second ?: emptyList()
+                            val text = chars.joinToString("") { it.unicode }
+                            showAnnotationPopupId = null
+                            annotationPopupOffset = null
+                            onActionCompleted("edit", text, pId, null)
+                        }) {
+                            Text("Edit", color = Color.White)
                         }
                     }
 
