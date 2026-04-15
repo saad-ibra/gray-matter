@@ -151,7 +151,7 @@ fun ReferenceSelectorSheet(
                             .fillMaxWidth()
                             .padding(bottom = 12.dp),
                         placeholder = { Text("Search everything...", color = GrayMatterColors.Neutral500) },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = GrayMatterColors.KnowledgeBlue) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = GrayMatterColors.TypeLink) },
                         trailingIcon = if (uiState.searchQuery.isNotEmpty()) {
                             {
                                 IconButton(onClick = { viewModel.search("") }) {
@@ -162,41 +162,14 @@ fun ReferenceSelectorSheet(
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = GrayMatterColors.KnowledgeBlue,
+                            focusedBorderColor = GrayMatterColors.TypeLink,
                             unfocusedBorderColor = GrayMatterColors.Neutral700,
                             focusedContainerColor = GrayMatterColors.SurfaceDark,
                             unfocusedContainerColor = GrayMatterColors.SurfaceDark
                         )
                     )
 
-                    // Tabs
-                    TabRow(
-                        selectedTabIndex = uiState.activeTab.ordinal,
-                        containerColor = Color.Transparent,
-                        contentColor = GrayMatterColors.KnowledgeBlue,
-                        indicator = { tabPositions ->
-                            TabRowDefaults.SecondaryIndicator(
-                                Modifier.tabIndicatorOffset(tabPositions[uiState.activeTab.ordinal]),
-                                color = GrayMatterColors.KnowledgeBlue
-                            )
-                        },
-                        divider = {},
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    ) {
-                        ReferenceTab.values().forEach { tab ->
-                            Tab(
-                                selected = uiState.activeTab == tab,
-                                onClick = { viewModel.setTab(tab) },
-                                text = { 
-                                    Text(
-                                        text = tab.name.lowercase().capitalize(),
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = if (uiState.activeTab == tab) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                }
-                            )
-                        }
-                    }
+
 
                     // Tree/Search List
                     LazyColumn(
@@ -225,7 +198,7 @@ fun ReferenceSelectorSheet(
                                 RadioButton(
                                     selected = item.isChecked,
                                     onClick = { viewModel.toggleCheck(item) },
-                                    colors = RadioButtonDefaults.colors(selectedColor = GrayMatterColors.KnowledgeBlue)
+                                    colors = RadioButtonDefaults.colors(selectedColor = GrayMatterColors.TypeLink)
                                 )
                                 
                                 val icon = when (item) {
@@ -235,7 +208,7 @@ fun ReferenceSelectorSheet(
                                     }
                                     is ReferenceSelectorItem.DetailItem -> {
                                         when (item.typeLabel) {
-                                            "Lookup" -> Icons.Default.MenuBook
+                                            "LOOKUP" -> Icons.Default.MenuBook
                                             "Annotation" -> Icons.Default.FormatQuote
                                             "Template" -> Icons.Default.DashboardCustomize
                                             "Custom" -> Icons.Default.EditNote
@@ -250,7 +223,7 @@ fun ReferenceSelectorSheet(
                                     is ReferenceSelectorItem.ResourceItem -> GrayMatterColors.Neutral300
                                     is ReferenceSelectorItem.DetailItem -> {
                                         when (item.typeLabel) {
-                                            "Lookup" -> GrayMatterColors.TypeLookupMain
+                                            "LOOKUP" -> GrayMatterColors.TypeLookupMain
                                             "Annotation" -> GrayMatterColors.TypeAnnotation
                                             "Template", "Custom" -> GrayMatterColors.TypeTemplate
                                             "Bookmark" -> GrayMatterColors.TypeBookmark
@@ -299,7 +272,7 @@ fun ReferenceSelectorSheet(
                                         val label = item.typeLabel
                                         if (label != null) {
                                             val labelColor = when (label) {
-                                                "Lookup" -> GrayMatterColors.TypeLookupMain
+                                                "LOOKUP" -> GrayMatterColors.TypeLookupMain
                                                 "Annotation" -> GrayMatterColors.TypeAnnotation
                                                 "Template", "Custom" -> GrayMatterColors.TypeTemplate
                                                 "Bookmark" -> GrayMatterColors.TypeBookmark

@@ -708,7 +708,7 @@ fun FileViewerScreen(
                                         }, 
                                         modifier = Modifier.size(24.dp)
                                     ) {
-                                        Icon(Icons.Default.Add, null, tint = GrayMatterColors.KnowledgeBlue, modifier = Modifier.size(20.dp))
+                                        Icon(Icons.Default.Add, null, tint = GrayMatterColors.TypeLink, modifier = Modifier.size(20.dp))
                                     }
                                 }
                                 
@@ -852,7 +852,7 @@ fun FileViewerScreen(
                                     }, 
                                     modifier = Modifier.size(24.dp)
                                 ) {
-                                    Icon(Icons.Default.Add, null, tint = GrayMatterColors.KnowledgeBlue, modifier = Modifier.size(20.dp))
+                                    Icon(Icons.Default.Add, null, tint = GrayMatterColors.TypeLink, modifier = Modifier.size(20.dp))
                                 }
                             }
                             

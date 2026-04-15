@@ -265,12 +265,12 @@ fun MarkdownEditor(
                                 is PreviewSegment.Reference -> {
                                     Surface(
                                         shape = RoundedCornerShape(8.dp),
-                                        color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.12f),
+                                        color = GrayMatterColors.TypeLink.copy(alpha = 0.12f),
                                         modifier = Modifier
                                             .padding(vertical = 4.dp)
                                             .border(
                                                 0.5.dp,
-                                                GrayMatterColors.KnowledgeBlue.copy(alpha = 0.3f),
+                                                GrayMatterColors.TypeLink.copy(alpha = 0.3f),
                                                 RoundedCornerShape(8.dp)
                                             )
                                             .clickable {
@@ -290,14 +290,14 @@ fun MarkdownEditor(
                                             Icon(
                                                 Icons.Default.Link,
                                                 null,
-                                                tint = GrayMatterColors.KnowledgeBlue,
+                                                tint = GrayMatterColors.TypeLink,
                                                 modifier = Modifier.size(14.dp)
                                             )
                                             Spacer(Modifier.width(6.dp))
                                             Text(
                                                 segment.refText,
                                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                                color = GrayMatterColors.KnowledgeBlue
+                                                color = GrayMatterColors.TypeLink
                                             )
                                         }
                                     }
@@ -421,14 +421,14 @@ fun MarkdownEditor(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(Icons.Default.Link, null, tint = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
+                                    Icon(Icons.Default.Link, null, tint = GrayMatterColors.TypeLink.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
                                     liveReferences.forEach { ref ->
                                         Surface(
                                             shape = RoundedCornerShape(8.dp),
-                                            color = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.1f),
-                                            modifier = Modifier.border(0.5.dp, GrayMatterColors.KnowledgeBlue.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                                            color = GrayMatterColors.TypeLink.copy(alpha = 0.1f),
+                                            modifier = Modifier.border(0.5.dp, GrayMatterColors.TypeLink.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
                                         ) {
-                                            Text(ref, style = MaterialTheme.typography.labelSmall, color = GrayMatterColors.KnowledgeBlue, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                                            Text(ref, style = MaterialTheme.typography.labelSmall, color = GrayMatterColors.TypeLink, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                                         }
                                     }
                                 }
@@ -461,7 +461,7 @@ fun MarkdownEditor(
                                         textFieldValue = TextFieldValue(txt.take(cursor) + "[[" + txt.substring(cursor), TextRange(cursor + 2))
                                         onShowReferenceSelector?.invoke()
                                     },
-                                    colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.KnowledgeBlue)
+                                    colors = ButtonDefaults.textButtonColors(contentColor = GrayMatterColors.TypeLink)
                                 ) {
                                     Icon(Icons.Default.Attachment, null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
@@ -522,7 +522,7 @@ class MarkdownVisualTransformation : androidx.compose.ui.text.input.VisualTransf
             Regex("\\[\\[(.*?)]]").findAll(s).forEach { match ->
                 addStyle(
                     style = androidx.compose.ui.text.SpanStyle(
-                        color = GrayMatterColors.KnowledgeBlue,
+                        color = GrayMatterColors.TypeLink,
                         fontWeight = FontWeight.SemiBold
                     ),
                     start = match.range.first,

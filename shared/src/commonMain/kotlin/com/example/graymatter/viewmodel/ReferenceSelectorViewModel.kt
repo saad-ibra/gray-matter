@@ -201,7 +201,7 @@ class ReferenceSelectorViewModel(
                 val resource = resourceEntry?.let { entry -> allResources.find { it.id == entry.resourceId } }
                 val context = resource?.title ?: "Unknown Resource"
                 val typeLabel = when {
-                    op.text.startsWith("[DICT] ") -> "Dictionary"
+                    op.text.startsWith("[DICT") -> "LOOKUP"
                     op.pageNumber != null && op.text.startsWith("> ") -> "Annotation"
                     op.text.startsWith("[TEMPLATE:") -> "Template"
                     op.text.startsWith("[CUSTOM: ") -> "Custom"
@@ -255,7 +255,7 @@ class ReferenceSelectorViewModel(
                     val resourceEntry = allResourceEntries.find { it.id == op.itemId }
                     val resource = resourceEntry?.let { entry -> allResources.find { it.id == entry.resourceId } }
                     val typeLabel = when {
-                        op.text.startsWith("[DICT] ") -> "Dictionary"
+                        op.text.startsWith("[DICT") -> "LOOKUP"
                         op.pageNumber != null && op.text.startsWith("> ") -> "Annotation"
                         op.text.startsWith("[TEMPLATE:") -> "Template"
                         op.text.startsWith("[CUSTOM: ") -> "Custom"
@@ -288,7 +288,7 @@ class ReferenceSelectorViewModel(
             for (op in opinions) {
                 val opChecked = checkedStateMap[op.id] ?: false
                 val typeLabel = when {
-                    op.text.startsWith("[DICT] ") -> "Dictionary"
+                    op.text.startsWith("[DICT") -> "LOOKUP"
                     op.pageNumber != null && op.text.startsWith("> ") -> "Annotation"
                     op.text.startsWith("[TEMPLATE:") -> "Template"
                     op.text.startsWith("[CUSTOM: ") -> "Custom"

@@ -936,8 +936,8 @@ fun KnowledgeGraphScreen(
                                 onClick = { onNodeDoubleTap(node) },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = GrayMatterColors.KnowledgeBlue.copy(alpha = 0.15f),
-                                    contentColor = GrayMatterColors.KnowledgeBlue
+                                    containerColor = GrayMatterColors.TypeLink.copy(alpha = 0.15f),
+                                    contentColor = GrayMatterColors.TypeLink
                                 ),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
