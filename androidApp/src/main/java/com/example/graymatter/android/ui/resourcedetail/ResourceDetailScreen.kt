@@ -1079,15 +1079,16 @@ private fun OpinionTimelineItem(
             ) {
             // Header: Serial Number, Title, Date & Confidence Badge
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-                Row(modifier = Modifier.weight(1f).padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    // Plain serial number
+                Row(modifier = Modifier.weight(1f).padding(end = 12.dp), verticalAlignment = Alignment.Top) {
+                    // Plain serial number aligned with the first line of text
                     Text(
                         text = serialNumber.toString(),
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Bold,
                             fontFamily = com.example.graymatter.android.ui.theme.InterFontFamily
                         ),
-                        color = GrayMatterColors.Neutral500
+                        color = GrayMatterColors.Neutral500,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
                     
                     Spacer(modifier = Modifier.width(12.dp))
@@ -1140,12 +1141,12 @@ private fun OpinionTimelineItem(
                     }
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ConfidenceBadge(score = opinion.confidenceScore)
                     // 3-dot overflow menu
                     val isDictionary = opinion.text.startsWith("[DICT")
                     Box {
-                        IconButton(onClick = { showItemMenu = true }, modifier = Modifier.size(32.dp)) {
+                        IconButton(onClick = { showItemMenu = true }, modifier = Modifier.size(24.dp)) {
                             Icon(Icons.Default.MoreVert, "More options", tint = GrayMatterColors.Neutral500, modifier = Modifier.size(18.dp))
                         }
                         DropdownMenu(
