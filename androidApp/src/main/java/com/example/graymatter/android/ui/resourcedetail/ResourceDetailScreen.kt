@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -24,6 +25,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
@@ -32,6 +34,9 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.layout.onGloballyPositioned
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.domain.ResourceEntryWithDetails
 import com.example.graymatter.domain.Opinion
@@ -198,10 +203,11 @@ fun ResourceDetailScreen(
                     onViewInRelatrixClick = { onViewInGraphClick(resourceEntryDetails.resource.id) }
                 )
 
+                val scrollState = rememberScrollState()
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
+                        .verticalScroll(scrollState)
                         .padding(horizontal = 24.dp)
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -460,6 +466,7 @@ fun ResourceDetailScreen(
                     // Unified Timeline
                     OpinionTimeline(
                         opinions = sortedOpinions,
+                        scrollState = scrollState,
                         resourceId = resourceEntryDetails.resource.id,
                         isEditing = isEditing,
                         focusOpinionId = localFocusOpinionId,
@@ -919,6 +926,7 @@ private fun ResourceCard(
 @Composable
 private fun OpinionTimeline(
     opinions: List<Opinion>,
+    scrollState: ScrollState,
     resourceId: String,
     isEditing: Boolean,
     focusOpinionId: String? = null,
@@ -937,6 +945,7 @@ private fun OpinionTimeline(
         opinions.forEachIndexed { index, opinion ->
             OpinionTimelineItem(
                 opinion = opinion,
+                scrollState = scrollState,
                 serialNumber = opinions.size - index,
                 isFirst = index == 0,
                 isLast = index == opinions.lastIndex,
@@ -965,6 +974,7 @@ private fun OpinionTimeline(
 @Composable
 private fun OpinionTimelineItem(
     opinion: Opinion,
+    scrollState: ScrollState,
     serialNumber: Int,
     isFirst: Boolean,
     isLast: Boolean,
@@ -1004,14 +1014,36 @@ private fun OpinionTimelineItem(
     val backgroundColor = remember { androidx.compose.animation.Animatable(Color.Transparent) }
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
 
-    LaunchedEffect(isFocused, pulseTrigger) {
-        if (isFocused) {
-            bringIntoViewRequester.bringIntoView()
-            val pulseColor = GrayMatterColors.Primary.copy(alpha = 0.25f)
-            backgroundColor.animateTo(pulseColor, tween(150, easing = androidx.compose.animation.core.FastOutSlowInEasing))
-            backgroundColor.animateTo(Color.Transparent, tween(800, easing = androidx.compose.animation.core.LinearOutSlowInEasing))
-        } else {
-            backgroundColor.snapTo(Color.Transparent)
+    val density = LocalDensity.current
+    val configuration = LocalConfiguration.current
+    var itemHeight by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(isFocused, isEditing, pulseTrigger) {
+        if (isFocused || isEditing) {
+            val viewportHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
+            val itemH = itemHeight.toFloat()
+            
+            if (itemH > 0) {
+                // To center an item of height H in viewport V, we bring into view a rect 
+                // that is the size of the viewport and centered on the item.
+                bringIntoViewRequester.bringIntoView(
+                    rect = androidx.compose.ui.geometry.Rect(
+                        left = 0f,
+                        top = itemH / 2 - viewportHeight / 2,
+                        right = 0f,
+                        bottom = itemH / 2 + viewportHeight / 2
+                    )
+                )
+            } else {
+                bringIntoViewRequester.bringIntoView()
+            }
+            
+            // Pulse effect for focus
+            if (isFocused) {
+                val pulseColor = GrayMatterColors.Primary.copy(alpha = 0.25f)
+                backgroundColor.animateTo(pulseColor, tween(150, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+                backgroundColor.animateTo(Color.Transparent, tween(800, easing = androidx.compose.animation.core.LinearOutSlowInEasing))
+            }
         }
     }
 
@@ -1021,6 +1053,7 @@ private fun OpinionTimelineItem(
             .height(IntrinsicSize.Min)
             .background(backgroundColor.value)
             .bringIntoViewRequester(bringIntoViewRequester)
+            .onGloballyPositioned { itemHeight = it.size.height }
     ) {
         // Physical thin line indicator
         Box(
@@ -1285,6 +1318,45 @@ private fun OpinionTimelineItem(
                                 }
                             )
                         }
+                    } else if (isAnnotation) {
+                        // Split into quote and reflection
+                        val parts = text.split("\n\n", limit = 2)
+                        val quote = parts[0].replace(Regex("\\[INDEX:\\d+\\]\\s*"), "").removePrefix("> ").trim()
+                        val initialReflection = if (parts.size > 1) parts[1].trim() else ""
+                        
+                        // Show read-only quote block above the editor
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.White.copy(alpha = 0.05f))
+                        ) {
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                Box(modifier = Modifier.width(4.dp).height(IntrinsicSize.Min).background(GrayMatterColors.TypeAnnotation)) // Orange accent
+                                Text(
+                                    text = "\"$quote\"",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic, lineHeight = 24.sp),
+                                    color = GrayMatterColors.Neutral400,
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
+                        }
+                        
+                        OpinionEditor(
+                            text = initialReflection,
+                            confidence = confidence,
+                            onTextChange = { newVal ->
+                                val currentParts = text.split("\n\n", limit = 2)
+                                val quotePart = currentParts[0]
+                                val newFullText = "$quotePart\n\n$newVal"
+                                text = newFullText
+                                onUpdate(newFullText, (confidence * 100).toInt(), opinion.createdAt, selectedReferences)
+                            },
+                            onConfidenceChange = { 
+                                confidence = it 
+                                onUpdate(text, (it * 100).toInt(), opinion.createdAt, selectedReferences)
+                            }
+                        )
                     } else {
                         OpinionEditor(
                             text = if (isCustomTitle) text.substringAfter("]\n").trim() else text,
