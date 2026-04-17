@@ -250,7 +250,7 @@ fun RecentlyDeletedScreen(
                                 val text = item.text
                                 when {
                                     text.startsWith("[DICT") -> "Lookup"
-                                    text.startsWith("> ") -> "Annotation"
+                                    text.startsWith("> ") || text.startsWith("[INDEX:") -> "Annotation"
                                     text.startsWith("[TEMPLATE:") || text.startsWith("[CUSTOM:") -> "Template/Custom"
                                     item.hasPage -> "Bookmark"
                                     else -> "Opinion"
@@ -275,7 +275,7 @@ fun RecentlyDeletedScreen(
                         val daysRemaining = maxOf(0, (remaining / (24 * 60 * 60 * 1000)).toInt())
                         
                         val snippet = if (item is DeletedItemUiModel.OpinionItem) {
-                            item.text.replace(Regex("\\[(TEMPLATE|CUSTOM|DICT).*?\\]|>"), "").trim().take(50)
+                            item.text.replace(Regex("\\[(TEMPLATE|CUSTOM|DICT|INDEX).*?\\]|>"), "").trim().take(50)
                         } else ""
 
                         Box(

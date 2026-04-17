@@ -164,7 +164,7 @@ fun ResourceDetailScreen(
                 val sortedOpinions = remember(resourceEntryDetails.opinions, selectedFilters) {
                     resourceEntryDetails.opinions.sortedByDescending { it.createdAt }
                         .filter { opinion ->
-                            val isAnnotation = opinion.text.startsWith("> ")
+                            val isAnnotation = opinion.text.startsWith("> ") || opinion.text.startsWith("[INDEX:")
                             val isDictionary = opinion.text.startsWith("[DICT")
                             val isTemplate = opinion.text.startsWith("[TEMPLATE:")
                             val isCustomTitle = opinion.text.startsWith("[CUSTOM: ")
@@ -1094,7 +1094,7 @@ private fun OpinionTimelineItem(
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Column {
-                        val isAnnotation = opinion.text.startsWith("> ")
+                        val isAnnotation = opinion.text.startsWith("> ") || opinion.text.startsWith("[INDEX:")
                         val isDictionary = opinion.text.startsWith("[DICT")
                         val isTemplate = opinion.text.startsWith("[TEMPLATE:")
                         val isCustomTitle = opinion.text.startsWith("[CUSTOM: ")
@@ -1200,7 +1200,7 @@ private fun OpinionTimelineItem(
                 }
             }
             
-            val isAnnotation = text.startsWith("> ")
+            val isAnnotation = text.startsWith("> ") || text.startsWith("[INDEX:")
             val isDictionary = text.startsWith("[DICT")
             val isTemplate = text.startsWith("[TEMPLATE:")
             val isCustomTitle = text.startsWith("[CUSTOM: ")
@@ -1329,7 +1329,7 @@ private fun OpinionTimelineItem(
                 } else if (isAnnotation) {
                     // Split into quote and reflection
                     val parts = text.split("\n\n", limit = 2)
-                    val quote = parts[0].removePrefix("> ").trim()
+                    val quote = parts[0].replace(Regex("\\[INDEX:\\d+\\]\\s*"), "").removePrefix("> ").trim()
                     val reflection = if (parts.size > 1) parts[1].trim() else ""
                     
                     Column(
@@ -1499,7 +1499,7 @@ private fun OpinionTimelineItem(
                     Spacer(modifier = Modifier.height(12.dp))
                     val tagColor = when {
                         opinion.text.startsWith("[DICT") -> GrayMatterColors.TypeLookupMain
-                        opinion.text.startsWith("> ") -> GrayMatterColors.TypeAnnotation
+                        opinion.text.startsWith("> ") || opinion.text.startsWith("[INDEX:") -> GrayMatterColors.TypeAnnotation
                         else -> GrayMatterColors.TypeBookmark
                     }
                     Box(
@@ -1511,7 +1511,7 @@ private fun OpinionTimelineItem(
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Icon(
                                 imageVector = if (opinion.text.startsWith("[DICT")) Icons.Default.Book 
-                                              else if (opinion.text.startsWith("> ")) Icons.Default.FormatQuote 
+                                              else if (opinion.text.startsWith("> ") || opinion.text.startsWith("[INDEX:")) Icons.Default.FormatQuote 
                                               else Icons.Default.Bookmark, 
                                 contentDescription = null, 
                                 tint = tagColor, 

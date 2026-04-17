@@ -243,7 +243,7 @@ fun FileViewerScreen(
                                 },
                                 onTextSelectionAction = { action, text, id, startIndex -> 
                                     when(action) {
-                                        "annotate", "create" -> viewModel.onTextSelected("annotate", text)
+                                        "annotate", "create" -> viewModel.onTextSelected("annotate", text, startIndex = startIndex)
                                         "dictionary" -> {
                                             viewModel.saveDictionaryEntry(text, id, startIndex)
                                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=${Uri.encode(text)}"))
@@ -968,10 +968,10 @@ fun FileViewerScreen(
             val op = editingOpinion!!
             var quote = "Selected Text"
             var userText = op.text
-            if (op.text.startsWith("> ")) {
+            if (op.text.startsWith("> ") || op.text.startsWith("[INDEX:")) {
                 val parts = op.text.split("\n\n")
                 if (parts.size >= 2) {
-                    quote = parts[0].substring(2).trim()
+                    quote = parts[0].replace(Regex("\\[INDEX:\\d+\\]\\s*"), "").removePrefix("> ").trim()
                     userText = parts.drop(1).joinToString("\n\n")
                 }
             }

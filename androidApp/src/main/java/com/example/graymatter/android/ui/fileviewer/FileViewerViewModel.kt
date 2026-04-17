@@ -87,6 +87,8 @@ class FileViewerViewModel(
         private set
     var selectedText by mutableStateOf<String?>(null)
         private set
+    var selectedTextStartIndex by mutableStateOf<Int?>(null)
+        private set
 
     // Add Entry state
     var showAddEntrySheet by mutableStateOf(false)
@@ -328,9 +330,10 @@ class FileViewerViewModel(
         showBookmarkDialog = false
     }
     
-    fun onTextSelected(action: String, text: String, x: Float = 0f, y: Float = 0f) {
+    fun onTextSelected(action: String, text: String, x: Float = 0f, y: Float = 0f, startIndex: Int? = null) {
         if (action == "annotate") {
             selectedText = text
+            selectedTextStartIndex = startIndex
             showSelectionAnnotationDialog = true
         }
     }
@@ -338,6 +341,7 @@ class FileViewerViewModel(
     fun closeSelectionAnnotationDialog() {
         showSelectionAnnotationDialog = false
         selectedText = null
+        selectedTextStartIndex = null
     }
 
     fun closePanels() {
@@ -467,7 +471,9 @@ class FileViewerViewModel(
             
             if (item != null) {
                 // Add the snippet inline as a blockquote
-                val fullOpinion = "> $textSnippet\n\n$opinionText"
+                // Include [INDEX:startIndex] prefix to support accurate highlighting of repeated text
+                val indexPrefix = if (selectedTextStartIndex != null) "[INDEX:${selectedTextStartIndex}] " else ""
+                val fullOpinion = "${indexPrefix}> $textSnippet\n\n$opinionText"
                 val opinionId = generateUuid()
                 
                 val opinion = Opinion(
@@ -485,6 +491,7 @@ class FileViewerViewModel(
             }
             showSelectionAnnotationDialog = false
             selectedText = null
+            selectedTextStartIndex = null
         }
     }
 

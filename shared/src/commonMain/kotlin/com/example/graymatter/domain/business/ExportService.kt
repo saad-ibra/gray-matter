@@ -35,8 +35,9 @@ object ExportService {
             sb.append("### ${index + 1}. Reflection$pageInfo\n")
             
             // Format Annotation vs Regular Opinion
-            if (opinion.text.startsWith("> ")) {
-                sb.append("${opinion.text}\n\n")
+            if (opinion.text.startsWith("> ") || opinion.text.startsWith("[INDEX:")) {
+                val cleanText = opinion.text.replace(Regex("\\[INDEX:\\d+\\]\\s*"), "")
+                sb.append("$cleanText\n\n")
             } else {
                 sb.append("${opinion.text}\n\n")
             }
@@ -78,8 +79,9 @@ object ExportService {
                         val pageInfo = if (opinion.pageNumber != null) " (Page ${opinion.pageNumber + 1})" else ""
                         sb.append("${index + 1}. Reflection$pageInfo\n")
                         
-                        if (opinion.text.startsWith("> ")) {
-                            sb.append("${opinion.text}\n\n")
+                        if (opinion.text.startsWith("> ") || opinion.text.startsWith("[INDEX:")) {
+                            val cleanText = opinion.text.replace(Regex("\\[INDEX:\\d+\\]\\s*"), "")
+                            sb.append("$cleanText\n\n")
                         } else {
                             sb.append("${opinion.text}\n\n")
                         }

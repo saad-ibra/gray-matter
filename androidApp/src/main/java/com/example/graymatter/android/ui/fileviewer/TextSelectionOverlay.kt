@@ -220,43 +220,49 @@ fun TextSelectionOverlay(
     val persistentHighlights = remember(opinions, characters) {
         opinions.mapNotNull { opinion ->
             var quote = ""
-            if (opinion.text.startsWith("> ")) {
-                val parts = opinion.text.split("\n\n")
-                if (parts.isNotEmpty()) {
-                    quote = parts[0].substring(2).trim()
+            var preferredIndex: Int? = null
+
+            when {
+                opinion.text.startsWith("[DICT:") -> {
+                    val match = Regex("\\[DICT:(\\d+)\\] (.*)").find(opinion.text)
+                    if (match != null) {
+                        preferredIndex = try { match.groupValues[1].toInt() } catch (e: Exception) { null }
+                        quote = match.groupValues[2].trim()
+                    }
                 }
-            } else if (opinion.text.startsWith("[DICT] ")) {
-                quote = opinion.text.removePrefix("[DICT] ").trim()
-                val startIndex = pageText.indexOf(quote)
-                if (startIndex != -1) {
-                    val chars = characters.subList(startIndex, minOf(startIndex + quote.length, characters.size))
-                    return@mapNotNull opinion.id to chars
+                opinion.text.startsWith("[DICT] ") -> {
+                    quote = opinion.text.removePrefix("[DICT] ").trim()
                 }
-            } else if (opinion.text.startsWith("[DICT:")) {
-                val match = Regex("\\[DICT:(\\d+)\\] (.*)").find(opinion.text)
-                if (match != null) {
-                    val index = match.groupValues[1].toInt()
-                    quote = match.groupValues[2].trim()
-                    if (index >= 0 && index + quote.length <= characters.size) {
-                        val chars = characters.subList(index, minOf(index + quote.length, characters.size))
-                        val textAtRange = chars.joinToString("") { it.unicode }
-                        if (textAtRange.equals(quote, ignoreCase = true)) {
-                            return@mapNotNull opinion.id to chars
-                        } else {
-                            val fallbackIndex = pageText.indexOf(quote)
-                            if (fallbackIndex != -1) {
-                                val fallbackChars = characters.subList(fallbackIndex, minOf(fallbackIndex + quote.length, characters.size))
-                                return@mapNotNull opinion.id to fallbackChars
-                            }
-                        }
+                opinion.text.startsWith("[INDEX:") -> {
+                    val match = Regex("\\[INDEX:(\\d+)\\] > (.*?)(?:\n\n|$)").find(opinion.text.replace("\r", ""))
+                    if (match != null) {
+                        preferredIndex = try { match.groupValues[1].toInt() } catch (e: Exception) { null }
+                        quote = match.groupValues[2].trim()
+                    }
+                }
+                opinion.text.startsWith("> ") -> {
+                    val parts = opinion.text.split("\n\n")
+                    if (parts.isNotEmpty()) {
+                        quote = parts[0].substring(2).trim()
                     }
                 }
             }
 
-            if (quote.isNotEmpty() && !opinion.text.startsWith("[DICT")) {
+            if (quote.isNotEmpty()) {
+                // 1. Try preferred index first (most accurate for repeated text)
+                if (preferredIndex != null && preferredIndex >= 0 && preferredIndex < characters.size) {
+                    val endIdx = (preferredIndex + quote.length).coerceAtMost(characters.size)
+                    val chars = characters.subList(preferredIndex, endIdx)
+                    val textAtRange = chars.joinToString("") { it.unicode }
+                    if (textAtRange.equals(quote, ignoreCase = true)) {
+                        return@mapNotNull opinion.id to chars
+                    }
+                }
+                
+                // 2. Fallback to searching the whole page (e.g. if document text shifted slightly)
                 val startIndex = pageText.indexOf(quote)
                 if (startIndex != -1) {
-                    val chars = characters.subList(startIndex, minOf(startIndex + quote.length, characters.size))
+                    val chars = characters.subList(startIndex, (startIndex + quote.length).coerceAtMost(characters.size))
                     return@mapNotNull opinion.id to chars
                 }
             }
@@ -502,7 +508,7 @@ fun TextSelectionOverlay(
             for ((id, chars) in persistentHighlights) {
                 val opinion = opinions.find { it.id == id }
                 val isDictionary = opinion?.text?.startsWith("[DICT") == true
-                val isAnnotation = opinion?.text?.startsWith("> ") == true
+                val isAnnotation = opinion?.text?.startsWith("> ") == true || opinion?.text?.startsWith("[INDEX:") == true
                 val color = when {
                     isDictionary -> GrayMatterColors.TypeLookupMain.copy(alpha = 0.4f)
                     isAnnotation -> GrayMatterColors.TypeAnnotation.copy(alpha = 0.4f)
