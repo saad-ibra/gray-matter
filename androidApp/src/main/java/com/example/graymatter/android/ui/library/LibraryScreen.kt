@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.CircleShape
@@ -39,6 +40,7 @@ import androidx.compose.ui.zIndex
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.theme.PlayfairDisplayFontFamily
 import com.example.graymatter.domain.Topic
+import kotlinx.coroutines.delay
 import java.util.TreeMap
 import kotlin.math.roundToInt
 
@@ -82,6 +84,8 @@ fun LibraryScreen(
     val gridPositionInRoot = remember { mutableStateOf(Offset.Zero) }
     val screenPositionInRoot = remember { mutableStateOf(Offset.Zero) }
     val lastSwappedId = remember { mutableStateOf<String?>(null) }
+    val lastSwapTimeMs = remember { mutableStateOf(0L) }
+    val gridViewportHeight = remember { mutableStateOf(0f) }
 
     val baseTopics = if (searchQuery.isBlank()) {
         topics
@@ -92,6 +96,11 @@ fun LibraryScreen(
     // Maintain a local copy of topics for fluid rearrangement during drag
     val filteredTopicsState = remember { mutableStateOf(baseTopics) }
     val filteredTopics = filteredTopicsState.value
+
+    // Pre-compute index map to avoid indexOf during recomposition
+    val topicIndexMap = remember(filteredTopics) {
+        filteredTopics.withIndex().associate { (index, topic) -> topic.id to index }
+    }
 
     // Sync with parent data when not actively dragging (preserves animation state)
     LaunchedEffect(baseTopics) {
@@ -104,6 +113,53 @@ fun LibraryScreen(
     val currentOnUpdateOrder by rememberUpdatedState(onUpdateOrder)
     val currentOnDeleteTopics by rememberUpdatedState(onDeleteTopics)
     val currentBaseTopics by rememberUpdatedState(baseTopics)
+
+    // Snappy spring so displaced items settle before the next swap fires
+    val dragAnimationSpec = remember {
+        spring<IntOffset>(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMedium
+        )
+    }
+
+    val density = LocalDensity.current
+    val autoScrollThresholdPx = remember { with(density) { 80.dp.toPx() } }
+    val autoScrollMaxSpeedPx  = remember { with(density) { 1200.dp.toPx() } } // px/sec at the very edge
+
+    val gridState = rememberLazyGridState()
+
+    // ── Auto-scroll engine: runs ~60 fps while dragging near top/bottom edges ──
+    LaunchedEffect(draggedTopicId.value) {
+        if (draggedTopicId.value == null) return@LaunchedEffect
+
+        while (draggedTopicId.value != null) {
+            val vpHeight = gridViewportHeight.value
+            if (vpHeight <= 0f) { delay(16L); continue }
+
+            val touchY  = touchPointInRoot.value.y
+            val gridTop = gridPositionInRoot.value.y
+            val relY    = touchY - gridTop  // touch position inside the grid viewport
+
+            val scrollPx = when {
+                // Near top edge → scroll UP (negative)
+                relY < autoScrollThresholdPx -> {
+                    val proximity = (1f - (relY / autoScrollThresholdPx).coerceIn(0f, 1f))
+                    -(autoScrollMaxSpeedPx * proximity * proximity) / 60f
+                }
+                // Near bottom edge → scroll DOWN (positive)
+                relY > vpHeight - autoScrollThresholdPx -> {
+                    val proximity = (1f - ((vpHeight - relY) / autoScrollThresholdPx).coerceIn(0f, 1f))
+                    (autoScrollMaxSpeedPx * proximity * proximity) / 60f
+                }
+                else -> 0f
+            }
+
+            if (scrollPx != 0f) {
+                gridState.scrollBy(scrollPx)
+            }
+            delay(16L)
+        }
+    }
 
     Box(modifier = modifier
         .fillMaxSize()
@@ -127,7 +183,7 @@ fun LibraryScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            val gridState = rememberLazyGridState()
+            // gridState is declared above so the auto-scroll LaunchedEffect can access it
             
             Box(modifier = Modifier.weight(1f)) {
                 if (filteredTopics.isEmpty() && searchQuery.isEmpty()) {
@@ -162,18 +218,21 @@ fun LibraryScreen(
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
                         state = gridState,
-                        // Fix: Disable grid scrolling during drag to prevent gesture interruption
+                        // Disable grid scrolling during drag to prevent gesture interruption
                         userScrollEnabled = draggedTopicId.value == null,
                         contentPadding = PaddingValues(start = 24.dp, top = 16.dp, end = 24.dp, bottom = 100.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier
                             .fillMaxSize()
-                            .onGloballyPositioned { gridPositionInRoot.value = it.positionInRoot() }
+                            .onGloballyPositioned { coords ->
+                                gridPositionInRoot.value = coords.positionInRoot()
+                                gridViewportHeight.value = coords.size.height.toFloat()
+                            }
                             .pointerInput(selectionMode) {
                                 if (selectionMode) return@pointerInput
                                 
-                                // Fix: Loop to keep detector alive across multiple gestures (Fixes "One-and-Done")
+                                // Loop to keep detector alive across multiple gestures
                                 while (true) {
                                     detectDragGesturesAfterLongPress(
                                         onDragStart = { offset ->
@@ -197,6 +256,7 @@ fun LibraryScreen(
                                                     touchAnchorOffset.value = rootTouchStart - itemRootTopLeft
                                                     draggedItemSize.value = Size(item.size.width.toFloat(), item.size.height.toFloat())
                                                     lastSwappedId.value = null
+                                                    lastSwapTimeMs.value = 0L
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                 }
                                             }
@@ -211,19 +271,32 @@ fun LibraryScreen(
                                             
                                             if (!isOverTrash.value) {
                                                 // 2. Search for swap target relative to grid
-                                                val relativeTouchPoint = touchPointInRoot.value - gridPositionInRoot.value
+                                                // Use center-point of dragged item for more stable swap detection
+                                                val dragCenterInRoot = touchPointInRoot.value - touchAnchorOffset.value + Offset(
+                                                    draggedItemSize.value.width / 2f,
+                                                    draggedItemSize.value.height / 2f
+                                                )
+                                                val relativeCenterPoint = dragCenterInRoot - gridPositionInRoot.value
                                                 val items = gridState.layoutInfo.visibleItemsInfo
                                                 
+                                                // Use a 60% inner threshold to create a dead-zone and prevent rapid flip-flop swaps
                                                 val target = items.find { item ->
+                                                    val insetX = item.size.width * 0.2f
+                                                    val insetY = item.size.height * 0.2f
                                                     Rect(
-                                                        item.offset.x.toFloat(), 
-                                                        item.offset.y.toFloat(), 
-                                                        (item.offset.x + item.size.width).toFloat(), 
-                                                        (item.offset.y + item.size.height).toFloat()
-                                                    ).contains(relativeTouchPoint)
+                                                        item.offset.x.toFloat() + insetX,
+                                                        item.offset.y.toFloat() + insetY,
+                                                        (item.offset.x + item.size.width).toFloat() - insetX,
+                                                        (item.offset.y + item.size.height).toFloat() - insetY
+                                                    ).contains(relativeCenterPoint)
                                                 }
 
-                                                if (target != null && target.key != currentDraggedId && target.key != lastSwappedId.value) {
+                                                val now = System.nanoTime() / 1_000_000L
+                                                val swapCooldownMs = 200L
+
+                                                if (target != null && target.key != currentDraggedId && target.key != lastSwappedId.value
+                                                    && (now - lastSwapTimeMs.value) >= swapCooldownMs
+                                                ) {
                                                     val currentList = filteredTopicsState.value
                                                     val fromIndex = currentList.indexOfFirst { it.id == currentDraggedId }
                                                     val toIndex = currentList.indexOfFirst { it.id == target.key }
@@ -234,6 +307,7 @@ fun LibraryScreen(
                                                         newList.add(toIndex, itemToMove)
                                                         filteredTopicsState.value = newList
                                                         lastSwappedId.value = target.key as? String
+                                                        lastSwapTimeMs.value = now
                                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                     }
                                                 } else if (target == null) {
@@ -273,7 +347,7 @@ fun LibraryScreen(
                         ) { topic ->
                             Box(
                                 modifier = Modifier
-                                    .animateItemPlacement()
+                                    .animateItemPlacement(dragAnimationSpec)
                                     .graphicsLayer {
                                         // Hide the source item while its replica is being dragged
                                         alpha = if (draggedTopicId.value == topic.id) 0f else 1f
@@ -281,7 +355,7 @@ fun LibraryScreen(
                             ) {
                                 TopicCard(
                                     topic = topic,
-                                    romanNumeral = toRomanNumeral(filteredTopics.indexOf(topic) + 1),
+                                    romanNumeral = toRomanNumeral((topicIndexMap[topic.id] ?: 0) + 1),
                                     isSelected = selectedTopics.contains(topic.id),
                                     onClick = {
                                         if (selectionMode) {
@@ -365,7 +439,6 @@ fun LibraryScreen(
         if (draggedTopicId.value != null) {
             val topic = filteredTopics.find { it.id == draggedTopicId.value }
             if (topic != null) {
-                val density = LocalDensity.current
                 val localOffset = touchPointInRoot.value - screenPositionInRoot.value - touchAnchorOffset.value
                 
                 Box(
@@ -386,7 +459,7 @@ fun LibraryScreen(
                 ) {
                     TopicCard(
                         topic = topic,
-                        romanNumeral = toRomanNumeral(filteredTopics.indexOf(topic) + 1),
+                        romanNumeral = toRomanNumeral((topicIndexMap[topic.id] ?: 0) + 1),
                         isSelected = false,
                         onClick = {},
                         onDelete = {},

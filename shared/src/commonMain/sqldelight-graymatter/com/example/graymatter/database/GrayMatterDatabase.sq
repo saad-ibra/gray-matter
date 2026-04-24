@@ -241,7 +241,7 @@ renameTopic:
 UPDATE topicEntity SET name = ?, updatedAt = ? WHERE id = ?;
 
 updateTopicOrder:
-UPDATE topicEntity SET sortOrder = ?, updatedAt = ? WHERE id = ?;
+UPDATE topicEntity SET sortOrder = ? WHERE id = ?;
 
 deleteTopic:
 DELETE FROM topicEntity WHERE id = ?;

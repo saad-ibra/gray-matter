@@ -110,9 +110,8 @@ class DefaultTopicRepository(
 
     override suspend fun updateTopicOrder(topicIds: List<String>) = withContext(dispatcher) {
         queries.transaction {
-            val now = Clock.System.now().toEpochMilliseconds()
             topicIds.forEachIndexed { index, id ->
-                queries.updateTopicOrder(index.toLong(), now, id)
+                queries.updateTopicOrder(index.toLong(), id)
             }
         }
     }
