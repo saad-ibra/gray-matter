@@ -42,12 +42,6 @@ fun ProfileScreen(
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 SettingsButton(
-                    icon = Icons.Default.MenuBook,
-                    title = "My Lookups",
-                    tint = GrayMatterColors.TypeLookupMain,
-                    onClick = onNavigateToLookups
-                )
-                SettingsButton(
                     icon = Icons.Default.Hub,
                     title = "Relatrix",
                     tint = GrayMatterColors.Primary,
@@ -58,6 +52,12 @@ fun ProfileScreen(
                     title = "Template Management",
                     tint = GrayMatterColors.Primary,
                     onClick = onNavigateToTemplates
+                )
+                SettingsButton(
+                    icon = Icons.Default.Search,
+                    title = "Lookup Management",
+                    tint = GrayMatterColors.Primary,
+                    onClick = onNavigateToLookups
                 )
                 SettingsButton(
                     icon = Icons.Default.Restore,

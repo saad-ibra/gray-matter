@@ -1,30 +1,29 @@
 package com.example.graymatter.android.ui.profile
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.viewmodel.LookupsViewModel
 import com.example.graymatter.domain.Opinion
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LookupsScreen(
     viewModel: LookupsViewModel,
@@ -35,68 +34,63 @@ fun LookupsScreen(
     val activeLookups by viewModel.activeLookups.collectAsState()
     val learntLookups by viewModel.learntLookups.collectAsState()
     
-    var selectedTab by remember { mutableIntStateOf(0) } // 0 = Active, 1 = Learnt
+    var selectedTab by remember { mutableIntStateOf(0) } // 0 = Learning, 1 = Learnt
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(GrayMatterColors.BackgroundDark)
-    ) {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-            
-            // Header
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = GrayMatterColors.TextPrimary
-                    )
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        containerColor = GrayMatterColors.BackgroundDark,
+        topBar = {
+            TopAppBar(
+                title = { Text("Lookup Management", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = GrayMatterColors.BackgroundDark,
+                    titleContentColor = GrayMatterColors.TextPrimary,
+                    navigationIconContentColor = GrayMatterColors.TextPrimary
+                )
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = GrayMatterColors.BackgroundDark,
+                contentColor = GrayMatterColors.Primary,
+                indicator = { tabPositions ->
+                    if (selectedTab < tabPositions.size) {
+                        TabRowDefaults.SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            color = GrayMatterColors.Primary
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "My Lookups",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = GrayMatterColors.TextPrimary
-                )
-            }
-            
-            // Segmented Tab
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 8.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(GrayMatterColors.SurfaceDark)
-                    .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(24.dp)),
             ) {
-                TabItem(
-                    text = "Learning",
-                    isSelected = selectedTab == 0,
+                Tab(
+                    selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    modifier = Modifier.weight(1f)
+                    text = { Text("Learning", fontWeight = FontWeight.SemiBold) }
                 )
-                TabItem(
-                    text = "Learnt",
-                    isSelected = selectedTab == 1,
+                Tab(
+                    selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    modifier = Modifier.weight(1f)
+                    text = { Text("Learnt", fontWeight = FontWeight.SemiBold) }
                 )
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+
             val currentList = if (selectedTab == 0) activeLookups else learntLookups
-            
+
             if (currentList.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text = if (selectedTab == 0) "No active lookups." else "No learnt lookups yet.",
+                        text = if (selectedTab == 0) "No lookups currently learning." else "No learnt lookups yet.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = GrayMatterColors.Neutral500
                     )
@@ -104,15 +98,16 @@ fun LookupsScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 32.dp)
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp)
                 ) {
                     items(currentList, key = { it.id }) { opinion ->
-                        LookupCard(
+                        LookupItem(
                             opinion = opinion,
                             isLearnt = selectedTab == 1,
                             onToggleLearnt = { viewModel.toggleLearntStatus(opinion) },
                             onJumpToOrigin = { onNavigateToOrigin(opinion.itemId, opinion.id) }
                         )
+                        HorizontalDivider(color = GrayMatterColors.Neutral800, modifier = Modifier.padding(horizontal = 16.dp))
                     }
                 }
             }
@@ -121,30 +116,7 @@ fun LookupsScreen(
 }
 
 @Composable
-private fun TabItem(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(24.dp))
-            .background(if (isSelected) GrayMatterColors.Primary.copy(alpha = 0.2f) else Color.Transparent)
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-            color = if (isSelected) GrayMatterColors.Primary else GrayMatterColors.Neutral500
-        )
-    }
-}
-
-@Composable
-private fun LookupCard(
+private fun LookupItem(
     opinion: Opinion,
     isLearnt: Boolean,
     onToggleLearnt: () -> Unit,
@@ -154,60 +126,40 @@ private fun LookupCard(
     val regex = Regex("\\[DICT(:\\d+)?\\]\\s*")
     val cleanWord = opinion.text.replace(regex, "").replace(" #learnt", "").trim()
     
-    val tint = if (isLearnt) GrayMatterColors.Success else GrayMatterColors.TypeLookupMain
+    // Opacity based logic using a standard white text color
+    val alpha = if (isLearnt) 0.5f else 1.0f
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(GrayMatterColors.SurfaceDark)
-            .border(1.dp, tint.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
-            .clickable(onClick = onJumpToOrigin)
-            .padding(20.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = cleanWord,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = tint
-                )
-            }
-            
+    ListItem(
+        headlineContent = { 
+            Text(
+                text = cleanWord, 
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = if (isLearnt) FontWeight.Normal else FontWeight.Bold),
+                color = GrayMatterColors.TextPrimary.copy(alpha = alpha),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            ) 
+        },
+        colors = ListItemDefaults.colors(
+            containerColor = Color.Transparent
+        ),
+        trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = onToggleLearnt,
-                    modifier = Modifier.size(36.dp)
-                        .clip(CircleShape)
-                        .background(if (isLearnt) GrayMatterColors.Neutral800 else tint.copy(alpha = 0.1f))
-                ) {
+                IconButton(onClick = onToggleLearnt) {
                     Icon(
-                        imageVector = if (isLearnt) Icons.Default.Restore else Icons.Default.Check,
-                        contentDescription = if (isLearnt) "Unmark as Learnt" else "Mark as Learnt",
-                        tint = if (isLearnt) GrayMatterColors.Neutral400 else tint,
-                        modifier = Modifier.size(20.dp)
+                        imageVector = if (isLearnt) Icons.Default.Restore else Icons.Default.CheckCircleOutline,
+                        contentDescription = if (isLearnt) "Restore to Learning" else "Mark as Learnt",
+                        tint = GrayMatterColors.TextPrimary.copy(alpha = alpha)
                     )
                 }
-                
-                Spacer(modifier = Modifier.width(8.dp))
-                
-                IconButton(
-                    onClick = onJumpToOrigin,
-                    modifier = Modifier.size(36.dp)
-                ) {
+                IconButton(onClick = onJumpToOrigin) {
                     Icon(
                         imageVector = Icons.Default.OpenInNew,
-                        contentDescription = "Go to origin",
-                        tint = GrayMatterColors.Neutral600,
-                        modifier = Modifier.size(20.dp)
+                        contentDescription = "View Original Context",
+                        tint = GrayMatterColors.TextPrimary.copy(alpha = alpha)
                     )
                 }
             }
-        }
-    }
+        },
+        modifier = Modifier.clickable(onClick = onJumpToOrigin)
+    )
 }
