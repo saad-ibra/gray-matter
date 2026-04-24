@@ -11,6 +11,8 @@ sealed class NavigationDestination(val route: String) {
     
     object Profile : NavigationDestination("profile")
     
+    object Lookups : NavigationDestination("lookups")
+    
     object NewEntry : NavigationDestination("new_entry")
     
     object ResourceDetail : NavigationDestination("resource_detail/{resourceEntryId}?focusOpinionId={focusOpinionId}") {

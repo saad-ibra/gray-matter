@@ -23,6 +23,7 @@ fun ProfileScreen(
     onNavigateToGraph: () -> Unit,
     onNavigateToTemplates: () -> Unit,
     onNavigateToRecentlyDeleted: () -> Unit,
+    onNavigateToLookups: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -41,18 +42,27 @@ fun ProfileScreen(
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 SettingsButton(
+                    icon = Icons.Default.MenuBook,
+                    title = "My Lookups",
+                    tint = GrayMatterColors.TypeLookupMain,
+                    onClick = onNavigateToLookups
+                )
+                SettingsButton(
                     icon = Icons.Default.Hub,
                     title = "Relatrix",
+                    tint = GrayMatterColors.Primary,
                     onClick = onNavigateToGraph
                 )
                 SettingsButton(
                     icon = Icons.AutoMirrored.Filled.ListAlt,
                     title = "Template Management",
+                    tint = GrayMatterColors.Primary,
                     onClick = onNavigateToTemplates
                 )
                 SettingsButton(
                     icon = Icons.Default.Restore,
                     title = "Recently Deleted",
+                    tint = GrayMatterColors.Primary,
                     onClick = onNavigateToRecentlyDeleted
                 )
             }
@@ -61,7 +71,7 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun SettingsButton(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit) {
+private fun SettingsButton(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, tint: androidx.compose.ui.graphics.Color = GrayMatterColors.Primary, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -78,7 +88,7 @@ private fun SettingsButton(icon: androidx.compose.ui.graphics.vector.ImageVector
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(24.dp))
+                Icon(icon, null, tint = tint, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
                     text = title,

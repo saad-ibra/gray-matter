@@ -5,6 +5,7 @@ import com.example.graymatter.android.ui.viewmodel.TrashViewModel
 import com.example.graymatter.android.ui.fileviewer.FileViewerViewModel
 import com.example.graymatter.android.ui.graph.KnowledgeGraphViewModel
 import com.example.graymatter.viewmodel.ReferenceSelectorViewModel
+import com.example.graymatter.android.ui.viewmodel.LookupsViewModel
 import com.example.graymatter.data.local.DatabaseDriverFactory
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.android.ext.koin.androidContext
@@ -29,6 +30,8 @@ val androidViewModelModule = module {
     viewModel { FileViewerViewModel(get(), get(), get(), get(), get()) }
     
     viewModel { KnowledgeGraphViewModel(get(), get(), get(), get(), get()) }
+    
+    viewModel { LookupsViewModel(get()) }
     
     factory {
         ReferenceSelectorViewModel(get(), get(), get(), get(), null, get())

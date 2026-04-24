@@ -169,6 +169,10 @@ fun ResourceDetailScreen(
                 val sortedOpinions = remember(resourceEntryDetails.opinions, selectedFilters) {
                     resourceEntryDetails.opinions.sortedByDescending { it.createdAt }
                         .filter { opinion ->
+                            if (opinion.text.contains(" #learnt")) {
+                                return@filter false
+                            }
+                            
                             val isAnnotation = opinion.text.startsWith("> ") || opinion.text.startsWith("[INDEX:")
                             val isDictionary = opinion.text.startsWith("[DICT")
                             val isTemplate = opinion.text.startsWith("[TEMPLATE:")
@@ -1196,6 +1200,20 @@ private fun OpinionTimelineItem(
                                 },
                                 onClick = { showItemMenu = false; onViewInGraph(opinion.id) }
                             )
+                            if (isDictionary) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Icon(Icons.Default.LibraryAddCheck, null, tint = GrayMatterColors.TypeLookupMain, modifier = Modifier.size(18.dp))
+                                            Text("Mark as Learnt", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                        }
+                                    },
+                                    onClick = { 
+                                        showItemMenu = false; 
+                                        onUpdate(opinion.text + " #learnt", opinion.confidenceScore, opinion.createdAt, emptyList())
+                                    }
+                                )
+                            }
                             if (!isDictionary) {
                                 DropdownMenuItem(
                                     text = {

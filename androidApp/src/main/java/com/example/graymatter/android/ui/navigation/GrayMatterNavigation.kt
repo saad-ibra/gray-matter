@@ -213,6 +213,9 @@ fun GrayMatterNavigation(
                                 },
                                 onNavigateToRecentlyDeleted = {
                                     navController.navigate(NavigationDestination.RecentlyDeleted.route)
+                                },
+                                onNavigateToLookups = {
+                                    navController.navigate(NavigationDestination.Lookups.route)
                                 }
                             )
                         }
@@ -685,6 +688,20 @@ fun GrayMatterNavigation(
                 viewModel = viewModel,
                 trashViewModel = trashViewModel,
                 onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // Lookups Screen
+        composable(
+            route = NavigationDestination.Lookups.route
+        ) {
+            val lookupsViewModel: com.example.graymatter.android.ui.viewmodel.LookupsViewModel = koinViewModel()
+            com.example.graymatter.android.ui.profile.LookupsScreen(
+                viewModel = lookupsViewModel,
+                onBackClick = { navController.popBackStack() },
+                onNavigateToOrigin = { itemId, opinionId ->
+                    navController.navigate(NavigationDestination.ResourceDetail.buildRoute(itemId, opinionId))
+                }
             )
         }
 
