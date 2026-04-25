@@ -379,7 +379,7 @@ class ForceSimulator(
     private val theta = 0.8f
 
     // ── Edge index for O(1) lookups ──
-    private val nodeIndex = HashMap<String, Int>(64)
+    internal val nodeIndex = HashMap<String, Int>(64)
 
     // ── Kinetic energy cutoff ──
     var isSettled: Boolean = false
@@ -387,11 +387,13 @@ class ForceSimulator(
     private var settledFrameCount = 0
     private val settleThreshold = 0.5f
 
+    @Synchronized
     fun wake() {
         isSettled = false
         settledFrameCount = 0
     }
 
+    @Synchronized
     fun clear() {
         nodes.clear()
         edges.clear()
@@ -399,6 +401,7 @@ class ForceSimulator(
         count = 0
     }
 
+    @Synchronized
     fun addNode(node: GraphNode) {
         if (node.x == 0f && node.y == 0f && node.z == 0f) {
             node.x = (Math.random() * width).toFloat()
@@ -417,6 +420,7 @@ class ForceSimulator(
     }
 
     /** Rebuild internal SoA arrays from the current [nodes] list. Call after setup. */
+    @Synchronized
     fun rebuildArrays() {
         count = nodes.size
         if (px.size < count) {
@@ -447,13 +451,16 @@ class ForceSimulator(
 
     /** Write SoA positions back into the GraphNode objects (for external reads). */
     private fun syncBack() {
-        for (i in 0 until count) {
-            val n = nodes[i]
-            n.x = px[i]; n.y = py[i]; n.z = pz[i]
-            n.vx = vxArr[i]; n.vy = vyArr[i]; n.vz = vzArr[i]
+        val n = nodes.size
+        val c = minOf(count, n)
+        for (i in 0 until c) {
+            val node = nodes[i]
+            node.x = px[i]; node.y = py[i]; node.z = pz[i]
+            node.vx = vxArr[i]; node.vy = vyArr[i]; node.vz = vzArr[i]
         }
     }
 
+    @Synchronized
     fun tick(speedMultiplier: Float = 1.0f) {
         if (count == 0) {
             if (nodes.isNotEmpty()) rebuildArrays()

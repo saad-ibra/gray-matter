@@ -149,7 +149,7 @@ fun KnowledgeGraphScreen(
     var canvasSize by remember { mutableStateOf(Size.Zero) }
 
     // Physics settling flag for cinematic zoom timing
-    var physicsSettled by remember { mutableStateOf(initialSelectedNodeId == null) }
+    var physicsSettled by remember { mutableStateOf(false) }
 
     // Cinematic zoom tracking
     var wasSelected by remember { mutableStateOf(false) }
@@ -183,12 +183,13 @@ fun KnowledgeGraphScreen(
     val hitGrid = remember { SpatialHashGrid(cellSize = 80f) }
 
     // ── Projection cache arrays (grown as needed, never shrunk) ──
-    var projectedX by remember { mutableStateOf(FloatArray(0)) }
-    var projectedY by remember { mutableStateOf(FloatArray(0)) }
-    var projectedZ by remember { mutableStateOf(FloatArray(0)) }
-    var screenX by remember { mutableStateOf(FloatArray(0)) }
-    var screenY by remember { mutableStateOf(FloatArray(0)) }
-    var sortedIndices by remember { mutableStateOf(IntArray(0)) }
+    // Using remember (not State) to avoid triggering recomposition from Canvas draws
+    val projectedXRef = remember { mutableListOf(FloatArray(0)) }
+    val projectedYRef = remember { mutableListOf(FloatArray(0)) }
+    val projectedZRef = remember { mutableListOf(FloatArray(0)) }
+    val screenXRef = remember { mutableListOf(FloatArray(0)) }
+    val screenYRef = remember { mutableListOf(FloatArray(0)) }
+    val sortedIndicesRef = remember { mutableListOf(IntArray(0)) }
 
     LaunchedEffect(Unit) {
         if (graphState.nodes.isEmpty()) {
@@ -198,6 +199,7 @@ fun KnowledgeGraphScreen(
 
     LaunchedEffect(graphState.nodes, graphState.edges) {
         if (graphState.nodes.isNotEmpty()) {
+            physicsSettled = false
             simulator.clear()
             // Clone nodes to allow filter hiding without losing physics state if we wanted, 
             // but for simplicity we simulate all and just don't draw hidden ones.
@@ -206,28 +208,28 @@ fun KnowledgeGraphScreen(
                 it.y = (Math.random() * 800f).toFloat()
                 simulator.addNode(it)
             }
+            
+            // Build SoA arrays first for O(1) node index lookup
+            simulator.rebuildArrays()
+            
+            // Use the nodeIndex for O(1) edge setup instead of O(N) find
             graphState.edges.forEach { edge ->
-                simulator.nodes.find { it.id == edge.source.id }?.let { src ->
-                    simulator.nodes.find { it.id == edge.target.id }?.let { tgt ->
-                        simulator.edges.add(GraphEdge(edge.id, src, tgt, edge.weight))
-                    }
+                val srcIdx = simulator.nodeIndex[edge.source.id]
+                val tgtIdx = simulator.nodeIndex[edge.target.id]
+                if (srcIdx != null && tgtIdx != null) {
+                    simulator.edges.add(GraphEdge(edge.id, simulator.nodes[srcIdx], simulator.nodes[tgtIdx], edge.weight))
                 }
             }
             
-            // Build SoA arrays for optimized tick()
-            simulator.rebuildArrays()
-            
-            // Pre-warm physics on background thread (no longer blocks main thread)
+            // Pre-warm physics on background thread (safe: @Synchronized prevents races)
             withContext(Dispatchers.Default) {
                 repeat(150) { simulator.tick(speedMultiplier) }
             }
             physicsSettled = true
             
-            // Render loop — physics on background thread, redraw on main
+            // Render loop — tick on Main thread (eliminates all concurrent-access crashes)
             while (isActive) {
-                withContext(Dispatchers.Default) {
-                    simulator.tick(speedMultiplier * 0.5f) // Slower tick after stable to reduce jitter
-                }
+                simulator.tick(speedMultiplier * 0.5f) // Runs on Main, no race with Canvas
                 ticks++ // force redraw
                 delay(if (simulator.isSettled) 200L else 16L) // Adaptive: 60fps active, 5fps settled
             }
@@ -469,12 +471,15 @@ fun KnowledgeGraphScreen(
                             onTap = { tapOffset ->
                                 // O(1) hit-test via spatial hash grid
                                 val candidates = hitGrid.query(tapOffset.x, tapOffset.y)
+                                val sxArr = screenXRef[0]
+                                val syArr = screenYRef[0]
                                 var hitNode: GraphNode? = null
                                 for (ci in candidates) {
                                     if (ci >= simulator.nodes.size) continue
                                     val node = simulator.nodes[ci]
-                                    val sx = screenX.getOrElse(ci) { 0f }
-                                    val sy = screenY.getOrElse(ci) { 0f }
+                                    if (ci >= sxArr.size) continue
+                                    val sx = sxArr[ci]
+                                    val sy = syArr[ci]
                                     val dx = sx - tapOffset.x
                                     val dy = sy - tapOffset.y
                                     if (sqrt(dx * dx + dy * dy) <= node.radius * scale + 20f) {
@@ -486,12 +491,15 @@ fun KnowledgeGraphScreen(
                             onDoubleTap = { tapOffset ->
                                 // O(1) hit-test via spatial hash grid
                                 val candidates = hitGrid.query(tapOffset.x, tapOffset.y)
+                                val sxArr = screenXRef[0]
+                                val syArr = screenYRef[0]
                                 var hitNode: GraphNode? = null
                                 for (ci in candidates) {
                                     if (ci >= simulator.nodes.size) continue
                                     val node = simulator.nodes[ci]
-                                    val sx = screenX.getOrElse(ci) { 0f }
-                                    val sy = screenY.getOrElse(ci) { 0f }
+                                    if (ci >= sxArr.size) continue
+                                    val sx = sxArr[ci]
+                                    val sy = syArr[ci]
                                     val dx = sx - tapOffset.x
                                     val dy = sy - tapOffset.y
                                     if (sqrt(dx * dx + dy * dy) <= node.radius * scale + 20f) {
@@ -506,9 +514,15 @@ fun KnowledgeGraphScreen(
                 // Access 'ticks' to observe state changes
                 val currentTicks = ticks
                 val nodeCount = simulator.nodes.size
-                if (nodeCount == 0) return@Canvas
+                if (nodeCount == 0 || !physicsSettled) return@Canvas
 
-                // ── Grow projection cache arrays if needed ──
+                // ── Grow projection cache arrays if needed (ref-based, no State write) ──
+                var projectedX = projectedXRef[0]
+                var projectedY = projectedYRef[0]
+                var projectedZ = projectedZRef[0]
+                var screenX = screenXRef[0]
+                var screenY = screenYRef[0]
+                var sortedIndices = sortedIndicesRef[0]
                 if (projectedX.size < nodeCount) {
                     projectedX = FloatArray(nodeCount)
                     projectedY = FloatArray(nodeCount)
@@ -516,6 +530,12 @@ fun KnowledgeGraphScreen(
                     screenX = FloatArray(nodeCount)
                     screenY = FloatArray(nodeCount)
                     sortedIndices = IntArray(nodeCount)
+                    projectedXRef[0] = projectedX
+                    projectedYRef[0] = projectedY
+                    projectedZRef[0] = projectedZ
+                    screenXRef[0] = screenX
+                    screenYRef[0] = screenY
+                    sortedIndicesRef[0] = sortedIndices
                 }
 
                 // ── Pre-compute visibility bitmask (replaces 4 when-blocks) ──
@@ -543,6 +563,7 @@ fun KnowledgeGraphScreen(
 
                 // ── Project all nodes ONCE per frame (cached) ──
                 for (i in 0 until nodeCount) {
+                    if (i >= simulator.nodes.size) break // defensive
                     val node = simulator.nodes[i]
                     val rx = node.x - halfW
                     val ry = node.y - halfH
@@ -562,6 +583,7 @@ fun KnowledgeGraphScreen(
                 // ── Build spatial hash grid for hit-testing ──
                 hitGrid.clear()
                 for (i in 0 until nodeCount) {
+                    if (i >= simulator.nodes.size) break
                     hitGrid.insert(i, screenX[i], screenY[i], simulator.nodes[i].radius * scale + 20f)
                 }
 
@@ -586,11 +608,11 @@ fun KnowledgeGraphScreen(
 
                 val frustumMargin = 150f
 
-                // ── Draw Edges ──
+                // ── Draw Edges (using nodeIndex for O(1) lookup, not indexOf) ──
                 simulator.edges.forEach { edge ->
-                    val srcIdx = simulator.nodes.indexOf(edge.source)
-                    val tgtIdx = simulator.nodes.indexOf(edge.target)
-                    if (srcIdx < 0 || tgtIdx < 0) return@forEach
+                    val srcIdx = simulator.nodeIndex[edge.source.id] ?: return@forEach
+                    val tgtIdx = simulator.nodeIndex[edge.target.id] ?: return@forEach
+                    if (srcIdx >= nodeCount || tgtIdx >= nodeCount) return@forEach
 
                     val srcVisible = visibilityByType[edge.source.type.ordinal]
                     val tgtVisible = visibilityByType[edge.target.type.ordinal]
