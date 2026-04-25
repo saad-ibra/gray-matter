@@ -43,7 +43,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -66,9 +65,49 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlin.math.sqrt
+import kotlinx.coroutines.withContext
+
+// ─── Pre-computed static geometry (allocated once, never recreated) ────────────
+
+private val ICOSAHEDRON_FACES = arrayOf(
+    intArrayOf(0, 8, 4), intArrayOf(0, 4, 6), intArrayOf(0, 6, 9), intArrayOf(0, 9, 2), intArrayOf(0, 2, 8),
+    intArrayOf(8, 10, 4), intArrayOf(4, 1, 6), intArrayOf(6, 11, 9), intArrayOf(9, 7, 2), intArrayOf(2, 5, 8),
+    intArrayOf(4, 10, 1), intArrayOf(6, 1, 11), intArrayOf(9, 11, 7), intArrayOf(2, 7, 5), intArrayOf(8, 5, 10),
+    intArrayOf(3, 10, 5), intArrayOf(3, 5, 7), intArrayOf(3, 7, 11), intArrayOf(3, 11, 1), intArrayOf(3, 1, 10)
+)
+
+private fun buildIcosahedronVertices(r: Float): Array<FloatArray> {
+    val phi = (1f + sqrt(5f)) / 2f
+    val length = sqrt(1f + phi * phi)
+    val vA = r / length
+    val vB = r * phi / length
+    return arrayOf(
+        floatArrayOf(0f, vA, vB), floatArrayOf(0f, vA, -vB),
+        floatArrayOf(0f, -vA, vB), floatArrayOf(0f, -vA, -vB),
+        floatArrayOf(vA, vB, 0f), floatArrayOf(vA, -vB, 0f),
+        floatArrayOf(-vA, vB, 0f), floatArrayOf(-vA, -vB, 0f),
+        floatArrayOf(vB, 0f, vA), floatArrayOf(-vB, 0f, vA),
+        floatArrayOf(vB, 0f, -vA), floatArrayOf(-vB, 0f, -vA)
+    )
+}
+
+private val TETRAHEDRON_FACES = arrayOf(
+    intArrayOf(0, 1, 2), intArrayOf(0, 2, 3), intArrayOf(0, 3, 1), intArrayOf(1, 3, 2)
+)
+
+private fun buildTetrahedronVertices(r: Float): Array<FloatArray> {
+    val sq23 = sqrt(2f / 3f)
+    val sq3 = sqrt(3f)
+    return arrayOf(
+        floatArrayOf(0f, -r, 0f),
+        floatArrayOf(-r * sq23, r / 3f, -r / sq3),
+        floatArrayOf(r * sq23, r / 3f, -r / sq3),
+        floatArrayOf(0f, r / 3f, r * 2f / sq3)
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalTextApi::class)
 @Composable
@@ -120,6 +159,37 @@ fun KnowledgeGraphScreen(
     val haptic = LocalHapticFeedback.current
     var lastVolumeChangeTime by remember { mutableLongStateOf(0L) }
 
+    // ── Pre-cached Color instances (avoids Color.copy() allocations per frame) ──
+    val nodeColorMap = remember {
+        mapOf(
+            NodeType.TOPIC to Color.White,
+            NodeType.RESOURCE to Color.White,
+            NodeType.ANNOTATION to GrayMatterColors.TypeAnnotation,
+            NodeType.BOOKMARK to GrayMatterColors.TypeBookmark,
+            NodeType.TEMPLATE to GrayMatterColors.TypeTemplate,
+            NodeType.CUSTOM to GrayMatterColors.TypeTemplate,
+            NodeType.LOOKUP to GrayMatterColors.TypeLookupMain,
+            NodeType.OPINION to GrayMatterColors.TypeOpinion
+        )
+    }
+    val nodeColorAlpha03 = remember { nodeColorMap.mapValues { it.value.copy(alpha = 0.3f) } }
+    val nodeColorAlpha06 = remember { nodeColorMap.mapValues { it.value.copy(alpha = 0.6f) } }
+    val nodeColorAlpha08 = remember { nodeColorMap.mapValues { it.value.copy(alpha = 0.8f) } }
+
+    // ── Reusable Path object (zero allocations per frame) ──
+    val reusablePath = remember { androidx.compose.ui.graphics.Path() }
+
+    // ── Spatial hash for O(1) tap hit-testing ──
+    val hitGrid = remember { SpatialHashGrid(cellSize = 80f) }
+
+    // ── Projection cache arrays (grown as needed, never shrunk) ──
+    var projectedX by remember { mutableStateOf(FloatArray(0)) }
+    var projectedY by remember { mutableStateOf(FloatArray(0)) }
+    var projectedZ by remember { mutableStateOf(FloatArray(0)) }
+    var screenX by remember { mutableStateOf(FloatArray(0)) }
+    var screenY by remember { mutableStateOf(FloatArray(0)) }
+    var sortedIndices by remember { mutableStateOf(IntArray(0)) }
+
     LaunchedEffect(Unit) {
         if (graphState.nodes.isEmpty()) {
             viewModel.loadGraphData()
@@ -144,15 +214,22 @@ fun KnowledgeGraphScreen(
                 }
             }
             
-            // Pre-warm physics so graph is stable before first render
-            repeat(150) { simulator.tick(speedMultiplier) }
+            // Build SoA arrays for optimized tick()
+            simulator.rebuildArrays()
+            
+            // Pre-warm physics on background thread (no longer blocks main thread)
+            withContext(Dispatchers.Default) {
+                repeat(150) { simulator.tick(speedMultiplier) }
+            }
             physicsSettled = true
             
-            // Render loop
+            // Render loop — physics on background thread, redraw on main
             while (isActive) {
-                simulator.tick(speedMultiplier * 0.5f) // Slower tick after stable to reduce jitter
+                withContext(Dispatchers.Default) {
+                    simulator.tick(speedMultiplier * 0.5f) // Slower tick after stable to reduce jitter
+                }
                 ticks++ // force redraw
-                delay(16) // ~60fps
+                delay(if (simulator.isSettled) 200L else 16L) // Adaptive: 60fps active, 5fps settled
             }
         }
     }
@@ -382,356 +459,299 @@ fun KnowledgeGraphScreen(
                             // Spin the 3D space with horizontal/vertical panning
                             globalRotY += pan.x * 0.01f
                             globalRotX += pan.y * 0.01f
+
+                            // Wake simulation on user interaction
+                            simulator.wake()
                         }
                     }
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onTap = { tapOffset ->
-                                // Find clicked node (taking scale and offset into account)
-                                val cosX = kotlin.math.cos(globalRotX)
-                                val sinX = kotlin.math.sin(globalRotX)
-                                val cosY = kotlin.math.cos(globalRotY)
-                                val sinY = kotlin.math.sin(globalRotY)
-                                
-                                val hitNode = simulator.nodes.findLast { node ->
-                                    val rx = (node.x - simulator.width / 2f)
-                                    val ry = (node.y - simulator.height / 2f)
-                                    val rz = node.z
-                                    
-                                    val x1 = rx * cosY - rz * sinY
-                                    val z1 = rz * cosY + rx * sinY
-                                    val y1 = ry
-                                    
-                                    val y2 = y1 * cosX - z1 * sinX
-                                    val z2 = z1 * cosX + y1 * sinX
-                                    
-                                    val zScale = (z2 + 400f).coerceIn(100f, 800f) / 400f
-                                    val screenX = x1 * scale * zScale + simulator.width / 2f * scale + offset.x
-                                    val screenY = y2 * scale * zScale + simulator.height / 2f * scale + offset.y
-                                    
-                                    val dx = screenX - tapOffset.x
-                                    val dy = screenY - tapOffset.y
-                                    sqrt(dx * dx + dy * dy) <= node.radius * scale + 20f
+                                // O(1) hit-test via spatial hash grid
+                                val candidates = hitGrid.query(tapOffset.x, tapOffset.y)
+                                var hitNode: GraphNode? = null
+                                for (ci in candidates) {
+                                    if (ci >= simulator.nodes.size) continue
+                                    val node = simulator.nodes[ci]
+                                    val sx = screenX.getOrElse(ci) { 0f }
+                                    val sy = screenY.getOrElse(ci) { 0f }
+                                    val dx = sx - tapOffset.x
+                                    val dy = sy - tapOffset.y
+                                    if (sqrt(dx * dx + dy * dy) <= node.radius * scale + 20f) {
+                                        hitNode = node // keep last (topmost in Z-order)
+                                    }
                                 }
                                 selectedNode = hitNode
                             },
                             onDoubleTap = { tapOffset ->
-                                val cosX = kotlin.math.cos(globalRotX)
-                                val sinX = kotlin.math.sin(globalRotX)
-                                val cosY = kotlin.math.cos(globalRotY)
-                                val sinY = kotlin.math.sin(globalRotY)
-                                
-                                val hitNode = simulator.nodes.findLast { node ->
-                                    val rx = (node.x - simulator.width / 2f)
-                                    val ry = (node.y - simulator.height / 2f)
-                                    val rz = node.z
-                                    
-                                    val x1 = rx * cosY - rz * sinY
-                                    val z1 = rz * cosY + rx * sinY
-                                    val y1 = ry
-                                    
-                                    val y2 = y1 * cosX - z1 * sinX
-                                    val z2 = z1 * cosX + y1 * sinX
-                                    
-                                    val zScale = (z2 + 400f).coerceIn(100f, 800f) / 400f
-                                    val screenX = x1 * scale * zScale + simulator.width / 2f * scale + offset.x
-                                    val screenY = y2 * scale * zScale + simulator.height / 2f * scale + offset.y
-                                    
-                                    val dx = screenX - tapOffset.x
-                                    val dy = screenY - tapOffset.y
-                                    sqrt(dx * dx + dy * dy) <= node.radius * scale + 20f
+                                // O(1) hit-test via spatial hash grid
+                                val candidates = hitGrid.query(tapOffset.x, tapOffset.y)
+                                var hitNode: GraphNode? = null
+                                for (ci in candidates) {
+                                    if (ci >= simulator.nodes.size) continue
+                                    val node = simulator.nodes[ci]
+                                    val sx = screenX.getOrElse(ci) { 0f }
+                                    val sy = screenY.getOrElse(ci) { 0f }
+                                    val dx = sx - tapOffset.x
+                                    val dy = sy - tapOffset.y
+                                    if (sqrt(dx * dx + dy * dy) <= node.radius * scale + 20f) {
+                                        hitNode = node
+                                    }
                                 }
                                 hitNode?.let { onNodeDoubleTap(it) }
                             }
                         )
                     }
             ) {
-                // Pre-calculate rotation matrices once per draw frame
+                // Access 'ticks' to observe state changes
+                val currentTicks = ticks
+                val nodeCount = simulator.nodes.size
+                if (nodeCount == 0) return@Canvas
+
+                // ── Grow projection cache arrays if needed ──
+                if (projectedX.size < nodeCount) {
+                    projectedX = FloatArray(nodeCount)
+                    projectedY = FloatArray(nodeCount)
+                    projectedZ = FloatArray(nodeCount)
+                    screenX = FloatArray(nodeCount)
+                    screenY = FloatArray(nodeCount)
+                    sortedIndices = IntArray(nodeCount)
+                }
+
+                // ── Pre-compute visibility bitmask (replaces 4 when-blocks) ──
+                val visibilityByType = BooleanArray(NodeType.entries.size)
+                visibilityByType[NodeType.TOPIC.ordinal] = showTopics
+                visibilityByType[NodeType.RESOURCE.ordinal] = showResources
+                visibilityByType[NodeType.ANNOTATION.ordinal] = showAnnotations
+                visibilityByType[NodeType.BOOKMARK.ordinal] = showBookmarks
+                visibilityByType[NodeType.TEMPLATE.ordinal] = showTemplates
+                visibilityByType[NodeType.CUSTOM.ordinal] = showCustom
+                visibilityByType[NodeType.LOOKUP.ordinal] = showLookup
+                visibilityByType[NodeType.OPINION.ordinal] = showOpinions
+
+                // ── Pre-compute rotation matrix once per frame ──
                 val cosX = kotlin.math.cos(globalRotX)
                 val sinX = kotlin.math.sin(globalRotX)
                 val cosY = kotlin.math.cos(globalRotY)
                 val sinY = kotlin.math.sin(globalRotY)
-                
-                val project3D = { x: Float, y: Float, z: Float ->
-                    val rx = x - simulator.width / 2f
-                    val ry = y - simulator.height / 2f
-                    val rz = z
-                    
+                val halfW = simulator.width / 2f
+                val halfH = simulator.height / 2f
+                val offsetX = offset.x
+                val offsetY = offset.y
+                val canvasW = size.width
+                val canvasH = size.height
+
+                // ── Project all nodes ONCE per frame (cached) ──
+                for (i in 0 until nodeCount) {
+                    val node = simulator.nodes[i]
+                    val rx = node.x - halfW
+                    val ry = node.y - halfH
+                    val rz = node.z
                     val x1 = rx * cosY - rz * sinY
                     val z1 = rz * cosY + rx * sinY
-                    
                     val y2 = ry * cosX - z1 * sinX
                     val z2 = z1 * cosX + ry * sinX
-                    
-                    floatArrayOf(x1, y2, z2)
+                    projectedX[i] = x1
+                    projectedY[i] = y2
+                    projectedZ[i] = z2
+                    val zS = (z2 + 400f).coerceIn(100f, 800f) / 400f
+                    screenX[i] = x1 * scale * zS + halfW * scale + offsetX
+                    screenY[i] = y2 * scale * zS + halfH * scale + offsetY
                 }
 
-                // Access 'ticks' to observe state changes
-                val currentTicks = ticks
+                // ── Build spatial hash grid for hit-testing ──
+                hitGrid.clear()
+                for (i in 0 until nodeCount) {
+                    hitGrid.insert(i, screenX[i], screenY[i], simulator.nodes[i].radius * scale + 20f)
+                }
+
+                // ── In-place Z-sort (no allocation) ──
+                for (i in 0 until nodeCount) sortedIndices[i] = i
+                // Simple insertion sort on projected Z (fast for nearly-sorted data across frames)
+                for (i in 1 until nodeCount) {
+                    val key = sortedIndices[i]
+                    val keyZ = projectedZ[key]
+                    var j = i - 1
+                    while (j >= 0 && projectedZ[sortedIndices[j]] > keyZ) {
+                        sortedIndices[j + 1] = sortedIndices[j]
+                        j--
+                    }
+                    sortedIndices[j + 1] = key
+                }
 
                 // Center everything initially
                 if (currentTicks == 1 && offset == Offset.Zero) {
-                    offset = Offset(size.width / 2f - simulator.width / 2f * scale, size.height / 2f - simulator.height / 2f * scale)
+                    offset = Offset(canvasW / 2f - halfW * scale, canvasH / 2f - halfH * scale)
                 }
 
-                // Axes removed as requested by user
+                val frustumMargin = 150f
 
-                // Draw Edges
+                // ── Draw Edges ──
                 simulator.edges.forEach { edge ->
-                    val srcVisible = when (edge.source.type) {
-                        NodeType.TOPIC -> showTopics
-                        NodeType.RESOURCE -> showResources
-                        NodeType.ANNOTATION -> showAnnotations
-                        NodeType.BOOKMARK -> showBookmarks
-                        NodeType.TEMPLATE -> showTemplates
-                        NodeType.CUSTOM -> showCustom
-                        NodeType.LOOKUP -> showLookup
-                        NodeType.OPINION -> showOpinions
-                    }
-                    val tgtVisible = when (edge.target.type) {
-                        NodeType.TOPIC -> showTopics
-                        NodeType.RESOURCE -> showResources
-                        NodeType.ANNOTATION -> showAnnotations
-                        NodeType.BOOKMARK -> showBookmarks
-                        NodeType.TEMPLATE -> showTemplates
-                        NodeType.CUSTOM -> showCustom
-                        NodeType.LOOKUP -> showLookup
-                        NodeType.OPINION -> showOpinions
-                    }
+                    val srcIdx = simulator.nodes.indexOf(edge.source)
+                    val tgtIdx = simulator.nodes.indexOf(edge.target)
+                    if (srcIdx < 0 || tgtIdx < 0) return@forEach
 
-                    if (srcVisible && tgtVisible) {
-                        // Connect linear nodes directly mathematically solving projection detachment!
-                        val p1 = project3D(edge.source.x, edge.source.y, edge.source.z)
-                        val p2 = project3D(edge.target.x, edge.target.y, edge.target.z)
-                        
-                        val zScaleSrc = (p1[2] + 400f).coerceIn(100f, 800f) / 400f
-                        val zScaleTgt = (p2[2] + 400f).coerceIn(100f, 800f) / 400f
-                        
-                        val start = Offset(
-                            p1[0] * scale * zScaleSrc + simulator.width / 2f * scale + offset.x,
-                            p1[1] * scale * zScaleSrc + simulator.height / 2f * scale + offset.y
-                        )
-                        val end = Offset(
-                            p2[0] * scale * zScaleTgt + simulator.width / 2f * scale + offset.x,
-                            p2[1] * scale * zScaleTgt + simulator.height / 2f * scale + offset.y
-                        )
-                        
-                        val isHighlighted = selectedNode == edge.source || selectedNode == edge.target
-                        
-                        // Z-based opacity (farther = fainter)
-                        val midZ = (p1[2] + p2[2]) / 2f
-                        val baseAlpha = (midZ + 400f).coerceIn(100f, 800f) / 800f
-                        val opacity = if (isHighlighted) 1.0f else (baseAlpha * 0.7f).coerceIn(0.25f, 0.95f)
-                        
-                        val isExplicit = edge.id.endsWith("_ref")
-                        // Animate dashed lines: dash phase moves towards the referencing (source) node
-                        val dashPhase = if (isExplicit) (ticks * 2f) else 0f
-                        
-                        val edgeColor = if (isHighlighted) GrayMatterColors.Primary else Color(0xFF42A5F5).copy(alpha = opacity)
-                        val strokeW = if (isHighlighted) 4.5f * scale else 2.2f * scale
+                    val srcVisible = visibilityByType[edge.source.type.ordinal]
+                    val tgtVisible = visibilityByType[edge.target.type.ordinal]
+                    if (!srcVisible || !tgtVisible) return@forEach
 
-                        if (isExplicit) {
-                            // Draw dynamic bezier curve for explicit reference edges so they "bow out" from straight containment edges
-                            val path = androidx.compose.ui.graphics.Path().apply {
-                                moveTo(start.x, start.y)
-                                
-                                val midX = (start.x + end.x) / 2f
-                                val midY = (start.y + end.y) / 2f
-                                val dx = end.x - start.x
-                                val dy = end.y - start.y
-                                val length = kotlin.math.sqrt(dx * dx + dy * dy)
-                                
-                                // Prevent division by zero
-                                val nx = if (length > 0f) -dy / length else 0f
-                                val ny = if (length > 0f) dx / length else 0f
-                                
-                                // Curve magnitude scales with line length and zoom, capped to look natural
-                                val curveOffset = (length * 0.2f).coerceIn(20f * scale, 60f * scale)
-                                
-                                quadraticBezierTo(
-                                    x1 = midX + nx * curveOffset,
-                                    y1 = midY + ny * curveOffset,
-                                    x2 = end.x,
-                                    y2 = end.y
-                                )
-                            }
-                            drawPath(
-                                path = path,
-                                color = edgeColor,
-                                style = Stroke(
-                                    width = strokeW,
-                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f * scale, 15f * scale), dashPhase)
-                                )
+                    val startSx = screenX[srcIdx]
+                    val startSy = screenY[srcIdx]
+                    val endSx = screenX[tgtIdx]
+                    val endSy = screenY[tgtIdx]
+
+                    // Frustum culling: skip if both endpoints are off-screen
+                    if ((startSx < -frustumMargin && endSx < -frustumMargin) ||
+                        (startSx > canvasW + frustumMargin && endSx > canvasW + frustumMargin) ||
+                        (startSy < -frustumMargin && endSy < -frustumMargin) ||
+                        (startSy > canvasH + frustumMargin && endSy > canvasH + frustumMargin)) return@forEach
+
+                    val start = Offset(startSx, startSy)
+                    val end = Offset(endSx, endSy)
+
+                    val isHighlighted = selectedNode == edge.source || selectedNode == edge.target
+                    
+                    // Z-based opacity (farther = fainter)
+                    val midZ = (projectedZ[srcIdx] + projectedZ[tgtIdx]) / 2f
+                    val baseAlpha = (midZ + 400f).coerceIn(100f, 800f) / 800f
+                    val opacity = if (isHighlighted) 1.0f else (baseAlpha * 0.7f).coerceIn(0.25f, 0.95f)
+                    
+                    val isExplicit = edge.id.endsWith("_ref")
+                    val dashPhase = if (isExplicit) (currentTicks * 2f) else 0f
+                    
+                    val edgeColor = if (isHighlighted) GrayMatterColors.Primary else Color(0xFF42A5F5).copy(alpha = opacity)
+                    val strokeW = if (isHighlighted) 4.5f * scale else 2.2f * scale
+
+                    if (isExplicit) {
+                        // Draw dynamic bezier curve for explicit reference edges
+                        reusablePath.reset()
+                        reusablePath.moveTo(start.x, start.y)
+                        
+                        val midX = (start.x + end.x) / 2f
+                        val midY = (start.y + end.y) / 2f
+                        val dx = end.x - start.x
+                        val dy = end.y - start.y
+                        val length = kotlin.math.sqrt(dx * dx + dy * dy)
+                        
+                        val nx = if (length > 0f) -dy / length else 0f
+                        val ny = if (length > 0f) dx / length else 0f
+                        
+                        val curveOffset = (length * 0.2f).coerceIn(20f * scale, 60f * scale)
+                        
+                        reusablePath.quadraticBezierTo(
+                            x1 = midX + nx * curveOffset,
+                            y1 = midY + ny * curveOffset,
+                            x2 = end.x,
+                            y2 = end.y
+                        )
+                        drawPath(
+                            path = reusablePath,
+                            color = edgeColor,
+                            style = Stroke(
+                                width = strokeW,
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f * scale, 15f * scale), dashPhase)
                             )
-                        } else {
-                            // Draw clean 3D straight line for standard edges
-                            drawLine(
-                                start = start,
-                                end = end,
-                                color = edgeColor,
-                                strokeWidth = strokeW
-                            )
-                        }
+                        )
+                    } else {
+                        drawLine(
+                            start = start,
+                            end = end,
+                            color = edgeColor,
+                            strokeWidth = strokeW
+                        )
                     }
                 }
 
-                // Sort nodes by Z-axis to draw back-to-front (true 3D layering)
-                val sortedNodes = simulator.nodes.sortedBy { it.z }
+                // ── Draw Nodes (back-to-front via sorted indices) ──
+                for (si in 0 until nodeCount) {
+                    val i = sortedIndices[si]
+                    val node = simulator.nodes[i]
 
-                // Draw Nodes
-                sortedNodes.forEach { node ->
-                    val isVisible = when (node.type) {
-                        NodeType.TOPIC -> showTopics
-                        NodeType.RESOURCE -> showResources
-                        NodeType.ANNOTATION -> showAnnotations
-                        NodeType.BOOKMARK -> showBookmarks
-                        NodeType.TEMPLATE -> showTemplates
-                        NodeType.CUSTOM -> showTemplates
-                        NodeType.LOOKUP -> showLookup
-                        NodeType.OPINION -> showOpinions
+                    if (!visibilityByType[node.type.ordinal]) continue
+
+                    val sx = screenX[i]
+                    val sy = screenY[i]
+
+                    // Frustum culling
+                    if (sx < -frustumMargin || sx > canvasW + frustumMargin ||
+                        sy < -frustumMargin || sy > canvasH + frustumMargin) continue
+
+                    val nodeColor = nodeColorMap[node.type] ?: Color.White
+                    val zScale = (projectedZ[i] + 400f).coerceIn(100f, 800f) / 400f
+                    val screenCenter = Offset(sx, sy)
+                    val scaledRadius = node.radius * scale * zScale
+                    
+                    val isSelected = selectedNode == node
+
+                    if (isSelected) {
+                        val pulsePhase = (kotlin.math.sin(currentTicks * 0.05f).toFloat() * 0.5f + 0.5f)
+                        val pulseRadius = scaledRadius + 15f * scale * zScale + (pulsePhase * 25f * scale * zScale)
+                        
+                        drawCircle(
+                            color = nodeColor.copy(alpha = 0.4f - (pulsePhase * 0.2f)),
+                            radius = pulseRadius,
+                            center = screenCenter
+                        )
+                        drawCircle(
+                            color = nodeColorAlpha06[node.type] ?: nodeColor.copy(alpha = 0.6f),
+                            radius = scaledRadius + 15f * scale * zScale,
+                            center = screenCenter
+                        )
                     }
 
-                    if (isVisible) {
-                        val nodeColor = when (node.type) {
-                            NodeType.TOPIC -> Color.White
-                            NodeType.RESOURCE -> Color.White
-                            NodeType.ANNOTATION -> GrayMatterColors.TypeAnnotation
-                            NodeType.BOOKMARK -> GrayMatterColors.TypeBookmark
-                            NodeType.TEMPLATE -> GrayMatterColors.TypeTemplate
-                            NodeType.CUSTOM -> GrayMatterColors.TypeTemplate
-                            NodeType.LOOKUP -> GrayMatterColors.TypeLookupMain
-                            NodeType.OPINION -> GrayMatterColors.TypeOpinion
+                    if (node.type == NodeType.TOPIC) {
+                        // ── Icosahedron wireframe (cached geometry) ──
+                        val r = node.radius * 1.7f
+                        val vertices = buildIcosahedronVertices(r)
+
+                        // Project vertices (reuses cached rotation values)
+                        for (faceIdx in ICOSAHEDRON_FACES) {
+                            val pA = projectVertex(node.x, node.y, node.z, vertices[faceIdx[0]], cosX, sinX, cosY, sinY, halfW, halfH)
+                            val pB = projectVertex(node.x, node.y, node.z, vertices[faceIdx[1]], cosX, sinX, cosY, sinY, halfW, halfH)
+                            val pC = projectVertex(node.x, node.y, node.z, vertices[faceIdx[2]], cosX, sinX, cosY, sinY, halfW, halfH)
+
+                            val sA = toScreen(pA, scale, halfW, halfH, offsetX, offsetY)
+                            val sB = toScreen(pB, scale, halfW, halfH, offsetX, offsetY)
+                            val sC = toScreen(pC, scale, halfW, halfH, offsetX, offsetY)
+
+                            reusablePath.reset()
+                            reusablePath.moveTo(sA.x, sA.y)
+                            reusablePath.lineTo(sB.x, sB.y)
+                            reusablePath.lineTo(sC.x, sC.y)
+                            reusablePath.close()
+                            drawPath(path = reusablePath, color = nodeColor, style = Stroke(width = 1.5f * scale))
                         }
-                        // 3D Perspective Scale & Position
-                        val pNode = project3D(node.x, node.y, node.z)
-                        val zScale = (pNode[2] + 400f).coerceIn(100f, 800f) / 400f // depth scaling
+
+                    } else if (node.type == NodeType.RESOURCE) {
+                        // ── Tetrahedron wireframe (cached geometry) ──
+                        val r = node.radius * 1.5f
+                        val vertices = buildTetrahedronVertices(r)
+
+                        for (faceIdx in TETRAHEDRON_FACES) {
+                            val pA = projectVertex(node.x, node.y, node.z, vertices[faceIdx[0]], cosX, sinX, cosY, sinY, halfW, halfH)
+                            val pB = projectVertex(node.x, node.y, node.z, vertices[faceIdx[1]], cosX, sinX, cosY, sinY, halfW, halfH)
+                            val pC = projectVertex(node.x, node.y, node.z, vertices[faceIdx[2]], cosX, sinX, cosY, sinY, halfW, halfH)
+
+                            val sA = toScreen(pA, scale, halfW, halfH, offsetX, offsetY)
+                            val sB = toScreen(pB, scale, halfW, halfH, offsetX, offsetY)
+                            val sC = toScreen(pC, scale, halfW, halfH, offsetX, offsetY)
+
+                            reusablePath.reset()
+                            reusablePath.moveTo(sA.x, sA.y)
+                            reusablePath.lineTo(sB.x, sB.y)
+                            reusablePath.lineTo(sC.x, sC.y)
+                            reusablePath.close()
+                            drawPath(path = reusablePath, color = nodeColor, style = Stroke(width = 1.5f * scale))
+                        }
                         
-                        val screenCenter = Offset(
-                            pNode[0] * scale * zScale + simulator.width / 2f * scale + offset.x,
-                            pNode[1] * scale * zScale + simulator.height / 2f * scale + offset.y
-                        )
-                        val scaledRadius = node.radius * scale * zScale
-                        
-                        val isSelected = selectedNode == node
-
-                        if (isSelected) {
-                            val pulsePhase = (kotlin.math.sin(currentTicks * 0.05f).toFloat() * 0.5f + 0.5f)
-                            val pulseRadius = scaledRadius + 15f * scale * zScale + (pulsePhase * 25f * scale * zScale)
-                            
-                            drawCircle(
-                                color = nodeColor.copy(alpha = 0.4f - (pulsePhase * 0.2f)),
-                                radius = pulseRadius,
-                                center = screenCenter
-                            )
-                            drawCircle(
-                                color = nodeColor.copy(alpha = 0.6f),
-                                radius = scaledRadius + 15f * scale * zScale,
-                                center = screenCenter
-                            )
-                        }
-
-                        // Draw True 3D Shapes (Painter's Algorithm)
-                        val drawSolidFaces = { vertices: Array<FloatArray>, facesDef: Array<IntArray>, color: Color ->
-                            // Transform global projected vertices
-                            val projected = vertices.map { v ->
-                                project3D(node.x + v[0], node.y + v[1], node.z + v[2])
-                            }
-                            
-                            // Map to Screen Space and sort faces by Z (back to front)
-                            val faces: List<Triple<Float, androidx.compose.ui.graphics.Path, Color>> = facesDef.map { faceIdx ->
-                                val pA = projected[faceIdx[0]]
-                                val pB = projected[faceIdx[1]]
-                                val pC = projected[faceIdx[2]]
-                                
-                                val avgZ = (pA[2] + pB[2] + pC[2]) / 3f
-                                
-                                val toScr = { g: FloatArray ->
-                                    val zS = (g[2] + 400f).coerceIn(100f, 800f) / 400f
-                                    Offset(
-                                        g[0] * scale * zS + simulator.width / 2f * scale + offset.x,
-                                        g[1] * scale * zS + simulator.height / 2f * scale + offset.y
-                                    )
-                                }
-                                val sA = toScr(pA)
-                                val sB = toScr(pB)
-                                val sC = toScr(pC)
-                                
-                                val path = androidx.compose.ui.graphics.Path().apply {
-                                    moveTo(sA.x, sA.y)
-                                    lineTo(sB.x, sB.y)
-                                    lineTo(sC.x, sC.y)
-                                    close()
-                                }
-                                
-                                // True transparent wireframes
-                                val faceColor = color.copy(alpha = 0f)
-                                
-                                Triple(avgZ, path, faceColor)
-                            }.sortedBy { -it.first } // sort descending Z (higher Z = further away)
-                            
-                            // Draw 
-                            faces.forEach { triple ->
-                                val path = triple.second
-                                // Glowing sci-fi neon edge wireframe (only outlined shapes)
-                                drawPath(path = path, color = color.copy(alpha=1f), style = Stroke(width = 1.5f * scale))
-                            }
-                        }
-
-                        if (node.type == NodeType.TOPIC) {
-                            val r = node.radius * 1.7f
-                            val phi = (1f + sqrt(5f)) / 2f
-                            val length = sqrt(1f + phi * phi)
-                            val vA = r / length
-                            val vB = r * phi / length
-
-                            val vertices = arrayOf(
-                                floatArrayOf(  0f,  vA,  vB), // 0
-                                floatArrayOf(  0f,  vA, -vB), // 1
-                                floatArrayOf(  0f, -vA,  vB), // 2
-                                floatArrayOf(  0f, -vA, -vB), // 3
-                                floatArrayOf(  vA,  vB,  0f), // 4
-                                floatArrayOf(  vA, -vB,  0f), // 5
-                                floatArrayOf( -vA,  vB,  0f), // 6
-                                floatArrayOf( -vA, -vB,  0f), // 7
-                                floatArrayOf(  vB,  0f,  vA), // 8
-                                floatArrayOf( -vB,  0f,  vA), // 9
-                                floatArrayOf(  vB,  0f, -vA), // 10
-                                floatArrayOf( -vB,  0f, -vA)  // 11
-                            )
-                            val facesDef = arrayOf(
-                                intArrayOf(0, 8, 4), intArrayOf(0, 4, 6), intArrayOf(0, 6, 9), intArrayOf(0, 9, 2), intArrayOf(0, 2, 8),
-                                intArrayOf(8, 10, 4), intArrayOf(4, 1, 6), intArrayOf(6, 11, 9), intArrayOf(9, 7, 2), intArrayOf(2, 5, 8),
-                                intArrayOf(4, 10, 1), intArrayOf(6, 1, 11), intArrayOf(9, 11, 7), intArrayOf(2, 7, 5), intArrayOf(8, 5, 10),
-                                intArrayOf(3, 10, 5), intArrayOf(3, 5, 7), intArrayOf(3, 7, 11), intArrayOf(3, 11, 1), intArrayOf(3, 1, 10)
-                            )
-                            drawSolidFaces(vertices, facesDef, nodeColor)
-
-                        } else if (node.type == NodeType.RESOURCE) {
-                            val r = node.radius * 1.5f
-                            val sq23 = sqrt(2f/3f)
-                            val sq3 = sqrt(3f)
-                            val vertices = arrayOf(
-                                floatArrayOf(0f, -r, 0f), 
-                                floatArrayOf(-r * sq23, r/3f, -r/sq3),
-                                floatArrayOf( r * sq23, r/3f, -r/sq3),
-                                floatArrayOf(0f, r/3f, r * 2f/sq3)
-                            )
-                            val facesDef = arrayOf(
-                                intArrayOf(0, 1, 2), 
-                                intArrayOf(0, 2, 3), 
-                                intArrayOf(0, 3, 1), 
-                                intArrayOf(1, 3, 2)
-                            )
-                            drawSolidFaces(vertices, facesDef, nodeColor)
-                            
-                        } else {
-                            // Spherical leaf nodes
-                            drawCircle(color = nodeColor.copy(alpha=0.3f), radius = scaledRadius, center = screenCenter)
-                            // Glowing Ring Frame
-                            drawCircle(color = nodeColor.copy(alpha=1f), radius = scaledRadius, center = screenCenter, style = Stroke(width = 2f * scale))
-                            // Solid core dot
-                            drawCircle(color = nodeColor.copy(alpha=0.8f), radius = scaledRadius * 0.3f, center = screenCenter)
-                        }
+                    } else {
+                        // Spherical leaf nodes
+                        drawCircle(color = nodeColorAlpha03[node.type] ?: nodeColor.copy(alpha = 0.3f), radius = scaledRadius, center = screenCenter)
+                        // Glowing Ring Frame
+                        drawCircle(color = nodeColor, radius = scaledRadius, center = screenCenter, style = Stroke(width = 2f * scale))
+                        // Solid core dot
+                        drawCircle(color = nodeColorAlpha08[node.type] ?: nodeColor.copy(alpha = 0.8f), radius = scaledRadius * 0.3f, center = screenCenter)
                     }
                 }
             }
@@ -895,15 +915,7 @@ fun KnowledgeGraphScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            val nodeColor = when (node.type) {
-                                NodeType.TOPIC -> Color.White
-                                NodeType.RESOURCE -> Color.White
-                                NodeType.ANNOTATION -> GrayMatterColors.TypeAnnotation
-                                NodeType.BOOKMARK -> GrayMatterColors.TypeBookmark
-                                NodeType.TEMPLATE, NodeType.CUSTOM -> GrayMatterColors.TypeTemplate
-                                NodeType.LOOKUP -> GrayMatterColors.TypeLookupMain
-                                NodeType.OPINION -> GrayMatterColors.TypeOpinion
-                            }
+                            val nodeColor = nodeColorMap[node.type] ?: Color.White
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
@@ -1002,6 +1014,37 @@ fun KnowledgeGraphScreen(
         }
         }
     }
+}
+
+// ─── Projection helpers (inlined for hot-path performance) ────────────────────
+
+private fun projectVertex(
+    nodeX: Float, nodeY: Float, nodeZ: Float,
+    vertex: FloatArray,
+    cosX: Float, sinX: Float, cosY: Float, sinY: Float,
+    halfW: Float, halfH: Float
+): FloatArray {
+    val rx = (nodeX + vertex[0]) - halfW
+    val ry = (nodeY + vertex[1]) - halfH
+    val rz = nodeZ + vertex[2]
+    val x1 = rx * cosY - rz * sinY
+    val z1 = rz * cosY + rx * sinY
+    val y2 = ry * cosX - z1 * sinX
+    val z2 = z1 * cosX + ry * sinX
+    return floatArrayOf(x1, y2, z2)
+}
+
+private fun toScreen(
+    projected: FloatArray,
+    scale: Float,
+    halfW: Float, halfH: Float,
+    offsetX: Float, offsetY: Float
+): Offset {
+    val zS = (projected[2] + 400f).coerceIn(100f, 800f) / 400f
+    return Offset(
+        projected[0] * scale * zS + halfW * scale + offsetX,
+        projected[1] * scale * zS + halfH * scale + offsetY
+    )
 }
 
 private fun stripMarkdown(text: String): String {
