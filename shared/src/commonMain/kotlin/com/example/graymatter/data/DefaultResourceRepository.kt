@@ -59,6 +59,10 @@ class DefaultResourceRepository(
         queries.searchResources(searchQuery, searchQuery, searchQuery).executeAsList().map { it.toResource() }
     }
 
+    override suspend fun findResourceByTitle(title: String): Resource? = withContext(dispatcher) {
+        queries.findResourceByTitle(title).executeAsOneOrNull()?.toResource()
+    }
+
     override suspend fun updateResourceTitle(id: String, title: String) = withContext(dispatcher) {
         queries.updateResourceTitle(title, id)
     }

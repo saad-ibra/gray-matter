@@ -85,6 +85,11 @@ class DefaultOpinionRepository(
         queries.searchOpinions(query).executeAsList().map { it.toOpinion() }
     }
 
+    override suspend fun findOpinionByTextContaining(text: String): Opinion? = withContext(dispatcher) {
+        // Find opinion that contains the text
+        queries.findOpinionByTextContaining(text).executeAsOneOrNull()?.toOpinion()
+    }
+
     override suspend fun softDeleteOpinionsByItemId(itemId: String, deletedAt: Long) = withContext(dispatcher) {
         queries.softDeleteOpinionsByItemId(deletedAt, itemId)
     }

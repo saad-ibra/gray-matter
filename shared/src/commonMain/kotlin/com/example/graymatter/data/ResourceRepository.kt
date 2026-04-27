@@ -34,6 +34,11 @@ interface ResourceRepository {
     suspend fun searchResources(query: String): List<Resource>
 
     /**
+     * Find a resource by exactly matching its title (case-insensitive). Returns the first match.
+     */
+    suspend fun findResourceByTitle(title: String): Resource?
+
+    /**
      * Update the title/name of a resource.
      */
     suspend fun updateResourceTitle(id: String, title: String)

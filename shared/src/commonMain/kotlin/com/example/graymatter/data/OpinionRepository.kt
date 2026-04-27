@@ -67,6 +67,11 @@ interface OpinionRepository {
     suspend fun searchOpinions(query: String): List<Opinion>
 
     /**
+     * Find an opinion by a substring match of its text. Returns the first match.
+     */
+    suspend fun findOpinionByTextContaining(text: String): Opinion?
+
+    /**
      * Bulk soft delete opinions by item ID.
      */
     suspend fun softDeleteOpinionsByItemId(itemId: String, deletedAt: Long)

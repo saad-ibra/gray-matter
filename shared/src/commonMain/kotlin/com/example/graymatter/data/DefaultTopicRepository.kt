@@ -104,6 +104,10 @@ class DefaultTopicRepository(
         queries.searchTopics(query, query).executeAsList().map { it.toTopic() }
     }
 
+    override suspend fun findTopicByName(name: String): Topic? = withContext(dispatcher) {
+        queries.findTopicByName(name).executeAsOneOrNull()?.toTopic()
+    }
+
     override suspend fun renameTopic(id: String, newName: String) = withContext(dispatcher) {
         queries.renameTopic(newName, Clock.System.now().toEpochMilliseconds(), id)
     }

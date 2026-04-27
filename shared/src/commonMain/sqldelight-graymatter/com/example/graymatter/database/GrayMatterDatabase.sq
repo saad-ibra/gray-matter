@@ -290,6 +290,16 @@ SELECT * FROM topicEntity WHERE
     (notes LIKE '%' || ? || '%')
 ORDER BY updatedAt DESC;
 
+-- Targeted single-row lookups for AutoLink (avoids full-table scans)
+findTopicByName:
+SELECT * FROM topicEntity WHERE name = ? COLLATE NOCASE AND isDeleted = 0 LIMIT 1;
+
+findResourceByTitle:
+SELECT * FROM resourceEntity WHERE title = ? COLLATE NOCASE LIMIT 1;
+
+findOpinionByTextContaining:
+SELECT * FROM opinionEntity WHERE text LIKE '%' || ? || '%' AND isDeleted = 0 LIMIT 1;
+
 -- Reading Progress Queries
 insertOrUpdateReadingProgress:
 INSERT OR REPLACE INTO readingProgressEntity(resourceId, currentPage, totalPages, percentComplete, currentChapter, lastOpenedAt)

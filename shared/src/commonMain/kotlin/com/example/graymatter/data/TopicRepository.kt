@@ -77,6 +77,11 @@ interface TopicRepository {
     suspend fun searchTopics(query: String): List<Topic>
 
     /**
+     * Find a topic by exactly matching its name (case-insensitive). Returns the first match.
+     */
+    suspend fun findTopicByName(name: String): Topic?
+
+    /**
      * Rename a topic.
      */
     suspend fun renameTopic(id: String, newName: String)
