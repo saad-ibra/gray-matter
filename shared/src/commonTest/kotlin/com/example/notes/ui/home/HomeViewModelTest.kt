@@ -50,7 +50,7 @@ class HomeViewModelTest {
 
         homeViewModel = HomeViewModel(
             notesRepository = notesRepositoryMock,
-            viewModelScope = testScope,
+            coroutineScope = testScope,
             defaultDispatcher = StandardTestDispatcher()
         )
     }

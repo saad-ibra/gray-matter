@@ -181,8 +181,10 @@ fun PdfViewerContent(
                                             }
                                         }
                                     }
+                                    Unit
                                 } catch (e: Exception) {
                                     Log.e("PdfViewer", "PDDocument load failed", e)
+                                    Unit
                                 }
                             }
                         }
