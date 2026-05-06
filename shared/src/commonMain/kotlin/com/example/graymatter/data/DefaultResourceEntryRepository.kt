@@ -211,8 +211,9 @@ class DefaultResourceEntryRepository(
     }
 
     override suspend fun undoDeleteResourceEntriesByTopicId(topicId: String, deletedAt: Long) = withContext(dispatcher) {
-        val entries = queries.getResourceEntriesByTopicId(topicId).executeAsList()
-        entries.forEach { entry ->
+        // Use getAllResourceEntriesByTopicId as getResourceEntriesByTopicId only returns non-deleted items
+        val entries = queries.getAllResourceEntriesByTopicId(topicId).executeAsList()
+        entries.filter { it.isDeleted == 1L && it.deletedAt == deletedAt }.forEach { entry ->
             opinionRepository.undoDeleteOpinionsByItemId(entry.id, deletedAt)
             resourceRepository.undoDeleteBookmarksByResourceId(entry.resourceId, deletedAt)
         }

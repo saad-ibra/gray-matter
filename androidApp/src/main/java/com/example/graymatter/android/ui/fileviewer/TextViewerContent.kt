@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.graymatter.android.util.SafeTextReader
 import com.example.graymatter.domain.ChapterOutline
 import com.example.graymatter.domain.ReadingSettings
 import java.io.File
@@ -45,9 +46,7 @@ fun TextViewerContent(
         if (!extractedText.isNullOrBlank()) {
             extractedText
         } else if (filePath.isNotBlank()) {
-            try {
-                File(filePath).readText()
-            } catch (e: Exception) {
+            SafeTextReader.readText(filePath).getOrElse { e ->
                 "Error reading file: ${e.message}"
             }
         } else {

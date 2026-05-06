@@ -1,14 +1,13 @@
 package com.example.graymatter.android.ui.profile
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.CheckCircleOutline
-import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -123,7 +122,7 @@ private fun LookupItem(
     onJumpToOrigin: () -> Unit
 ) {
     // Strip [DICT:42], [DICT], and #learnt tags
-    val regex = Regex("\\[DICT(:\\d+)?\\]\\s*")
+    val regex = Regex("\\[DICT(:\\d+)?]\\s*")
     val cleanWord = opinion.text.replace(regex, "").replace(" #learnt", "").trim()
     
     // Opacity based logic using a standard white text color
@@ -153,7 +152,7 @@ private fun LookupItem(
                 }
                 IconButton(onClick = onJumpToOrigin) {
                     Icon(
-                        imageVector = Icons.Default.OpenInNew,
+                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                         contentDescription = "View Original Context",
                         tint = GrayMatterColors.TextPrimary.copy(alpha = alpha)
                     )

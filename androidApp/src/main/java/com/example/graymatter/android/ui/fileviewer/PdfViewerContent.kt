@@ -130,19 +130,30 @@ fun PdfViewerContent(
                     
                     val uri = Uri.parse(filePath)
                     val descriptor = if (uri.scheme == "content") {
-                        context.contentResolver.openFileDescriptor(uri, "r")
+                        try {
+                            context.contentResolver.openFileDescriptor(uri, "r")
+                        } catch (e: Exception) {
+                            Log.e("PdfViewer", "Failed to open content URI", e)
+                            null
+                        }
                     } else {
                         val file = File(filePath)
                         if (file.exists()) {
-                            ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+                            try {
+                                ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+                            } catch (e: Exception) {
+                                Log.e("PdfViewer", "Failed to open file path", e)
+                                null
+                            }
                         } else {
                             null
                         }
                     }
 
-                    if (descriptor == null) {
+                    if (descriptor == null || descriptor.fileDescriptor == null || !descriptor.fileDescriptor.valid()) {
                         loadError = "Could not open file descriptor for: $filePath"
                         Log.e("PdfViewer", loadError!!)
+                        descriptor?.close()
                         return@withContext
                     }
 
@@ -150,34 +161,45 @@ fun PdfViewerContent(
                         val inputStream = if (uri.scheme == "content") {
                             context.contentResolver.openInputStream(uri)
                         } else {
-                            java.io.FileInputStream(File(filePath))
+                            val f = File(filePath)
+                            if (f.exists()) java.io.FileInputStream(f) else null
                         }
+                        
                         if (inputStream != null) {
-                            val doc = PDDocument.load(inputStream)
-                            pdDocument = doc
-                            
-                            // Extract Table of Contents (Outlines)
-                            val outline = doc.documentInformation.title // Just checking doc
-                            val root = doc.documentCatalog.documentOutline
-                            if (root != null) {
-                                val chapters = extractChaptersRecursive(doc, root.firstChild)
-                                if (chapters.isNotEmpty()) {
-                                    withContext(Dispatchers.Main) {
-                                        onChaptersFound(chapters)
+                            inputStream.use { stream ->
+                                try {
+                                    val doc = PDDocument.load(stream)
+                                    pdDocument = doc
+                                    
+                                    // Extract Table of Contents (Outlines)
+                                    val root = doc.documentCatalog.documentOutline
+                                    if (root != null) {
+                                        val chapters = extractChaptersRecursive(doc, root.firstChild)
+                                        if (chapters.isNotEmpty()) {
+                                            withContext(Dispatchers.Main) {
+                                                onChaptersFound(chapters)
+                                            }
+                                        }
                                     }
+                                } catch (e: Exception) {
+                                    Log.e("PdfViewer", "PDDocument load failed", e)
                                 }
                             }
-                            inputStream.close()
                         }
                     } catch (e: Exception) {
                         Log.e("PdfViewer", "Failed to load PDDocument for text selection", e)
                     }
 
                     pfd = descriptor
-                    val r = PdfRenderer(descriptor)
-                    renderer = r
-                    withContext(Dispatchers.Main) {
-                        onTotalPages(r.pageCount)
+                    try {
+                        val r = PdfRenderer(descriptor)
+                        renderer = r
+                        withContext(Dispatchers.Main) {
+                            onTotalPages(r.pageCount)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("PdfViewer", "PdfRenderer creation failed", e)
+                        loadError = "Failed to initialize PDF renderer: ${e.localizedMessage}"
                     }
                 } catch (e: SecurityException) {
                     Log.e("PdfViewer", "Permission denied for PDF: $filePath", e)
@@ -529,40 +551,65 @@ private suspend fun getOrRenderPdfPage(
                 // If asking for high res but we already have low res, don't block heavily
                 if (!isActive) return@withLock null
 
-                val page = renderer.openPage(pageIndex)
+                val page = try {
+                    renderer.openPage(pageIndex)
+                } catch (e: Exception) {
+                    Log.e("PdfViewer", "Failed to open page $pageIndex", e)
+                    return@withLock null
+                }
+                
                 val density = context.resources.displayMetrics.density
                 
                 // Adjust scale based on low/high res context
                 val scale = if (isLowRes) 0.5f else 1.5f
-                val baseWidth = (page.width * density * scale).toInt()
-                val baseHeight = (page.height * density * scale).toInt()
+                val baseWidth = (page.width * density * scale).toInt().coerceAtLeast(1)
+                val baseHeight = (page.height * density * scale).toInt().coerceAtLeast(1)
                 
-                var b = Bitmap.createBitmap(baseWidth, baseHeight, Bitmap.Config.ARGB_8888)
-                b.eraseColor(android.graphics.Color.WHITE)
-                page.render(b, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                var b = try {
+                    Bitmap.createBitmap(baseWidth, baseHeight, Bitmap.Config.ARGB_8888).apply {
+                        eraseColor(android.graphics.Color.WHITE)
+                    }
+                } catch (e: OutOfMemoryError) {
+                    Log.e("PdfViewer", "OOM creating bitmap for page $pageIndex")
+                    page.close()
+                    return@withLock null
+                }
+                
+                try {
+                    page.render(b, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                } catch (e: Exception) {
+                    Log.e("PdfViewer", "Failed to render page $pageIndex", e)
+                    page.close()
+                    return@withLock null
+                }
                 page.close()
 
                 if (autoCrop) {
-                    val cropRectPdf = cropCache[pageIndex] ?: run {
-                        val bounds = detectContentBounds(b)
+                    try {
+                        val cropRectPdf = cropCache[pageIndex] ?: run {
+                            val bounds = detectContentBounds(b)
+                            val rs = (b.width.toFloat() / page.width)
+                            android.graphics.RectF(
+                                bounds.left / rs,
+                                bounds.top / rs,
+                                bounds.right / rs,
+                                bounds.bottom / rs
+                            )
+                        }
+                        cropCache[pageIndex] = cropRectPdf
+                        
                         val rs = (b.width.toFloat() / page.width)
-                        android.graphics.RectF(
-                            bounds.left / rs,
-                            bounds.top / rs,
-                            bounds.right / rs,
-                            bounds.bottom / rs
-                        )
-                    }
-                    cropCache[pageIndex] = cropRectPdf
-                    
-                    val rs = (b.width.toFloat() / page.width)
-                    val left = (cropRectPdf.left * rs - 16 * density).toInt().coerceAtLeast(0)
-                    val top = (cropRectPdf.top * rs - 16 * density).toInt().coerceAtLeast(0)
-                    val right = (cropRectPdf.right * rs + 16 * density).toInt().coerceAtMost(b.width)
-                    val bottom = (cropRectPdf.bottom * rs + 16 * density).toInt().coerceAtMost(b.height)
-                    
-                    if (right > left && bottom > top) {
-                        b = Bitmap.createBitmap(b, left, top, right - left, bottom - top)
+                        val left = (cropRectPdf.left * rs - 16 * density).toInt().coerceAtLeast(0)
+                        val top = (cropRectPdf.top * rs - 16 * density).toInt().coerceAtLeast(0)
+                        val right = (cropRectPdf.right * rs + 16 * density).toInt().coerceAtMost(b.width)
+                        val bottom = (cropRectPdf.bottom * rs + 16 * density).toInt().coerceAtMost(b.height)
+                        
+                        if (right > left && bottom > top) {
+                            b = Bitmap.createBitmap(b, left, top, right - left, bottom - top)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("PdfViewer", "Auto-crop failed for page $pageIndex", e)
+                        // Continue with uncropped bitmap
                     }
                 }
                 
@@ -570,7 +617,7 @@ private suspend fun getOrRenderPdfPage(
                 b
             }
         } catch (e: Throwable) {
-            Log.e("PdfViewer", "Failed to render page $pageIndex", e)
+            Log.e("PdfViewer", "Unexpected error in getOrRenderPdfPage for page $pageIndex", e)
             null
         }
     }
