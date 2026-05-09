@@ -193,7 +193,7 @@ private fun AddNewEntryCard(
     Box(
         modifier = modifier
             .fillMaxWidth(0.85f)
-            .aspectRatio(1.8f),
+            .heightIn(min = 140.dp, max = 200.dp),
         contentAlignment = Alignment.Center
     ) {
         // Ambient glow effect

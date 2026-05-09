@@ -34,10 +34,18 @@ import com.example.graymatter.android.ui.theme.GrayMatterColors
 fun GrayMatterApp(
     navController: NavHostController = rememberNavController()
 ) {
-    GrayMatterNavigation(
-        navController = navController,
-        modifier = Modifier.fillMaxSize()
-    )
+    // Wrap in a Surface to ensure the background color draws behind the system bars
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = GrayMatterColors.BackgroundDark
+    ) {
+        GrayMatterNavigation(
+            navController = navController,
+            // safeDrawingPadding ensures the UI never draws under the camera notch in 
+            // landscape mode or under the system navigation bars.
+            modifier = Modifier.fillMaxSize().safeDrawingPadding()
+        )
+    }
 }
 
 @Composable
@@ -62,7 +70,6 @@ fun GrayMatterBottomBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
                 .height(64.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
@@ -151,5 +158,58 @@ private fun NavBarItem(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun GrayMatterNavigationRail(
+    currentRoute: String?,
+    onNavigateToHome: () -> Unit,
+    onNavigateToLibrary: () -> Unit,
+    onNavigateToProfile: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxHeight()
+            .background(GrayMatterColors.BackgroundDark.copy(alpha = 0.98f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(80.dp),
+            verticalArrangement = Arrangement.SpaceEvenly,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            NavBarItem(
+                selected = currentRoute == NavigationDestination.Home.route,
+                activeIcon = Icons.Filled.Home,
+                inactiveIcon = Icons.Outlined.Home,
+                onClick = onNavigateToHome,
+                modifier = Modifier.weight(1f).fillMaxWidth()
+            )
+            
+            NavBarItem(
+                selected = currentRoute == NavigationDestination.Library.route,
+                activeIcon = Icons.Filled.List,
+                inactiveIcon = Icons.Outlined.List,
+                onClick = onNavigateToLibrary,
+                modifier = Modifier.weight(1f).fillMaxWidth()
+            )
+
+            NavBarItem(
+                selected = currentRoute == NavigationDestination.Profile.route,
+                activeIcon = Icons.Filled.Person,
+                inactiveIcon = Icons.Outlined.Person,
+                onClick = onNavigateToProfile,
+                modifier = Modifier.weight(1f).fillMaxWidth()
+            )
+        }
+        
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(0.5.dp)
+                .background(GrayMatterColors.Neutral800)
+        )
     }
 }

@@ -26,6 +26,7 @@
         <activity
             android:theme="@style/Theme.GrayMatter.SplashScreen"
             android:name="com.example.graymatter.android.ui.MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

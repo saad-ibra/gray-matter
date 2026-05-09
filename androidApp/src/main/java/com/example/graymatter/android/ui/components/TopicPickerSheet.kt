@@ -45,92 +45,97 @@ fun TopicPickerSheet(
                 .fillMaxWidth()
                 .padding(24.dp)
                 .navigationBarsPadding()
-                .imePadding()
+                .imePadding(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Assign Topic",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = GrayMatterColors.TextPrimary
-            )
-            Text(
-                text = "Regarding: $title",
-                style = MaterialTheme.typography.bodyMedium,
-                color = GrayMatterColors.TextSecondary
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Search/Create section
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Search or create topic...") },
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Search, null) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = GrayMatterColors.SurfaceInput,
-                    focusedContainerColor = GrayMatterColors.SurfaceInput,
-                    unfocusedBorderColor = GrayMatterColors.Neutral800,
-                    focusedBorderColor = GrayMatterColors.Primary,
-                    unfocusedTextColor = Color.White,
-                    focusedTextColor = Color.White
-                ),
-                shape = RoundedCornerShape(16.dp),
-                trailingIcon = {
+            Column(
+                modifier = Modifier.widthIn(max = 600.dp)
+            ) {
+                Text(
+                    text = "Assign Topic",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = GrayMatterColors.TextPrimary
+                )
+                Text(
+                    text = "Regarding: $title",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = GrayMatterColors.TextSecondary
+                )
+    
+                Spacer(modifier = Modifier.height(24.dp))
+    
+                // Search/Create section
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search or create topic...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = { Icon(Icons.Default.Search, null) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = GrayMatterColors.SurfaceInput,
+                        focusedContainerColor = GrayMatterColors.SurfaceInput,
+                        unfocusedBorderColor = GrayMatterColors.Neutral800,
+                        focusedBorderColor = GrayMatterColors.Primary,
+                        unfocusedTextColor = Color.White,
+                        focusedTextColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    trailingIcon = {
+                        if (searchQuery.isNotBlank() && topics.none { it.name.equals(searchQuery, true) }) {
+                            IconButton(onClick = { onCreateNewTopic(searchQuery) }) {
+                                Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary)
+                            }
+                        }
+                    }
+                )
+    
+                Spacer(modifier = Modifier.height(16.dp))
+    
+                val filteredTopics = topics.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp)
+                ) {
                     if (searchQuery.isNotBlank() && topics.none { it.name.equals(searchQuery, true) }) {
-                        IconButton(onClick = { onCreateNewTopic(searchQuery) }) {
-                            Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary)
+                        item {
+                            TextButton(
+                                onClick = { onCreateNewTopic(searchQuery) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.Add, null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Create \"$searchQuery\"")
+                            }
                         }
                     }
-                }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val filteredTopics = topics.filter { it.name.contains(searchQuery, ignoreCase = true) }
-
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 300.dp)
-            ) {
-                if (searchQuery.isNotBlank() && topics.none { it.name.equals(searchQuery, true) }) {
-                    item {
-                        TextButton(
-                            onClick = { onCreateNewTopic(searchQuery) },
-                            modifier = Modifier.fillMaxWidth()
+    
+                    items(filteredTopics) { topic ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onSelectTopic(topic) }
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Add, null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Create \"$searchQuery\"")
+                            Icon(Icons.Default.Folder, null, tint = GrayMatterColors.Primary)
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(topic.name, color = Color.White)
                         }
                     }
                 }
-
-                items(filteredTopics) { topic ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelectTopic(topic) }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Folder, null, tint = GrayMatterColors.Primary)
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(topic.name, color = Color.White)
-                    }
+    
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Neutral800),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text("Cancel", color = Color.White)
                 }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Neutral800),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text("Cancel", color = Color.White)
             }
         }
     }

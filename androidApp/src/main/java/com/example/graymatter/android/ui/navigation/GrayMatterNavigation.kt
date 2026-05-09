@@ -13,6 +13,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Row
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -128,26 +130,45 @@ fun GrayMatterNavigation(
             }
         ) {
             val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 3 })
+            val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+            val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
             
             androidx.compose.material3.Scaffold(
                 bottomBar = {
-                    com.example.graymatter.android.ui.GrayMatterBottomBar(
-                        currentRoute = when (pagerState.currentPage) {
-                            0 -> NavigationDestination.Home.route
-                            1 -> NavigationDestination.Library.route
-                            2 -> NavigationDestination.Profile.route
-                            else -> NavigationDestination.Home.route
-                        },
-                        onNavigateToHome = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
-                        onNavigateToLibrary = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
-                        onNavigateToProfile = { coroutineScope.launch { pagerState.animateScrollToPage(2) } }
-                    )
+                    if (!isLandscape) {
+                        com.example.graymatter.android.ui.GrayMatterBottomBar(
+                            currentRoute = when (pagerState.currentPage) {
+                                0 -> NavigationDestination.Home.route
+                                1 -> NavigationDestination.Library.route
+                                2 -> NavigationDestination.Profile.route
+                                else -> NavigationDestination.Home.route
+                            },
+                            onNavigateToHome = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
+                            onNavigateToLibrary = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
+                            onNavigateToProfile = { coroutineScope.launch { pagerState.animateScrollToPage(2) } }
+                        )
+                    }
                 }
             ) { paddingValues ->
-                androidx.compose.foundation.pager.HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.padding(paddingValues).fillMaxSize()
-                ) { page ->
+                Row(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                    if (isLandscape) {
+                        com.example.graymatter.android.ui.GrayMatterNavigationRail(
+                            currentRoute = when (pagerState.currentPage) {
+                                0 -> NavigationDestination.Home.route
+                                1 -> NavigationDestination.Library.route
+                                2 -> NavigationDestination.Profile.route
+                                else -> NavigationDestination.Home.route
+                            },
+                            onNavigateToHome = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
+                            onNavigateToLibrary = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
+                            onNavigateToProfile = { coroutineScope.launch { pagerState.animateScrollToPage(2) } }
+                        )
+                    }
+                    
+                    androidx.compose.foundation.pager.HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.weight(1f).fillMaxHeight()
+                    ) { page ->
                     when (page) {
                         0 -> {
                             val continueReadingItem by homeViewModel.continueReadingResourceEntry.collectAsState()
@@ -224,7 +245,8 @@ fun GrayMatterNavigation(
                         }
                     }
                 }
-            }
+            } // Close Row
+        } // Close Scaffold
         }
 
         // Topic Detail Screen (Synthesis)

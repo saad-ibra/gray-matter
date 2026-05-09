@@ -216,7 +216,7 @@ fun LibraryScreen(
                     }
                 } else {
                     LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
+                        columns = GridCells.Adaptive(minSize = 160.dp),
                         state = gridState,
                         // Disable grid scrolling during drag to prevent gesture interruption
                         userScrollEnabled = draggedTopicId.value == null,
