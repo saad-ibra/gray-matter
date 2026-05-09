@@ -551,6 +551,7 @@ fun KnowledgeGraphScreen(
                 visibilityByType[NodeType.CUSTOM.ordinal] = showCustom
                 visibilityByType[NodeType.LOOKUP.ordinal] = showLookup
                 visibilityByType[NodeType.OPINION.ordinal] = showOpinions
+                visibilityByType[NodeType.VISUAL.ordinal] = showVisuals
 
                 // ── Pre-compute rotation matrix once per frame ──
                 val cosX = kotlin.math.cos(globalRotX)
@@ -872,7 +873,8 @@ fun KnowledgeGraphScreen(
                     "Opinions" to (showOpinions || showAnnotations),
                     "Bookmarks" to showBookmarks,
                     "Templates" to showTemplates,
-                    "Lookup" to showLookup
+                    "Lookup" to showLookup,
+                    "Visuals" to showVisuals
                 )
                 
                 LazyRow(
@@ -894,6 +896,7 @@ fun KnowledgeGraphScreen(
                                     "Bookmarks" -> showBookmarks = !showBookmarks
                                     "Templates" -> showTemplates = !showTemplates
                                     "Lookup" -> showLookup = !showLookup
+                                    "Visuals" -> showVisuals = !showVisuals
                                 }
                             },
                             label = { Text(name, color = Color.Unspecified) },
@@ -905,6 +908,7 @@ fun KnowledgeGraphScreen(
                                     "Bookmarks" -> GrayMatterColors.TypeBookmark.copy(alpha = 0.3f)
                                     "Templates" -> GrayMatterColors.TypeTemplate.copy(alpha = 0.3f)
                                     "Dict" -> GrayMatterColors.TypeLookupMain.copy(alpha = 0.3f)
+                                    "Visuals" -> GrayMatterColors.TypeVisual.copy(alpha = 0.3f)
                                     else -> GrayMatterColors.TypeOpinion.copy(alpha = 0.3f)
                                 },
                                 selectedLabelColor = when(name) {
@@ -914,6 +918,7 @@ fun KnowledgeGraphScreen(
                                     "Bookmarks" -> GrayMatterColors.TypeBookmark
                                     "Templates" -> GrayMatterColors.TypeTemplate
                                     "Dict" -> GrayMatterColors.TypeLookupMain
+                                    "Visuals" -> GrayMatterColors.TypeVisual
                                     else -> GrayMatterColors.TypeOpinion
                                 }
                             )
