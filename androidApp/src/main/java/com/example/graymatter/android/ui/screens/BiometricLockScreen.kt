@@ -1,23 +1,20 @@
 package com.example.graymatter.android.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.example.graymatter.android.R
 
 /**
- * Minimal lock screen that requires biometric/device credential
- * authentication before showing app content.
- *
- * This composable automatically triggers the biometric prompt on first display.
- * It is kept intentionally blank to abstract security features from the user.
+ * Minimal lock screen with a black background and a small logo.
+ * Designed to be as unobtrusive as possible while security is verified.
  */
 @Composable
 fun BiometricLockScreen(
@@ -32,18 +29,31 @@ fun BiometricLockScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(Color.Black), // Black background as requested
         contentAlignment = Alignment.Center
     ) {
-        // Minimal fallback button in case the system prompt is dismissed
-        Button(
-            onClick = onAuthenticate,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text(text = "Unlock")
+            // Small logo
+            Image(
+                painter = painterResource(id = R.mipmap.ic_launcher_round),
+                contentDescription = "Logo",
+                modifier = Modifier.size(80.dp) // Small logo size
+            )
+            
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // Minimal fallback button
+            TextButton(
+                onClick = onAuthenticate,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color.White.copy(alpha = 0.3f)
+                )
+            ) {
+                Text(text = "Unlock")
+            }
         }
     }
 }
