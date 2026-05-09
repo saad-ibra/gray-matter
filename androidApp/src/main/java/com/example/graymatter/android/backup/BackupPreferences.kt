@@ -47,6 +47,18 @@ class BackupPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_LAST_BACKUP_SUCCESS, true)
         set(value) = prefs.edit().putBoolean(KEY_LAST_BACKUP_SUCCESS, value).apply()
 
+    var backupTimeHour: Int
+        get() = prefs.getInt(KEY_BACKUP_HOUR, 2) // Default to 2 AM
+        set(value) = prefs.edit().putInt(KEY_BACKUP_HOUR, value).apply()
+
+    var backupTimeMinute: Int
+        get() = prefs.getInt(KEY_BACKUP_MINUTE, 0)
+        set(value) = prefs.edit().putInt(KEY_BACKUP_MINUTE, value).apply()
+
+    var is24HourFormat: Boolean
+        get() = prefs.getBoolean(KEY_IS_24H, true) // Default to 24h
+        set(value) = prefs.edit().putBoolean(KEY_IS_24H, value).apply()
+
     fun hasPassword(): Boolean = !masterPassword.isNullOrEmpty()
 
     companion object {
@@ -56,6 +68,9 @@ class BackupPreferences(context: Context) {
         private const val KEY_LAST_BACKUP_TIME = "last_backup_timestamp"
         private const val KEY_LAST_BACKUP_SIZE = "last_backup_size"
         private const val KEY_LAST_BACKUP_SUCCESS = "last_backup_success"
+        private const val KEY_BACKUP_HOUR = "backup_hour"
+        private const val KEY_BACKUP_MINUTE = "backup_minute"
+        private const val KEY_IS_24H = "is_24h_format"
     }
 }
 

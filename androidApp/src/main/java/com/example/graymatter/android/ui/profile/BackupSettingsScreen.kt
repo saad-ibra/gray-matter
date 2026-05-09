@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -144,20 +145,100 @@ fun BackupSettingsScreen(
             }
             item {
                 SettingsCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text("Frequency", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            BackupFrequency.entries.forEach { freq ->
-                                FilterChip(
-                                    selected = state.frequency == freq,
-                                    onClick = { viewModel.setFrequency(freq) },
-                                    label = { Text(freq.label) },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
-                                        selectedLabelColor = GrayMatterColors.Primary
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text("Frequency", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                BackupFrequency.entries.forEach { freq ->
+                                    FilterChip(
+                                        selected = state.frequency == freq,
+                                        onClick = { viewModel.setFrequency(freq) },
+                                        label = { Text(freq.label) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
+                                            selectedLabelColor = GrayMatterColors.Primary
+                                        )
                                     )
+                                }
+                            }
+                        }
+
+                        Divider(color = GrayMatterColors.Neutral800, thickness = 0.5.dp)
+
+                        var showTimePicker by remember { mutableStateOf(false) }
+
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            // First line: Title and Format Chips
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Auto backup time of day", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
+                                
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FilterChip(
+                                        selected = state.is24HourFormat,
+                                        onClick = { viewModel.set24HourFormat(true) },
+                                        label = { Text("24h", style = MaterialTheme.typography.labelSmall) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
+                                            selectedLabelColor = GrayMatterColors.Primary
+                                        ),
+                                        modifier = Modifier.height(28.dp)
+                                    )
+                                    FilterChip(
+                                        selected = !state.is24HourFormat,
+                                        onClick = { viewModel.set24HourFormat(false) },
+                                        label = { Text("12h", style = MaterialTheme.typography.labelSmall) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
+                                            selectedLabelColor = GrayMatterColors.Primary
+                                        ),
+                                        modifier = Modifier.height(28.dp)
+                                    )
+                                }
+                            }
+
+                            // Second line: Time selection
+                            val timeStr = if (state.is24HourFormat) {
+                                String.format("%02d:%02d", state.backupTimeHour, state.backupTimeMinute)
+                            } else {
+                                val hour = if (state.backupTimeHour % 12 == 0) 12 else state.backupTimeHour % 12
+                                val amPm = if (state.backupTimeHour < 12) "AM" else "PM"
+                                String.format("%02d:%02d %s", hour, state.backupTimeMinute, amPm)
+                            }
+                            
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(GrayMatterColors.Neutral900)
+                                    .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                                    .clickable { showTimePicker = true }
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    timeStr,
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    color = GrayMatterColors.Primary,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
+                        }
+
+                        if (showTimePicker) {
+                            TimePickerDialog(
+                                initialHour = state.backupTimeHour,
+                                initialMinute = state.backupTimeMinute,
+                                is24Hour = state.is24HourFormat,
+                                onDismiss = { showTimePicker = false },
+                                onConfirm = { hour, minute ->
+                                    viewModel.setBackupTime(hour, minute)
+                                    showTimePicker = false
+                                }
+                            )
                         }
                     }
                 }
@@ -677,6 +758,79 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (String) -> U
             TextButton(onClick = onDismiss) { Text("Cancel", color = GrayMatterColors.Neutral500) }
         }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimePickerDialog(
+    initialHour: Int,
+    initialMinute: Int,
+    is24Hour: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (Int, Int) -> Unit
+) {
+    val timePickerState = rememberTimePickerState(
+        initialHour = initialHour,
+        initialMinute = initialMinute,
+        is24Hour = is24Hour
+    )
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = GrayMatterColors.SurfaceDark,
+            modifier = Modifier.fillMaxWidth().wrapContentHeight()
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Text(
+                    "Select Backup Time",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = GrayMatterColors.TextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                TimePicker(
+                    state = timePickerState,
+                    colors = TimePickerDefaults.colors(
+                        clockDialColor = GrayMatterColors.Neutral900,
+                        clockDialSelectedContentColor = GrayMatterColors.OnPrimary,
+                        clockDialUnselectedContentColor = GrayMatterColors.TextPrimary,
+                        selectorColor = GrayMatterColors.Primary,
+                        periodSelectorBorderColor = GrayMatterColors.Neutral700,
+                        periodSelectorSelectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
+                        periodSelectorUnselectedContainerColor = Color.Transparent,
+                        periodSelectorSelectedContentColor = GrayMatterColors.Primary,
+                        periodSelectorUnselectedContentColor = GrayMatterColors.Neutral500,
+                        timeSelectorSelectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
+                        timeSelectorUnselectedContainerColor = GrayMatterColors.Neutral900,
+                        timeSelectorSelectedContentColor = GrayMatterColors.Primary,
+                        timeSelectorUnselectedContentColor = GrayMatterColors.TextPrimary
+                    )
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel", color = GrayMatterColors.Neutral400)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = { onConfirm(timePickerState.hour, timePickerState.minute) },
+                        colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary)
+                    ) {
+                        Text("Confirm")
+                    }
+                }
+            }
+        }
+    }
 }
 
 private fun formatDate(timestamp: Long): String {

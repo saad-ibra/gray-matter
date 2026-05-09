@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 data class BackupUiState(
@@ -28,7 +29,10 @@ data class BackupUiState(
     val localBackups: List<BackupInfo> = emptyList(),
     val isBackingUp: Boolean = false,
     val isRestoring: Boolean = false,
-    val statusMessage: String? = null
+    val statusMessage: String? = null,
+    val backupTimeHour: Int = 2,
+    val backupTimeMinute: Int = 0,
+    val is24HourFormat: Boolean = true
 )
 
 class BackupViewModel(application: Application) : AndroidViewModel(application) {
@@ -51,7 +55,10 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
             lastBackupTimestamp = preferences.lastBackupTimestamp,
             lastBackupSizeBytes = preferences.lastBackupSizeBytes,
             lastBackupSuccess = preferences.lastBackupSuccess,
-            localBackups = manager.getLocalBackups()
+            localBackups = manager.getLocalBackups(),
+            backupTimeHour = preferences.backupTimeHour,
+            backupTimeMinute = preferences.backupTimeMinute,
+            is24HourFormat = preferences.is24HourFormat
         )
     }
 
@@ -80,6 +87,18 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
     fun setMaxBackups(count: Int) {
         preferences.maxBackupCount = count
         _uiState.value = _uiState.value.copy(maxBackups = count)
+    }
+
+    fun setBackupTime(hour: Int, minute: Int) {
+        preferences.backupTimeHour = hour
+        preferences.backupTimeMinute = minute
+        _uiState.value = _uiState.value.copy(backupTimeHour = hour, backupTimeMinute = minute)
+        scheduleBackup(preferences.backupFrequency)
+    }
+
+    fun set24HourFormat(is24Hour: Boolean) {
+        preferences.is24HourFormat = is24Hour
+        _uiState.value = _uiState.value.copy(is24HourFormat = is24Hour)
     }
 
     fun triggerManualBackup() {
@@ -133,10 +152,26 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
     private fun scheduleBackup(frequency: BackupFrequency) {
         val workManager = WorkManager.getInstance(getApplication())
 
+        // Calculate initial delay to run at the specified time
+        val calendar = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, preferences.backupTimeHour)
+            set(Calendar.MINUTE, preferences.backupTimeMinute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        
+        val currentTime = System.currentTimeMillis()
+        if (calendar.timeInMillis <= currentTime) {
+            calendar.add(Calendar.DAY_OF_YEAR, 1)
+        }
+        
+        val initialDelay = calendar.timeInMillis - currentTime
+
         val request = PeriodicWorkRequestBuilder<BackupWorker>(
             repeatInterval = frequency.intervalHours,
             repeatIntervalTimeUnit = TimeUnit.HOURS
-        ).setConstraints(
+        ).setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
+        .setConstraints(
             Constraints.Builder()
                 .setRequiresBatteryNotLow(true)
                 .build()
