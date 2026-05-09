@@ -45,8 +45,8 @@ object GrayMatterColors {
     val TypeLookupMain = Color(0xFFBF5A6A)
     val TypeLookupSavedElsewhere = Color(0xFFC47A8A)
     val TypeTemplate = Color(0xFF7E6A8C)
-    val TypeNoteDescription = Color(0xFF9E8A6A)
-    val TypeVisual = Color(0xFF788880)
+    val TypeNoteDescription = Color(0xFF788880)
+    val TypeVisual = Color(0xFFD4906A)
 
     // Neutral grays
     val Neutral100 = Color(0xFFF4F4F5)
