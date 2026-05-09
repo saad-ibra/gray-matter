@@ -88,4 +88,7 @@ dependencies {
 
     // Encrypted SharedPreferences (privacy-centric backup settings)
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // Biometric authentication (hardware-tied CryptoObject)
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
 }

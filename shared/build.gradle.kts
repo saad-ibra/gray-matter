@@ -44,6 +44,9 @@ kotlin {
             dependencies {
                 // sql-delight driver - Android
                 implementation("app.cash.sqldelight:android-driver:2.0.0")
+                // SQLCipher for encrypted database (AES-256)
+                implementation("net.zetetic:android-database-sqlcipher:4.5.4")
+                implementation("androidx.sqlite:sqlite:2.4.0")
             }
         }
 

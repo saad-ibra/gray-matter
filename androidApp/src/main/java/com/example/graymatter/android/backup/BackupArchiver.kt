@@ -28,19 +28,21 @@ object BackupArchiver {
 
                 val entries = mutableListOf<ArchiveEntry>()
 
-                // Databases
-                val dbFile = context.getDatabasePath("graymatter_v13.db")
+                // Databases (try encrypted v14 first, fall back to v13 for legacy)
+                val encDbFile = context.getDatabasePath("graymatter_v14_enc.db")
+                val legacyDbFile = context.getDatabasePath("graymatter_v13.db")
+                val dbFile = if (encDbFile.exists()) encDbFile else legacyDbFile
                 if (dbFile.exists()) {
-                    entries.add(ArchiveEntry("databases/graymatter_v13.db", dbFile))
+                    entries.add(ArchiveEntry("databases/${dbFile.name}", dbFile))
                 }
                 val notesDbFile = context.getDatabasePath("notes.db")
                 if (notesDbFile.exists()) {
                     entries.add(ArchiveEntry("databases/notes.db", notesDbFile))
                 }
                 val walFile = File(dbFile.path + "-wal")
-                if (walFile.exists()) entries.add(ArchiveEntry("databases/graymatter_v13.db-wal", walFile))
+                if (walFile.exists()) entries.add(ArchiveEntry("databases/${dbFile.name}-wal", walFile))
                 val shmFile = File(dbFile.path + "-shm")
-                if (shmFile.exists()) entries.add(ArchiveEntry("databases/graymatter_v13.db-shm", shmFile))
+                if (shmFile.exists()) entries.add(ArchiveEntry("databases/${dbFile.name}-shm", shmFile))
 
                 // Resource files (PDFs, etc.)
                 val resourcesDir = File(context.filesDir, "resources")

@@ -129,10 +129,16 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /**
+     * Restores from a backup file URI.
+     * The password string is converted to CharArray and zeroed after use.
+     */
     fun restoreFromBackup(backupUri: Uri, password: String) {
         _uiState.value = _uiState.value.copy(isRestoring = true, statusMessage = null)
         viewModelScope.launch(Dispatchers.IO) {
-            val success = manager.restoreFromBackup(backupUri, password)
+            val passwordChars = password.toCharArray()
+            val success = manager.restoreFromBackup(backupUri, passwordChars)
+            // Note: BackupManager.restoreFromBackup already zeros the CharArray
             _uiState.value = _uiState.value.copy(
                 isRestoring = false,
                 statusMessage = if (success) "Restore complete — please restart the app" else "Restore failed — wrong password or corrupt file"

@@ -20,6 +20,9 @@ data class BackupInfo(
 
 /**
  * Orchestrates backup creation, rotation, and export.
+ *
+ * All password parameters are [CharArray] to enable explicit memory zeroing.
+ * Callers MUST zero their password arrays after use.
  */
 class BackupManager(
     private val context: Context,
@@ -31,10 +34,12 @@ class BackupManager(
     /**
      * Runs a full backup: archive → encrypt → rotate.
      * Returns the backup file on success, null on failure.
+     *
+     * The master password is retrieved as a [CharArray] and zeroed after use.
      */
     fun runBackup(): File? {
-        val password = preferences.masterPassword
-        if (password.isNullOrEmpty()) {
+        val password = preferences.getMasterPasswordChars()
+        if (password == null || password.isEmpty()) {
             Log.e(TAG, "Cannot run backup: no master password set")
             return null
         }
@@ -75,6 +80,7 @@ class BackupManager(
             backupFile.delete()
             null
         } finally {
+            password.fill('\u0000') // Zero password from memory
             tempArchive.delete()
         }
     }
@@ -82,8 +88,10 @@ class BackupManager(
     /**
      * Restores from a backup file URI.
      * Returns true on success.
+     *
+     * @param password Password as CharArray. Will be zeroed after use.
      */
-    fun restoreFromBackup(backupUri: Uri, password: String): Boolean {
+    fun restoreFromBackup(backupUri: Uri, password: CharArray): Boolean {
         val stagingDir = File(context.cacheDir, "restore_staging")
         val tempArchive = File(context.cacheDir, "restore_temp.tar.gz")
 
@@ -145,6 +153,7 @@ class BackupManager(
             Log.e(TAG, "Restore failed", e)
             false
         } finally {
+            password.fill('\u0000') // Zero password from memory
             tempArchive.delete()
             stagingDir.deleteRecursively()
         }

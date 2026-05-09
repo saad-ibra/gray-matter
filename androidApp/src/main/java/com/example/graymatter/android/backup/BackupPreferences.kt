@@ -23,6 +23,21 @@ class BackupPreferences(context: Context) {
         )
     }
 
+    /**
+     * Returns the master password as a mutable [CharArray].
+     * The caller MUST zero this after use: `chars.fill('\u0000')`
+     *
+     * Returns null if no password is set.
+     */
+    fun getMasterPasswordChars(): CharArray? {
+        val stored = prefs.getString(KEY_MASTER_PASSWORD, null)
+        return stored?.toCharArray()
+    }
+
+    /**
+     * Legacy property for backward compatibility.
+     * Prefer [getMasterPasswordChars] for memory-safe access.
+     */
     var masterPassword: String?
         get() = prefs.getString(KEY_MASTER_PASSWORD, null)
         set(value) = prefs.edit().putString(KEY_MASTER_PASSWORD, value).apply()

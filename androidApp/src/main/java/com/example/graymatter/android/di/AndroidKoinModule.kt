@@ -1,5 +1,6 @@
 package com.example.graymatter.android.di
 
+import com.example.graymatter.android.security.SecureDatabaseKeyManager
 import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
 import com.example.graymatter.android.ui.viewmodel.TrashViewModel
 import com.example.graymatter.android.ui.fileviewer.FileViewerViewModel
@@ -12,8 +13,14 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
 val androidAppModule = module {
-    // Provide the Android-specific DatabaseDriverFactory using Koin's androidContext()
-    single { DatabaseDriverFactory(androidContext()) }
+    // Hardware-backed key management for database encryption
+    single { SecureDatabaseKeyManager(androidContext()) }
+
+    // Provide the Android-specific DatabaseDriverFactory with SQLCipher passphrase
+    single {
+        val keyManager: SecureDatabaseKeyManager = get()
+        DatabaseDriverFactory(androidContext(), keyManager.getDatabasePassphrase())
+    }
 }
 
 val androidViewModelModule = module {
