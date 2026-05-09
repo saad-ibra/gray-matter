@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +25,7 @@ fun ProfileScreen(
     onNavigateToTemplates: () -> Unit,
     onNavigateToRecentlyDeleted: () -> Unit,
     onNavigateToLookups: () -> Unit,
+    onNavigateToBackupSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -64,6 +66,12 @@ fun ProfileScreen(
                     title = "Recently Deleted",
                     tint = GrayMatterColors.Primary,
                     onClick = onNavigateToRecentlyDeleted
+                )
+                SettingsButton(
+                    icon = Icons.Outlined.Security,
+                    title = "Backup & Security",
+                    tint = GrayMatterColors.Primary,
+                    onClick = onNavigateToBackupSettings
                 )
             }
         }

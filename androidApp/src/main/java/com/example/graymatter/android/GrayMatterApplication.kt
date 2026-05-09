@@ -2,7 +2,7 @@ package com.example.graymatter.android
 
 import android.app.Application
 import androidx.work.Configuration
-import com.example.graymatter.android.workers.CleanupWorkerFactory
+import com.example.graymatter.android.workers.GrayMatterWorkerFactory
 import com.example.graymatter.android.workers.setupCleanupWorker
 import com.example.graymatter.di.sharedModule
 import com.example.graymatter.android.di.androidAppModule
@@ -32,8 +32,8 @@ class GrayMatterApplication : Application(), Configuration.Provider {
         setupCleanupWorker(this)
     }
 
-    // The WorkerManager uses our CleanupWorkerFactory which does not need appModule anymore
+    // The WorkerManager uses our combined WorkerFactory
     override fun getWorkManagerConfiguration(): Configuration = Configuration.Builder()
-        .setWorkerFactory(CleanupWorkerFactory())
+        .setWorkerFactory(GrayMatterWorkerFactory())
         .build()
 }

@@ -71,7 +71,7 @@ class CleanupWorker(
     }
 }
 
-class CleanupWorkerFactory : WorkerFactory() {
+class GrayMatterWorkerFactory : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
         workerClassName: String,
@@ -79,6 +79,10 @@ class CleanupWorkerFactory : WorkerFactory() {
     ): ListenableWorker? {
         return when (workerClassName) {
             CleanupWorker::class.java.name -> CleanupWorker(
+                appContext = appContext,
+                workerParameters = workerParameters
+            )
+            BackupWorker::class.java.name -> BackupWorker(
                 appContext = appContext,
                 workerParameters = workerParameters
             )
