@@ -984,7 +984,16 @@ private fun ConfidenceLevelSection(
             Text("${(confidence * 100).toInt()}%", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
         }
         Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(bgColor).border(1.dp, borderColor, RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Slider(value = confidence, onValueChange = onConfidenceChange, valueRange = 0f..1f, colors = SliderDefaults.colors(thumbColor = accentColor, activeTrackColor = accentColor, inactiveTrackColor = GrayMatterColors.Neutral800))
+            Slider(
+                value = confidence, 
+                onValueChange = onConfidenceChange, 
+                valueRange = 0f..1f, 
+                colors = SliderDefaults.colors(
+                    thumbColor = Color.White, 
+                    activeTrackColor = Color.White, 
+                    inactiveTrackColor = GrayMatterColors.Neutral800
+                )
+            )
         }
     }
 }

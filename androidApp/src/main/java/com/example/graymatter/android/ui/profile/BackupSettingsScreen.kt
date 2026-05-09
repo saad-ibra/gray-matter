@@ -167,40 +167,13 @@ fun BackupSettingsScreen(
 
                         var showTimePicker by remember { mutableStateOf(false) }
 
-                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            // First line: Title and Format Chips
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("Auto backup time of day", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
-                                
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    FilterChip(
-                                        selected = state.is24HourFormat,
-                                        onClick = { viewModel.set24HourFormat(true) },
-                                        label = { Text("24h", style = MaterialTheme.typography.labelSmall) },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
-                                            selectedLabelColor = GrayMatterColors.Primary
-                                        ),
-                                        modifier = Modifier.height(28.dp)
-                                    )
-                                    FilterChip(
-                                        selected = !state.is24HourFormat,
-                                        onClick = { viewModel.set24HourFormat(false) },
-                                        label = { Text("12h", style = MaterialTheme.typography.labelSmall) },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
-                                            selectedLabelColor = GrayMatterColors.Primary
-                                        ),
-                                        modifier = Modifier.height(28.dp)
-                                    )
-                                }
-                            }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Time of day", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
 
-                            // Second line: Time selection
                             val timeStr = if (state.is24HourFormat) {
                                 String.format("%02d:%02d", state.backupTimeHour, state.backupTimeMinute)
                             } else {
@@ -208,20 +181,18 @@ fun BackupSettingsScreen(
                                 val amPm = if (state.backupTimeHour < 12) "AM" else "PM"
                                 String.format("%02d:%02d %s", hour, state.backupTimeMinute, amPm)
                             }
-                            
+
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(GrayMatterColors.Neutral900)
                                     .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
                                     .clickable { showTimePicker = true }
-                                    .padding(vertical = 12.dp),
-                                contentAlignment = Alignment.Center
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
                             ) {
                                 Text(
                                     timeStr,
-                                    style = MaterialTheme.typography.headlineMedium,
+                                    style = MaterialTheme.typography.titleMedium,
                                     color = GrayMatterColors.Primary,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -233,6 +204,7 @@ fun BackupSettingsScreen(
                                 initialHour = state.backupTimeHour,
                                 initialMinute = state.backupTimeMinute,
                                 is24Hour = state.is24HourFormat,
+                                onFormatToggle = { viewModel.set24HourFormat(it) },
                                 onDismiss = { showTimePicker = false },
                                 onConfirm = { hour, minute ->
                                     viewModel.setBackupTime(hour, minute)
@@ -301,50 +273,6 @@ fun BackupSettingsScreen(
                 }
             }
 
-            // ── Status Section ──
-            if (state.lastBackupTimestamp > 0) {
-                item {
-                    SectionHeader(icon = Icons.Default.Info, title = "LAST BACKUP")
-                }
-                item {
-                    SettingsCard {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    formatDate(state.lastBackupTimestamp),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = GrayMatterColors.TextPrimary
-                                )
-                                Text(
-                                    formatSize(state.lastBackupSizeBytes),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = GrayMatterColors.Neutral500
-                                )
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (state.lastBackupSuccess) GrayMatterColors.Primary.copy(alpha = 0.15f)
-                                        else MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
-                                    )
-                                    .padding(8.dp)
-                            ) {
-                                Icon(
-                                    if (state.lastBackupSuccess) Icons.Default.CheckCircle else Icons.Default.Error,
-                                    null,
-                                    tint = if (state.lastBackupSuccess) GrayMatterColors.Primary else MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
 
             // ── Actions ──
             item {
@@ -766,6 +694,7 @@ private fun TimePickerDialog(
     initialHour: Int,
     initialMinute: Int,
     is24Hour: Boolean,
+    onFormatToggle: (Boolean) -> Unit,
     onDismiss: () -> Unit,
     onConfirm: (Int, Int) -> Unit
 ) {
@@ -786,12 +715,39 @@ private fun TimePickerDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                Text(
-                    "Select Backup Time",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = GrayMatterColors.TextPrimary,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Select Time",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = GrayMatterColors.TextPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = is24Hour,
+                            onClick = { onFormatToggle(true) },
+                            label = { Text("24h") },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
+                                selectedLabelColor = GrayMatterColors.Primary
+                            )
+                        )
+                        FilterChip(
+                            selected = !is24Hour,
+                            onClick = { onFormatToggle(false) },
+                            label = { Text("12h") },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
+                                selectedLabelColor = GrayMatterColors.Primary
+                            )
+                        )
+                    }
+                }
                 
                 TimePicker(
                     state = timePickerState,

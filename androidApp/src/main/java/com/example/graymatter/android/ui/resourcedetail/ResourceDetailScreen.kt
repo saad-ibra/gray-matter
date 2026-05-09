@@ -1291,16 +1291,27 @@ private fun OpinionTimelineItem(
                                 onClick = { showItemMenu = false; onViewInGraph(opinion.id) }
                             )
                             if (isDictionary) {
+                                val isCurrentlyLearnt = text.contains(" #learnt")
                                 DropdownMenuItem(
                                     text = {
                                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                            Icon(Icons.Default.LibraryAddCheck, null, tint = GrayMatterColors.TypeLookupMain, modifier = Modifier.size(18.dp))
-                                            Text("Mark as Learnt", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                            Icon(
+                                                imageVector = if (isCurrentlyLearnt) Icons.Default.Restore else Icons.Default.LibraryAddCheck, 
+                                                contentDescription = null, 
+                                                tint = GrayMatterColors.TypeLookupMain, 
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Text(if (isCurrentlyLearnt) "Mark as Learning" else "Mark as Learnt", color = Color.White, style = MaterialTheme.typography.bodyMedium)
                                         }
                                     },
                                     onClick = { 
                                         showItemMenu = false; 
-                                        onUpdate(text, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, opinion.imagePath)
+                                        val newText = if (isCurrentlyLearnt) {
+                                            text.replace(" #learnt", "")
+                                        } else {
+                                            if (text.contains(" #learnt")) text else "$text #learnt"
+                                        }
+                                        onUpdate(newText, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, opinion.imagePath)
                                     }
                                 )
                             }
@@ -1865,7 +1876,15 @@ private fun DynamicEntryEditor(
             }
         }
         
-        Slider(value = confidence, onValueChange = onConfidenceChange, colors = SliderDefaults.colors(thumbColor = GrayMatterColors.TypeTemplate, activeTrackColor = GrayMatterColors.TypeTemplate))
+        Slider(
+            value = confidence, 
+            onValueChange = onConfidenceChange, 
+            colors = SliderDefaults.colors(
+                thumbColor = Color.White, 
+                activeTrackColor = Color.White,
+                inactiveTrackColor = GrayMatterColors.Neutral800
+            )
+        )
     }
 }
 
@@ -1964,7 +1983,15 @@ private fun OpinionEditor(text: String, confidence: Float, onTextChange: (String
         Box(modifier = Modifier.fillMaxWidth().background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp)).border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp)).padding(12.dp)) {
             BasicTextField(value = text, onValueChange = onTextChange, textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary), modifier = Modifier.fillMaxWidth(), cursorBrush = SolidColor(GrayMatterColors.Primary))
         }
-        Slider(value = confidence, onValueChange = onConfidenceChange, colors = SliderDefaults.colors(thumbColor = GrayMatterColors.Primary, activeTrackColor = GrayMatterColors.Primary))
+        Slider(
+            value = confidence, 
+            onValueChange = onConfidenceChange, 
+            colors = SliderDefaults.colors(
+                thumbColor = Color.White, 
+                activeTrackColor = Color.White,
+                inactiveTrackColor = GrayMatterColors.Neutral800
+            )
+        )
     }
 }
 
@@ -2238,7 +2265,11 @@ private fun OpinionEditDialog(
                     Slider(
                         value = confidence,
                         onValueChange = { confidence = it },
-                        colors = SliderDefaults.colors(thumbColor = accentColor, activeTrackColor = accentColor)
+                        colors = SliderDefaults.colors(
+                            thumbColor = Color.White,
+                            activeTrackColor = Color.White,
+                            inactiveTrackColor = GrayMatterColors.Neutral800
+                        )
                     )
                 }
 
