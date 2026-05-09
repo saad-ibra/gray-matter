@@ -175,29 +175,46 @@ fun BackupSettingsScreen(
                             Text("Keep Backups", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
                             
                             var backupCountStr by remember(state.maxBackups) { mutableStateOf(state.maxBackups.toString()) }
-                            OutlinedTextField(
-                                value = backupCountStr,
-                                onValueChange = { newValue ->
-                                    // Only allow numbers
-                                    if (newValue.all { it.isDigit() }) {
-                                        backupCountStr = newValue
-                                        val num = newValue.toIntOrNull()
-                                        if (num != null && num > 0) {
-                                            viewModel.setMaxBackups(num)
+                            var errorMsg by remember { mutableStateOf<String?>(null) }
+                            
+                            Column(horizontalAlignment = Alignment.End) {
+                                OutlinedTextField(
+                                    value = backupCountStr,
+                                    onValueChange = { newValue ->
+                                        if (newValue.all { it.isDigit() }) {
+                                            backupCountStr = newValue
+                                            val num = newValue.toIntOrNull()
+                                            if (num != null) {
+                                                if (num > 30) {
+                                                    errorMsg = "Max 30"
+                                                } else if (num < 1) {
+                                                    errorMsg = "Min 1"
+                                                } else {
+                                                    errorMsg = null
+                                                    viewModel.setMaxBackups(num)
+                                                }
+                                            } else if (newValue.isEmpty()) {
+                                                errorMsg = "Required"
+                                            }
                                         }
-                                    }
-                                },
-                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true,
-                                modifier = Modifier.width(80.dp).height(50.dp),
-                                textStyle = MaterialTheme.typography.bodyMedium.copy(color = GrayMatterColors.TextPrimary, textAlign = androidx.compose.ui.text.style.TextAlign.Center),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = GrayMatterColors.Primary,
-                                    unfocusedBorderColor = GrayMatterColors.Neutral700,
-                                    cursorColor = GrayMatterColors.Primary
-                                ),
-                                shape = RoundedCornerShape(8.dp)
-                            )
+                                    },
+                                    isError = errorMsg != null,
+                                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    modifier = Modifier.width(80.dp).height(50.dp),
+                                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = GrayMatterColors.TextPrimary, textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = GrayMatterColors.Primary,
+                                        unfocusedBorderColor = GrayMatterColors.Neutral700,
+                                        errorBorderColor = MaterialTheme.colorScheme.error,
+                                        cursorColor = GrayMatterColors.Primary
+                                    ),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                errorMsg?.let {
+                                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+                                }
+                            }
                         }
                     }
                 }
@@ -317,6 +334,8 @@ fun BackupSettingsScreen(
 
     if (showPasswordDialog) {
         PasswordDialog(
+            isPasswordSet = state.isPasswordSet,
+            onVerifyOldPassword = { oldPassword -> viewModel.verifyPassword(oldPassword) },
             onDismiss = { showPasswordDialog = false },
             onConfirm = { password ->
                 viewModel.setPassword(password)
@@ -430,10 +449,19 @@ private fun BackupListItem(
 }
 
 @Composable
-private fun PasswordDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+private fun PasswordDialog(
+    isPasswordSet: Boolean,
+    onVerifyOldPassword: (String) -> Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var oldPassword by remember { mutableStateOf("") }
+    var oldPasswordError by remember { mutableStateOf<String?>(null) }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var showOldPassword by remember { mutableStateOf(false) }
     var showPassword by remember { mutableStateOf(false) }
+    var showConfirmPassword by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
@@ -465,7 +493,7 @@ private fun PasswordDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
                         Icon(Icons.Default.Lock, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(28.dp))
                     }
                     Text(
-                        text = "Master Password",
+                        text = if (isPasswordSet) "Change Password" else "Set Master Password",
                         style = MaterialTheme.typography.titleLarge,
                         color = GrayMatterColors.TextPrimary,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
@@ -480,10 +508,43 @@ private fun PasswordDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
 
                 // Input Fields
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    if (isPasswordSet) {
+                        OutlinedTextField(
+                            value = oldPassword,
+                            onValueChange = { oldPassword = it; oldPasswordError = null },
+                            label = { Text("Current Password") },
+                            visualTransformation = if (showOldPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { showOldPassword = !showOldPassword }) {
+                                    Icon(
+                                        if (showOldPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                        null,
+                                        tint = GrayMatterColors.Neutral500
+                                    )
+                                }
+                            },
+                            singleLine = true,
+                            isError = oldPasswordError != null,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = GrayMatterColors.Primary,
+                                unfocusedBorderColor = GrayMatterColors.Neutral700,
+                                errorBorderColor = MaterialTheme.colorScheme.error,
+                                focusedTextColor = GrayMatterColors.TextPrimary,
+                                unfocusedTextColor = GrayMatterColors.TextPrimary,
+                                cursorColor = GrayMatterColors.Primary
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        oldPasswordError?.let {
+                            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 4.dp))
+                        }
+                    }
+
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it; error = null },
-                        label = { Text("Password") },
+                        label = { Text(if (isPasswordSet) "New Password" else "Password") },
                         visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
                             IconButton(onClick = { showPassword = !showPassword }) {
@@ -510,7 +571,16 @@ private fun PasswordDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it; error = null },
                         label = { Text("Confirm Password") },
-                        visualTransformation = PasswordVisualTransformation(),
+                        visualTransformation = if (showConfirmPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { showConfirmPassword = !showConfirmPassword }) {
+                                Icon(
+                                    if (showConfirmPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    null,
+                                    tint = GrayMatterColors.Neutral500
+                                )
+                            }
+                        },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = GrayMatterColors.Primary,
@@ -541,6 +611,11 @@ private fun PasswordDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
                     }
                     Button(
                         onClick = {
+                            if (isPasswordSet && !onVerifyOldPassword(oldPassword)) {
+                                oldPasswordError = "Incorrect current password"
+                                return@Button
+                            }
+                            
                             when {
                                 password.length < 6 -> error = "Minimum 6 characters"
                                 password != confirmPassword -> error = "Passwords don't match"

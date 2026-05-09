@@ -67,6 +67,10 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
         )
     }
 
+    fun verifyPassword(password: String): Boolean {
+        return preferences.masterPassword == password
+    }
+
     fun setFrequency(frequency: BackupFrequency) {
         preferences.backupFrequency = frequency
         scheduleBackup(frequency)
