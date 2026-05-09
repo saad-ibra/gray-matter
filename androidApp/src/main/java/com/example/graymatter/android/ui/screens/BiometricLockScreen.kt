@@ -36,16 +36,7 @@ fun BiometricLockScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Small logo
-            Image(
-                painter = painterResource(id = R.mipmap.ic_launcher_round),
-                contentDescription = "Logo",
-                modifier = Modifier.size(80.dp) // Small logo size
-            )
-            
-            Spacer(modifier = Modifier.height(48.dp))
-
-            // Minimal fallback button
+            // Minimal fallback button only
             TextButton(
                 onClick = onAuthenticate,
                 colors = ButtonDefaults.textButtonColors(
