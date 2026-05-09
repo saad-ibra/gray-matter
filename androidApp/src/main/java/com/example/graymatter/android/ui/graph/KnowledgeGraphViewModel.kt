@@ -108,6 +108,7 @@ class KnowledgeGraphViewModel(
                     opinion.text.startsWith("[CUSTOM:") -> NodeType.CUSTOM
                     opinion.pageNumber != null && opinion.text.startsWith(">") -> NodeType.ANNOTATION
                     opinion.pageNumber != null -> NodeType.BOOKMARK
+                    opinion.imagePath != null -> NodeType.VISUAL
                     else -> NodeType.OPINION
                 }
                 
@@ -116,6 +117,7 @@ class KnowledgeGraphViewModel(
                     NodeType.TEMPLATE -> opinion.text.substringAfter("]\n").replace("### ", "").replace("|", ": ").replace("\n", " • ").trim().take(40) + "..."
                     NodeType.CUSTOM -> opinion.text.substringAfter("]\n").replace("### ", "").replace("|", ": ").replace("\n", " • ").trim().take(40) + "..."
                     NodeType.ANNOTATION -> opinion.text.substringAfter(">").trim().take(20) + "..."
+                    NodeType.VISUAL -> if (opinion.text.isNotBlank()) opinion.text.take(20) + "..." else "Visual"
                     NodeType.BOOKMARK -> if (opinion.text.isNotBlank()) opinion.text.take(20) + "..." else "Bookmark pg ${opinion.pageNumber}"
                     else -> opinion.text.take(20) + "..."
                 }
@@ -203,7 +205,8 @@ class KnowledgeGraphViewModel(
                 NodeType.BOOKMARK,
                 NodeType.LOOKUP,
                 NodeType.TEMPLATE,
-                NodeType.CUSTOM -> {
+                NodeType.CUSTOM,
+                NodeType.VISUAL -> {
                     opinionRepository.softDeleteOpinion(node.id)
                 }
             }
@@ -226,7 +229,8 @@ class KnowledgeGraphViewModel(
                 NodeType.BOOKMARK,
                 NodeType.LOOKUP,
                 NodeType.TEMPLATE,
-                NodeType.CUSTOM -> {
+                NodeType.CUSTOM,
+                NodeType.VISUAL -> {
                     opinionRepository.undoDeleteOpinion(node.id)
                 }
             }

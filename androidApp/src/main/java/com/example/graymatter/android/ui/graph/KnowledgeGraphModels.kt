@@ -5,7 +5,7 @@ import kotlin.math.max
 import kotlin.math.sqrt
 
 enum class NodeType {
-    TOPIC, RESOURCE, OPINION, ANNOTATION, BOOKMARK, TEMPLATE, CUSTOM, LOOKUP
+    TOPIC, RESOURCE, OPINION, ANNOTATION, BOOKMARK, TEMPLATE, CUSTOM, LOOKUP, VISUAL
 }
 
 data class GraphNode(

@@ -47,6 +47,7 @@ class DefaultOpinionRepository(
             text = opinion.text,
             confidenceScore = opinion.confidenceScore.toLong(),
             pageNumber = opinion.pageNumber?.toLong(),
+            imagePath = opinion.imagePath,
             createdAt = opinion.createdAt,
             updatedAt = opinion.updatedAt,
             isDeleted = if (opinion.isDeleted) 1L else 0L,
@@ -72,6 +73,7 @@ class DefaultOpinionRepository(
             confidenceScore = opinion.confidenceScore.toLong(),
             createdAt = opinion.createdAt,
             pageNumber = opinion.pageNumber?.toLong(),
+            imagePath = opinion.imagePath,
             updatedAt = opinion.updatedAt,
             id = opinion.id
         )
@@ -113,6 +115,7 @@ private fun OpinionEntity.toOpinion(): Opinion = Opinion(
     text = text,
     confidenceScore = confidenceScore.toInt(),
     pageNumber = pageNumber?.toInt(),
+    imagePath = imagePath,
     createdAt = createdAt,
     updatedAt = updatedAt,
     isDeleted = isDeleted == 1L,

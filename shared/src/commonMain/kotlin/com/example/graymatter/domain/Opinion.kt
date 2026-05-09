@@ -9,6 +9,7 @@ data class Opinion(
     val text: String,
     val confidenceScore: Int,
     val pageNumber: Int? = null,
+    val imagePath: String? = null,
     val createdAt: Long,
     val updatedAt: Long,
     val isDeleted: Boolean = false,

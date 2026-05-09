@@ -74,7 +74,7 @@ class GrayMatterViewModel(
     /**
      * Adds a new opinion to an existing resource entry.
      */
-    fun addOpinion(resourceEntryId: String, opinionText: String, confidence: Int, createdAt: Long? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
+    fun addOpinion(resourceEntryId: String, opinionText: String, confidence: Int, createdAt: Long? = null, imagePath: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         viewModelScope.launch {
             val now = Clock.System.now().toEpochMilliseconds()
             val finalCreatedAt = createdAt ?: now
@@ -84,6 +84,7 @@ class GrayMatterViewModel(
                 itemId = resourceEntryId,
                 text = opinionText,
                 confidenceScore = confidence,
+                imagePath = imagePath,
                 createdAt = finalCreatedAt,
                 updatedAt = now
             )
@@ -99,7 +100,7 @@ class GrayMatterViewModel(
     /**
      * Updates an existing opinion.
      */
-    fun updateOpinion(opinionId: String, text: String, confidence: Int, createdAt: Long, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
+    fun updateOpinion(opinionId: String, text: String, confidence: Int, createdAt: Long, imagePath: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         viewModelScope.launch {
             val now = Clock.System.now().toEpochMilliseconds()
             val existing = opinionRepository.getOpinionById(opinionId) ?: return@launch
@@ -107,6 +108,7 @@ class GrayMatterViewModel(
                 text = text,
                 confidenceScore = confidence,
                 createdAt = createdAt,
+                imagePath = imagePath ?: existing.imagePath,
                 updatedAt = now
             )
             opinionRepository.updateOpinion(updated)

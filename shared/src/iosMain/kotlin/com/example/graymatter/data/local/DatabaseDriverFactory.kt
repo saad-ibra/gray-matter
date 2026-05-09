@@ -7,7 +7,7 @@ actual class DatabaseDriverFactory {
     actual fun createDriver(): GrayMatterDatabase {
         val driver = NativeSqliteDriver(
             schema = GrayMatterDatabase.Schema,
-            name = "graymatter_v12.db"
+            name = "graymatter_v13.db"
         )
         return GrayMatterDatabase(driver)
     }

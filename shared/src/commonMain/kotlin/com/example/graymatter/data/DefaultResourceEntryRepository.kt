@@ -144,6 +144,7 @@ class DefaultResourceEntryRepository(
                 text = opinionText,
                 confidenceScore = confidence.toLong(),
                 pageNumber = null,
+                imagePath = null,
                 createdAt = now,
                 updatedAt = now,
                 isDeleted = 0L,

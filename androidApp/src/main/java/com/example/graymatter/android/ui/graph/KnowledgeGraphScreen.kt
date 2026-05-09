@@ -135,6 +135,7 @@ fun KnowledgeGraphScreen(
     var showTemplates by remember { mutableStateOf(true) }
     var showCustom by remember { mutableStateOf(true) }
     var showLookup by remember { mutableStateOf(true) }
+    var showVisuals by remember { mutableStateOf(true) }
     
     // Simulation
     val simulator = remember { ForceSimulator() }
@@ -169,6 +170,7 @@ fun KnowledgeGraphScreen(
             NodeType.TEMPLATE to GrayMatterColors.TypeTemplate,
             NodeType.CUSTOM to GrayMatterColors.TypeTemplate,
             NodeType.LOOKUP to GrayMatterColors.TypeLookupMain,
+            NodeType.VISUAL to GrayMatterColors.TypeVisual,
             NodeType.OPINION to GrayMatterColors.TypeOpinion
         )
     }
@@ -325,6 +327,7 @@ fun KnowledgeGraphScreen(
                     NodeType.CUSTOM -> showCustom
                     NodeType.LOOKUP -> showLookup
                     NodeType.OPINION -> showOpinions
+                    NodeType.VISUAL -> showVisuals
                 }
             }.toSet()
 

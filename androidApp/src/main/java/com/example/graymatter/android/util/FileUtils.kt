@@ -95,4 +95,47 @@ object FileUtils {
         val extension = File(filePath).extension
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension.lowercase()) ?: "*/*"
     }
+
+    /**
+     * Saves a bitmap to the app's internal storage and returns the absolute path.
+     */
+    fun saveBitmapToInternalStorage(context: Context, bitmap: android.graphics.Bitmap, folderName: String = "opinions"): String? {
+        return try {
+            val outputDir = File(context.filesDir, folderName)
+            if (!outputDir.exists()) {
+                outputDir.mkdirs()
+            }
+
+            val fileName = "img_${System.currentTimeMillis()}.jpg"
+            val outputFile = File(outputDir, fileName)
+
+            FileOutputStream(outputFile).use { output ->
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, output)
+            }
+            
+            outputFile.absolutePath
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving bitmap to internal storage", e)
+            null
+        }
+    }
+
+    /**
+     * Creates a temporary image file and returns its URI for camera capture.
+     */
+    fun createTempImageUri(context: Context): Uri? {
+        return try {
+            val outputDir = File(context.cacheDir, "camera_temp")
+            if (!outputDir.exists()) outputDir.mkdirs()
+            val file = File(outputDir, "temp_capture.jpg")
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                file
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error creating temp URI", e)
+            null
+        }
+    }
 }

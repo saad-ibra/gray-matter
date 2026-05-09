@@ -363,11 +363,11 @@ fun GrayMatterNavigation(
                 onUpdateDescription = { desc, refs ->
                     viewModel.updateResourceEntryDescription(resourceEntryId, desc, refs)
                 },
-                onAddOpinion = { text, confidence, selectedLinks ->
-                    viewModel.addOpinion(resourceEntryId, text, confidence, referenceLinks = selectedLinks)
+                onAddOpinion = { text, confidence, selectedLinks, imagePath ->
+                    viewModel.addOpinion(resourceEntryId, text, confidence, imagePath = imagePath, referenceLinks = selectedLinks)
                 },
-                onUpdateOpinion = { opinionId, text, confidence, date, selectedLinks ->
-                    viewModel.updateOpinion(opinionId, text, confidence, date, selectedLinks)
+                onUpdateOpinion = { opinionId, text, confidence, date, selectedLinks, imagePath ->
+                    viewModel.updateOpinion(opinionId, text, confidence, date, imagePath = imagePath, referenceLinks = selectedLinks)
                 },
                 onDeleteOpinion = { opinionId ->
                     viewModel.deleteOpinion(opinionId)
@@ -426,6 +426,20 @@ fun GrayMatterNavigation(
                     }
                 },
                 onSaveTemplate = { templateViewModel.saveTemplate(it) },
+                onNavigateToImageEditor = { uri: Uri, text: String, confidence: Int ->
+                    navController.currentBackStackEntry?.savedStateHandle?.set("imageUri", uri)
+                    navController.currentBackStackEntry?.savedStateHandle?.set("initialText", text)
+                    navController.currentBackStackEntry?.savedStateHandle?.set("initialConfidence", confidence)
+                    navController.navigate(NavigationDestination.ImageEditor.route)
+                },
+                imageResultPath = navController.currentBackStackEntry?.savedStateHandle?.get<String>("imagePath"),
+                visualText = navController.currentBackStackEntry?.savedStateHandle?.get<String>("visualText"),
+                visualConfidence = navController.currentBackStackEntry?.savedStateHandle?.get<Int>("visualConfidence"),
+                onClearVisualResult = {
+                    navController.currentBackStackEntry?.savedStateHandle?.remove<String>("imagePath")
+                    navController.currentBackStackEntry?.savedStateHandle?.remove<String>("visualText")
+                    navController.currentBackStackEntry?.savedStateHandle?.remove<Int>("visualConfidence")
+                },
                 generateUuid = { viewModel.generateUuid() }
             )
 
@@ -714,6 +728,29 @@ fun GrayMatterNavigation(
                 onBackClick = { navController.popBackStack() },
                 onItemClick = { resourceEntryId ->
                     navController.navigate(NavigationDestination.ResourceDetail.buildRoute(resourceEntryId))
+                }
+            )
+        }
+
+        // Image Editor Screen
+        composable(
+            route = NavigationDestination.ImageEditor.route
+        ) {
+            val imageUri = navController.previousBackStackEntry?.savedStateHandle?.get<Uri>("imageUri") ?: return@composable
+            val initialText = navController.previousBackStackEntry?.savedStateHandle?.get<String>("initialText") ?: ""
+            val initialConfidence = navController.previousBackStackEntry?.savedStateHandle?.get<Int>("initialConfidence") ?: 100
+            
+            com.example.graymatter.android.ui.components.ImageEditorScreen(
+                imageUri = imageUri,
+                initialText = initialText,
+                initialConfidence = initialConfidence,
+                onBackClick = { navController.popBackStack() },
+                onSave = { bitmap, text, confidence ->
+                    val path = FileUtils.saveBitmapToInternalStorage(context, bitmap)
+                    navController.previousBackStackEntry?.savedStateHandle?.set("imagePath", path)
+                    navController.previousBackStackEntry?.savedStateHandle?.set("visualText", text)
+                    navController.previousBackStackEntry?.savedStateHandle?.set("visualConfidence", confidence)
+                    navController.popBackStack()
                 }
             )
         }

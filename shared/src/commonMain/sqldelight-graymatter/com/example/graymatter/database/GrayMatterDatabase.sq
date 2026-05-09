@@ -45,6 +45,7 @@ CREATE TABLE opinionEntity (
     text TEXT NOT NULL,
     confidenceScore INTEGER NOT NULL,
     pageNumber INTEGER,
+    imagePath TEXT,
     createdAt INTEGER NOT NULL,
     updatedAt INTEGER NOT NULL,
     isDeleted INTEGER NOT NULL DEFAULT 0,
@@ -122,8 +123,8 @@ UPDATE resourceEntity SET extractedText = ? WHERE id = ?;
 
 -- Opinion queries
 insertOpinion:
-INSERT OR REPLACE INTO opinionEntity(id, itemId, text, confidenceScore, pageNumber, createdAt, updatedAt, isDeleted, deletedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO opinionEntity(id, itemId, text, confidenceScore, pageNumber, imagePath, createdAt, updatedAt, isDeleted, deletedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 getOpinionById:
 SELECT * FROM opinionEntity WHERE id = ?;
@@ -132,7 +133,7 @@ getOpinionsByItemId:
 SELECT * FROM opinionEntity WHERE itemId = ? AND isDeleted = 0 ORDER BY createdAt DESC;
 
 updateOpinion:
-UPDATE opinionEntity SET text = ?, confidenceScore = ?, createdAt = ?, pageNumber = ?, updatedAt = ? WHERE id = ?;
+UPDATE opinionEntity SET text = ?, confidenceScore = ?, createdAt = ?, pageNumber = ?, imagePath = ?, updatedAt = ? WHERE id = ?;
 
 deleteOpinion:
 DELETE FROM opinionEntity WHERE id = ?;

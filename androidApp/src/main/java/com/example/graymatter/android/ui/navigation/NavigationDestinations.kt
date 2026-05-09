@@ -53,4 +53,6 @@ sealed class NavigationDestination(val route: String) {
     object RecentlyDeleted : NavigationDestination("recently_deleted")
 
     object RecentResources : NavigationDestination("recent_resources")
+    
+    object ImageEditor : NavigationDestination("image_editor")
 }
