@@ -26,6 +26,7 @@ fun ProfileScreen(
     onNavigateToRecentlyDeleted: () -> Unit,
     onNavigateToLookups: () -> Unit,
     onNavigateToBackupSettings: () -> Unit = {},
+    onNavigateToSecuritySettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -68,10 +69,16 @@ fun ProfileScreen(
                     onClick = onNavigateToRecentlyDeleted
                 )
                 SettingsButton(
-                    icon = Icons.Outlined.Security,
-                    title = "Backup & Security",
+                    icon = Icons.Default.Backup,
+                    title = "Backup",
                     tint = GrayMatterColors.Primary,
                     onClick = onNavigateToBackupSettings
+                )
+                SettingsButton(
+                    icon = Icons.Outlined.Security,
+                    title = "Security",
+                    tint = GrayMatterColors.Primary,
+                    onClick = onNavigateToSecuritySettings
                 )
             }
         }

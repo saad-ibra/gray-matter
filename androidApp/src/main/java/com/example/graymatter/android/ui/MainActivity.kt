@@ -23,20 +23,22 @@ import com.example.graymatter.android.ui.theme.GrayMatterTheme
 class MainActivity : FragmentActivity() {
 
     private val biometricAuthManager = BiometricAuthManager()
+    private lateinit var securityPreferences: com.example.graymatter.android.security.SecurityPreferences
     
     override fun onCreate(savedInstanceState: Bundle?) {
         // Handle the splash screen transition
         installSplashScreen()
 
         super.onCreate(savedInstanceState)
+        
+        securityPreferences = com.example.graymatter.android.security.SecurityPreferences(this)
 
-        // Prevent screenshots, screen recordings, and recent-apps preview.
-        // This physically blocks malware, the OS, and users from capturing
-        // a visual snapshot of the app's content.
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
-        )
+        // Prevent screenshots, screen recordings, and recent-apps preview if enabled.
+        if (securityPreferences.isScreenSecurityEnabled) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
         
         // Check biometric availability (auto-unlocks if not available)
         biometricAuthManager.checkAvailability(this)
@@ -47,8 +49,9 @@ class MainActivity : FragmentActivity() {
         setContent {
             GrayMatterTheme(darkTheme = true) {
                 val isUnlocked by biometricAuthManager.isUnlocked.collectAsState()
+                val isAppLockEnabled = securityPreferences.isAppLockEnabled
 
-                if (isUnlocked) {
+                if (isUnlocked || !isAppLockEnabled) {
                     GrayMatterApp()
                 } else {
                     BiometricLockScreen(

@@ -56,25 +56,6 @@ kotlin {
                 implementation("app.cash.sqldelight:native-driver:2.0.0")
             }
         }
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-                // coroutines
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-            }
-        }
-
-        val androidInstrumentedTest by getting {
-            dependencies {
-                // coroutines
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-                // junit
-                implementation("junit:junit:4.13.2")
-                implementation("androidx.test:core:1.5.0")
-                // instrumentation test runner
-                implementation("androidx.test:runner:1.5.2")
-            }
-        }
     }
 }
 
@@ -82,7 +63,6 @@ android {
     namespace = "com.example.graymatter"
     compileSdk = 33
     defaultConfig {
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         minSdk = 24
     }
 }

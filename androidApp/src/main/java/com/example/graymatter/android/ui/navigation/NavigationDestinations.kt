@@ -57,4 +57,6 @@ sealed class NavigationDestination(val route: String) {
     object ImageEditor : NavigationDestination("image_editor")
 
     object BackupSettings : NavigationDestination("backup_settings")
+
+    object SecuritySettings : NavigationDestination("security_settings")
 }

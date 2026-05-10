@@ -42,6 +42,8 @@ val androidViewModelModule = module {
     
     viewModel { com.example.graymatter.android.ui.viewmodel.BackupViewModel(androidContext() as android.app.Application) }
     
+    viewModel { com.example.graymatter.android.ui.viewmodel.SecurityViewModel(androidContext() as android.app.Application) }
+    
     factory {
         ReferenceSelectorViewModel(get(), get(), get(), get(), null, get())
     }

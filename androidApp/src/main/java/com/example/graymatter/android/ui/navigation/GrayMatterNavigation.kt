@@ -240,6 +240,9 @@ fun GrayMatterNavigation(
                                 },
                                 onNavigateToBackupSettings = {
                                     navController.navigate(NavigationDestination.BackupSettings.route)
+                                },
+                                onNavigateToSecuritySettings = {
+                                    navController.navigate(NavigationDestination.SecuritySettings.route)
                                 }
                             )
                         }
@@ -787,6 +790,17 @@ fun GrayMatterNavigation(
             val backupViewModel: com.example.graymatter.android.ui.viewmodel.BackupViewModel = koinViewModel()
             com.example.graymatter.android.ui.profile.BackupSettingsScreen(
                 viewModel = backupViewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // Security Settings Screen
+        composable(
+            route = NavigationDestination.SecuritySettings.route
+        ) {
+            val securityViewModel: com.example.graymatter.android.ui.viewmodel.SecurityViewModel = koinViewModel()
+            com.example.graymatter.android.ui.profile.SecuritySettingsScreen(
+                viewModel = securityViewModel,
                 onBackClick = { navController.popBackStack() }
             )
         }

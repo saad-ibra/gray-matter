@@ -43,7 +43,6 @@ dependencies {
     // compose
     val composeBom = platform("androidx.compose:compose-bom:2024.02.01")
     implementation(composeBom)
-    androidTestImplementation(composeBom)
 
     implementation("androidx.compose.material3:material3")
     implementation("androidx.activity:activity-compose")
@@ -52,8 +51,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
     implementation("androidx.navigation:navigation-compose:2.7.5")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
     // Material icons extended
     implementation("androidx.compose.material:material-icons-extended")
