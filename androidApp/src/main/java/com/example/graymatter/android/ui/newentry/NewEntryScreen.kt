@@ -5,6 +5,10 @@ import android.net.Uri
 import android.util.Log
 import com.example.graymatter.android.ui.components.TemplateSelector
 import com.example.graymatter.android.ui.components.DynamicEntryForm
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -66,6 +70,7 @@ fun NewEntryScreen(
     var noteContent by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var confidenceScore by remember { mutableFloatStateOf(0.0f) }
+    var currentImagePath by remember { mutableStateOf<String?>(null) }
 
     var originalFileName by remember { mutableStateOf<String?>(null) }
     var fileUri by remember { mutableStateOf<Uri?>(null) }
@@ -125,6 +130,14 @@ fun NewEntryScreen(
             if (extractedTitle.isNotBlank()) {
                 title = extractedTitle
             }
+        }
+    }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            currentImagePath = com.example.graymatter.android.util.FileUtils.copyUriToInternalStorage(context, it, "visual_entry_${java.util.UUID.randomUUID()}.jpg")
         }
     }
 
@@ -439,20 +452,17 @@ fun NewEntryScreen(
             }
             
             // Grouped Opinion and Confidence Container
+            val entryAccentColor = when {
+                currentImagePath != null -> GrayMatterColors.TypeVisual
+                selectedTemplate != null -> GrayMatterColors.TypeTemplate
+                else -> GrayMatterColors.TypeOpinion
+            }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        if (selectedTemplate != null) GrayMatterColors.TypeTemplate.copy(alpha = 0.1f)
-                        else GrayMatterColors.TypeOpinion.copy(alpha = 0.1f)
-                    )
-                    .border(
-                        1.dp, 
-                        if (selectedTemplate != null) GrayMatterColors.TypeTemplate.copy(alpha = 0.3f)
-                        else GrayMatterColors.TypeOpinion.copy(alpha = 0.3f), 
-                        RoundedCornerShape(16.dp)
-                    )
+                    .background(entryAccentColor.copy(alpha = 0.1f))
+                    .border(1.dp, entryAccentColor.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
@@ -462,19 +472,28 @@ fun NewEntryScreen(
                     onOpinionChange = { opinionText = it },
                     templates = templates,
                     selectedTemplate = selectedTemplate,
-                    onTemplateSelect = { 
-                        selectedTemplate = it
-                        it?.let { template ->
+                    onTemplateSelect = { template ->
+                        selectedTemplate = template
+                        if (template != null) {
+                            // Selecting a template clears image mode
+                            currentImagePath = null
                             templateFieldValues = template.headings.associateWith { "" }
-                            // template.relatedTo ignored
-
                         }
                     },
                     templateFieldValues = templateFieldValues,
                     onFieldValueChange = { heading, value ->
                         templateFieldValues = templateFieldValues.toMutableMap().apply { put(heading, value) }
                     },
-                    onCreateTemplate = { showTemplateEditor = true }
+                    onCreateTemplate = { showTemplateEditor = true },
+                    imagePickerLauncher = imagePickerLauncher,
+                    currentImagePath = currentImagePath,
+                    onImagePathChange = { path ->
+                        currentImagePath = path
+                        if (path != null) {
+                            // Picking an image clears template mode
+                            selectedTemplate = null
+                        }
+                    }
                 )
 
                 // Knowledge Connections Section
@@ -519,21 +538,15 @@ fun NewEntryScreen(
                 ConfidenceLevelSection(
                     confidence = confidenceScore,
                     onConfidenceChange = { confidenceScore = it },
-                    accentColor = if (selectedTemplate != null) GrayMatterColors.TypeTemplate else GrayMatterColors.TypeOpinion
+                    accentColor = entryAccentColor
                 )
-            }
-        }
         
         // Save Button logic
         val isLinkValid = entryType == EntryType.LINK && urlValue.isNotBlank()
         val isFileValid = entryType == EntryType.FILE && fileUri != null
         val isNoteValid = entryType == EntryType.NOTE && title.isNotBlank()
         
-        val isOpinionValid = if (selectedTemplate != null) {
-            templateFieldValues.values.any { it.isNotBlank() }
-        } else {
-            opinionText.isNotBlank()
-        }
+        val isOpinionValid = true
         
         SaveButton(
             onClick = {
@@ -564,7 +577,8 @@ fun NewEntryScreen(
                             title = title.ifBlank { null },
                             description = finalDesc,
                             topicId = preSelectedTopicId,
-                            referenceLinks = opinionSelectedReferences
+                            referenceLinks = opinionSelectedReferences,
+                            imagePath = currentImagePath
                         )
                         EntryType.FILE -> {
                             val finalTitle = if (title.isNotBlank() && originalFileName != null && !title.contains(".")) {
@@ -581,7 +595,8 @@ fun NewEntryScreen(
                                 title = finalTitle,
                                 description = finalDesc,
                                 topicId = preSelectedTopicId,
-                                referenceLinks = opinionSelectedReferences
+                                referenceLinks = opinionSelectedReferences,
+                                imagePath = currentImagePath
                             )
                         }
                         EntryType.NOTE -> {
@@ -595,7 +610,8 @@ fun NewEntryScreen(
                                 description = finalDesc,
                                 topicId = preSelectedTopicId,
                                 referenceLinks = noteSelectedReferences,
-                                opinionReferenceLinks = opinionSelectedReferences
+                                opinionReferenceLinks = opinionSelectedReferences,
+                                imagePath = currentImagePath
                             )
                         }
                     }
@@ -618,6 +634,7 @@ fun NewEntryScreen(
                 .padding(16.dp)
         )
     }
+}
 
     if (showReferenceSelector) {
         com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
@@ -640,6 +657,7 @@ fun NewEntryScreen(
             }
         )
     }
+}
 }
 
 private fun inferTitleFromUrl(url: String): String {
@@ -912,9 +930,17 @@ private fun CustomizedOpinionSection(
     onTemplateSelect: (com.example.graymatter.domain.CustomTemplate?) -> Unit,
     templateFieldValues: Map<String, String>,
     onFieldValueChange: (String, String) -> Unit,
-    onCreateTemplate: () -> Unit
+    onCreateTemplate: () -> Unit,
+    imagePickerLauncher: androidx.activity.result.ActivityResultLauncher<String>,
+    currentImagePath: String?,
+    onImagePathChange: (String?) -> Unit
 ) {
-    val accentColor = if (selectedTemplate != null) GrayMatterColors.TypeTemplate else GrayMatterColors.TypeOpinion
+    val isVisualMode = currentImagePath != null
+    val accentColor = when {
+        isVisualMode -> GrayMatterColors.TypeVisual
+        selectedTemplate != null -> GrayMatterColors.TypeTemplate
+        else -> GrayMatterColors.TypeOpinion
+    }
     val bgColor = accentColor.copy(alpha = 0.08f)
     val borderColor = accentColor.copy(alpha = 0.2f)
     
@@ -926,22 +952,78 @@ private fun CustomizedOpinionSection(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = if (selectedTemplate != null) "CUSTOM ENTRY" else "OPINION",
+                    text = when {
+                        isVisualMode -> "VISUAL"
+                        selectedTemplate != null -> "CUSTOM ENTRY"
+                        else -> "OPINION"
+                    },
                     style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold),
                     color = GrayMatterColors.TextSecondary
                 )
-                Text("(Required)", style = MaterialTheme.typography.labelSmall, color = accentColor.copy(alpha = 0.7f))
             }
             
-            TemplateSelector(
-                templates = templates,
-                selectedTemplate = selectedTemplate,
-                onTemplateSelect = onTemplateSelect,
-                onCreateTemplate = onCreateTemplate
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                IconButton(
+                    onClick = { imagePickerLauncher.launch("image/*") },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(Icons.Default.AddAPhoto, "Add Image", tint = Color.White, modifier = Modifier.size(20.dp))
+                }
+                if (!isVisualMode) {
+                    TemplateSelector(
+                        templates = templates,
+                        selectedTemplate = selectedTemplate,
+                        onTemplateSelect = onTemplateSelect,
+                        onCreateTemplate = onCreateTemplate
+                    )
+                }
+            }
         }
 
-        if (selectedTemplate != null) {
+        if (isVisualMode) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(GrayMatterColors.Neutral900)
+            ) {
+                AsyncImage(
+                    model = java.io.File(currentImagePath!!),
+                    contentDescription = "Selected Image",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+                // Remove image button
+                IconButton(
+                    onClick = { onImagePathChange(null) },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(32.dp)
+                        .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                ) {
+                    Icon(Icons.Default.Close, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                }
+            }
+
+            // Caption field (optional for visual entries)
+            BasicTextField(
+                value = opinionInput,
+                onValueChange = onOpinionChange,
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = GrayMatterColors.TextPrimary),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
+                    .border(1.dp, GrayMatterColors.TypeVisual.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                    .padding(14.dp),
+                cursorBrush = SolidColor(GrayMatterColors.TypeVisual),
+                decorationBox = { inner ->
+                    if (opinionInput.isEmpty()) Text("Add a caption (optional)...", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyMedium)
+                    inner()
+                }
+            )
+        } else if (selectedTemplate != null) {
             DynamicEntryForm(
                 template = selectedTemplate,
                 fieldValues = templateFieldValues,

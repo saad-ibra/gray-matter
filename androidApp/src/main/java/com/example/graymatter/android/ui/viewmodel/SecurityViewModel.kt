@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 data class SecurityUiState(
-    val isAppLockEnabled: Boolean = true,
-    val isScreenSecurityEnabled: Boolean = true,
+    val isAppLockEnabled: Boolean = false,
+    val isScreenSecurityEnabled: Boolean = false,
     val isMasterPasswordSet: Boolean = false,
     val statusMessage: String? = null
 )

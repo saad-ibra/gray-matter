@@ -113,7 +113,8 @@ class DefaultResourceEntryRepository(
         opinionId: String,
         opinionText: String,
         confidence: Int,
-        now: Long
+        now: Long,
+        imagePath: String?
     ) = withContext(dispatcher) {
         queries.transaction {
             queries.insertResource(
@@ -144,7 +145,7 @@ class DefaultResourceEntryRepository(
                 text = opinionText,
                 confidenceScore = confidence.toLong(),
                 pageNumber = null,
-                imagePath = null,
+                imagePath = imagePath,
                 createdAt = now,
                 updatedAt = now,
                 isDeleted = 0L,

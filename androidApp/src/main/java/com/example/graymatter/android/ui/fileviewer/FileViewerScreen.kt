@@ -793,7 +793,6 @@ fun FileViewerScreen(
                                     viewModel.saveTemplateOpinion(formatted, (confidence * 100).toInt(), selectedReferences) 
                                     viewModel.selectTemplateForNewEntry(null)
                                 },
-                                enabled = fieldValues.values.any { it.isNotBlank() },
                                 colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.TypeTemplate, contentColor = Color.White)
                             ) { 
                                 Text("Save") 
@@ -928,7 +927,6 @@ fun FileViewerScreen(
                                     viewModel.saveGeneralOpinion(content = text, confidence = (confidence * 100).toInt(), referenceLinks = selectedReferences)
                                     viewModel.toggleCustomOpinionDialog() 
                                 },
-                                enabled = text.isNotBlank(),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = GrayMatterColors.TypeOpinion,
                                     contentColor = Color.Black
@@ -1366,7 +1364,6 @@ fun SelectionAnnotationDialog(
                     }
                     Button(
                         onClick = { onConfirm(opinion, (confidence * 100).toInt(), selectedReferences) },
-                        enabled = opinion.isNotBlank(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = GrayMatterColors.Primary,
                             contentColor = GrayMatterColors.OnPrimary

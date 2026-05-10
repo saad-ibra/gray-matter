@@ -107,6 +107,61 @@ fun BackupSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
+            // ── Info Banner ──
+            if (!state.isPasswordSet) {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.Gamboge.copy(alpha = 0.12f))
+                            .border(1.dp, GrayMatterColors.Gamboge.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Info, null, tint = GrayMatterColors.Gamboge, modifier = Modifier.size(20.dp))
+                        Text(
+                            "Set master password in Security → Data Encryption to start backups",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = GrayMatterColors.Gamboge,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            // ── Backup Toggle ──
+            item {
+                SettingsCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("Automatic Backups", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                if (state.isBackupEnabled) "Backups are scheduled" else "Backups are disabled",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = GrayMatterColors.Neutral500
+                            )
+                        }
+                        Switch(
+                            checked = state.isBackupEnabled,
+                            onCheckedChange = { viewModel.setBackupEnabled(it) },
+                            enabled = state.isPasswordSet,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = GrayMatterColors.Primary,
+                                checkedTrackColor = GrayMatterColors.Primary.copy(alpha = 0.3f),
+                                uncheckedThumbColor = GrayMatterColors.Neutral500,
+                                uncheckedTrackColor = GrayMatterColors.Neutral800
+                            )
+                        )
+                    }
+                }
+            }
+
             // ── Schedule Section ──
             item {
                 SectionHeader(icon = Icons.Default.Schedule, title = "BACKUP SCHEDULE")

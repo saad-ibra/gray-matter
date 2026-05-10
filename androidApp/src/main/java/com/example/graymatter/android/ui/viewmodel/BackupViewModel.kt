@@ -32,7 +32,8 @@ data class BackupUiState(
     val statusMessage: String? = null,
     val backupTimeHour: Int = 2,
     val backupTimeMinute: Int = 0,
-    val is24HourFormat: Boolean = true
+    val is24HourFormat: Boolean = true,
+    val isBackupEnabled: Boolean = false
 )
 
 class BackupViewModel(application: Application) : AndroidViewModel(application) {
@@ -58,7 +59,8 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
             localBackups = manager.getLocalBackups(),
             backupTimeHour = preferences.backupTimeHour,
             backupTimeMinute = preferences.backupTimeMinute,
-            is24HourFormat = preferences.is24HourFormat
+            is24HourFormat = preferences.is24HourFormat,
+            isBackupEnabled = preferences.isBackupEnabled
         )
     }
 
@@ -99,6 +101,16 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
     fun set24HourFormat(is24Hour: Boolean) {
         preferences.is24HourFormat = is24Hour
         _uiState.value = _uiState.value.copy(is24HourFormat = is24Hour)
+    }
+
+    fun setBackupEnabled(enabled: Boolean) {
+        preferences.isBackupEnabled = enabled
+        _uiState.value = _uiState.value.copy(isBackupEnabled = enabled)
+        if (enabled && preferences.hasPassword()) {
+            scheduleBackup(preferences.backupFrequency)
+        } else if (!enabled) {
+            WorkManager.getInstance(getApplication()).cancelUniqueWork(BACKUP_WORK_NAME)
+        }
     }
 
     fun triggerManualBackup() {

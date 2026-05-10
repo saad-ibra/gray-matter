@@ -59,7 +59,8 @@ interface ResourceEntryRepository {
         opinionId: String,
         opinionText: String,
         confidence: Int,
-        now: Long
+        now: Long,
+        imagePath: String? = null
     )
     
     /**

@@ -2105,17 +2105,25 @@ private fun OpinionEditDialog(
                     }
                     
                     if (!isVisualMode) {
-                        com.example.graymatter.android.ui.components.TemplateSelector(
-                            templates = templates,
-                            selectedTemplate = selectedTemplate,
-                            onTemplateSelect = { 
-                                selectedTemplate = it
-                                it?.let { template ->
-                                    templateFieldValues = template.headings.associateWith { "" }
-                                }
-                            },
-                            onCreateTemplate = onCreateTemplate
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            IconButton(
+                                onClick = { showImagePicker = true },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(Icons.Default.AddAPhoto, "Add Image", tint = Color.White, modifier = Modifier.size(20.dp))
+                            }
+                            com.example.graymatter.android.ui.components.TemplateSelector(
+                                templates = templates,
+                                selectedTemplate = selectedTemplate,
+                                onTemplateSelect = { 
+                                    selectedTemplate = it
+                                    it?.let { template ->
+                                        templateFieldValues = template.headings.associateWith { "" }
+                                    }
+                                },
+                                onCreateTemplate = onCreateTemplate
+                            )
+                        }
                     }
                 }
 
@@ -2216,18 +2224,6 @@ private fun OpinionEditDialog(
                             }
                         }
                         
-                        Spacer(Modifier.width(12.dp))
-                        
-                        // Unified Add Image button
-                        IconButton(
-                            onClick = { showImagePicker = true },
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(GrayMatterColors.TypeVisual.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                                .border(1.dp, GrayMatterColors.TypeVisual.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                        ) {
-                            Icon(Icons.Default.AddAPhoto, "Add Image", tint = GrayMatterColors.TypeVisual)
-                        }
                     }
 
                     // Text input or template
@@ -2295,7 +2291,6 @@ private fun OpinionEditDialog(
                             }
                             onConfirm(finalText, (confidence * 100).toInt(), selectedReferences, currentImagePath) 
                         }, 
-                        enabled = (selectedTemplate != null && templateFieldValues.values.any { it.isNotBlank() }) || (selectedTemplate == null && text.isNotBlank()) || currentImagePath != null, 
                         colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = if (isVisualMode) Color.White else GrayMatterColors.OnPrimary)
                     ) { Text(if (isVisualMode) "Save Visual" else "Save") }
                 }

@@ -19,11 +19,11 @@ class SecurityPreferences(context: Context) {
     }
 
     var isAppLockEnabled: Boolean
-        get() = prefs.getBoolean(KEY_APP_LOCK, true)
+        get() = prefs.getBoolean(KEY_APP_LOCK, false)
         set(value) = prefs.edit().putBoolean(KEY_APP_LOCK, value).apply()
 
     var isScreenSecurityEnabled: Boolean
-        get() = prefs.getBoolean(KEY_SCREEN_SECURITY, true)
+        get() = prefs.getBoolean(KEY_SCREEN_SECURITY, false)
         set(value) = prefs.edit().putBoolean(KEY_SCREEN_SECURITY, value).apply()
 
     companion object {

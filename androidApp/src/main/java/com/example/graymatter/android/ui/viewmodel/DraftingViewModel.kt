@@ -38,7 +38,8 @@ class DraftingViewModel(
         title: String? = null, 
         description: String? = null, 
         topicId: String? = null, 
-        referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()
+        referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
+        imagePath: String? = null
     ): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
@@ -57,7 +58,8 @@ class DraftingViewModel(
             opinionId = opinionId,
             opinionText = opinionText,
             confidence = confidence,
-            now = now
+            now = now,
+            imagePath = imagePath
         )
         
         if (topicId != null) {
@@ -81,7 +83,8 @@ class DraftingViewModel(
         description: String? = null, 
         topicId: String? = null, 
         referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
-        opinionReferenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()
+        opinionReferenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
+        imagePath: String? = null
     ): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
@@ -102,11 +105,11 @@ class DraftingViewModel(
             filePath = internalFile.absolutePath,
             extractedText = content,
             title = title,
-            description = description,
             opinionId = opinionId,
             opinionText = opinionText,
             confidence = confidence,
-            now = now
+            now = now,
+            imagePath = imagePath
         )
         
         if (topicId != null) {
@@ -133,8 +136,9 @@ class DraftingViewModel(
         confidence: Int,
         title: String? = null,
         description: String? = null,
-        topicId: String? = null,
-        referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()
+        topicId: String? = null, 
+        referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
+        imagePath: String? = null
     ): String? {
         _isImporting.value = true
         return try {
@@ -165,7 +169,8 @@ class DraftingViewModel(
                 opinionId = opinionId,
                 opinionText = opinionText,
                 confidence = confidence,
-                now = now
+                now = now,
+                imagePath = imagePath
             )
             
             if (topicId != null) {

@@ -74,6 +74,10 @@ class BackupPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_IS_24H, true) // Default to 24h
         set(value) = prefs.edit().putBoolean(KEY_IS_24H, value).apply()
 
+    var isBackupEnabled: Boolean
+        get() = prefs.getBoolean(KEY_BACKUP_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_BACKUP_ENABLED, value).apply()
+
     fun hasPassword(): Boolean = !masterPassword.isNullOrEmpty()
 
     companion object {
@@ -86,6 +90,7 @@ class BackupPreferences(context: Context) {
         private const val KEY_BACKUP_HOUR = "backup_hour"
         private const val KEY_BACKUP_MINUTE = "backup_minute"
         private const val KEY_IS_24H = "is_24h_format"
+        private const val KEY_BACKUP_ENABLED = "backup_enabled"
     }
 }
 
