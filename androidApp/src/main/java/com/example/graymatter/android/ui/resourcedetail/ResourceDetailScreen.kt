@@ -80,6 +80,7 @@ fun ResourceDetailScreen(
     onExport: (List<Opinion>) -> Unit,
     onExportPdf: (List<Opinion>) -> Unit = {},
     onShareOpinion: (Opinion) -> Unit = {},
+    onShareOpinionMarkdown: (Opinion) -> Unit = {},
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     onLoadResourceLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     onViewInGraphClick: (String) -> Unit,
@@ -517,6 +518,7 @@ fun ResourceDetailScreen(
                             onUpdateOpinion(opinionId, newText, newConfidence, newCreatedAt, newLinks, newImagePath)
                         },
                         onShareOpinion = onShareOpinion,
+                        onShareOpinionMarkdown = onShareOpinionMarkdown,
                         onDeleteOpinion = { opinionId -> 
                             deletedOpinionInfo = opinionId
                             onDeleteOpinion(opinionId)
@@ -871,8 +873,8 @@ private fun ResourceDetailHeader(
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        Icon(Icons.Default.TextSnippet, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
-                                        Text("Export as Text", color = Color.White)
+                                        Icon(Icons.Default.Description, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                        Text("Export as Markdown", color = Color.White)
                                     }
                                 },
                                 onClick = { menuExpanded = false; onExportClick() }
@@ -1044,6 +1046,7 @@ private fun OpinionTimeline(
     onNavigateToKnowledgeLink: (com.example.graymatter.domain.ReferenceSelectorItem) -> Unit,
     onImageClick: (String) -> Unit,
     onShareOpinion: (Opinion) -> Unit = {},
+    onShareOpinionMarkdown: (Opinion) -> Unit = {},
     onStartEditingOpinion: (String) -> Unit = {},
     pulseTrigger: Long = 0L
 ) {
@@ -1071,6 +1074,7 @@ private fun OpinionTimeline(
                 onNavigateToKnowledgeLink = onNavigateToKnowledgeLink,
                 onImageClick = onImageClick,
                 onShareOpinion = onShareOpinion,
+                onShareOpinionMarkdown = onShareOpinionMarkdown,
                 onStartEditing = { onStartEditingOpinion(opinion.id) },
                 pulseTrigger = pulseTrigger
             )
@@ -1098,6 +1102,7 @@ private fun OpinionTimelineItem(
     onNavigateToKnowledgeLink: (com.example.graymatter.domain.ReferenceSelectorItem) -> Unit,
     onImageClick: (String) -> Unit,
     onShareOpinion: (Opinion) -> Unit = {},
+    onShareOpinionMarkdown: (Opinion) -> Unit = {},
     onStartEditing: () -> Unit = {},
     pulseTrigger: Long = 0L
 ) {
@@ -1312,11 +1317,20 @@ private fun OpinionTimelineItem(
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        Icon(Icons.Default.Share, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                                        Text("Share as Image", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                        Icon(Icons.Default.Image, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                        Text("Export as Image", color = Color.White, style = MaterialTheme.typography.bodyMedium)
                                     }
                                 },
                                 onClick = { showItemMenu = false; onShareOpinion(opinion) }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        Icon(Icons.Default.Description, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                        Text("Export as Markdown", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                },
+                                onClick = { showItemMenu = false; onShareOpinionMarkdown(opinion) }
                             )
                             if (isDictionary) {
                                 val isCurrentlyLearnt = text.contains(" #learnt")

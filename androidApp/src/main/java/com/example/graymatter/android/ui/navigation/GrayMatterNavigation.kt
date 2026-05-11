@@ -211,11 +211,22 @@ fun GrayMatterNavigation(
                                 onDeleteTopics = { ids -> viewModel.deleteTopics(ids) },
                                 onUndoDeleteTopics = { ids -> viewModel.undoDeleteTopics(ids) },
                                 onRenameTopic = { id, name -> viewModel.renameTopic(id, name) },
-                                onExportTopic = { topic ->
+                                onExportTopicMarkdown = { topic ->
                                     coroutineScope.launch {
                                         val topicItems = viewModel.getResourceEntriesByTopic(topic.id).first()
                                         val markdown = ExportService.exportTopicSummary(topic, topicItems)
                                         shareText(context, markdown, "Topic Analysis: ${topic.name}")
+                                    }
+                                },
+                                onExportTopicPdf = { topic ->
+                                    coroutineScope.launch {
+                                        val topicItems = viewModel.getResourceEntriesByTopic(topic.id).first()
+                                        val pdfFile = com.example.graymatter.android.export.PdfExportService.generateTopicPdf(context, topic, topicItems)
+                                        if (pdfFile != null) {
+                                            com.example.graymatter.android.export.PdfExportService.sharePdf(context, pdfFile, "Topic Analysis: ${topic.name}")
+                                        } else {
+                                            android.widget.Toast.makeText(context, "Failed to generate PDF", android.widget.Toast.LENGTH_SHORT).show()
+                                        }
                                     }
                                 },
                                 onViewTopicInRelatrix = { topicId ->
@@ -456,6 +467,10 @@ fun GrayMatterNavigation(
                     } else {
                         android.widget.Toast.makeText(context, "Failed to generate image", android.widget.Toast.LENGTH_SHORT).show()
                     }
+                },
+                onShareOpinionMarkdown = { opinion ->
+                    val markdown = ExportService.exportOpinion(opinion, itemDetails?.resource?.title)
+                    shareText(context, markdown, "Knowledge Reflection")
                 },
                 onLoadLinks = { opinionId -> viewModel.getLinksForOpinion(opinionId) },
                 onLoadResourceLinks = { resourceId -> viewModel.getLinksForResource(resourceId) },

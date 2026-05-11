@@ -60,7 +60,8 @@ fun LibraryScreen(
     onDeleteTopics: (List<String>) -> Unit,
     onUndoDeleteTopics: (List<String>) -> Unit,
     onRenameTopic: (String, String) -> Unit,
-    onExportTopic: (Topic) -> Unit,
+    onExportTopicMarkdown: (Topic) -> Unit,
+    onExportTopicPdf: (Topic) -> Unit,
     onViewTopicInRelatrix: (String) -> Unit,
     onUpdateOrder: (List<String>) -> Unit,
     modifier: Modifier = Modifier
@@ -374,7 +375,8 @@ fun LibraryScreen(
                                         deletedTopicsInfo = ids
                                     },
                                     onRename = { renamingTopic = topic },
-                                    onExport = { onExportTopic(topic) },
+                                    onExportMarkdown = { onExportTopicMarkdown(topic) },
+                                    onExportPdf = { onExportTopicPdf(topic) },
                                     onViewInRelatrix = { onViewTopicInRelatrix(topic.id) }
                                 )
                             }
@@ -464,7 +466,8 @@ fun LibraryScreen(
                         onClick = {},
                         onDelete = {},
                         onRename = {},
-                        onExport = {},
+                        onExportMarkdown = {},
+                        onExportPdf = {},
                         onViewInRelatrix = {},
                         enabled = false // Disable hits on replica to prevent pointer interference
                     )
@@ -570,7 +573,8 @@ private fun TopicCard(
     onClick: () -> Unit,
     onDelete: () -> Unit,
     onRename: () -> Unit,
-    onExport: () -> Unit,
+    onExportMarkdown: () -> Unit,
+    onExportPdf: () -> Unit,
     onViewInRelatrix: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true
@@ -638,12 +642,21 @@ private fun TopicCard(
                             )
 
                             DropdownMenuItem(
-                                text = { Text("Export Topic", color = GrayMatterColors.TextPrimary) },
+                                text = { Text("Export as PDF", color = GrayMatterColors.TextPrimary) },
                                 onClick = {
                                     showMenu = false
-                                    onExport()
+                                    onExportPdf()
                                 },
-                                leadingIcon = { Icon(Icons.Default.Share, null, tint = GrayMatterColors.Primary) }
+                                leadingIcon = { Icon(Icons.Default.PictureAsPdf, null, tint = GrayMatterColors.Primary) }
+                            )
+
+                            DropdownMenuItem(
+                                text = { Text("Export as Markdown", color = GrayMatterColors.TextPrimary) },
+                                onClick = {
+                                    showMenu = false
+                                    onExportMarkdown()
+                                },
+                                leadingIcon = { Icon(Icons.Default.Description, null, tint = GrayMatterColors.Primary) }
                             )
 
                             DropdownMenuItem(

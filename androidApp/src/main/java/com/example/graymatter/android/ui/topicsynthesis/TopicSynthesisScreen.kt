@@ -290,7 +290,7 @@ private fun TopicHeader(
                         showMenu = false
                         onExportClick()
                     },
-                    leadingIcon = { Icon(Icons.Default.Share, null, tint = GrayMatterColors.Primary) }
+                    leadingIcon = { Icon(Icons.Default.Description, null, tint = GrayMatterColors.Primary) }
                 )
                 
                 DropdownMenuItem(
