@@ -87,8 +87,9 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun setMaxBackups(count: Int) {
-        preferences.maxBackupCount = count
-        _uiState.value = _uiState.value.copy(maxBackups = count)
+        val validatedCount = count.coerceIn(1, 50)
+        preferences.maxBackupCount = validatedCount
+        _uiState.value = _uiState.value.copy(maxBackups = validatedCount)
     }
 
     fun setBackupTime(hour: Int, minute: Int) {
@@ -120,11 +121,21 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
         }
         _uiState.value = _uiState.value.copy(isBackingUp = true, statusMessage = null)
         viewModelScope.launch(Dispatchers.IO) {
+            val existingBackups = manager.getLocalBackups()
+            val maxCount = preferences.maxBackupCount
             val result = manager.runBackup()
+            val updatedBackups = manager.getLocalBackups()
+
+            val message = when {
+                result == null -> "Backup failed"
+                existingBackups.size >= maxCount -> "Backup created — oldest backup was removed (limit: $maxCount)"
+                else -> "Backup created successfully"
+            }
+
             _uiState.value = _uiState.value.copy(
                 isBackingUp = false,
-                statusMessage = if (result != null) "Backup created successfully" else "Backup failed",
-                localBackups = manager.getLocalBackups(),
+                statusMessage = message,
+                localBackups = updatedBackups,
                 lastBackupTimestamp = preferences.lastBackupTimestamp,
                 lastBackupSizeBytes = preferences.lastBackupSizeBytes,
                 lastBackupSuccess = preferences.lastBackupSuccess

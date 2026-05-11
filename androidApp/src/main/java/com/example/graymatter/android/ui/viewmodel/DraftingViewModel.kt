@@ -23,6 +23,51 @@ class DraftingViewModel(
     private val autoLinkService: AutoLinkService
 ) : ViewModel() {
 
+    enum class EntryType { LINK, FILE, NOTE }
+
+    private val _entryType = MutableStateFlow(EntryType.LINK)
+    val entryType: StateFlow<EntryType> = _entryType.asStateFlow()
+
+    private val _draftTitle = MutableStateFlow("")
+    val draftTitle: StateFlow<String> = _draftTitle.asStateFlow()
+
+    private val _draftUrl = MutableStateFlow("")
+    val draftUrl: StateFlow<String> = _draftUrl.asStateFlow()
+
+    private val _draftOpinion = MutableStateFlow("")
+    val draftOpinion: StateFlow<String> = _draftOpinion.asStateFlow()
+
+    private val _draftNoteContent = MutableStateFlow("")
+    val draftNoteContent: StateFlow<String> = _draftNoteContent.asStateFlow()
+
+    private val _draftDescription = MutableStateFlow("")
+    val draftDescription: StateFlow<String> = _draftDescription.asStateFlow()
+
+    private val _draftConfidence = MutableStateFlow(0f)
+    val draftConfidence: StateFlow<Float> = _draftConfidence.asStateFlow()
+
+    private val _draftImagePath = MutableStateFlow<String?>(null)
+    val draftImagePath: StateFlow<String?> = _draftImagePath.asStateFlow()
+
+    fun updateEntryType(type: EntryType) { _entryType.value = type }
+    fun updateTitle(title: String) { _draftTitle.value = title }
+    fun updateUrl(url: String) { _draftUrl.value = url }
+    fun updateOpinion(opinion: String) { _draftOpinion.value = opinion }
+    fun updateNoteContent(content: String) { _draftNoteContent.value = content }
+    fun updateDescription(desc: String) { _draftDescription.value = desc }
+    fun updateConfidence(confidence: Float) { _draftConfidence.value = confidence }
+    fun updateImagePath(path: String?) { _draftImagePath.value = path }
+
+    fun resetDraft() {
+        _draftTitle.value = ""
+        _draftUrl.value = ""
+        _draftOpinion.value = ""
+        _draftNoteContent.value = ""
+        _draftDescription.value = ""
+        _draftConfidence.value = 0f
+        _draftImagePath.value = null
+    }
+
     private val _isImporting = MutableStateFlow(false)
     val isImporting: StateFlow<Boolean> = _isImporting.asStateFlow()
 

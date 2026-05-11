@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import com.example.graymatter.android.ui.components.TemplateSelector
 import com.example.graymatter.android.ui.components.DynamicEntryForm
+import com.example.graymatter.android.ui.viewmodel.DraftingViewModel
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
@@ -62,15 +63,18 @@ fun NewEntryScreen(
     
     val isSaving by draftingViewModel.isImporting.collectAsState()
     val templates by templateViewModel.templates.collectAsState()
-    
-    var entryType by remember { mutableStateOf(EntryType.LINK) } // 0 = Link, 1 = File, 2 = Note
-    var title by remember { mutableStateOf("") }
-    var urlValue by remember { mutableStateOf("") }
-    var opinionText by remember { mutableStateOf("") }
-    var noteContent by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var confidenceScore by remember { mutableFloatStateOf(0.0f) }
-    var currentImagePath by remember { mutableStateOf<String?>(null) }
+
+    val entryType by draftingViewModel.entryType.collectAsState()
+    val title by draftingViewModel.draftTitle.collectAsState()
+    val urlValue by draftingViewModel.draftUrl.collectAsState()
+    val opinionText by draftingViewModel.draftOpinion.collectAsState()
+    val noteContent by draftingViewModel.draftNoteContent.collectAsState()
+    val description by draftingViewModel.draftDescription.collectAsState()
+    val confidenceScore by draftingViewModel.draftConfidence.collectAsState()
+    val currentImagePath by draftingViewModel.draftImagePath.collectAsState()
+
+    var showImageSourcePicker by remember { mutableStateOf(false) }
+    var tempCameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
 
     var originalFileName by remember { mutableStateOf<String?>(null) }
     var fileUri by remember { mutableStateOf<Uri?>(null) }
@@ -128,16 +132,26 @@ fun NewEntryScreen(
                 ?: ""
 
             if (extractedTitle.isNotBlank()) {
-                title = extractedTitle
+                draftingViewModel.updateTitle(extractedTitle)
             }
         }
     }
 
-    val imagePickerLauncher = rememberLauncherForActivityResult(
+    val galleryPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            currentImagePath = com.example.graymatter.android.util.FileUtils.copyUriToInternalStorage(context, it, "visual_entry_${java.util.UUID.randomUUID()}.jpg")
+            val path = com.example.graymatter.android.util.FileUtils.copyUriToInternalStorage(context, it, "visual_entry_${java.util.UUID.randomUUID()}.jpg")
+            draftingViewModel.updateImagePath(path)
+        }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempCameraUri != null) {
+            val path = com.example.graymatter.android.util.FileUtils.copyUriToInternalStorage(context, tempCameraUri!!, "visual_entry_${java.util.UUID.randomUUID()}.jpg")
+            draftingViewModel.updateImagePath(path)
         }
     }
 
@@ -161,14 +175,14 @@ fun NewEntryScreen(
             initialText = noteContent,
             onBackClick = { isNoteEditorOpen = false },
             onSave = { content ->
-                noteContent = content
+                draftingViewModel.updateNoteContent(content)
                 isNoteEditorOpen = false
             },
             onTextChange = { content ->
                 // Live sync for background display and pruning
-                noteContent = content
+                draftingViewModel.updateNoteContent(content)
             },
-            onTitleChange = { title = it },
+            onTitleChange = { draftingViewModel.updateTitle(it) },
             onShowReferenceSelector = {
                 onShowReferenceSelector()
             },
@@ -243,18 +257,18 @@ fun NewEntryScreen(
             SourceMaterialSection(
                 selectedTab = entryType.ordinal,
                 onTabChange = { 
-                    entryType = EntryType.entries[it]
+                    draftingViewModel.updateEntryType(DraftingViewModel.EntryType.values()[it])
                 },
                 titleInput = title,
-                onTitleChange = { title = it },
+                onTitleChange = { draftingViewModel.updateTitle(it) },
                 urlInput = urlValue,
-                onUrlChange = { urlValue = it },
+                onUrlChange = { draftingViewModel.updateUrl(it) },
                 onLoadTitle = { 
-                    title = inferTitleFromUrl(urlValue)
+                    draftingViewModel.updateTitle(draftingViewModel.extractTitleFromUrl(urlValue))
                 },
                 onClearUrl = {
-                    urlValue = ""
-                    title = ""
+                    draftingViewModel.updateUrl("")
+                    draftingViewModel.updateTitle("")
                 },
                 selectedFileName = originalFileName,
                 onPickFile = { filePickerLauncher.launch(arrayOf("*/*")) },
@@ -302,7 +316,7 @@ fun NewEntryScreen(
                     ) {
                         BasicTextField(
                             description,
-                            onValueChange = { description = it },
+                            onValueChange = { draftingViewModel.updateDescription(it) },
                             textStyle = MaterialTheme.typography.bodyMedium.copy(color = GrayMatterColors.TextPrimary),
                             modifier = Modifier.fillMaxSize(),
                             cursorBrush = SolidColor(GrayMatterColors.Primary),
@@ -316,7 +330,7 @@ fun NewEntryScreen(
             }
 
             // KNOWLEDGE LINKS display section — for notes, shown between source material and opinion
-            if (entryType == EntryType.NOTE) {
+            if (entryType == DraftingViewModel.EntryType.NOTE) {
                 // Auto-extract [[...]] references from noteContent
                 val autoExtractedRefs = remember(noteContent, noteSelectedReferences) {
                     val regex = Regex("\\[\\[(.*?)\\]\\]")
@@ -469,14 +483,14 @@ fun NewEntryScreen(
                 // Opinion Section
                 CustomizedOpinionSection(
                     opinionInput = opinionText,
-                    onOpinionChange = { opinionText = it },
+                    onOpinionChange = { draftingViewModel.updateOpinion(it) },
                     templates = templates,
                     selectedTemplate = selectedTemplate,
                     onTemplateSelect = { template ->
                         selectedTemplate = template
                         if (template != null) {
                             // Selecting a template clears image mode
-                            currentImagePath = null
+                            draftingViewModel.updateImagePath(null)
                             templateFieldValues = template.headings.associateWith { "" }
                         }
                     },
@@ -485,10 +499,10 @@ fun NewEntryScreen(
                         templateFieldValues = templateFieldValues.toMutableMap().apply { put(heading, value) }
                     },
                     onCreateTemplate = { showTemplateEditor = true },
-                    imagePickerLauncher = imagePickerLauncher,
+                    onShowImageSourcePicker = { showImageSourcePicker = true },
                     currentImagePath = currentImagePath,
                     onImagePathChange = { path ->
-                        currentImagePath = path
+                        draftingViewModel.updateImagePath(path)
                         if (path != null) {
                             // Picking an image clears template mode
                             selectedTemplate = null
@@ -537,14 +551,14 @@ fun NewEntryScreen(
                 // Confidence Level Section
                 ConfidenceLevelSection(
                     confidence = confidenceScore,
-                    onConfidenceChange = { confidenceScore = it },
+                    onConfidenceChange = { draftingViewModel.updateConfidence(it) },
                     accentColor = entryAccentColor
                 )
         
         // Save Button logic
-        val isLinkValid = entryType == EntryType.LINK && urlValue.isNotBlank()
-        val isFileValid = entryType == EntryType.FILE && fileUri != null
-        val isNoteValid = entryType == EntryType.NOTE && title.isNotBlank()
+        val isLinkValid = entryType == DraftingViewModel.EntryType.LINK && urlValue.isNotBlank()
+        val isFileValid = entryType == DraftingViewModel.EntryType.FILE && fileUri != null
+        val isNoteValid = entryType == DraftingViewModel.EntryType.NOTE && title.isNotBlank()
         
         val isOpinionValid = true
         
@@ -570,7 +584,7 @@ fun NewEntryScreen(
                     }
 
                     val newItemId = when (entryType) {
-                        EntryType.LINK -> draftingViewModel.createNewResourceEntry(
+                        DraftingViewModel.EntryType.LINK -> draftingViewModel.createNewResourceEntry(
                             url = urlValue,
                             opinionText = finalOpinion,
                             confidence = (confidenceScore * 100).toInt(),
@@ -580,7 +594,7 @@ fun NewEntryScreen(
                             referenceLinks = opinionSelectedReferences,
                             imagePath = currentImagePath
                         )
-                        EntryType.FILE -> {
+                        DraftingViewModel.EntryType.FILE -> {
                             val finalTitle = if (title.isNotBlank() && originalFileName != null && !title.contains(".")) {
                                 val ext = originalFileName!!.substringAfterLast('.', "")
                                 if (ext.isNotEmpty()) "$title.$ext" else title
@@ -599,7 +613,7 @@ fun NewEntryScreen(
                                 imagePath = currentImagePath
                             )
                         }
-                        EntryType.NOTE -> {
+                        DraftingViewModel.EntryType.NOTE -> {
                             val finalTitle = if (title.isNotBlank() && !title.endsWith(".md")) "$title.md" else (title.ifBlank { "Untitled.md" })
                             draftingViewModel.createNewNote(
                                 context = context,
@@ -617,6 +631,7 @@ fun NewEntryScreen(
                     }
 
                     if (newItemId != null) {
+                        draftingViewModel.resetDraft()
                         if (preSelectedTopicId != null) {
                             onNavigateToHome()
                         } else {
@@ -657,84 +672,111 @@ fun NewEntryScreen(
             }
         )
     }
-}
-}
 
-private fun inferTitleFromUrl(url: String): String {
-    return try {
-        val uri = Uri.parse(url)
-        var clean = url
-            .removePrefix("https://")
-            .removePrefix("http://")
-            .removePrefix("www.")
-        
-        if (clean.endsWith("/")) clean = clean.dropLast(1)
-        
-        // Remove query parameters and fragments
-        clean = clean.substringBefore("?").substringBefore("#")
-        
-        val parts = clean.split("/").filter { it.isNotBlank() }
-        if (parts.isEmpty()) return ""
+    if (showImageSourcePicker) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showImageSourcePicker = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                    ) { showImageSourcePicker = false },
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                        .background(GrayMatterColors.SurfaceDark)
+                        .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                        .clickable(enabled = false) {} // prevent dismiss when tapping sheet
+                        .padding(horizontal = 24.dp, vertical = 20.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Add Image", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
+                            IconButton(onClick = { showImageSourcePicker = false }) {
+                                Icon(Icons.Default.Close, null, tint = GrayMatterColors.Neutral600)
+                            }
+                        }
 
-        // Common non-title segments to ignore
-        val ignoreKeywords = setOf(
-            "articleshow", "article", "post", "blog", "news", "story", "p", "id", 
-            "view", "details", "html", "php", "cms", "aspx", "category", "tag", "archives"
-        )
+                        Spacer(modifier = Modifier.height(8.dp))
 
-        var slug = ""
-        
-        // Iterate backwards to find the most descriptive part
-        for (i in parts.indices.reversed()) {
-            val part = parts[i].lowercase()
-            
-            // Skip domain names (first part usually)
-            if (i == 0 && parts.size > 1) continue
-            
-            // Skip technical IDs or short noise
-            if (part.all { it.isDigit() || it == '.' } || 
-                part.length < 4 || 
-                ignoreKeywords.contains(part.substringBeforeLast(".")) ||
-                part.contains("index.")
-            ) continue
-            
-            // If it has hyphens or underscores, it's likely the title slug
-            if (part.contains("-") || part.contains("_")) {
-                slug = parts[i]
-                break
-            }
-            
-            // Fallback to the first non-ignored part from the end
-            if (slug.isEmpty()) {
-                slug = parts[i]
+                        // Take Photo option
+                        Surface(
+                            onClick = {
+                                showImageSourcePicker = false
+                                tempCameraUri = com.example.graymatter.android.util.FileUtils.createTempImageUri(context)
+                                tempCameraUri?.let { cameraLauncher.launch(it) }
+                            },
+                            color = GrayMatterColors.SurfaceInput,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier.size(44.dp).background(GrayMatterColors.TypeVisual.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.PhotoCamera, null, tint = GrayMatterColors.TypeVisual, modifier = Modifier.size(22.dp))
+                                }
+                                Column {
+                                    Text("Take Photo", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = GrayMatterColors.TextPrimary)
+                                    Text("Capture with camera", style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500)
+                                }
+                            }
+                        }
+
+                        // Gallery option
+                        Surface(
+                            onClick = {
+                                showImageSourcePicker = false
+                                galleryPickerLauncher.launch("image/*")
+                            },
+                            color = GrayMatterColors.SurfaceInput,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier.size(44.dp).background(GrayMatterColors.TypeVisual.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.PhotoLibrary, null, tint = GrayMatterColors.TypeVisual, modifier = Modifier.size(22.dp))
+                                }
+                                Column {
+                                    Text("Choose from Gallery", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = GrayMatterColors.TextPrimary)
+                                    Text("Pick an existing image", style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
             }
         }
-        
-        if (slug.isEmpty()) slug = parts.last()
-
-        // Final cleanup
-        var formatted = slug
-            .substringBeforeLast(".cms")
-            .substringBeforeLast(".html")
-            .substringBeforeLast(".php")
-            .substringBeforeLast(".htm")
-            .replace("-", " ")
-            .replace("_", " ")
-            .replace(Regex("\\s+"), " ") // Double spaces
-            .trim()
-        
-        // Robust formatting: Title Case
-        formatted = formatted.split(" ").filter { it.isNotBlank() }.joinToString(" ") { word ->
-            word.lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-        }
-        
-        formatted
-    } catch (e: Exception) {
-        ""
+    }
     }
 }
 
-enum class EntryType { LINK, FILE, NOTE }
 
 @Composable
 private fun NewEntryHeader(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -931,7 +973,7 @@ private fun CustomizedOpinionSection(
     templateFieldValues: Map<String, String>,
     onFieldValueChange: (String, String) -> Unit,
     onCreateTemplate: () -> Unit,
-    imagePickerLauncher: androidx.activity.result.ActivityResultLauncher<String>,
+    onShowImageSourcePicker: () -> Unit,
     currentImagePath: String?,
     onImagePathChange: (String?) -> Unit
 ) {
@@ -964,7 +1006,7 @@ private fun CustomizedOpinionSection(
             
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 IconButton(
-                    onClick = { imagePickerLauncher.launch("image/*") },
+                    onClick = onShowImageSourcePicker,
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(Icons.Default.AddAPhoto, "Add Image", tint = Color.White, modifier = Modifier.size(20.dp))

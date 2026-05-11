@@ -78,6 +78,8 @@ fun ResourceDetailScreen(
     onUndoDeleteResourceEntry: () -> Unit = {},
     onEditNote: () -> Unit,
     onExport: (List<Opinion>) -> Unit,
+    onExportPdf: (List<Opinion>) -> Unit = {},
+    onShareOpinion: (Opinion) -> Unit = {},
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     onLoadResourceLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     onViewInGraphClick: (String) -> Unit,
@@ -237,6 +239,7 @@ fun ResourceDetailScreen(
                     onDeleteClick = { showDeleteConfirm = true },
                     onFilterClick = { showFilterMenu = true },
                     onExportClick = { onExport(sortedOpinions) },
+                    onExportPdfClick = { onExportPdf(sortedOpinions) },
                     onViewInRelatrixClick = { onViewInGraphClick(resourceEntryDetails.resource.id) }
                 )
 
@@ -513,6 +516,7 @@ fun ResourceDetailScreen(
                         onUpdateOpinion = { opinionId, newText, newConfidence, newCreatedAt, newLinks, newImagePath ->
                             onUpdateOpinion(opinionId, newText, newConfidence, newCreatedAt, newLinks, newImagePath)
                         },
+                        onShareOpinion = onShareOpinion,
                         onDeleteOpinion = { opinionId -> 
                             deletedOpinionInfo = opinionId
                             onDeleteOpinion(opinionId)
@@ -805,6 +809,7 @@ private fun ResourceDetailHeader(
     onDeleteClick: () -> Unit,
     onFilterClick: (() -> Unit)? = null,
     onExportClick: (() -> Unit)? = null,
+    onExportPdfClick: (() -> Unit)? = null,
     onViewInRelatrixClick: (() -> Unit)? = null
 ) {
     Row(
@@ -866,11 +871,22 @@ private fun ResourceDetailHeader(
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        Icon(Icons.Default.Share, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
-                                        Text("Export History", color = Color.White)
+                                        Icon(Icons.Default.TextSnippet, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                        Text("Export as Text", color = Color.White)
                                     }
                                 },
                                 onClick = { menuExpanded = false; onExportClick() }
+                            )
+                        }
+                        if (onExportPdfClick != null) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        Icon(Icons.Default.PictureAsPdf, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                        Text("Export as PDF", color = Color.White)
+                                    }
+                                },
+                                onClick = { menuExpanded = false; onExportPdfClick() }
                             )
                         }
                         if (onViewInRelatrixClick != null) {
@@ -1027,6 +1043,7 @@ private fun OpinionTimeline(
     onViewInGraph: (String) -> Unit,
     onNavigateToKnowledgeLink: (com.example.graymatter.domain.ReferenceSelectorItem) -> Unit,
     onImageClick: (String) -> Unit,
+    onShareOpinion: (Opinion) -> Unit = {},
     onStartEditingOpinion: (String) -> Unit = {},
     pulseTrigger: Long = 0L
 ) {
@@ -1053,6 +1070,7 @@ private fun OpinionTimeline(
                 onViewInGraph = onViewInGraph,
                 onNavigateToKnowledgeLink = onNavigateToKnowledgeLink,
                 onImageClick = onImageClick,
+                onShareOpinion = onShareOpinion,
                 onStartEditing = { onStartEditingOpinion(opinion.id) },
                 pulseTrigger = pulseTrigger
             )
@@ -1079,6 +1097,7 @@ private fun OpinionTimelineItem(
     onViewInGraph: (String) -> Unit,
     onNavigateToKnowledgeLink: (com.example.graymatter.domain.ReferenceSelectorItem) -> Unit,
     onImageClick: (String) -> Unit,
+    onShareOpinion: (Opinion) -> Unit = {},
     onStartEditing: () -> Unit = {},
     pulseTrigger: Long = 0L
 ) {
@@ -1289,6 +1308,15 @@ private fun OpinionTimelineItem(
                                     }
                                 },
                                 onClick = { showItemMenu = false; onViewInGraph(opinion.id) }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        Icon(Icons.Default.Share, null, tint = GrayMatterColors.TypeVisual, modifier = Modifier.size(18.dp))
+                                        Text("Share as Image", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                },
+                                onClick = { showItemMenu = false; onShareOpinion(opinion) }
                             )
                             if (isDictionary) {
                                 val isCurrentlyLearnt = text.contains(" #learnt")
@@ -1562,72 +1590,80 @@ private fun OpinionTimelineItem(
                     val templateName = text.substringAfter("[TEMPLATE:").substringBefore("]")
                     val content = text.substringAfter("]\n").trim()
                     
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(GrayMatterColors.TypeTemplate.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .border(1.dp, GrayMatterColors.TypeTemplate.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = templateName.uppercase(),
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                            color = GrayMatterColors.TypeTemplate
-                        )
-                        
-                        // Parse markdown-ish structure
-                        val headings = content.split("### ").filter { it.isNotBlank() }
-                        headings.forEach { headingBlock ->
-                            val lines = headingBlock.split("\n", limit = 2)
-                            val heading = lines[0].trim()
-                            val response = lines.getOrNull(1)?.trim() ?: ""
+                    if (content.isNotEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(GrayMatterColors.TypeTemplate.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                                .border(1.dp, GrayMatterColors.TypeTemplate.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = templateName.uppercase(),
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                                color = GrayMatterColors.TypeTemplate
+                            )
                             
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(
-                                    text = heading,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = GrayMatterColors.Neutral500
-                                )
-                                Text(
-                                    text = response,
-                                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
-                                    color = GrayMatterColors.TextPrimary
-                                )
+                            // Parse markdown-ish structure
+                            val headings = content.split("### ").filter { it.isNotBlank() }
+                            headings.forEach { headingBlock ->
+                                val lines = headingBlock.split("\n", limit = 2)
+                                val heading = lines[0].trim()
+                                val response = lines.getOrNull(1)?.trim() ?: ""
+                                
+                                if (response.isNotBlank()) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Text(
+                                            text = heading,
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = GrayMatterColors.Neutral500
+                                        )
+                                        Text(
+                                            text = response,
+                                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
+                                            color = GrayMatterColors.TextPrimary
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 } else if (isCustomTitle) {
                     val displayContent = text.substringAfter("]\n").trim()
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(GrayMatterColors.TypeOpinion.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .border(1.dp, GrayMatterColors.TypeOpinion.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = displayContent,
-                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
-                            color = GrayMatterColors.TextPrimary
-                        )
+                    if (displayContent.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(GrayMatterColors.TypeOpinion.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                                .border(1.dp, GrayMatterColors.TypeOpinion.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = displayContent,
+                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
+                                color = GrayMatterColors.TextPrimary
+                            )
+                        }
                     }
                 } else if (hasPageNumber) {
                     // Bookmark or old style page opinion
                     val cleanText = if (text.startsWith("[Page ")) text.replace(Regex("^\\[Page \\d+\\]\\s*"), "") else text
                     
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(GrayMatterColors.TypeBookmark.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .border(1.dp, GrayMatterColors.TypeBookmark.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = cleanText,
-                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
-                            color = GrayMatterColors.TextPrimary
-                        )
+                    if (cleanText.isNotBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(GrayMatterColors.TypeBookmark.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                                .border(1.dp, GrayMatterColors.TypeBookmark.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = cleanText,
+                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
+                                color = GrayMatterColors.TextPrimary
+                            )
+                        }
                     }
                 } else if (isVisual) {
                     // Visual Entry — image is the primary content
@@ -1676,18 +1712,20 @@ private fun OpinionTimelineItem(
                     }
                 } else {
                     // General Opinion
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(GrayMatterColors.TypeOpinion.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .border(1.dp, GrayMatterColors.TypeOpinion.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = text,
-                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
-                            color = GrayMatterColors.TextPrimary
-                        )
+                    if (text.isNotBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(GrayMatterColors.TypeOpinion.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                                .border(1.dp, GrayMatterColors.TypeOpinion.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = text,
+                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
+                                color = GrayMatterColors.TextPrimary
+                            )
+                        }
                     }
                 }
                 

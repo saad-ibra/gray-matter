@@ -27,7 +27,7 @@ import com.example.graymatter.android.ui.resourcedetail.ResourceDetailScreen
 import com.example.graymatter.android.ui.home.HomeScreen
 import com.example.graymatter.android.ui.home.RecentResourcesScreen
 import com.example.graymatter.android.ui.library.LibraryScreen
-import com.example.graymatter.android.ui.newentry.EntryType
+import com.example.graymatter.android.ui.viewmodel.DraftingViewModel
 import com.example.graymatter.android.ui.newentry.NewEntryScreen
 import com.example.graymatter.android.ui.topicsynthesis.TopicSynthesisScreen
 import com.example.graymatter.android.ui.components.MarkdownEditor
@@ -427,6 +427,24 @@ fun GrayMatterNavigation(
                     itemDetails?.let { details ->
                         val markdown = ExportService.exportResourceHistory(details, filteredOpinions)
                         shareText(context, markdown, "Opinion History: ${details.resource.title ?: "Untitled"}")
+                    }
+                },
+                onExportPdf = { filteredOpinions ->
+                    itemDetails?.let { details ->
+                        val pdfFile = com.example.graymatter.android.export.PdfExportService.generateResourceHistoryPdf(context, details, filteredOpinions)
+                        if (pdfFile != null) {
+                            com.example.graymatter.android.export.PdfExportService.sharePdf(context, pdfFile, "Opinion History: ${details.resource.title ?: "Untitled"}")
+                        } else {
+                            android.widget.Toast.makeText(context, "Failed to generate PDF", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
+                onShareOpinion = { opinion ->
+                    val imageFile = com.example.graymatter.android.export.PngShareService.generateOpinionImage(context, opinion, itemDetails?.resource?.title)
+                    if (imageFile != null) {
+                        com.example.graymatter.android.export.PngShareService.shareImage(context, imageFile, "Shared from GrayMatter")
+                    } else {
+                        android.widget.Toast.makeText(context, "Failed to generate image", android.widget.Toast.LENGTH_SHORT).show()
                     }
                 },
                 onLoadLinks = { opinionId -> viewModel.getLinksForOpinion(opinionId) },

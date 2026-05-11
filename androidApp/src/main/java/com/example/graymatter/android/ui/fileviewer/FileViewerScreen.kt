@@ -1179,7 +1179,7 @@ fun BookmarkOpinionDialog(
                     cursorBrush = SolidColor(GrayMatterColors.Primary),
                     decorationBox = { inner ->
                         if (text.isEmpty()) {
-                            Text("Type your reflection here...", color = GrayMatterColors.Neutral600)
+                            Text("Add a note (optional)...", color = GrayMatterColors.Neutral600)
                         }
                         inner()
                     }
@@ -1207,7 +1207,6 @@ fun BookmarkOpinionDialog(
                     }
                     Button(
                         onClick = { onConfirm(text, (confidence * 100).toInt(), selectedReferences) },
-                        enabled = text.isNotBlank(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = GrayMatterColors.Primary,
                             contentColor = GrayMatterColors.OnPrimary
