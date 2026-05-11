@@ -143,6 +143,7 @@ fun NewEntryScreen(
         uri?.let {
             val path = com.example.graymatter.android.util.FileUtils.copyUriToInternalStorage(context, it, "visual_entry_${java.util.UUID.randomUUID()}.jpg")
             draftingViewModel.updateImagePath(path)
+            selectedTemplate = null
         }
     }
 
@@ -152,6 +153,7 @@ fun NewEntryScreen(
         if (success && tempCameraUri != null) {
             val path = com.example.graymatter.android.util.FileUtils.copyUriToInternalStorage(context, tempCameraUri!!, "visual_entry_${java.util.UUID.randomUUID()}.jpg")
             draftingViewModel.updateImagePath(path)
+            selectedTemplate = null
         }
     }
 
@@ -567,7 +569,7 @@ fun NewEntryScreen(
                 coroutineScope.launch {
                     val finalDesc = description.takeIf { it.isNotBlank() }
                     
-                    val finalOpinion = if (selectedTemplate != null) {
+                    val finalOpinion = if (selectedTemplate != null && currentImagePath == null) {
                         val sb = StringBuilder()
                         sb.appendLine("[TEMPLATE:${selectedTemplate!!.name}]")
                         selectedTemplate!!.headings.forEach { heading ->
