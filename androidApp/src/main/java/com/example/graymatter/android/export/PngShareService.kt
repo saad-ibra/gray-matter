@@ -58,7 +58,10 @@ object PngShareService {
         // Clean text
         val cleanText = when {
             isAnnotation -> {
-                val cleaned = opinion.text.replace(Regex("\\[INDEX:\\d+\\]\\s*"), "")
+                val cleaned = opinion.text
+                    .replace(Regex("\\[INDEX:\\d+\\]\\s*"), "")
+                    .replace(Regex("^>\\s*"), "")
+                    .trim()
                 cleaned
             }
             isDictionary -> opinion.text.substringAfter("] ").trim()
@@ -81,10 +84,37 @@ object PngShareService {
 
         // Calculate image height
         val headerHeight = 120f
-        val textHeight = textLines.size * 52f
+        var textHeight = textLines.size * 52f
+        
+        // Image support for visual entries
+        var visualImageBitmap: Bitmap? = null
+        var visualImageHeight = 0f
+        if (isVisual) {
+            try {
+                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeFile(opinion.imagePath, options)
+                
+                val imgWidth = options.outWidth
+                val imgHeight = options.outHeight
+                
+                if (imgWidth > 0 && imgHeight > 0) {
+                    val scale = (IMAGE_WIDTH - 2 * PADDING - 32f) / imgWidth
+                    visualImageHeight = imgHeight * scale
+                    
+                    // Load actual bitmap scaled down if needed to avoid OOM
+                    val loadOptions = BitmapFactory.Options().apply {
+                        inSampleSize = if (imgWidth > 2000) 2 else 1
+                    }
+                    visualImageBitmap = BitmapFactory.decodeFile(opinion.imagePath, loadOptions)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
         val metaHeight = 80f
         val footerHeight = 100f
-        val totalHeight = (PADDING + headerHeight + 32f + textHeight + 32f + metaHeight + footerHeight + PADDING).toInt()
+        val totalHeight = (PADDING + headerHeight + 32f + textHeight + (if (isVisual) visualImageHeight + 32f else 0f) + 32f + metaHeight + footerHeight + PADDING).toInt()
 
         val bitmap = Bitmap.createBitmap(IMAGE_WIDTH, totalHeight, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -179,6 +209,14 @@ object PngShareService {
         }
 
         y += 16f
+
+        // Draw visual image if present
+        if (visualImageBitmap != null) {
+            val destRect = RectF(PADDING + 16f, y, cardRight - 32f, y + visualImageHeight)
+            canvas.drawBitmap(visualImageBitmap, null, destRect, Paint(Paint.FILTER_BITMAP_FLAG))
+            y += visualImageHeight + 32f
+            visualImageBitmap.recycle()
+        }
 
         // Meta section
         if (resourceTitle != null) {

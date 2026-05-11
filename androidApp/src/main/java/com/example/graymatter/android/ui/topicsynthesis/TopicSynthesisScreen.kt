@@ -43,6 +43,7 @@ fun TopicSynthesisScreen(
     onDeleteTopic: () -> Unit,
     onRenameTopic: (String) -> Unit,
     onExport: () -> Unit,
+    onExportPdf: () -> Unit,
     onViewInGraph: (String) -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
@@ -140,6 +141,7 @@ fun TopicSynthesisScreen(
                     onRenameClick = { showRenameDialog = true },
                     onDeleteClick = { showDeleteConfirm = true },
                     onExportClick = onExport,
+                    onExportPdfClick = onExportPdf,
                     onViewInGraphClick = { onViewInGraph(topic.id) }
                 )
                 
@@ -216,6 +218,7 @@ private fun TopicHeader(
     onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onExportClick: () -> Unit,
+    onExportPdfClick: () -> Unit,
     onViewInGraphClick: () -> Unit
 ) {
     Row(
@@ -273,7 +276,16 @@ private fun TopicHeader(
                 )
 
                 DropdownMenuItem(
-                    text = { Text("Export Topic", color = GrayMatterColors.TextPrimary) },
+                    text = { Text("Export to PDF", color = GrayMatterColors.TextPrimary) },
+                    onClick = {
+                        showMenu = false
+                        onExportPdfClick()
+                    },
+                    leadingIcon = { Icon(Icons.Default.PictureAsPdf, null, tint = GrayMatterColors.Primary) }
+                )
+
+                DropdownMenuItem(
+                    text = { Text("Export to Markdown", color = GrayMatterColors.TextPrimary) },
                     onClick = {
                         showMenu = false
                         onExportClick()

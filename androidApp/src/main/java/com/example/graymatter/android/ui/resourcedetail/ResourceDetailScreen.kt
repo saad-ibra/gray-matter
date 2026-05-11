@@ -1312,7 +1312,7 @@ private fun OpinionTimelineItem(
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        Icon(Icons.Default.Share, null, tint = GrayMatterColors.TypeVisual, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.Default.Share, null, tint = Color.White, modifier = Modifier.size(18.dp))
                                         Text("Share as Image", color = Color.White, style = MaterialTheme.typography.bodyMedium)
                                     }
                                 },

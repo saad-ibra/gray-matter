@@ -30,7 +30,12 @@ object PdfExportService {
     private val cardBg = Color.rgb(12, 12, 12)
     private val textPrimary = Color.rgb(255, 255, 255)
     private val textSecondary = Color.rgb(161, 161, 170)
-    private val accentColor = Color.rgb(142, 162, 88) // TypeOpinion
+    private val accentGreen = Color.rgb(142, 162, 88)
+    private val accentBookmark = Color.rgb(196, 168, 78)
+    private val accentAnnotation = Color.rgb(196, 122, 90)
+    private val accentTemplate = Color.rgb(126, 106, 140)
+    private val accentVisual = Color.rgb(90, 158, 140)
+    private val accentLookup = Color.rgb(191, 90, 106)
     private val borderColor = Color.rgb(30, 30, 34)
     private val neutralColor = Color.rgb(98, 98, 106)
 
@@ -127,16 +132,115 @@ object PdfExportService {
         context.startActivity(Intent.createChooser(shareIntent, "Share PDF"))
     }
 
-    private fun drawHeader(canvas: Canvas, title: String, startY: Float): Float {
+    fun generateTopicPdf(
+        context: Context,
+        topic: com.example.graymatter.domain.Topic,
+        resourceDetails: List<ResourceEntryWithDetails>
+    ): File? {
+        val document = PdfDocument()
+        var pageNumber = 1
+        var currentY = 0f
+        var pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
+        var page = document.startPage(pageInfo)
+        var canvas = page.canvas
+
+        // Draw background
+        canvas.drawColor(bgColor)
+
+        // Draw Topic Header
+        currentY = drawHeader(canvas, topic.name, 0f, "Topic Analysis")
+        currentY += 16f
+
+        // Topic Notes (Synthesis)
+        if (!topic.notes.isNullOrBlank()) {
+            currentY = drawText(canvas, "Topic Overview", MARGIN, currentY, accentGreen, 12f, true)
+            currentY += 8f
+            currentY = drawWrappedText(canvas, topic.notes!!, MARGIN, currentY, textPrimary, 11f, PAGE_WIDTH - 2 * MARGIN)
+            currentY += 24f
+        }
+
+        // List Resources
+        currentY = drawText(canvas, "Included Resources (${resourceDetails.size})", MARGIN, currentY, accentGreen, 12f, true)
+        currentY += 12f
+
+        resourceDetails.forEach { details ->
+            // Check if we need a new page for the resource title
+            if (currentY > PAGE_HEIGHT - MARGIN - 100f) {
+                drawFooter(canvas, pageNumber)
+                document.finishPage(page)
+                pageNumber++
+                pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
+                page = document.startPage(pageInfo)
+                canvas = page.canvas
+                canvas.drawColor(bgColor)
+                currentY = MARGIN
+            }
+
+            // Resource title separator
+            currentY = drawSeparator(canvas, currentY)
+            currentY += 16f
+            
+            currentY = drawText(canvas, details.resource.title ?: "Untitled Resource", MARGIN, currentY, textPrimary, 14f, true)
+            currentY += 8f
+            
+            val source = details.resource.url ?: details.resource.filePath?.substringAfterLast("/") ?: ""
+            if (source.isNotEmpty()) {
+                currentY = drawText(canvas, "Source: $source", MARGIN, currentY, textSecondary, 9f)
+                currentY += 4f
+            }
+            
+            currentY += 12f
+
+            // Opinions for this resource
+            details.opinions.sortedBy { it.createdAt }.forEachIndexed { index, opinion ->
+                val estimatedHeight = estimateOpinionHeight(opinion, index + 1)
+
+                if (currentY + estimatedHeight > PAGE_HEIGHT - MARGIN - 40f) {
+                    drawFooter(canvas, pageNumber)
+                    document.finishPage(page)
+                    pageNumber++
+                    pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
+                    page = document.startPage(pageInfo)
+                    canvas = page.canvas
+                    canvas.drawColor(bgColor)
+                    currentY = MARGIN
+                }
+
+                currentY = drawOpinionCard(canvas, opinion, index + 1, currentY)
+                currentY += 16f
+            }
+            
+            currentY += 24f
+        }
+
+        // Draw footer on last page
+        drawFooter(canvas, pageNumber)
+        document.finishPage(page)
+
+        // Write to file
+        val outputFile = File(context.cacheDir, "topic_export_${System.currentTimeMillis()}.pdf")
+        return try {
+            FileOutputStream(outputFile).use { out ->
+                document.writeTo(out)
+            }
+            document.close()
+            outputFile
+        } catch (e: Exception) {
+            document.close()
+            null
+        }
+    }
+
+    private fun drawHeader(canvas: Canvas, title: String, startY: Float, subtitlePrefix: String = "Opinion History"): Float {
         var y = startY + MARGIN
 
         // Brand bar
         val brandPaint = Paint().apply {
-            color = accentColor
+            color = accentGreen
             style = Paint.Style.FILL
         }
         canvas.drawRect(0f, y - 4f, PAGE_WIDTH.toFloat(), y + 2f, brandPaint)
-        y += 20f
+        y += 32f // Added line gap after green line
 
         // Title
         val titlePaint = Paint().apply {
@@ -145,7 +249,7 @@ object PdfExportService {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText("Opinion History", MARGIN, y, titlePaint)
+        canvas.drawText(subtitlePrefix, MARGIN, y, titlePaint)
         y += 28f
 
         // Resource title
@@ -214,17 +318,17 @@ object PdfExportService {
         val isTemplate = opinion.text.startsWith("[TEMPLATE:")
         val isVisual = opinion.imagePath != null
 
-        val typeName = when {
-            isVisual -> "VISUAL"
-            isDictionary -> "LOOKUP"
-            isAnnotation -> "ANNOTATION"
-            isTemplate -> "TEMPLATE"
-            opinion.pageNumber != null -> "BOOKMARK"
-            else -> "OPINION"
+        val (typeName, accent) = when {
+            isVisual -> "VISUAL" to accentVisual
+            isDictionary -> "LOOKUP" to accentLookup
+            isAnnotation -> "ANNOTATION" to accentAnnotation
+            isTemplate -> "TEMPLATE" to accentTemplate
+            opinion.pageNumber != null -> "BOOKMARK" to accentBookmark
+            else -> "OPINION" to accentGreen
         }
 
         val badgePaint = Paint().apply {
-            color = accentColor
+            color = accent
             textSize = 9f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
@@ -246,8 +350,10 @@ object PdfExportService {
         // Content text
         val cleanText = when {
             isAnnotation -> {
-                val cleaned = opinion.text.replace(Regex("\\[INDEX:\\d+\\]\\s*"), "")
-                cleaned
+                opinion.text
+                    .replace(Regex("\\[INDEX:\\d+\\]\\s*"), "")
+                    .replace(Regex("^>\\s*"), "")
+                    .trim()
             }
             isDictionary -> opinion.text.substringAfter("] ").trim()
             isTemplate -> {
@@ -259,7 +365,31 @@ object PdfExportService {
         }
 
         y = drawWrappedText(canvas, cleanText, innerLeft, y, textPrimary, 11f, innerWidth)
-        y += 12f
+        y += 8f
+
+        // Draw visual image if present
+        if (isVisual) {
+            try {
+                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeFile(opinion.imagePath, options)
+                val imgWidth = options.outWidth
+                val imgHeight = options.outHeight
+                if (imgWidth > 0 && imgHeight > 0) {
+                    val scale = innerWidth / imgWidth
+                    val visualHeight = imgHeight * scale
+                    
+                    val bitmap = BitmapFactory.decodeFile(opinion.imagePath)
+                    if (bitmap != null) {
+                        val destRect = RectF(innerLeft, y, innerLeft + innerWidth, y + visualHeight)
+                        canvas.drawBitmap(bitmap, null, destRect, Paint(Paint.FILTER_BITMAP_FLAG))
+                        y += visualHeight + 12f
+                        bitmap.recycle()
+                    }
+                }
+            } catch (e: Exception) {}
+        }
+        
+        y += 4f
 
         // Confidence badge
         val confPaint = Paint().apply {
@@ -284,7 +414,10 @@ object PdfExportService {
     private fun estimateOpinionHeight(opinion: Opinion, index: Int): Float {
         val cleanText = when {
             opinion.text.startsWith("> ") || opinion.text.startsWith("[INDEX:") ->
-                opinion.text.replace(Regex("\\[INDEX:\\d+\\]\\s*"), "")
+                opinion.text
+                    .replace(Regex("\\[INDEX:\\d+\\]\\s*"), "")
+                    .replace(Regex("^>\\s*"), "")
+                    .trim()
             opinion.text.startsWith("[DICT") -> opinion.text.substringAfter("] ").trim()
             opinion.text.startsWith("[TEMPLATE:") ->
                 opinion.text.substringAfter("]\n").replace(Regex("### "), "").trim()
@@ -298,8 +431,21 @@ object PdfExportService {
         val availableWidth = PAGE_WIDTH - 2 * MARGIN - 32f
         val lineCount = estimateLineCount(cleanText, paint, availableWidth)
 
-        // Header (16) + badge line (16) + text lines + confidence (12) + padding (28)
-        return 16f + 16f + (lineCount * LINE_HEIGHT) + 12f + 28f
+        // Image height estimation
+        var visualHeight = 0f
+        if (opinion.imagePath != null) {
+            try {
+                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeFile(opinion.imagePath, options)
+                if (options.outWidth > 0) {
+                    val scale = availableWidth / options.outWidth
+                    visualHeight = options.outHeight * scale + 12f
+                }
+            } catch (e: Exception) {}
+        }
+
+        // Header (16) + badge line (16) + text lines + image + confidence (12) + padding (28)
+        return 16f + 16f + (lineCount * LINE_HEIGHT) + visualHeight + 12f + 28f
     }
 
     private fun estimateLineCount(text: String, paint: Paint, maxWidth: Float): Int {
@@ -317,11 +463,14 @@ object PdfExportService {
         return count.coerceAtLeast(1)
     }
 
-    private fun drawText(canvas: Canvas, text: String, x: Float, y: Float, color: Int, size: Float): Float {
+    private fun drawText(canvas: Canvas, text: String, x: Float, y: Float, color: Int, size: Float, isBold: Boolean = false): Float {
         val paint = Paint().apply {
             this.color = color
             textSize = size
             isAntiAlias = true
+            if (isBold) {
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            }
         }
         canvas.drawText(text, x, y, paint)
         return y + LINE_HEIGHT
@@ -374,7 +523,7 @@ object PdfExportService {
 
         // "Made by Relatrix" branding
         val brandPaint = Paint().apply {
-            color = accentColor
+            color = accentGreen
             textSize = 9f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true

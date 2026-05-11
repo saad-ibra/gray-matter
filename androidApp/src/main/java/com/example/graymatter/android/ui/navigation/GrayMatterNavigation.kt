@@ -300,6 +300,16 @@ fun GrayMatterNavigation(
                         shareText(context, markdown, "Topic Analysis: ${t.name}")
                     }
                 },
+                onExportPdf = {
+                    topic?.let { t ->
+                        val pdfFile = com.example.graymatter.android.export.PdfExportService.generateTopicPdf(context, t, topicItems)
+                        if (pdfFile != null) {
+                            com.example.graymatter.android.export.PdfExportService.sharePdf(context, pdfFile, "Topic Analysis: ${t.name}")
+                        } else {
+                            android.widget.Toast.makeText(context, "Failed to generate PDF", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
                 onViewInGraph = { id -> 
                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute(id))
                 },
