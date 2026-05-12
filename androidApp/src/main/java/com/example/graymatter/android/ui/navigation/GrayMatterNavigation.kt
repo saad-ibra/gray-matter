@@ -62,6 +62,7 @@ fun GrayMatterNavigation(
     val trashViewModel: com.example.graymatter.android.ui.viewmodel.TrashViewModel = koinViewModel()
     val templateViewModel: com.example.graymatter.android.ui.viewmodel.TemplateViewModel = koinViewModel()
     val homeViewModel: com.example.graymatter.android.ui.viewmodel.HomeViewModel = koinViewModel()
+    val librarySearchViewModel: com.example.graymatter.android.ui.library.LibrarySearchViewModel = koinViewModel()
     val draftingViewModel: com.example.graymatter.android.ui.viewmodel.DraftingViewModel = koinViewModel()
     val opinionRepository: com.example.graymatter.data.OpinionRepository = koinInject()
 
@@ -232,7 +233,14 @@ fun GrayMatterNavigation(
                                 onViewTopicInRelatrix = { topicId ->
                                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute(topicId))
                                 },
-                                onUpdateOrder = { ids -> viewModel.updateTopicOrder(ids) }
+                                onUpdateOrder = { ids -> viewModel.updateTopicOrder(ids) },
+                                librarySearchViewModel = librarySearchViewModel,
+                                onNavigateToResourceDetail = { id ->
+                                    navController.navigate(NavigationDestination.ResourceDetail.buildRoute(id))
+                                },
+                                onNavigateToFileViewer = { id ->
+                                    navController.navigate(NavigationDestination.FileViewer.buildRoute(id))
+                                }
                             )
                         }
                         2 -> {

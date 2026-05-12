@@ -132,7 +132,7 @@ fun SecuritySettingsScreen(
                         Icon(Icons.Default.VerifiedUser, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
                         Column {
                             Text("Vault Encryption", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
-                            Text("AES-256 SQLCipher (Hardware-backed)", style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500)
+                            Text("Hardware-backed security", style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500)
                         }
                     }
                 }

@@ -64,8 +64,12 @@ fun LibraryScreen(
     onExportTopicPdf: (Topic) -> Unit,
     onViewTopicInRelatrix: (String) -> Unit,
     onUpdateOrder: (List<String>) -> Unit,
+    librarySearchViewModel: LibrarySearchViewModel? = null,
+    onNavigateToResourceDetail: (String) -> Unit = {},
+    onNavigateToFileViewer: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    var showGlobalSearch by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedTopics by remember { mutableStateOf<Set<String>>(emptySet()) }
     
@@ -174,13 +178,34 @@ fun LibraryScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            SearchBar(
-                query = searchQuery,
-                onQueryChange = { searchQuery = it },
+            // Search bar — tap to open global search overlay
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
-            )
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(GrayMatterColors.SurfaceDark)
+                    .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                    .clickable { showGlobalSearch = true }
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        tint = GrayMatterColors.Neutral500,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Text(
+                        text = "Search",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = GrayMatterColors.Neutral600
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -503,6 +528,27 @@ fun LibraryScreen(
                 }
             )
         }
+
+        // Global Search Overlay
+        if (showGlobalSearch && librarySearchViewModel != null) {
+            LibrarySearchOverlay(
+                viewModel = librarySearchViewModel,
+                onDismiss = { showGlobalSearch = false },
+                onNavigateToTopic = { topicId ->
+                    showGlobalSearch = false
+                    val topic = topics.find { it.id == topicId }
+                    if (topic != null) onTopicClick(topic)
+                },
+                onNavigateToResourceDetail = { resourceEntryId ->
+                    showGlobalSearch = false
+                    onNavigateToResourceDetail(resourceEntryId)
+                },
+                onNavigateToFileViewer = { resourceId ->
+                    showGlobalSearch = false
+                    onNavigateToFileViewer(resourceId)
+                }
+            )
+        }
     }
     
     // Safety cleanup
@@ -510,57 +556,6 @@ fun LibraryScreen(
         onDispose {
             draggedTopicId.value = null
             isOverTrash.value = false
-        }
-    }
-}
-
-@Composable
-private fun SearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(GrayMatterColors.SurfaceDark)
-            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
-            .padding(horizontal = 16.dp, vertical = 14.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = null,
-                tint = GrayMatterColors.Neutral500,
-                modifier = Modifier.size(22.dp)
-            )
-            
-            BasicTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(
-                    color = GrayMatterColors.TextPrimary,
-                    fontWeight = FontWeight.Medium
-                ),
-                cursorBrush = SolidColor(GrayMatterColors.TextPrimary),
-                modifier = Modifier.weight(1f),
-                decorationBox = { innerTextField ->
-                    Box {
-                        if (query.isEmpty()) {
-                            Text(
-                                text = "Search Library...",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = GrayMatterColors.Neutral600
-                            )
-                        }
-                        innerTextField()
-                    }
-                }
-            )
         }
     }
 }

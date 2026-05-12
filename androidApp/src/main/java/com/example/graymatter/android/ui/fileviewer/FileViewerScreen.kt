@@ -230,6 +230,8 @@ fun FileViewerScreen(
                                 onChaptersFound = { viewModel.setChapters(it) },
                                 opinions = opinions,
                                 globalLookupWords = globalLookupWords,
+                                searchQuery = viewModel.searchQuery,
+                                searchHighlightOffset = viewModel.scrollToMatchOffset,
                                 onEmptyTap = { offset, width ->
                                     if (offset.x < width * 0.15f) {
                                         viewModel.previousPage()

@@ -26,8 +26,18 @@ class SecurityPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_SCREEN_SECURITY, false)
         set(value) = prefs.edit().putBoolean(KEY_SCREEN_SECURITY, value).apply()
 
+    var lockTimeoutSeconds: Long
+        get() = prefs.getLong(KEY_LOCK_TIMEOUT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LOCK_TIMEOUT, value).apply()
+
+    var lastActiveTime: Long
+        get() = prefs.getLong(KEY_LAST_ACTIVE, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_ACTIVE, value).apply()
+
     companion object {
         private const val KEY_APP_LOCK = "app_lock_enabled"
         private const val KEY_SCREEN_SECURITY = "screen_security_enabled"
+        private const val KEY_LOCK_TIMEOUT = "lock_timeout_seconds"
+        private const val KEY_LAST_ACTIVE = "last_active_timestamp"
     }
 }

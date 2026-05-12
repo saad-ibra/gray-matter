@@ -1,5 +1,11 @@
 package com.example.graymatter.android.ui.fileviewer
 
+import androidx.compose.animation.core.InfiniteTransition
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -44,11 +50,52 @@ fun TextSelectionOverlay(
     zoomScale: Float = 1f,
     panOffset: Offset = Offset.Zero,
     renderScale: Float = density * 1.5f,
+    searchQuery: String = "",
+    searchHighlightOffset: Int = -1,
     onEmptyTap: (Offset, Float) -> Unit = {_, _ -> },
     onSelectionChange: (Boolean) -> Unit = {},
     onNavigateToLookupOrigin: (opinionId: String, itemId: String) -> Unit = { _, _ -> },
     onActionCompleted: (action: String, selectedText: String?, id: String?, startIndex: Int?) -> Unit
 ) {
+    // Search highlight pulse animation
+    val searchPulseTransition = rememberInfiniteTransition(label = "searchPulse")
+    val searchPulseAlpha by searchPulseTransition.animateFloat(
+        initialValue = 0.55f,
+        targetValue = 0.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "searchPulseAlpha"
+    )
+
+    // Compute search highlight characters
+    val searchHighlightChars = remember(searchQuery, searchHighlightOffset, characters) {
+        if (searchQuery.length < 2 || searchHighlightOffset < 0 || characters.isEmpty()) {
+            emptyList()
+        } else {
+            val pageText = characters.joinToString("") { it.unicode }
+            // Find the match at or near the given offset
+            val idx = pageText.indexOf(searchQuery, startIndex = 0, ignoreCase = true)
+            // Try to find the specific occurrence closest to searchHighlightOffset
+            var bestIdx = -1
+            var searchStart = 0
+            while (searchStart < pageText.length) {
+                val found = pageText.indexOf(searchQuery, searchStart, ignoreCase = true)
+                if (found == -1) break
+                bestIdx = found
+                if (found >= searchHighlightOffset || (searchHighlightOffset - found) < searchQuery.length) break
+                searchStart = found + 1
+            }
+            if (bestIdx >= 0 && bestIdx + searchQuery.length <= characters.size) {
+                characters.subList(bestIdx, bestIdx + searchQuery.length)
+            } else if (idx >= 0 && idx + searchQuery.length <= characters.size) {
+                characters.subList(idx, idx + searchQuery.length)
+            } else {
+                emptyList()
+            }
+        }
+    }
     val offsetSaver = Saver<Offset?, String>(
         save = { it?.let { "${it.x},${it.y}" } ?: "" },
         restore = { 
@@ -550,6 +597,36 @@ fun TextSelectionOverlay(
                         color = Color(0xFFF6B3B3).copy(alpha = 0.4f),
                         topLeft = Offset(paddedX, paddedY),
                         size = androidx.compose.ui.geometry.Size(paddedW, paddedH)
+                    )
+                }
+            }
+
+            // Draw Search Highlight (amber/gold pulsing)
+            if (searchHighlightChars.isNotEmpty()) {
+                val searchColor = Color(0xFFFFB300).copy(alpha = searchPulseAlpha)
+                val searchLineRects = groupCharactersIntoRects(searchHighlightChars)
+                for (rect in searchLineRects) {
+                    val pScreen = pdfToScreen(rect.left, rect.top)
+                    val screenW = rect.width() * baseRenderScale * scale * zoomScale
+                    val screenH = rect.height() * baseRenderScale * scale * zoomScale
+
+                    val paddedX = pScreen.x - hPad - 2.dp.toPx()
+                    val paddedY = pScreen.y - vPad - 1.dp.toPx()
+                    val paddedW = screenW + hPad * 2 + 4.dp.toPx()
+                    val paddedH = screenH + vPad * 2 + 2.dp.toPx()
+
+                    // Draw a rounded-feel highlight with a border
+                    drawRect(
+                        color = searchColor,
+                        topLeft = Offset(paddedX, paddedY),
+                        size = androidx.compose.ui.geometry.Size(paddedW, paddedH)
+                    )
+                    // Draw border outline for extra visibility
+                    drawRect(
+                        color = Color(0xFFFF8F00).copy(alpha = 0.8f),
+                        topLeft = Offset(paddedX, paddedY),
+                        size = androidx.compose.ui.geometry.Size(paddedW, paddedH),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
                     )
                 }
             }
