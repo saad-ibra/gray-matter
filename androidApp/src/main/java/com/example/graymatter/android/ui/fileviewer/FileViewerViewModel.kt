@@ -359,6 +359,10 @@ class FileViewerViewModel(
         }
     }
 
+    fun openSearchPanel() {
+        showSearchPanel = true
+    }
+
     fun onSearchQueryChanged(query: String) {
         searchQuery = query
         if (query.length < 3) {

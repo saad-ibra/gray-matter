@@ -14,6 +14,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import android.app.Application
+import android.content.Context
+import androidx.lifecycle.AndroidViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Categories for global search results.
@@ -55,11 +61,48 @@ enum class SearchFilter {
  * Performs debounced cross-content search across topics, resources, and opinions.
  */
 class LibrarySearchViewModel(
+    application: Application,
     private val topicRepository: TopicRepository,
     private val resourceRepository: ResourceRepository,
     private val resourceEntryRepository: ResourceEntryRepository,
     private val opinionRepository: OpinionRepository
-) : ViewModel() {
+) : AndroidViewModel(application) {
+
+    private val prefs = application.getSharedPreferences("library_search_prefs", Context.MODE_PRIVATE)
+
+    private val _recentSearches = MutableStateFlow<List<String>>(emptyList())
+    val recentSearches: StateFlow<List<String>> = _recentSearches.asStateFlow()
+
+    init {
+        loadRecentSearches()
+    }
+
+    private fun loadRecentSearches() {
+        val saved = prefs.getString("recent_searches", "") ?: ""
+        if (saved.isNotEmpty()) {
+            _recentSearches.value = saved.split("|||")
+        }
+    }
+
+    private fun saveRecentSearch(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.length < 2) return
+        
+        val current = _recentSearches.value.toMutableList()
+        current.remove(trimmed)
+        current.add(0, trimmed)
+        
+        // Keep up to 10 recent searches
+        val limited = current.take(10)
+        _recentSearches.value = limited
+        
+        prefs.edit().putString("recent_searches", limited.joinToString("|||")).apply()
+    }
+    
+    fun clearRecentSearches() {
+        _recentSearches.value = emptyList()
+        prefs.edit().remove("recent_searches").apply()
+    }
 
     var searchQuery by mutableStateOf("")
         private set
@@ -93,6 +136,7 @@ class LibrarySearchViewModel(
         searchJob = viewModelScope.launch {
             delay(300) // Debounce
             performSearch(query)
+            saveRecentSearch(query)
         }
     }
 

@@ -235,11 +235,11 @@ fun GrayMatterNavigation(
                                 },
                                 onUpdateOrder = { ids -> viewModel.updateTopicOrder(ids) },
                                 librarySearchViewModel = librarySearchViewModel,
-                                onNavigateToResourceDetail = { id ->
-                                    navController.navigate(NavigationDestination.ResourceDetail.buildRoute(id))
+                                onNavigateToResourceDetail = { id, focusId ->
+                                    navController.navigate(NavigationDestination.ResourceDetail.buildRoute(id, focusOpinionId = focusId, searchQuery = librarySearchViewModel.searchQuery))
                                 },
-                                onNavigateToFileViewer = { id ->
-                                    navController.navigate(NavigationDestination.FileViewer.buildRoute(id))
+                                onNavigateToFileViewer = { id, query ->
+                                    navController.navigate(NavigationDestination.FileViewer.buildRoute(id, searchQuery = query ?: librarySearchViewModel.searchQuery))
                                 }
                             )
                         }
@@ -379,6 +379,7 @@ fun GrayMatterNavigation(
         ) { backStackEntry ->
             val resourceEntryId = backStackEntry.arguments?.getString(NavigationDestination.ResourceDetail.ARG_RESOURCE_ENTRY_ID) ?: return@composable
             val focusOpinionId = backStackEntry.arguments?.getString(NavigationDestination.ResourceDetail.ARG_FOCUS_OPINION_ID)
+            val initialSearchQuery = backStackEntry.arguments?.getString(NavigationDestination.ResourceDetail.ARG_SEARCH_QUERY)
             val itemDetails by viewModel.getResourceEntryDetails(resourceEntryId).collectAsState(initial = null)
             val readingProgress by viewModel.getReadingProgressStream(itemDetails?.resource?.id ?: "").collectAsState(initial = null)
 
@@ -691,6 +692,7 @@ fun GrayMatterNavigation(
         ) { backStackEntry ->
             val resourceId = backStackEntry.arguments?.getString(NavigationDestination.FileViewer.ARG_RESOURCE_ID) ?: return@composable
             val initialPage = backStackEntry.arguments?.getInt(NavigationDestination.FileViewer.ARG_PAGE) ?: -1
+            val initialSearchQuery = backStackEntry.arguments?.getString(NavigationDestination.FileViewer.ARG_SEARCH_QUERY)
             
             val fileViewerViewModel: com.example.graymatter.android.ui.fileviewer.FileViewerViewModel = koinViewModel()
 
@@ -699,6 +701,7 @@ fun GrayMatterNavigation(
                 referenceSelectorViewModel = referenceSelectorViewModel,
                 resourceId = resourceId,
                 initialPage = if (initialPage >= 0) initialPage else null,
+                initialSearchQuery = initialSearchQuery,
                 onBackClick = { navController.popBackStack() },
                 onViewInGraph = { resId -> 
                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute(resId)) 

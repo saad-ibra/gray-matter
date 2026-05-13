@@ -15,12 +15,21 @@ sealed class NavigationDestination(val route: String) {
     
     object NewEntry : NavigationDestination("new_entry")
     
-    object ResourceDetail : NavigationDestination("resource_detail/{resourceEntryId}?focusOpinionId={focusOpinionId}") {
+    object ResourceDetail : NavigationDestination("resource_detail/{resourceEntryId}?focusOpinionId={focusOpinionId}&searchQuery={searchQuery}") {
         const val ARG_RESOURCE_ENTRY_ID = "resourceEntryId"
         const val ARG_FOCUS_OPINION_ID = "focusOpinionId"
-        fun buildRoute(resourceEntryId: String, focusOpinionId: String? = null) = 
-            if (focusOpinionId != null) "resource_detail/$resourceEntryId?focusOpinionId=$focusOpinionId"
-            else "resource_detail/$resourceEntryId"
+        const val ARG_SEARCH_QUERY = "searchQuery"
+        fun buildRoute(resourceEntryId: String, focusOpinionId: String? = null, searchQuery: String? = null) = 
+            buildString {
+                append("resource_detail/$resourceEntryId")
+                val params = mutableListOf<String>()
+                if (focusOpinionId != null) params.add("focusOpinionId=$focusOpinionId")
+                if (searchQuery != null) params.add("searchQuery=$searchQuery")
+                if (params.isNotEmpty()) {
+                    append("?")
+                    append(params.joinToString("&"))
+                }
+            }
     }
     
     object AddToTopic : NavigationDestination("add_to_topic/{resourceEntryId}") {
@@ -35,11 +44,21 @@ sealed class NavigationDestination(val route: String) {
     
     object Search : NavigationDestination("search")
 
-    object FileViewer : NavigationDestination("file_viewer/{resourceId}?page={page}") {
+    object FileViewer : NavigationDestination("file_viewer/{resourceId}?page={page}&searchQuery={searchQuery}") {
         const val ARG_RESOURCE_ID = "resourceId"
         const val ARG_PAGE = "page"
-        fun buildRoute(resourceId: String, page: Int? = null) = 
-            if (page != null) "file_viewer/$resourceId?page=$page" else "file_viewer/$resourceId"
+        const val ARG_SEARCH_QUERY = "searchQuery"
+        fun buildRoute(resourceId: String, page: Int? = null, searchQuery: String? = null) = 
+            buildString {
+                append("file_viewer/$resourceId")
+                val params = mutableListOf<String>()
+                if (page != null) params.add("page=$page")
+                if (searchQuery != null) params.add("searchQuery=$searchQuery")
+                if (params.isNotEmpty()) {
+                    append("?")
+                    append(params.joinToString("&"))
+                }
+            }
     }
 
     object KnowledgeGraph : NavigationDestination("knowledge_graph?nodeId={nodeId}") {

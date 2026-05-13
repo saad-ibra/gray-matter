@@ -52,6 +52,9 @@ import coil.compose.AsyncImage
 import java.io.File
 import android.net.Uri
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 
 /**
  * Resource Details Screen.
@@ -63,6 +66,7 @@ fun ResourceDetailScreen(
     resourceEntryDetails: ResourceEntryWithDetails?,
     readingProgress: com.example.graymatter.domain.ReadingProgress?,
     focusOpinionId: String? = null,
+    initialSearchQuery: String? = null,
     templates: List<CustomTemplate> = emptyList(),
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
     onBackClick: () -> Unit,
@@ -548,7 +552,8 @@ fun ResourceDetailScreen(
                                 showAddDialog = true // Assuming showAddDialog is used for both Add and Edit
                             }
                         },
-                        pulseTrigger = pulseTrigger
+                        pulseTrigger = pulseTrigger,
+                        initialSearchQuery = initialSearchQuery
                     )
 
                     Spacer(modifier = Modifier.height(100.dp))
@@ -1048,7 +1053,8 @@ private fun OpinionTimeline(
     onShareOpinion: (Opinion) -> Unit = {},
     onShareOpinionMarkdown: (Opinion) -> Unit = {},
     onStartEditingOpinion: (String) -> Unit = {},
-    pulseTrigger: Long = 0L
+    pulseTrigger: Long = 0L,
+    initialSearchQuery: String? = null
 ) {
     Column {
         opinions.forEachIndexed { index, opinion ->
@@ -1076,7 +1082,8 @@ private fun OpinionTimeline(
                 onShareOpinion = onShareOpinion,
                 onShareOpinionMarkdown = onShareOpinionMarkdown,
                 onStartEditing = { onStartEditingOpinion(opinion.id) },
-                pulseTrigger = pulseTrigger
+                pulseTrigger = pulseTrigger,
+                initialSearchQuery = initialSearchQuery
             )
         }
     }
@@ -1104,12 +1111,62 @@ private fun OpinionTimelineItem(
     onShareOpinion: (Opinion) -> Unit = {},
     onShareOpinionMarkdown: (Opinion) -> Unit = {},
     onStartEditing: () -> Unit = {},
-    pulseTrigger: Long = 0L
+    pulseTrigger: Long = 0L,
+    initialSearchQuery: String? = null
 ) {
     var text by remember(opinion.text) { mutableStateOf(opinion.text) }
     var confidence by remember(opinion.confidenceScore) { mutableStateOf(opinion.confidenceScore.toFloat() / 100f) }
     var showDateTimePicker by remember { mutableStateOf(false) }
     var showItemMenu by remember { mutableStateOf(false) }
+
+    @Composable
+    fun highlightText(
+        fullText: String,
+        query: String?,
+        baseColor: Color = GrayMatterColors.TextPrimary,
+        baseAlpha: Float = 1f
+    ): androidx.compose.ui.text.AnnotatedString {
+        return remember(fullText, query) {
+            buildAnnotatedString {
+                if (query.isNullOrBlank() || query.length < 2) {
+                    withStyle(SpanStyle(color = baseColor.copy(alpha = baseAlpha))) {
+                        append(fullText)
+                    }
+                } else {
+                    val lowerText = fullText.lowercase()
+                    val lowerQuery = query.lowercase()
+                    var currentIndex = 0
+
+                    while (currentIndex < fullText.length) {
+                        val matchIndex = lowerText.indexOf(lowerQuery, currentIndex)
+                        if (matchIndex == -1) {
+                            withStyle(SpanStyle(color = baseColor.copy(alpha = baseAlpha))) {
+                                append(fullText.substring(currentIndex))
+                            }
+                            break
+                        }
+
+                        if (matchIndex > currentIndex) {
+                            withStyle(SpanStyle(color = baseColor.copy(alpha = baseAlpha))) {
+                                append(fullText.substring(currentIndex, matchIndex))
+                            }
+                        }
+
+                        // High-performance premium highlight (amber/gold)
+                        withStyle(SpanStyle(
+                            color = Color(0xFFFFCC00),
+                            fontWeight = FontWeight.Bold,
+                            background = Color(0xFFFFCC00).copy(alpha = 0.15f)
+                        )) {
+                            append(fullText.substring(matchIndex, matchIndex + query.length))
+                        }
+
+                        currentIndex = matchIndex + query.length
+                    }
+                }
+            }
+        }
+    }
     
     // Load initial reference links to pre-populate selection
     val flowLinks by onLoadLinks(opinion.id).collectAsState(initial = emptyList())
@@ -1133,8 +1190,12 @@ private fun OpinionTimelineItem(
     val configuration = LocalConfiguration.current
     var itemHeight by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(isFocused, isEditing, pulseTrigger) {
-        if (isFocused || isEditing) {
+    val containsQuery = remember(opinion.text, initialSearchQuery) {
+        !initialSearchQuery.isNullOrBlank() && opinion.text.contains(initialSearchQuery, ignoreCase = true)
+    }
+
+    LaunchedEffect(isFocused, isEditing, pulseTrigger, containsQuery) {
+        if (isFocused || isEditing || containsQuery) {
             val viewportHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
             val itemH = itemHeight.toFloat()
             
@@ -1555,9 +1616,8 @@ private fun OpinionTimelineItem(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = phrase,
-                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp, fontWeight = FontWeight.Medium),
-                            color = Color.White // Dictionary text is now white
+                            text = highlightText(phrase, initialSearchQuery, Color.White),
+                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp, fontWeight = FontWeight.Medium)
                         )
                     }
                 } else if (isAnnotation) {
@@ -1584,9 +1644,8 @@ private fun OpinionTimelineItem(
                             Row(modifier = Modifier.fillMaxWidth()) {
                                 Box(modifier = Modifier.width(4.dp).height(IntrinsicSize.Min).background(GrayMatterColors.TypeAnnotation)) // Orange accent
                                 Text(
-                                    text = "\"$quote\"",
+                                    text = highlightText("\"$quote\"", initialSearchQuery, GrayMatterColors.Neutral400),
                                     style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic, lineHeight = 24.sp),
-                                    color = GrayMatterColors.Neutral400,
                                     modifier = Modifier.padding(12.dp)
                                 )
                             }
@@ -1594,9 +1653,8 @@ private fun OpinionTimelineItem(
                         // Reflection
                         if (reflection.isNotEmpty()) {
                             Text(
-                                text = reflection,
-                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
-                                color = GrayMatterColors.TextPrimary
+                                text = highlightText(reflection, initialSearchQuery, GrayMatterColors.TextPrimary),
+                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
                     }
@@ -1634,9 +1692,8 @@ private fun OpinionTimelineItem(
                                             color = GrayMatterColors.Neutral500
                                         )
                                         Text(
-                                            text = response,
-                                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
-                                            color = GrayMatterColors.TextPrimary
+                                            text = highlightText(response, initialSearchQuery, GrayMatterColors.TextPrimary),
+                                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                                         )
                                     }
                                 }
@@ -1654,9 +1711,8 @@ private fun OpinionTimelineItem(
                                 .padding(16.dp)
                         ) {
                             Text(
-                                text = displayContent,
-                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
-                                color = GrayMatterColors.TextPrimary
+                                text = highlightText(displayContent, initialSearchQuery, GrayMatterColors.TextPrimary),
+                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
                     }
@@ -1673,9 +1729,8 @@ private fun OpinionTimelineItem(
                                 .padding(16.dp)
                         ) {
                             Text(
-                                text = cleanText,
-                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
-                                color = GrayMatterColors.TextPrimary
+                                text = highlightText(cleanText, initialSearchQuery, GrayMatterColors.TextPrimary),
+                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
                     }
@@ -1716,9 +1771,8 @@ private fun OpinionTimelineItem(
                             // Caption (if any)
                             if (text.isNotBlank()) {
                                 Text(
-                                    text = text,
+                                    text = highlightText(text, initialSearchQuery, GrayMatterColors.TextSecondary),
                                     style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
-                                    color = GrayMatterColors.TextSecondary,
                                     modifier = Modifier.padding(12.dp)
                                 )
                             }
@@ -1735,9 +1789,8 @@ private fun OpinionTimelineItem(
                                 .padding(16.dp)
                         ) {
                             Text(
-                                text = text,
-                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
-                                color = GrayMatterColors.TextPrimary
+                                text = highlightText(text, initialSearchQuery, GrayMatterColors.TextPrimary),
+                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
                     }

@@ -65,8 +65,8 @@ fun LibraryScreen(
     onViewTopicInRelatrix: (String) -> Unit,
     onUpdateOrder: (List<String>) -> Unit,
     librarySearchViewModel: LibrarySearchViewModel? = null,
-    onNavigateToResourceDetail: (String) -> Unit = {},
-    onNavigateToFileViewer: (String) -> Unit = {},
+    onNavigateToResourceDetail: (String, String?) -> Unit = { _, _ -> },
+    onNavigateToFileViewer: (String, String?) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     var showGlobalSearch by remember { mutableStateOf(false) }
@@ -539,13 +539,13 @@ fun LibraryScreen(
                     val topic = topics.find { it.id == topicId }
                     if (topic != null) onTopicClick(topic)
                 },
-                onNavigateToResourceDetail = { resourceEntryId ->
+                onNavigateToResourceDetail = { resourceEntryId, focusId ->
                     showGlobalSearch = false
-                    onNavigateToResourceDetail(resourceEntryId)
+                    onNavigateToResourceDetail(resourceEntryId, focusId)
                 },
-                onNavigateToFileViewer = { resourceId ->
+                onNavigateToFileViewer = { resourceId, query ->
                     showGlobalSearch = false
-                    onNavigateToFileViewer(resourceId)
+                    onNavigateToFileViewer(resourceId, query)
                 }
             )
         }

@@ -48,8 +48,8 @@ fun LibrarySearchOverlay(
     viewModel: LibrarySearchViewModel,
     onDismiss: () -> Unit,
     onNavigateToTopic: (topicId: String) -> Unit,
-    onNavigateToResourceDetail: (resourceEntryId: String) -> Unit,
-    onNavigateToFileViewer: (resourceId: String) -> Unit
+    onNavigateToResourceDetail: (resourceEntryId: String, focusOpinionId: String?) -> Unit,
+    onNavigateToFileViewer: (resourceId: String, searchQuery: String?) -> Unit
 ) {
     val focusRequester = remember { FocusRequester() }
 
@@ -109,7 +109,86 @@ fun LibrarySearchOverlay(
                     EmptySearchState(query = viewModel.searchQuery)
                 }
                 else -> {
-                    SearchIdleState()
+                    val recentSearches by viewModel.recentSearches.collectAsState()
+                    if (recentSearches.isNotEmpty()) {
+                        RecentSearchesList(
+                            recentSearches = recentSearches,
+                            onSearchSelected = { viewModel.updateQuery(it) },
+                            onClearSearches = { viewModel.clearRecentSearches() }
+                        )
+                    } else {
+                        SearchIdleState()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentSearchesList(
+    recentSearches: List<String>,
+    onSearchSelected: (String) -> Unit,
+    onClearSearches: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 24.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Recent Searches",
+                color = Color.White.copy(alpha = 0.4f),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.5.sp
+            )
+            TextButton(
+                onClick = onClearSearches,
+                contentPadding = PaddingValues(0.dp),
+                modifier = Modifier.defaultMinSize(minWidth = 1.dp, minHeight = 1.dp)
+            ) {
+                Text(
+                    "Clear",
+                    color = Color(0xFFFFB300).copy(alpha = 0.8f),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
+        LazyColumn(
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            itemsIndexed(recentSearches) { _, query ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSearchSelected(query) }
+                        .padding(horizontal = 8.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.History,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.3f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = query,
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }
@@ -294,8 +373,8 @@ private fun SearchResultsList(
     results: List<GlobalSearchResult>,
     query: String,
     onNavigateToTopic: (String) -> Unit,
-    onNavigateToResourceDetail: (String) -> Unit,
-    onNavigateToFileViewer: (String) -> Unit,
+    onNavigateToResourceDetail: (String, String?) -> Unit,
+    onNavigateToFileViewer: (String, String?) -> Unit,
     onDismiss: () -> Unit
 ) {
     // Group results by type for section headers
@@ -378,9 +457,9 @@ private fun SearchResultsList(
                                 onClick = {
                                     onDismiss()
                                     if (isPdf && result.matchType == "content") {
-                                        onNavigateToFileViewer(result.resource.id)
+                                        onNavigateToFileViewer(result.resource.id, query)
                                     } else {
-                                        onNavigateToResourceDetail(result.resourceEntryId)
+                                        onNavigateToResourceDetail(result.resourceEntryId, null)
                                     }
                                 }
                             )
@@ -395,7 +474,7 @@ private fun SearchResultsList(
                                 badge = "Knowledge",
                                 onClick = {
                                     onDismiss()
-                                    onNavigateToResourceDetail(result.resourceEntryId)
+                                    onNavigateToResourceDetail(result.resourceEntryId, result.opinion.id)
                                 }
                             )
                         }

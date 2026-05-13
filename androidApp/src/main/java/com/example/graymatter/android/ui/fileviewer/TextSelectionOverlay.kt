@@ -60,10 +60,10 @@ fun TextSelectionOverlay(
     // Search highlight pulse animation
     val searchPulseTransition = rememberInfiniteTransition(label = "searchPulse")
     val searchPulseAlpha by searchPulseTransition.animateFloat(
-        initialValue = 0.55f,
-        targetValue = 0.25f,
+        initialValue = 0.65f,
+        targetValue = 0.35f,
         animationSpec = infiniteRepeatable(
-            animation = tween(800),
+            animation = tween(1000),
             repeatMode = RepeatMode.Reverse
         ),
         label = "searchPulseAlpha"
@@ -71,29 +71,58 @@ fun TextSelectionOverlay(
 
     // Compute search highlight characters
     val searchHighlightChars = remember(searchQuery, searchHighlightOffset, characters) {
-        if (searchQuery.length < 2 || searchHighlightOffset < 0 || characters.isEmpty()) {
+        if (searchQuery.length < 2 || characters.isEmpty()) {
             emptyList()
         } else {
             val pageText = characters.joinToString("") { it.unicode }
-            // Find the match at or near the given offset
-            val idx = pageText.indexOf(searchQuery, startIndex = 0, ignoreCase = true)
-            // Try to find the specific occurrence closest to searchHighlightOffset
+            
+            // Try exact match first
+            var idx = pageText.indexOf(searchQuery, ignoreCase = true)
             var bestIdx = -1
-            var searchStart = 0
-            while (searchStart < pageText.length) {
-                val found = pageText.indexOf(searchQuery, searchStart, ignoreCase = true)
-                if (found == -1) break
-                bestIdx = found
-                if (found >= searchHighlightOffset || (searchHighlightOffset - found) < searchQuery.length) break
-                searchStart = found + 1
+            if (idx != -1) {
+                var searchStart = 0
+                while (searchStart < pageText.length) {
+                    val found = pageText.indexOf(searchQuery, searchStart, ignoreCase = true)
+                    if (found == -1) break
+                    bestIdx = found
+                    if (searchHighlightOffset >= 0 && (found >= searchHighlightOffset || (searchHighlightOffset - found) < searchQuery.length)) break
+                    searchStart = found + 1
+                }
+                val finalIdx = if (bestIdx >= 0) bestIdx else idx
+                if (finalIdx >= 0 && finalIdx + searchQuery.length <= characters.size) {
+                    return@remember characters.subList(finalIdx, finalIdx + searchQuery.length)
+                }
             }
-            if (bestIdx >= 0 && bestIdx + searchQuery.length <= characters.size) {
-                characters.subList(bestIdx, bestIdx + searchQuery.length)
-            } else if (idx >= 0 && idx + searchQuery.length <= characters.size) {
-                characters.subList(idx, idx + searchQuery.length)
-            } else {
-                emptyList()
+            
+            // Fallback to fuzzy match (ignoring whitespace differences)
+            val cleanQuery = searchQuery.replace(Regex("\\s+"), "").lowercase()
+            val cleanPageText = pageText.replace(Regex("\\s+"), "").lowercase()
+            
+            val cleanIdx = cleanPageText.indexOf(cleanQuery)
+            if (cleanIdx >= 0) {
+                var cleanCount = 0
+                var originalStartIdx = -1
+                var originalEndIdx = -1
+                
+                for (i in pageText.indices) {
+                    if (!pageText[i].isWhitespace()) {
+                        if (cleanCount == cleanIdx && originalStartIdx == -1) {
+                            originalStartIdx = i
+                        }
+                        cleanCount++
+                        if (cleanCount == cleanIdx + cleanQuery.length) {
+                            originalEndIdx = i
+                            break
+                        }
+                    }
+                }
+                
+                if (originalStartIdx != -1 && originalEndIdx != -1 && originalEndIdx < characters.size) {
+                    return@remember characters.subList(originalStartIdx, originalEndIdx + 1)
+                }
             }
+            
+            emptyList()
         }
     }
     val offsetSaver = Saver<Offset?, String>(
@@ -136,22 +165,29 @@ fun TextSelectionOverlay(
         if (chars.isEmpty()) return emptyList()
         val rects = mutableListOf<android.graphics.RectF>()
         
-        var currentLineMinX = chars.first().x
-        var currentLineMaxX = chars.first().x + chars.first().width
-        var currentLineMinY = chars.first().y
-        var currentLineMaxY = chars.first().y + chars.first().height
+        // Filter out whitespace characters which often have bizarre coordinates in PDFBox
+        val visibleChars = chars.filter { !it.unicode.isBlank() }
+        if (visibleChars.isEmpty()) return emptyList()
         
-        for (i in 1 until chars.size) {
-            val char = chars[i]
-            // If the char is roughly on the same line (y overlap)
+        var currentLineMinX = visibleChars.first().x
+        var currentLineMaxX = visibleChars.first().x + visibleChars.first().width
+        var currentLineMinY = visibleChars.first().y
+        var currentLineMaxY = visibleChars.first().y + visibleChars.first().height
+        
+        for (i in 1 until visibleChars.size) {
+            val char = visibleChars[i]
             val centerY = char.y + char.height / 2f
-            if (centerY >= currentLineMinY && centerY <= currentLineMaxY) {
+            
+            // Check if char is on the same line and distance isn't massive (avoids cross-column merging)
+            val isSameLine = centerY >= currentLineMinY && centerY <= currentLineMaxY
+            val gapX = char.x - currentLineMaxX
+            
+            if (isSameLine && gapX < 100f) {
                 currentLineMinX = minOf(currentLineMinX, char.x)
                 currentLineMaxX = maxOf(currentLineMaxX, char.x + char.width)
                 currentLineMinY = minOf(currentLineMinY, char.y)
                 currentLineMaxY = maxOf(currentLineMaxY, char.y + char.height)
             } else {
-                // New line
                 rects.add(android.graphics.RectF(currentLineMinX, currentLineMinY, currentLineMaxX, currentLineMaxY))
                 currentLineMinX = char.x
                 currentLineMaxX = char.x + char.width
@@ -601,32 +637,41 @@ fun TextSelectionOverlay(
                 }
             }
 
-            // Draw Search Highlight (amber/gold pulsing)
+            // Draw Search Highlight (Premium amber/gold pulsing)
             if (searchHighlightChars.isNotEmpty()) {
-                val searchColor = Color(0xFFFFB300).copy(alpha = searchPulseAlpha)
+                val searchColor = Color(0xFFFFCC00).copy(alpha = searchPulseAlpha)
                 val searchLineRects = groupCharactersIntoRects(searchHighlightChars)
                 for (rect in searchLineRects) {
                     val pScreen = pdfToScreen(rect.left, rect.top)
-                    val screenW = rect.width() * baseRenderScale * scale * zoomScale
-                    val screenH = rect.height() * baseRenderScale * scale * zoomScale
+                    
+                    // Improved width/height calculation using screen coordinates for better precision
+                    val pBottomRight = pdfToScreen(rect.right, rect.bottom)
+                    val screenW = pBottomRight.x - pScreen.x
+                    val screenH = pBottomRight.y - pScreen.y
 
-                    val paddedX = pScreen.x - hPad - 2.dp.toPx()
-                    val paddedY = pScreen.y - vPad - 1.dp.toPx()
-                    val paddedW = screenW + hPad * 2 + 4.dp.toPx()
-                    val paddedH = screenH + vPad * 2 + 2.dp.toPx()
+                    val cornerRadius = 4.dp.toPx() * zoomScale
+                    val hPad = 2.dp.toPx() * zoomScale
+                    val vPad = 1.dp.toPx() * zoomScale
 
-                    // Draw a rounded-feel highlight with a border
-                    drawRect(
+                    val paddedX = pScreen.x - hPad
+                    val paddedY = pScreen.y - vPad
+                    val paddedW = screenW + hPad * 2
+                    val paddedH = screenH + vPad * 2
+
+                    // Draw a premium rounded-rect highlight
+                    drawRoundRect(
                         color = searchColor,
                         topLeft = Offset(paddedX, paddedY),
-                        size = androidx.compose.ui.geometry.Size(paddedW, paddedH)
+                        size = androidx.compose.ui.geometry.Size(paddedW, paddedH),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerRadius, cornerRadius)
                     )
-                    // Draw border outline for extra visibility
-                    drawRect(
-                        color = Color(0xFFFF8F00).copy(alpha = 0.8f),
+                    // Subtler border outline
+                    drawRoundRect(
+                        color = Color(0xFFFFB300).copy(alpha = 0.7f),
                         topLeft = Offset(paddedX, paddedY),
                         size = androidx.compose.ui.geometry.Size(paddedW, paddedH),
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerRadius, cornerRadius),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx() * zoomScale)
                     )
                 }
             }

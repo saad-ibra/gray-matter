@@ -67,6 +67,7 @@ fun FileViewerScreen(
     viewModel: FileViewerViewModel,
     resourceId: String,
     initialPage: Int? = null,
+    initialSearchQuery: String? = null,
     onBackClick: () -> Unit,
     onViewInGraph: (String) -> Unit,
     onNavigateToLookupOrigin: (opinionId: String, itemId: String) -> Unit = { _, _ -> },
@@ -96,8 +97,12 @@ fun FileViewerScreen(
     
     var editingOpinion by remember { mutableStateOf<com.example.graymatter.domain.Opinion?>(null) }
 
-    LaunchedEffect(resourceId, initialPage) {
+    LaunchedEffect(resourceId, initialPage, initialSearchQuery) {
         viewModel.loadResource(resourceId, initialPage)
+        if (!initialSearchQuery.isNullOrBlank()) {
+            viewModel.openSearchPanel()
+            viewModel.onSearchQueryChanged(initialSearchQuery)
+        }
     }
 
     var showEditReferenceSelector by remember { mutableStateOf(false) }
