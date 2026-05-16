@@ -89,6 +89,8 @@ class FileViewerViewModel(
         private set
     var selectedTextStartIndex by mutableStateOf<Int?>(null)
         private set
+    var selectedColorTag by mutableStateOf<String?>(null)
+        private set
 
     // Add Entry state
     var showAddEntrySheet by mutableStateOf(false)
@@ -330,10 +332,11 @@ class FileViewerViewModel(
         showBookmarkDialog = false
     }
     
-    fun onTextSelected(action: String, text: String, x: Float = 0f, y: Float = 0f, startIndex: Int? = null) {
+    fun onTextSelected(action: String, text: String, x: Float = 0f, y: Float = 0f, startIndex: Int? = null, colorTag: String? = null) {
         if (action == "annotate") {
             selectedText = text
             selectedTextStartIndex = startIndex
+            selectedColorTag = colorTag
             showSelectionAnnotationDialog = true
         }
     }
@@ -342,6 +345,7 @@ class FileViewerViewModel(
         showSelectionAnnotationDialog = false
         selectedText = null
         selectedTextStartIndex = null
+        selectedColorTag = null
     }
 
     fun closePanels() {
@@ -477,7 +481,8 @@ class FileViewerViewModel(
                 // Add the snippet inline as a blockquote
                 // Include [INDEX:startIndex] prefix to support accurate highlighting of repeated text
                 val indexPrefix = if (selectedTextStartIndex != null) "[INDEX:${selectedTextStartIndex}] " else ""
-                val fullOpinion = "${indexPrefix}> $textSnippet\n\n$opinionText"
+                val colorPrefix = if (selectedColorTag != null) "[COLOR:${selectedColorTag}] " else ""
+                val fullOpinion = "${colorPrefix}${indexPrefix}> $textSnippet\n\n$opinionText"
                 val opinionId = generateUuid()
                 
                 val opinion = Opinion(
@@ -496,6 +501,7 @@ class FileViewerViewModel(
             showSelectionAnnotationDialog = false
             selectedText = null
             selectedTextStartIndex = null
+            selectedColorTag = null
         }
     }
 
@@ -585,7 +591,7 @@ class FileViewerViewModel(
                     itemId = item.id,
                     text = content,
                     confidenceScore = confidence,
-                    pageNumber = null,
+                    pageNumber = currentPage,
                     createdAt = now,
                     updatedAt = now
                 )
@@ -608,12 +614,36 @@ class FileViewerViewModel(
                     itemId = item.id,
                     text = formattedText, // text is exactly formatted in UI
                     confidenceScore = confidence,
-                    pageNumber = null,
+                    pageNumber = currentPage,
                     createdAt = now,
                     updatedAt = now
                 )
                 opinionRepository.saveOpinion(opinion)
                 autoLinkService.syncLinks(opinionId, ReferenceType.OPINION, formattedText, referenceLinks)
+                resourceEntryRepository.updateResourceEntryOpinionMetadata(item.id, now)
+            }
+        }
+    }
+
+    fun saveVisionOpinion(imagePath: String, caption: String, confidence: Int, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
+        val res = _resource.value ?: return
+        viewModelScope.launch {
+            val now = Clock.System.now().toEpochMilliseconds()
+            val item = resourceEntryRepository.getResourceEntryByResourceId(res.id)
+            if (item != null) {
+                val opinionId = generateUuid()
+                val opinion = Opinion(
+                    id = opinionId,
+                    itemId = item.id,
+                    text = caption,
+                    imagePath = imagePath,
+                    confidenceScore = confidence,
+                    pageNumber = currentPage,
+                    createdAt = now,
+                    updatedAt = now
+                )
+                opinionRepository.saveOpinion(opinion)
+                autoLinkService.syncLinks(opinionId, ReferenceType.OPINION, caption, referenceLinks)
                 resourceEntryRepository.updateResourceEntryOpinionMetadata(item.id, now)
             }
         }

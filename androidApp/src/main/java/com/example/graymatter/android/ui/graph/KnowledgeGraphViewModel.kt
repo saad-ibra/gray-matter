@@ -102,24 +102,25 @@ class KnowledgeGraphViewModel(
 
             // 3. Process Opinions
             allOpinions.forEach { opinion ->
+                val cleanText = opinion.text.replace(Regex("\\[COLOR:[^\\]]+\\]\\s*", RegexOption.IGNORE_CASE), "")
                 val nodeType = when {
-                    opinion.text.startsWith("[DICT") -> NodeType.LOOKUP
-                    opinion.text.startsWith("[TEMPLATE:") -> NodeType.TEMPLATE
-                    opinion.text.startsWith("[CUSTOM:") -> NodeType.CUSTOM
-                    opinion.pageNumber != null && opinion.text.startsWith(">") -> NodeType.ANNOTATION
+                    cleanText.startsWith("[DICT") -> NodeType.LOOKUP
+                    cleanText.startsWith("[TEMPLATE:") -> NodeType.TEMPLATE
+                    cleanText.startsWith("[CUSTOM:") -> NodeType.CUSTOM
+                    opinion.pageNumber != null && (cleanText.startsWith(">") || cleanText.startsWith("[INDEX:")) -> NodeType.ANNOTATION
                     opinion.pageNumber != null -> NodeType.BOOKMARK
                     opinion.imagePath != null -> NodeType.VISUAL
                     else -> NodeType.OPINION
                 }
                 
                 val displayLabel = when (nodeType) {
-                    NodeType.LOOKUP -> opinion.text.substringAfter("]").trim().take(20) + "..."
-                    NodeType.TEMPLATE -> opinion.text.substringAfter("]\n").replace("### ", "").replace("|", ": ").replace("\n", " • ").trim().take(40) + "..."
-                    NodeType.CUSTOM -> opinion.text.substringAfter("]\n").replace("### ", "").replace("|", ": ").replace("\n", " • ").trim().take(40) + "..."
-                    NodeType.ANNOTATION -> opinion.text.substringAfter(">").trim().take(20) + "..."
-                    NodeType.VISUAL -> if (opinion.text.isNotBlank()) opinion.text.take(20) + "..." else "Visual"
-                    NodeType.BOOKMARK -> if (opinion.text.isNotBlank()) opinion.text.take(20) + "..." else "Bookmark pg ${opinion.pageNumber}"
-                    else -> opinion.text.take(20) + "..."
+                    NodeType.LOOKUP -> cleanText.substringAfter("]").trim().take(20) + "..."
+                    NodeType.TEMPLATE -> cleanText.substringAfter("]\n").replace("### ", "").replace("|", ": ").replace("\n", " • ").trim().take(40) + "..."
+                    NodeType.CUSTOM -> cleanText.substringAfter("]\n").replace("### ", "").replace("|", ": ").replace("\n", " • ").trim().take(40) + "..."
+                    NodeType.ANNOTATION -> cleanText.substringAfter(">").trim().take(20) + "..."
+                    NodeType.VISUAL -> if (cleanText.isNotBlank()) cleanText.take(20) + "..." else "Visual"
+                    NodeType.BOOKMARK -> if (cleanText.isNotBlank()) cleanText.take(20) + "..." else "Bookmark pg ${opinion.pageNumber}"
+                    else -> cleanText.take(20) + "..."
                 }
 
                 val opinionNode = GraphNode(

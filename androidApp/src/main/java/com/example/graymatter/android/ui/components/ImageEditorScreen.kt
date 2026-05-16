@@ -122,7 +122,7 @@ fun ImageEditorScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Confidence", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                            Text("Confidence: ${(confidence * 10).toInt()}/10", color = Color.White, style = MaterialTheme.typography.labelMedium)
                             Spacer(modifier = Modifier.width(16.dp))
                             Slider(
                                 value = confidence,

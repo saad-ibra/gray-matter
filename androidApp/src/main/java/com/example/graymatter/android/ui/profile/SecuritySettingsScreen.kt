@@ -33,6 +33,7 @@ fun SecuritySettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var showPasswordDialog by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     // Snackbar for status messages
     val snackbarHostState = remember { SnackbarHostState() }
@@ -91,7 +92,15 @@ fun SecuritySettingsScreen(
                         title = "Screen Security",
                         subtitle = "Hide app content in recents and block screenshots",
                         checked = state.isScreenSecurityEnabled,
-                        onCheckedChange = { viewModel.setScreenSecurityEnabled(it) }
+                        onCheckedChange = { 
+                            viewModel.setScreenSecurityEnabled(it)
+                            val window = (context as? android.app.Activity)?.window
+                            if (it) {
+                                window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                            } else {
+                                window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                            }
+                        }
                     )
                 }
             }

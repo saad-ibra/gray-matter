@@ -424,8 +424,8 @@ private fun OverallOpinionSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(if (hasOpinion) GrayMatterColors.TypeNoteDescription.copy(alpha = 0.12f) else GrayMatterColors.SurfaceDark)
-                .border(1.5.dp, if (hasOpinion) GrayMatterColors.TypeNoteDescription.copy(alpha = 0.4f) else GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+                .background(if (hasOpinion) GrayMatterColors.TypeOpinion.copy(alpha = 0.12f) else GrayMatterColors.SurfaceDark)
+                .border(1.5.dp, if (hasOpinion) GrayMatterColors.TypeOpinion.copy(alpha = 0.4f) else GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
                 .clickable(onClick = onClick)
                 .padding(20.dp),
             contentAlignment = Alignment.Center
@@ -434,12 +434,12 @@ private fun OverallOpinionSection(
                 Icon(
                     imageVector = if (hasOpinion) Icons.Default.EditNote else Icons.Default.RateReview,
                     contentDescription = null,
-                    tint = GrayMatterColors.TypeNoteDescription
+                    tint = GrayMatterColors.TypeOpinion
                 )
                 Text(
                     text = if (hasOpinion) "Edit Topic Overview" else "Add Topic Overview",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = GrayMatterColors.TypeNoteDescription
+                    color = GrayMatterColors.TypeOpinion
                 )
             }
         }

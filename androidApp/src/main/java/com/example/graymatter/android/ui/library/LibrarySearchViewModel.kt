@@ -208,7 +208,7 @@ class LibrarySearchViewModel(
                 }
             }
 
-            // 3. Search Opinions (knowledge history)
+            // 3. Search Opinions (Timeline)
             val matchedOpinions = opinionRepository.searchOpinions(query)
             matchedOpinions.filter { !it.isDeleted }.take(30).forEach { opinion ->
                 val entry = entries.find { it.id == opinion.itemId }

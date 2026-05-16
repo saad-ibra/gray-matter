@@ -55,6 +55,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.res.painterResource
 
 /**
  * Resource Details Screen.
@@ -415,7 +416,7 @@ fun ResourceDetailScreen(
                     }
 
                     Text(
-                        text = "Knowledge History",
+                        text = "Timeline",
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -443,7 +444,7 @@ fun ResourceDetailScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Filter Knowledge", color = Color.White, fontWeight = FontWeight.Bold)
+                                    Text("Filter Timeline", color = Color.White, fontWeight = FontWeight.Bold)
                                     Row {
                                         TextButton(
                                             onClick = { selectedFilters = filterNames },
@@ -868,7 +869,7 @@ private fun ResourceDetailHeader(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                         Icon(Icons.Default.FilterList, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
-                                        Text("Filter History", color = Color.White)
+                                        Text("Filter Timeline", color = Color.White)
                                     }
                                 },
                                 onClick = { menuExpanded = false; onFilterClick() }
@@ -1246,7 +1247,7 @@ private fun OpinionTimelineItem(
                 Box(
                     modifier = Modifier
                         .width(1.dp)
-                        .height(dotTopPadding + dotSize / 2)
+                        .height(12.dp + dotSize / 2)
                         .background(lineColor)
                 )
             }
@@ -1263,7 +1264,7 @@ private fun OpinionTimelineItem(
 
             Box(
                 modifier = Modifier
-                    .padding(top = dotTopPadding)
+                    .padding(top = 12.dp)
                     .size(dotSize)
                     .scale(dotScale)
                     .clip(CircleShape)
@@ -1303,15 +1304,16 @@ private fun OpinionTimelineItem(
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Column {
-                        val isAnnotation = opinion.text.startsWith("> ") || opinion.text.startsWith("[INDEX:")
-                        val isDictionary = opinion.text.startsWith("[DICT")
-                        val isTemplate = opinion.text.startsWith("[TEMPLATE:")
-                        val isCustomTitle = opinion.text.startsWith("[CUSTOM: ")
+                        val cleanText = opinion.text.replace(Regex("\\[COLOR:[^\\]]+\\]\\s*", RegexOption.IGNORE_CASE), "")
+                        val isAnnotation = cleanText.startsWith("> ") || cleanText.startsWith("[INDEX:")
+                        val isDictionary = cleanText.startsWith("[DICT")
+                        val isTemplate = cleanText.startsWith("[TEMPLATE:")
+                        val isCustomTitle = cleanText.startsWith("[CUSTOM: ")
                         val hasPageNumber = opinion.pageNumber != null
                         
                         val dynamicTitle = when {
-                            isTemplate -> opinion.text.substringAfter("[TEMPLATE:").substringBefore("]")
-                            isCustomTitle -> opinion.text.substringAfter("[CUSTOM: ").substringBefore("]")
+                            isTemplate -> cleanText.substringAfter("[TEMPLATE:").substringBefore("]")
+                            isCustomTitle -> cleanText.substringAfter("[CUSTOM: ").substringBefore("]")
                             else -> "CUSTOM ENTRY"
                         }
                         
@@ -1323,7 +1325,6 @@ private fun OpinionTimelineItem(
                             isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.TypeAnnotation)
                             isTemplate -> Triple("TEMPLATE", Icons.Default.DashboardCustomize, GrayMatterColors.TypeTemplate)
                             isCustomTitle -> Triple(dynamicTitle.uppercase(), Icons.Default.EditNote, GrayMatterColors.TypeOpinion)
-                            hasPageNumber -> Triple("BOOKMARK", Icons.Default.Bookmark, GrayMatterColors.TypeBookmark)
                             else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.TypeOpinion)
                         }
 
@@ -1455,11 +1456,11 @@ private fun OpinionTimelineItem(
                 }
             }
             
-            val isAnnotation = text.startsWith("> ") || text.startsWith("[INDEX:")
-            val isDictionary = text.startsWith("[DICT")
-            val isTemplate = text.startsWith("[TEMPLATE:")
-            val isCustomTitle = text.startsWith("[CUSTOM: ")
-            val hasPageNumber = opinion.pageNumber != null
+            val cleanTextForContent = text.replace(Regex("\\[COLOR:[^\\]]+\\]\\s*", RegexOption.IGNORE_CASE), "")
+            val isAnnotation = cleanTextForContent.startsWith("> ") || cleanTextForContent.startsWith("[INDEX:")
+            val isDictionary = cleanTextForContent.startsWith("[DICT")
+            val isTemplate = cleanTextForContent.startsWith("[TEMPLATE:")
+            val isCustomTitle = cleanTextForContent.startsWith("[CUSTOM: ")
             val isVisual = opinion.imagePath != null
 
             
@@ -1470,7 +1471,7 @@ private fun OpinionTimelineItem(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     // Knowledge Connections in Edit Mode
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("KNOWLEDGE LINKS", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = GrayMatterColors.Neutral500)
+                        Text("TIMELINE LINKS", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = GrayMatterColors.Neutral500)
                         TextButton(
                             onClick = {
                                 referenceSelectorViewModel?.clearSelection()
@@ -1506,11 +1507,11 @@ private fun OpinionTimelineItem(
 
                     if (isTemplate) {
                         // Try to parse and show dynamic form for custom entry editing
-                        val templateName = text.substringAfter("[TEMPLATE:").substringBefore("]")
+                        val templateName = cleanTextForContent.substringAfter("[TEMPLATE:").substringBefore("]")
                         val template = templates.find { it.name == templateName }
                         
                         if (template != null) {
-                            val fieldValues = remember(text) { parseTemplateContent(text, template.headings) }
+                            val fieldValues = remember(text) { parseTemplateContent(cleanTextForContent, template.headings) }
                             DynamicEntryEditor(
                                 template = template,
                                 fieldValues = fieldValues,
@@ -1543,7 +1544,8 @@ private fun OpinionTimelineItem(
                         }
                     } else if (isAnnotation) {
                         // Split into quote and reflection
-                        val parts = text.split("\n\n", limit = 2)
+                        val cleanText = text.replace(Regex("\\[COLOR:[^\\]]+\\]\\s*"), "")
+                        val parts = cleanText.split("\n\n", limit = 2)
                         val quote = parts[0].replace(Regex("\\[INDEX:\\d+\\]\\s*"), "").removePrefix("> ").trim()
                         val initialReflection = if (parts.size > 1) parts[1].trim() else ""
                         
@@ -1582,11 +1584,11 @@ private fun OpinionTimelineItem(
                         )
                     } else {
                         OpinionEditor(
-                            text = if (isCustomTitle) text.substringAfter("]\n").trim() else text,
+                            text = if (isCustomTitle) cleanTextForContent.substringAfter("]\n").trim() else cleanTextForContent,
                             confidence = confidence,
                             onTextChange = { 
                                 val newFullText = if (isCustomTitle) {
-                                    val prefix = text.substringBefore("]\n") + "]\n"
+                                    val prefix = cleanTextForContent.substringBefore("]\n") + "]\n"
                                     prefix + it
                                 } else {
                                     it
@@ -1602,12 +1604,53 @@ private fun OpinionTimelineItem(
                     }
                 }
             } else {
-                if (isDictionary) {
-                    val phrase = when {
-                        text.startsWith("[DICT:") -> text.substringAfter("]").trim()
-                        text.startsWith("[DICT]") -> text.substringAfter("]").trim()
-                        else -> text.removePrefix("[DICT]").trim()
+                if (isVisual) {
+                    // Visual Entry — image is the primary content
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.TypeVisual.copy(alpha = 0.1f))
+                            .border(1.dp, GrayMatterColors.TypeVisual.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                    ) {
+                        Column {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(220.dp)
+                                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                                    .background(GrayMatterColors.Neutral900)
+                                    .clickable { onImageClick(opinion.imagePath!!) }
+                            ) {
+                                AsyncImage(
+                                    model = if (opinion.imagePath!!.startsWith("content://")) opinion.imagePath!! else java.io.File(opinion.imagePath!!),
+                                    contentDescription = "Visual Entry",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    error = painterResource(id = android.R.drawable.ic_menu_report_image)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(8.dp)
+                                        .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Icon(Icons.Default.OpenInFull, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(12.dp))
+                                }
+                            }
+                            // Caption (if any)
+                            if (cleanTextForContent.isNotBlank()) {
+                                Text(
+                                    text = highlightText(cleanTextForContent, initialSearchQuery, GrayMatterColors.TextSecondary),
+                                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
+                        }
                     }
+                } else if (isDictionary) {
+                    val phrase = cleanTextForContent.substringAfter("]").trim()
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1622,7 +1665,7 @@ private fun OpinionTimelineItem(
                     }
                 } else if (isAnnotation) {
                     // Split into quote and reflection
-                    val parts = text.split("\n\n", limit = 2)
+                    val parts = cleanTextForContent.split("\n\n", limit = 2)
                     val quote = parts[0].replace(Regex("\\[INDEX:\\d+\\]\\s*"), "").removePrefix("> ").trim()
                     val reflection = if (parts.size > 1) parts[1].trim() else ""
                     
@@ -1659,8 +1702,8 @@ private fun OpinionTimelineItem(
                         }
                     }
                 } else if (isTemplate) {
-                    val templateName = text.substringAfter("[TEMPLATE:").substringBefore("]")
-                    val content = text.substringAfter("]\n").trim()
+                    val templateName = cleanTextForContent.substringAfter("[TEMPLATE:").substringBefore("]")
+                    val content = cleanTextForContent.substringAfter("]\n").trim()
                     
                     if (content.isNotEmpty()) {
                         Column(
@@ -1701,7 +1744,7 @@ private fun OpinionTimelineItem(
                         }
                     }
                 } else if (isCustomTitle) {
-                    val displayContent = text.substringAfter("]\n").trim()
+                    val displayContent = cleanTextForContent.substringAfter("]\n").trim()
                     if (displayContent.isNotEmpty()) {
                         Box(
                             modifier = Modifier
@@ -1718,7 +1761,7 @@ private fun OpinionTimelineItem(
                     }
                 } else if (hasPageNumber) {
                     // Bookmark or old style page opinion
-                    val cleanText = if (text.startsWith("[Page ")) text.replace(Regex("^\\[Page \\d+\\]\\s*"), "") else text
+                    val cleanText = if (cleanTextForContent.startsWith("[Page ")) cleanTextForContent.replace(Regex("^\\[Page \\d+\\]\\s*"), "") else cleanTextForContent
                     
                     if (cleanText.isNotBlank()) {
                         Box(
@@ -1734,53 +1777,9 @@ private fun OpinionTimelineItem(
                             )
                         }
                     }
-                } else if (isVisual) {
-                    // Visual Entry — image is the primary content
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(GrayMatterColors.TypeVisual.copy(alpha = 0.1f))
-                            .border(1.dp, GrayMatterColors.TypeVisual.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                    ) {
-                        Column {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(220.dp)
-                                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-                                    .background(GrayMatterColors.Neutral900)
-                                    .clickable { onImageClick(opinion.imagePath!!) }
-                            ) {
-                                AsyncImage(
-                                    model = File(opinion.imagePath!!),
-                                    contentDescription = "Visual Entry",
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .padding(8.dp)
-                                        .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                                ) {
-                                    Icon(Icons.Default.OpenInFull, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(12.dp))
-                                }
-                            }
-                            // Caption (if any)
-                            if (text.isNotBlank()) {
-                                Text(
-                                    text = highlightText(text, initialSearchQuery, GrayMatterColors.TextSecondary),
-                                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
-                                    modifier = Modifier.padding(12.dp)
-                                )
-                            }
-                        }
-                    }
                 } else {
                     // General Opinion
-                    if (text.isNotBlank()) {
+                    if (cleanTextForContent.isNotBlank()) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1789,7 +1788,7 @@ private fun OpinionTimelineItem(
                                 .padding(16.dp)
                         ) {
                             Text(
-                                text = highlightText(text, initialSearchQuery, GrayMatterColors.TextPrimary),
+                                text = highlightText(cleanTextForContent, initialSearchQuery, GrayMatterColors.TextPrimary),
                                 style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
@@ -1808,7 +1807,7 @@ private fun OpinionTimelineItem(
                             .clickable { onImageClick(opinion.imagePath!!) }
                     ) {
                         AsyncImage(
-                            model = File(opinion.imagePath!!),
+                            model = if (opinion.imagePath!!.startsWith("content://")) opinion.imagePath!! else java.io.File(opinion.imagePath!!),
                             contentDescription = "Opinion Image",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = androidx.compose.ui.layout.ContentScale.Crop
@@ -1861,10 +1860,12 @@ private fun OpinionTimelineItem(
                 }
                 if (hasPageNumber && !isEditing) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    val tagColor = when {
-                        opinion.text.startsWith("[DICT") -> GrayMatterColors.TypeLookupMain
-                        opinion.text.startsWith("> ") || opinion.text.startsWith("[INDEX:") -> GrayMatterColors.TypeAnnotation
-                        else -> GrayMatterColors.TypeBookmark
+                    val (tagColor, tagIcon) = when {
+                        opinion.imagePath != null -> GrayMatterColors.TypeVisual to Icons.Default.Image
+                        cleanTextForContent.startsWith("[DICT") -> GrayMatterColors.TypeLookupMain to Icons.Default.MenuBook
+                        cleanTextForContent.startsWith("[TEMPLATE:") -> GrayMatterColors.TypeTemplate to Icons.Default.Assignment
+                        cleanTextForContent.startsWith("> ") || cleanTextForContent.startsWith("[INDEX:") -> GrayMatterColors.TypeAnnotation to Icons.Default.FormatQuote
+                        else -> GrayMatterColors.TypeBookmark to Icons.Default.Bookmark
                     }
                     Box(
                         modifier = Modifier
@@ -1874,17 +1875,15 @@ private fun OpinionTimelineItem(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Icon(
-                                imageVector = if (opinion.text.startsWith("[DICT")) Icons.Default.Book 
-                                              else if (opinion.text.startsWith("> ") || opinion.text.startsWith("[INDEX:")) Icons.Default.FormatQuote 
-                                              else Icons.Default.Bookmark, 
+                                imageVector = tagIcon, 
                                 contentDescription = null, 
                                 tint = tagColor, 
                                 modifier = Modifier.size(10.dp)
                             )
                             Text(
-                                "PAGE ${opinion.pageNumber!! + 1}", 
-                                fontSize = 9.sp, 
-                                fontWeight = FontWeight.Bold, 
+                                "Page ${opinion.pageNumber!! + 1}", 
+                                fontSize = 10.sp, 
+                                fontWeight = FontWeight.SemiBold, 
                                 color = tagColor, 
                                 maxLines = 1, 
                                 softWrap = false

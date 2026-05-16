@@ -390,7 +390,7 @@ private fun SearchResultsList(
                 add("RESOURCES" to resources)
             }
             if (knowledge.isNotEmpty()) {
-                add("KNOWLEDGE HISTORY" to knowledge)
+                add("TIMELINE" to knowledge)
             }
         }
     }
@@ -744,7 +744,7 @@ private fun SearchIdleState() {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "Topics • PDFs • Notes • Knowledge History",
+                "Topics • PDFs • Notes • Timeline",
                 color = Color.White.copy(alpha = 0.12f),
                 fontSize = 12.sp
             )

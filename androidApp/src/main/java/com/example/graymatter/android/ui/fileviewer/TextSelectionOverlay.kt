@@ -13,9 +13,15 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
@@ -305,28 +311,29 @@ fun TextSelectionOverlay(
             var quote = ""
             var preferredIndex: Int? = null
 
+            val cleanText = opinion.text.replace(Regex("\\[COLOR:[^\\]]+\\]\\s*", RegexOption.IGNORE_CASE), "")
             when {
-                opinion.text.startsWith("[DICT:") -> {
-                    val match = Regex("\\[DICT:(\\d+)\\] (.*)").find(opinion.text)
+                cleanText.startsWith("[DICT:") -> {
+                    val match = Regex("\\[DICT:(\\d+)\\] (.*)").find(cleanText)
                     if (match != null) {
                         preferredIndex = try { match.groupValues[1].toInt() } catch (e: Exception) { null }
                         quote = match.groupValues[2].trim()
                     }
                 }
-                opinion.text.startsWith("[DICT] ") -> {
-                    quote = opinion.text.removePrefix("[DICT] ").trim()
+                cleanText.startsWith("[DICT] ") -> {
+                    quote = cleanText.removePrefix("[DICT] ").trim()
                 }
-                opinion.text.startsWith("[INDEX:") -> {
-                    val match = Regex("\\[INDEX:(\\d+)\\] > (.*?)(?:\n\n|$)").find(opinion.text.replace("\r", ""))
+                cleanText.startsWith("[INDEX:") -> {
+                    val match = Regex("\\[INDEX:(\\d+)\\] > (.*?)(?:\n\n|$)").find(cleanText.replace("\r", ""))
                     if (match != null) {
                         preferredIndex = try { match.groupValues[1].toInt() } catch (e: Exception) { null }
                         quote = match.groupValues[2].trim()
                     }
                 }
-                opinion.text.startsWith("> ") -> {
-                    val parts = opinion.text.split("\n\n")
+                cleanText.startsWith("> ") -> {
+                    val parts = cleanText.split("\n\n")
                     if (parts.isNotEmpty()) {
-                        quote = parts[0].substring(2).trim()
+                        quote = parts[0].removePrefix("> ").trim()
                     }
                 }
             }
@@ -590,10 +597,28 @@ fun TextSelectionOverlay(
             // Draw Persistent Highlights First
             for ((id, chars) in persistentHighlights) {
                 val opinion = opinions.find { it.id == id }
-                val isDictionary = opinion?.text?.startsWith("[DICT") == true
-                val isAnnotation = opinion?.text?.startsWith("> ") == true || opinion?.text?.startsWith("[INDEX:") == true
+                val text = opinion?.text ?: ""
+                val cleanText = text.replace(Regex("\\[COLOR:[^\\]]+\\]\\s*", RegexOption.IGNORE_CASE), "")
+                val isDictionary = cleanText.startsWith("[DICT")
+                val isAnnotation = cleanText.startsWith("> ") || cleanText.startsWith("[INDEX:")
+                
+                var customColor: Color? = null
+                val colorMatch = Regex("\\[COLOR:([^\\]]+)\\]", RegexOption.IGNORE_CASE).find(text)
+                if (colorMatch != null) {
+                    val colorTag = colorMatch.groupValues[1].lowercase().trim()
+                    customColor = when (colorTag) {
+                        "opinion", "green" -> GrayMatterColors.TypeOpinion
+                        "annotation", "orange" -> GrayMatterColors.TypeAnnotation
+                        "link", "blue" -> GrayMatterColors.TypeLink
+                        "template", "purple" -> GrayMatterColors.TypeTemplate
+                        "yellow" -> Color(0xFFFFD700) // Fallback for old orange/yellow
+                        else -> null
+                    }
+                }
+                
                 val color = when {
                     isDictionary -> GrayMatterColors.TypeLookupMain.copy(alpha = 0.4f)
+                    customColor != null -> customColor.copy(alpha = 0.4f)
                     isAnnotation -> GrayMatterColors.TypeAnnotation.copy(alpha = 0.4f)
                     else -> GrayMatterColors.TypeOpinion.copy(alpha = 0.4f) // opinion = green
                 }
@@ -734,8 +759,8 @@ fun TextSelectionOverlay(
             val minY = selectedCharacters.value.minOf { pdfToScreen(it.x, it.y).y }
             val maxY = selectedCharacters.value.maxOf { pdfToScreen(it.x, it.y + it.height).y }
             
-            val bubbleWidth = 320f
-            val bubbleHeight = 140f
+            val bubbleWidth = 280f
+            val bubbleHeight = 120f
             
             val popupX = ((minX + maxX) / 2f - bubbleWidth / 2f).coerceIn(16f, (imageSize.width - bubbleWidth - 16f).coerceAtLeast(16f))
             var popupY = minY - bubbleHeight - 56f
@@ -761,17 +786,37 @@ fun TextSelectionOverlay(
                     }) {
                         Text("Copy", color = Color.White)
                     }
-                    TextButton(onClick = {
-                        val textChars = selectedCharacters.value
-                        val text = textChars.joinToString("") { it.unicode }
-                        val startIndex = characters.indexOf(textChars.first())
-                        dragStart = null
-                        dragEnd = null
-                        showPopup = false
-                        onActionCompleted("annotate", text, null, startIndex)
-                    }) {
-                        Text("Annotate", color = Color.White)
+                    
+                    val annotationColors = listOf(
+                        "Green" to GrayMatterColors.TypeOpinion,
+                        "Orange" to GrayMatterColors.TypeAnnotation,
+                        "Blue" to GrayMatterColors.TypeLink,
+                        "Purple" to GrayMatterColors.TypeTemplate
+                    )
+                    
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        annotationColors.forEach { (colorName, colorValue) ->
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .background(colorValue, CircleShape)
+                                    .clickable {
+                                        val textChars = selectedCharacters.value
+                                        val text = textChars.joinToString("") { it.unicode }
+                                        val startIndex = characters.indexOf(textChars.first())
+                                        dragStart = null
+                                        dragEnd = null
+                                        showPopup = false
+                                        onActionCompleted("annotate:$colorName", text, null, startIndex)
+                                    }
+                            )
+                        }
                     }
+                    
                     TextButton(onClick = {
                         val textChars = selectedCharacters.value
                         val text = textChars.joinToString("") { it.unicode }

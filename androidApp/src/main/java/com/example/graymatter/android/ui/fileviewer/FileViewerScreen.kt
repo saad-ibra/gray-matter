@@ -95,6 +95,31 @@ fun FileViewerScreen(
     var showAddEntrySheet by remember { mutableStateOf(false) }
     var showTemplateEditor by remember { mutableStateOf(false) }
     
+    var showImageSourcePicker by remember { mutableStateOf(false) }
+    var showVisionEntryDialog by remember { mutableStateOf(false) }
+    var currentImagePath by remember { mutableStateOf<String?>(null) }
+    var tempCameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    
+    val galleryPickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        uri?.let {
+            val path = com.example.graymatter.android.util.FileUtils.copyUriToInternalStorage(context, it, "visual_entry_${java.util.UUID.randomUUID()}.jpg")
+            currentImagePath = path
+            showVisionEntryDialog = true
+        }
+    }
+
+    val cameraLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempCameraUri != null) {
+            val path = com.example.graymatter.android.util.FileUtils.copyUriToInternalStorage(context, tempCameraUri!!, "visual_entry_${java.util.UUID.randomUUID()}.jpg")
+            currentImagePath = path
+            showVisionEntryDialog = true
+        }
+    }
+    
     var editingOpinion by remember { mutableStateOf<com.example.graymatter.domain.Opinion?>(null) }
 
     LaunchedEffect(resourceId, initialPage, initialSearchQuery) {
@@ -249,23 +274,27 @@ fun FileViewerScreen(
                                     }
                                 },
                                 onTextSelectionAction = { action, text, id, startIndex -> 
-                                    when(action) {
-                                        "annotate", "create" -> viewModel.onTextSelected("annotate", text, startIndex = startIndex)
-                                        "dictionary" -> {
+                                    when {
+                                        action.startsWith("annotate") || action == "create" -> {
+                                            val parts = action.split(":")
+                                            val colorTag = if (parts.size > 1) parts[1] else null
+                                            viewModel.onTextSelected("annotate", text, startIndex = startIndex, colorTag = colorTag)
+                                        }
+                                        action == "dictionary" -> {
                                             viewModel.saveDictionaryEntry(text, id, startIndex)
                                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=${Uri.encode(text)}"))
                                             context.startActivity(intent)
                                         }
-                                        "edit" -> {
+                                        action == "edit" -> {
                                             val op = opinions.find { it.id == id }
                                             if(op != null) {
                                                 editingOpinion = op
                                             }
                                         }
-                                        "delete" -> {
+                                        action == "delete" -> {
                                             if(id != null) viewModel.deleteAnnotation(id)
                                         }
-                                        "copy" -> {
+                                        action == "copy" -> {
                                             // Handled in overlay via clipboardManager
                                         }
                                     }
@@ -597,8 +626,272 @@ fun FileViewerScreen(
                         },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     )
+                    
+                    ListItem(
+                        headlineContent = { Text("Vision Entry", color = Color.White) },
+                        leadingContent = { Icon(Icons.Default.Image, null, tint = GrayMatterColors.TypeVisual) },
+                        modifier = Modifier.clickable { 
+                            viewModel.toggleAddEntrySheet()
+                            showImageSourcePicker = true
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
                     Spacer(modifier = Modifier.height(32.dp))
                 }
+            }
+        }
+        
+        if (showImageSourcePicker) {
+            Dialog(
+                onDismissRequest = { showImageSourcePicker = false },
+                properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.5f))
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                        ) { showImageSourcePicker = false },
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                            .background(GrayMatterColors.SurfaceDark)
+                            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                            .clickable(enabled = false) {} // prevent dismiss when tapping sheet
+                            .padding(horizontal = 24.dp, vertical = 20.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Add Image", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
+                                IconButton(onClick = { showImageSourcePicker = false }) {
+                                    Icon(Icons.Default.Close, null, tint = GrayMatterColors.Neutral600)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Take Photo option
+                            Surface(
+                                onClick = {
+                                    showImageSourcePicker = false
+                                    tempCameraUri = com.example.graymatter.android.util.FileUtils.createTempImageUri(context)
+                                    tempCameraUri?.let { cameraLauncher.launch(it) }
+                                },
+                                color = GrayMatterColors.SurfaceInput,
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier.size(44.dp).background(GrayMatterColors.TypeVisual.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Default.PhotoCamera, null, tint = GrayMatterColors.TypeVisual, modifier = Modifier.size(22.dp))
+                                    }
+                                    Column {
+                                        Text("Take Photo", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = GrayMatterColors.TextPrimary)
+                                        Text("Capture with camera", style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500)
+                                    }
+                                }
+                            }
+
+                            // Gallery option
+                            Surface(
+                                onClick = {
+                                    showImageSourcePicker = false
+                                    galleryPickerLauncher.launch("image/*")
+                                },
+                                color = GrayMatterColors.SurfaceInput,
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier.size(44.dp).background(GrayMatterColors.TypeVisual.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Default.PhotoLibrary, null, tint = GrayMatterColors.TypeVisual, modifier = Modifier.size(22.dp))
+                                    }
+                                    Column {
+                                        Text("Choose from Gallery", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = GrayMatterColors.TextPrimary)
+                                        Text("Pick an existing image", style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500)
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (showVisionEntryDialog && currentImagePath != null) {
+            var confidence by remember { mutableFloatStateOf(0.0f) }
+            var caption by remember { mutableStateOf("") }
+            var selectedReferences by remember { mutableStateOf(emptyList<com.example.graymatter.domain.ReferenceSelectorItem>()) }
+            var showReferenceSelector by remember { mutableStateOf(false) }
+            
+            Dialog(onDismissRequest = { 
+                showVisionEntryDialog = false
+                currentImagePath = null
+            }) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(GrayMatterColors.SurfaceDark)
+                        .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(20.dp))
+                        .padding(24.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(
+                            "New Vision Entry", 
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), 
+                            color = GrayMatterColors.TextPrimary
+                        )
+
+                        // Preview Image
+                        Box(modifier = Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(12.dp))) {
+                            coil.compose.AsyncImage(
+                                model = java.io.File(currentImagePath!!),
+                                contentDescription = null,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+
+                        // Caption Field
+                        OutlinedTextField(
+                            value = caption,
+                            onValueChange = { caption = it },
+                            placeholder = { Text("Add an optional caption...", color = GrayMatterColors.Neutral600) },
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = GrayMatterColors.TypeVisual,
+                                unfocusedBorderColor = GrayMatterColors.Neutral800,
+                                cursorColor = GrayMatterColors.TypeVisual,
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        // Knowledge Connections
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
+                                IconButton(
+                                    onClick = { 
+                                        referenceSelectorViewModel?.clearSelection()
+                                        showReferenceSelector = true 
+                                    }, 
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(Icons.Default.Add, null, tint = GrayMatterColors.TypeLink, modifier = Modifier.size(20.dp))
+                                }
+                            }
+                            
+                            if (selectedReferences.isNotEmpty()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    selectedReferences.forEach { ref ->
+                                        val refText = when (ref) {
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                                        }
+                                        InputChip(
+                                            selected = true,
+                                            onClick = { selectedReferences = selectedReferences.filter { it.id != ref.id } },
+                                            label = { Text(refText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                            trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
+                                            colors = InputChipDefaults.inputChipColors(
+                                                containerColor = GrayMatterColors.SurfaceInput,
+                                                labelColor = Color.White,
+                                                trailingIconColor = GrayMatterColors.Neutral500
+                                            ),
+                                            border = null
+                                        )
+                                    }
+                                }
+                            }
+                        }
+        
+                        Column {
+                            Text(
+                                "Confidence: ${(confidence * 10).toInt()}/10",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = GrayMatterColors.Neutral500
+                            )
+                            Slider(
+                                value = confidence,
+                                onValueChange = { confidence = it },
+                                colors = SliderDefaults.colors(
+                                    thumbColor = GrayMatterColors.TypeVisual,
+                                    activeTrackColor = GrayMatterColors.TypeVisual
+                                )
+                            )
+                        }
+        
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = { 
+                                showVisionEntryDialog = false
+                                currentImagePath = null
+                            }) {
+                                Text("Cancel", color = GrayMatterColors.Neutral500)
+                            }
+                            Button(
+                                onClick = { 
+                                    viewModel.saveVisionOpinion(imagePath = currentImagePath!!, caption = caption, confidence = (confidence * 100).toInt(), referenceLinks = selectedReferences)
+                                    showVisionEntryDialog = false
+                                    currentImagePath = null
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = GrayMatterColors.TypeVisual,
+                                    contentColor = Color.Black
+                                )
+                            ) {
+                                Text("Save Vision")
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (showReferenceSelector && referenceSelectorViewModel != null) {
+                com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
+                    viewModel = referenceSelectorViewModel,
+                    onDismissRequest = { showReferenceSelector = false },
+                    onConfirm = { items ->
+                        showReferenceSelector = false
+                        selectedReferences = (selectedReferences + items).distinctBy { it.id }
+                    }
+                )
             }
         }
 
