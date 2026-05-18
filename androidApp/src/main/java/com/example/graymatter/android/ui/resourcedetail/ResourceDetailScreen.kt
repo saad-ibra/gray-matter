@@ -217,14 +217,16 @@ fun ResourceDetailScreen(
                             val isDictionary = opinion.text.startsWith("[DICT")
                             val isTemplate = opinion.text.startsWith("[TEMPLATE:")
                             val isCustomTitle = opinion.text.startsWith("[CUSTOM: ")
+                            val isVisual = opinion.imagePath != null
                             val hasPageNumber = opinion.pageNumber != null
+                            val isPureBookmark = hasPageNumber && opinion.text.isBlank() && opinion.imagePath == null
                             
                             val type = when {
+                                isVisual -> "Visual"
                                 isDictionary -> "Lookups"
                                 isAnnotation -> "Annotation"
                                 isTemplate || isCustomTitle -> "Custom"
-                                hasPageNumber -> "Bookmark"
-                                opinion.imagePath != null -> "Visual"
+                                isPureBookmark -> "Bookmark"
                                 else -> "Opinion"
                             }
                             
@@ -1462,6 +1464,8 @@ private fun OpinionTimelineItem(
             val isTemplate = cleanTextForContent.startsWith("[TEMPLATE:")
             val isCustomTitle = cleanTextForContent.startsWith("[CUSTOM: ")
             val isVisual = opinion.imagePath != null
+            val hasPageNumber = opinion.pageNumber != null
+            val isPureBookmark = hasPageNumber && cleanTextForContent.isBlank() && opinion.imagePath == null
 
             
             Spacer(modifier = Modifier.height(12.dp))
@@ -1759,27 +1763,27 @@ private fun OpinionTimelineItem(
                             )
                         }
                     }
-                } else if (hasPageNumber) {
+                } else if (isPureBookmark) {
                     // Bookmark or old style page opinion
                     val cleanText = if (cleanTextForContent.startsWith("[Page ")) cleanTextForContent.replace(Regex("^\\[Page \\d+\\]\\s*"), "") else cleanTextForContent
+                    val displayText = if (cleanText.isNotBlank()) cleanText else "Bookmark Page ${opinion.pageNumber!! + 1}"
                     
-                    if (cleanText.isNotBlank()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(GrayMatterColors.TypeBookmark.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                                .border(1.dp, GrayMatterColors.TypeBookmark.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                                .padding(16.dp)
-                        ) {
-                            Text(
-                                text = highlightText(cleanText, initialSearchQuery, GrayMatterColors.TextPrimary),
-                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
-                            )
-                        }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(GrayMatterColors.TypeBookmark.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterColors.TypeBookmark.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = highlightText(displayText, initialSearchQuery, GrayMatterColors.TextPrimary),
+                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
+                        )
                     }
                 } else {
-                    // General Opinion
-                    if (cleanTextForContent.isNotBlank()) {
+                    // General Opinion (including page-numbered opinions)
+                    val cleanText = if (cleanTextForContent.startsWith("[Page ")) cleanTextForContent.replace(Regex("^\\[Page \\d+\\]\\s*"), "") else cleanTextForContent
+                    if (cleanText.isNotBlank()) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1788,7 +1792,7 @@ private fun OpinionTimelineItem(
                                 .padding(16.dp)
                         ) {
                             Text(
-                                text = highlightText(cleanTextForContent, initialSearchQuery, GrayMatterColors.TextPrimary),
+                                text = highlightText(cleanText, initialSearchQuery, GrayMatterColors.TextPrimary),
                                 style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
@@ -1865,7 +1869,8 @@ private fun OpinionTimelineItem(
                         cleanTextForContent.startsWith("[DICT") -> GrayMatterColors.TypeLookupMain to Icons.Default.MenuBook
                         cleanTextForContent.startsWith("[TEMPLATE:") -> GrayMatterColors.TypeTemplate to Icons.Default.Assignment
                         cleanTextForContent.startsWith("> ") || cleanTextForContent.startsWith("[INDEX:") -> GrayMatterColors.TypeAnnotation to Icons.Default.FormatQuote
-                        else -> GrayMatterColors.TypeBookmark to Icons.Default.Bookmark
+                        isPureBookmark -> GrayMatterColors.TypeBookmark to Icons.Default.Bookmark
+                        else -> GrayMatterColors.TypeOpinion to Icons.Default.QuestionAnswer
                     }
                     Box(
                         modifier = Modifier

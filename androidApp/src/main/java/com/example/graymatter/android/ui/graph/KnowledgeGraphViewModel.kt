@@ -104,12 +104,12 @@ class KnowledgeGraphViewModel(
             allOpinions.forEach { opinion ->
                 val cleanText = opinion.text.replace(Regex("\\[COLOR:[^\\]]+\\]\\s*", RegexOption.IGNORE_CASE), "")
                 val nodeType = when {
+                    opinion.imagePath != null -> NodeType.VISUAL
                     cleanText.startsWith("[DICT") -> NodeType.LOOKUP
                     cleanText.startsWith("[TEMPLATE:") -> NodeType.TEMPLATE
                     cleanText.startsWith("[CUSTOM:") -> NodeType.CUSTOM
                     opinion.pageNumber != null && (cleanText.startsWith(">") || cleanText.startsWith("[INDEX:")) -> NodeType.ANNOTATION
-                    opinion.pageNumber != null -> NodeType.BOOKMARK
-                    opinion.imagePath != null -> NodeType.VISUAL
+                    opinion.pageNumber != null && cleanText.isBlank() -> NodeType.BOOKMARK
                     else -> NodeType.OPINION
                 }
                 
