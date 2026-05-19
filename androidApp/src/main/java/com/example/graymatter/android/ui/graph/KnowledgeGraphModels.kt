@@ -191,14 +191,15 @@ private class Octree {
         nodePx: Float, nodePy: Float, nodePz: Float,
         nodeType: NodeType,
         nodeRadius: Float,
+        nodeDegree: Int,
         baseRepulsion: Float,
         theta: Float,
         outFx: FloatArray, outFy: FloatArray, outFz: FloatArray,
-        allRadii: FloatArray, allTypes: Array<NodeType>
+        allRadii: FloatArray, allTypes: Array<NodeType>, allDegrees: IntArray
     ) {
         val r = root ?: return
-        walkForce(r, idx, nodePx, nodePy, nodePz, nodeType, nodeRadius,
-            baseRepulsion, theta, outFx, outFy, outFz, allRadii, allTypes)
+        walkForce(r, idx, nodePx, nodePy, nodePz, nodeType, nodeRadius, nodeDegree,
+            baseRepulsion, theta, outFx, outFy, outFz, allRadii, allTypes, allDegrees)
     }
 
     private fun walkForce(
@@ -207,10 +208,11 @@ private class Octree {
         nodePx: Float, nodePy: Float, nodePz: Float,
         nodeType: NodeType,
         nodeRadius: Float,
+        nodeDegree: Int,
         baseRepulsion: Float,
         theta: Float,
         outFx: FloatArray, outFy: FloatArray, outFz: FloatArray,
-        allRadii: FloatArray, allTypes: Array<NodeType>
+        allRadii: FloatArray, allTypes: Array<NodeType>, allDegrees: IntArray
     ) {
         if (cell.mass == 0) return
 
@@ -218,9 +220,9 @@ private class Octree {
         if (cell.mass == 1 && cell.singleNodeIdx >= 0) {
             if (cell.singleNodeIdx == idx) return // skip self
             applyRepulsion(
-                idx, nodePx, nodePy, nodePz, nodeType, nodeRadius,
+                idx, nodePx, nodePy, nodePz, nodeType, nodeRadius, nodeDegree,
                 cell.comX, cell.comY, cell.comZ,
-                cell.singleNodeIdx, allRadii, allTypes,
+                cell.singleNodeIdx, allRadii, allTypes, allDegrees,
                 baseRepulsion, 1,
                 outFx, outFy, outFz
             )
@@ -237,7 +239,7 @@ private class Octree {
         if (cellSize * cellSize / distSq < theta * theta) {
             // Treat entire cell as a pseudo-node at its center-of-mass
             applyRepulsionApprox(
-                idx, nodePx, nodePy, nodePz, nodeType,
+                idx, nodePx, nodePy, nodePz, nodeType, nodeDegree,
                 cell.comX, cell.comY, cell.comZ,
                 cell.mass, cell.maxRepulsionMultiplier,
                 baseRepulsion, outFx, outFy, outFz
@@ -249,8 +251,8 @@ private class Octree {
         val children = cell.children ?: return
         for (i in 0 until 8) {
             children[i]?.let {
-                walkForce(it, idx, nodePx, nodePy, nodePz, nodeType, nodeRadius,
-                    baseRepulsion, theta, outFx, outFy, outFz, allRadii, allTypes)
+                walkForce(it, idx, nodePx, nodePy, nodePz, nodeType, nodeRadius, nodeDegree,
+                    baseRepulsion, theta, outFx, outFy, outFz, allRadii, allTypes, allDegrees)
             }
         }
     }
@@ -258,14 +260,15 @@ private class Octree {
     /** Exact pairwise repulsion — preserves all type-specific multipliers and collision padding */
     private fun applyRepulsion(
         idx: Int,
-        px1: Float, py1: Float, pz1: Float, type1: NodeType, radius1: Float,
+        px1: Float, py1: Float, pz1: Float, type1: NodeType, radius1: Float, degree1: Int,
         px2: Float, py2: Float, pz2: Float,
-        otherIdx: Int, allRadii: FloatArray, allTypes: Array<NodeType>,
+        otherIdx: Int, allRadii: FloatArray, allTypes: Array<NodeType>, allDegrees: IntArray,
         baseRepulsion: Float, mass: Int,
         outFx: FloatArray, outFy: FloatArray, outFz: FloatArray
     ) {
         val type2 = allTypes[otherIdx]
         val radius2 = allRadii[otherIdx]
+        val degree2 = allDegrees[otherIdx]
 
         val dx = px1 - px2
         val dy = py1 - py2
@@ -273,7 +276,9 @@ private class Octree {
         var distSq = dx * dx * 0.4f + dy * dy * 1.2f + dz * dz * 0.8f
         if (distSq < 100f) distSq = 100f
 
-        var currentRepulsion = baseRepulsion
+        val maxDeg = maxOf(degree1, degree2)
+        val repulsionScale = 1f + (maxDeg * 0.15f).coerceAtMost(8f)
+        var currentRepulsion = baseRepulsion * repulsionScale
         val isTopicVsResource = (type1 == NodeType.TOPIC && type2 == NodeType.RESOURCE) ||
                 (type1 == NodeType.RESOURCE && type2 == NodeType.TOPIC)
 
@@ -286,8 +291,9 @@ private class Octree {
         }
 
         var minDistance = radius1 + radius2 + 45f
+        minDistance *= (1f + (maxDeg * 0.05f).coerceAtMost(2f)) // Scale minimum distance slightly
         if (isTopicVsResource) {
-            minDistance *= 2f
+            minDistance *= 1.5f // Ensure Topic-Resource distance is visibly larger than Resource-Opinion
         }
         if (distSq < minDistance * minDistance) {
             currentRepulsion *= 4f
@@ -307,7 +313,7 @@ private class Octree {
     /** Approximate repulsion for distant clusters — uses max multiplier conservatively */
     private fun applyRepulsionApprox(
         idx: Int,
-        px1: Float, py1: Float, pz1: Float, type1: NodeType,
+        px1: Float, py1: Float, pz1: Float, type1: NodeType, degree1: Int,
         comX: Float, comY: Float, comZ: Float,
         mass: Int, clusterMaxMul: Float,
         baseRepulsion: Float,
@@ -327,7 +333,8 @@ private class Octree {
         }
         // Geometric mean gives a reasonable approximation of the pairwise interaction
         val effectiveMul = sqrt(selfMul * clusterMaxMul)
-        val currentRepulsion = baseRepulsion * effectiveMul
+        val repulsionScale = 1f + (degree1 * 0.15f).coerceAtMost(8f)
+        val currentRepulsion = baseRepulsion * effectiveMul * repulsionScale
 
         val force = currentRepulsion * mass / distSq
         val dist = sqrt(dx * dx + dy * dy + dz * dz + 0.1f)
@@ -368,6 +375,7 @@ class ForceSimulator(
     private var radii = FloatArray(0)
     private var pinned = BooleanArray(0)
     private var types = arrayOf<NodeType>()
+    private var degrees = IntArray(0)
 
     // ── Force accumulation scratch arrays ──
     private var fx = FloatArray(0)
@@ -433,6 +441,7 @@ class ForceSimulator(
             radii = FloatArray(count)
             pinned = BooleanArray(count)
             types = Array(count) { NodeType.TOPIC }
+            degrees = IntArray(count)
             fx = FloatArray(count)
             fy = FloatArray(count)
             fz = FloatArray(count)
@@ -446,6 +455,15 @@ class ForceSimulator(
             pinned[i] = n.isPinned
             types[i] = n.type
             nodeIndex[n.id] = i
+            degrees[i] = 0
+        }
+        
+        // Compute degree (number of connections) for each node
+        for (edge in edges) {
+            val i1 = nodeIndex[edge.source.id] ?: continue
+            val i2 = nodeIndex[edge.target.id] ?: continue
+            degrees[i1]++
+            degrees[i2]++
         }
     }
 
@@ -478,10 +496,10 @@ class ForceSimulator(
             if (pinned[i]) continue
             octree.calculateForce(
                 i, px[i], py[i], pz[i],
-                types[i], radii[i],
+                types[i], radii[i], degrees[i],
                 repulsionStrength, theta,
                 fx, fy, fz,
-                radii, types
+                radii, types, degrees
             )
         }
         
@@ -498,7 +516,12 @@ class ForceSimulator(
             val isTopicVsResource = (types[i1] == NodeType.TOPIC && types[i2] == NodeType.RESOURCE) || 
                                    (types[i1] == NodeType.RESOURCE && types[i2] == NodeType.TOPIC)
             
-            val effectiveSpringLength = if (isTopicVsResource) springLength * 2f else springLength
+            val maxDeg = maxOf(degrees[i1], degrees[i2])
+            val lengthScale = 1f + (maxDeg * 0.05f).coerceAtMost(2.5f)
+            
+            // Topic-Resource connections use a larger baseline to visually separate hierarchy tiers
+            // 1.8x keeps them clearly distinct from Resource-Opinion (1.0x) without pushing them off-screen
+            val effectiveSpringLength = if (isTopicVsResource) springLength * 1.8f * lengthScale else springLength * lengthScale
             
             val displacement = dist - effectiveSpringLength
             val force = displacement * springStrength * edge.weight

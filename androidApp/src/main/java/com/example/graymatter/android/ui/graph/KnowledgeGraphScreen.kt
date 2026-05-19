@@ -125,6 +125,10 @@ fun KnowledgeGraphScreen(
     var speedMultiplier by remember { mutableFloatStateOf(0.25f) }
     var globalRotX by remember { mutableFloatStateOf(0f) }
     var globalRotY by remember { mutableFloatStateOf(0f) }
+    var ambientRotEnabled by remember { mutableStateOf(true) }
+    var showPhysicsPanel by remember { mutableStateOf(false) }
+    var repulsionSlider by remember { mutableFloatStateOf(0.5f) }  // 0..1 mapped to 1000..4000
+    var springSlider by remember { mutableFloatStateOf(0.4f) }    // 0..1 mapped to 60..200
     
     // Filters
     var showTopics by remember { mutableStateOf(true) }
@@ -174,9 +178,7 @@ fun KnowledgeGraphScreen(
             NodeType.OPINION to GrayMatterColors.TypeOpinion
         )
     }
-    val nodeColorAlpha03 = remember { nodeColorMap.mapValues { it.value.copy(alpha = 0.3f) } }
-    val nodeColorAlpha06 = remember { nodeColorMap.mapValues { it.value.copy(alpha = 0.6f) } }
-    val nodeColorAlpha08 = remember { nodeColorMap.mapValues { it.value.copy(alpha = 0.8f) } }
+    // (alpha now computed inline per-node with depth fog factor)
 
     // ── Reusable Path object (zero allocations per frame) ──
     val reusablePath = remember { androidx.compose.ui.graphics.Path() }
@@ -231,9 +233,16 @@ fun KnowledgeGraphScreen(
             
             // Render loop — tick on Main thread (eliminates all concurrent-access crashes)
             while (isActive) {
-                simulator.tick(speedMultiplier * 0.5f) // Runs on Main, no race with Canvas
-                ticks++ // force redraw
-                delay(if (simulator.isSettled) 200L else 16L) // Adaptive: 60fps active, 5fps settled
+                // Apply live physics slider values each frame
+                simulator.repulsionStrength = 1000f + repulsionSlider * 3000f
+                simulator.springLength = 60f + springSlider * 140f
+                simulator.tick(speedMultiplier * 0.5f)
+                // Ambient rotation when settled and no active selection
+                if (simulator.isSettled && ambientRotEnabled) {
+                    globalRotY += 0.0012f
+                }
+                ticks++
+                delay(if (simulator.isSettled) 32L else 16L)
             }
         }
     }
@@ -455,17 +464,21 @@ fun KnowledgeGraphScreen(
                     .fillMaxSize()
                     .onSizeChanged { canvasSize = Size(it.width.toFloat(), it.height.toFloat()) }
                     .pointerInput(Unit) {
-                        detectTransformGestures { centroid, pan, zoom, _ ->
+                        // Two-finger: zoom + rotate 3D. One-finger: camera pan.
+                        detectTransformGestures(panZoomLock = false) { centroid, pan, zoom, _ ->
+                            // Count active pointers via zoom deviation (1.0 = no pinch)
+                            val isPinch = zoom != 1f
                             scale = (scale * zoom).coerceIn(0.1f, 5f)
-                            
-                            // Adjust offset to keep the point under the fingers exactly at the same screen coordinates
                             offset = offset * zoom + centroid * (1f - zoom)
-                            
-                            // Spin the 3D space with horizontal/vertical panning
-                            globalRotY += pan.x * 0.01f
-                            globalRotX += pan.y * 0.01f
 
-                            // Wake simulation on user interaction
+                            if (isPinch) {
+                                // Two-finger: rotate 3D space
+                                globalRotY += pan.x * 0.008f
+                                globalRotX += pan.y * 0.008f
+                            } else {
+                                // One-finger: pan the camera
+                                offset += pan
+                            }
                             simulator.wake()
                         }
                     }
@@ -612,7 +625,7 @@ fun KnowledgeGraphScreen(
 
                 val frustumMargin = 150f
 
-                // ── Draw Edges (using nodeIndex for O(1) lookup, not indexOf) ──
+                // ── Draw Edges (gradient + depth fog) ──
                 simulator.edges.forEach { edge ->
                     val srcIdx = simulator.nodeIndex[edge.source.id] ?: return@forEach
                     val tgtIdx = simulator.nodeIndex[edge.target.id] ?: return@forEach
@@ -627,7 +640,6 @@ fun KnowledgeGraphScreen(
                     val endSx = screenX[tgtIdx]
                     val endSy = screenY[tgtIdx]
 
-                    // Frustum culling: skip if both endpoints are off-screen
                     if ((startSx < -frustumMargin && endSx < -frustumMargin) ||
                         (startSx > canvasW + frustumMargin && endSx > canvasW + frustumMargin) ||
                         (startSy < -frustumMargin && endSy < -frustumMargin) ||
@@ -635,57 +647,51 @@ fun KnowledgeGraphScreen(
 
                     val start = Offset(startSx, startSy)
                     val end = Offset(endSx, endSy)
-
                     val isHighlighted = selectedNode == edge.source || selectedNode == edge.target
-                    
-                    // Z-based opacity (farther = fainter)
-                    val midZ = (projectedZ[srcIdx] + projectedZ[tgtIdx]) / 2f
-                    val baseAlpha = (midZ + 400f).coerceIn(100f, 800f) / 800f
-                    val opacity = if (isHighlighted) 1.0f else (baseAlpha * 0.7f).coerceIn(0.25f, 0.95f)
-                    
+
+                    // Depth fog: use per-endpoint Z for a more realistic gradient fade
+                    val srcAlpha = ((projectedZ[srcIdx] + 400f).coerceIn(80f, 800f) / 800f)
+                        .let { if (isHighlighted) 1f else (it * 0.75f).coerceIn(0.15f, 0.9f) }
+                    val tgtAlpha = ((projectedZ[tgtIdx] + 400f).coerceIn(80f, 800f) / 800f)
+                        .let { if (isHighlighted) 1f else (it * 0.75f).coerceIn(0.15f, 0.9f) }
+
+                    val srcNodeColor = nodeColorMap[edge.source.type] ?: Color.White
+                    val tgtNodeColor = nodeColorMap[edge.target.type] ?: Color.White
+
+                    val srcEdgeColor = if (isHighlighted) GrayMatterColors.Primary else srcNodeColor.copy(alpha = srcAlpha)
+                    val tgtEdgeColor = if (isHighlighted) GrayMatterColors.Primary else tgtNodeColor.copy(alpha = tgtAlpha)
+
+                    val strokeW = if (isHighlighted) 4.5f * scale else 2.0f * scale
                     val isExplicit = edge.id.endsWith("_ref")
-                    val dashPhase = if (isExplicit) (currentTicks * 2f) else 0f
-                    
-                    val edgeColor = if (isHighlighted) GrayMatterColors.Primary else Color(0xFF42A5F5).copy(alpha = opacity)
-                    val strokeW = if (isHighlighted) 4.5f * scale else 2.2f * scale
+
+                    val edgeBrush = Brush.linearGradient(
+                        colors = listOf(srcEdgeColor, tgtEdgeColor),
+                        start = start,
+                        end = end
+                    )
 
                     if (isExplicit) {
-                        // Draw dynamic bezier curve for explicit reference edges
-                        reusablePath.reset()
-                        reusablePath.moveTo(start.x, start.y)
-                        
+                        val dashPhase = currentTicks * 2f
                         val midX = (start.x + end.x) / 2f
                         val midY = (start.y + end.y) / 2f
-                        val dx = end.x - start.x
-                        val dy = end.y - start.y
+                        val dx = end.x - start.x; val dy = end.y - start.y
                         val length = kotlin.math.sqrt(dx * dx + dy * dy)
-                        
                         val nx = if (length > 0f) -dy / length else 0f
                         val ny = if (length > 0f) dx / length else 0f
-                        
                         val curveOffset = (length * 0.2f).coerceIn(20f * scale, 60f * scale)
-                        
+                        reusablePath.reset()
+                        reusablePath.moveTo(start.x, start.y)
                         reusablePath.quadraticBezierTo(
-                            x1 = midX + nx * curveOffset,
-                            y1 = midY + ny * curveOffset,
-                            x2 = end.x,
-                            y2 = end.y
+                            x1 = midX + nx * curveOffset, y1 = midY + ny * curveOffset,
+                            x2 = end.x, y2 = end.y
                         )
                         drawPath(
                             path = reusablePath,
-                            color = edgeColor,
-                            style = Stroke(
-                                width = strokeW,
-                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f * scale, 15f * scale), dashPhase)
-                            )
+                            brush = edgeBrush,
+                            style = Stroke(width = strokeW, pathEffect = PathEffect.dashPathEffect(floatArrayOf(18f * scale, 12f * scale), dashPhase))
                         )
                     } else {
-                        drawLine(
-                            start = start,
-                            end = end,
-                            color = edgeColor,
-                            strokeWidth = strokeW
-                        )
+                        drawLine(brush = edgeBrush, start = start, end = end, strokeWidth = strokeW)
                     }
                 }
 
@@ -699,85 +705,87 @@ fun KnowledgeGraphScreen(
                     val sx = screenX[i]
                     val sy = screenY[i]
 
-                    // Frustum culling
                     if (sx < -frustumMargin || sx > canvasW + frustumMargin ||
                         sy < -frustumMargin || sy > canvasH + frustumMargin) continue
 
                     val nodeColor = nodeColorMap[node.type] ?: Color.White
                     val zScale = (projectedZ[i] + 400f).coerceIn(100f, 800f) / 400f
+                    // Enhanced depth fog: nodes far behind fade more aggressively
+                    val depthAlpha = ((projectedZ[i] + 400f).coerceIn(60f, 800f) / 800f)
+                        .let { it * it } // Quadratic falloff — subtle close, dramatic far
+                        .coerceIn(0.12f, 1f)
                     val screenCenter = Offset(sx, sy)
                     val scaledRadius = node.radius * scale * zScale
-                    
                     val isSelected = selectedNode == node
 
                     if (isSelected) {
                         val pulsePhase = (kotlin.math.sin(currentTicks * 0.05f).toFloat() * 0.5f + 0.5f)
                         val pulseRadius = scaledRadius + 15f * scale * zScale + (pulsePhase * 25f * scale * zScale)
-                        
                         drawCircle(
-                            color = nodeColor.copy(alpha = 0.4f - (pulsePhase * 0.2f)),
-                            radius = pulseRadius,
-                            center = screenCenter
+                            color = nodeColor.copy(alpha = (0.4f - pulsePhase * 0.2f) * depthAlpha),
+                            radius = pulseRadius, center = screenCenter
                         )
                         drawCircle(
-                            color = nodeColorAlpha06[node.type] ?: nodeColor.copy(alpha = 0.6f),
-                            radius = scaledRadius + 15f * scale * zScale,
-                            center = screenCenter
+                            color = nodeColor.copy(alpha = 0.6f * depthAlpha),
+                            radius = scaledRadius + 15f * scale * zScale, center = screenCenter
                         )
                     }
 
                     if (node.type == NodeType.TOPIC) {
-                        // ── Icosahedron wireframe (cached geometry) ──
                         val r = node.radius * 1.7f
                         val vertices = buildIcosahedronVertices(r)
-
-                        // Project vertices (reuses cached rotation values)
                         for (faceIdx in ICOSAHEDRON_FACES) {
                             val pA = projectVertex(node.x, node.y, node.z, vertices[faceIdx[0]], cosX, sinX, cosY, sinY, halfW, halfH)
                             val pB = projectVertex(node.x, node.y, node.z, vertices[faceIdx[1]], cosX, sinX, cosY, sinY, halfW, halfH)
                             val pC = projectVertex(node.x, node.y, node.z, vertices[faceIdx[2]], cosX, sinX, cosY, sinY, halfW, halfH)
-
                             val sA = toScreen(pA, scale, halfW, halfH, offsetX, offsetY)
                             val sB = toScreen(pB, scale, halfW, halfH, offsetX, offsetY)
                             val sC = toScreen(pC, scale, halfW, halfH, offsetX, offsetY)
-
+                            // Only draw front-facing faces (simple Z-based culling for icosahedron)
+                            val avgFaceZ = (pA[2] + pB[2] + pC[2]) / 3f
                             reusablePath.reset()
                             reusablePath.moveTo(sA.x, sA.y)
                             reusablePath.lineTo(sB.x, sB.y)
                             reusablePath.lineTo(sC.x, sC.y)
                             reusablePath.close()
-                            drawPath(path = reusablePath, color = nodeColor, style = Stroke(width = 1.5f * scale))
+                            // Translucent fill on front-facing faces
+                            if (avgFaceZ > projectedZ[i]) {
+                                drawPath(path = reusablePath, color = nodeColor.copy(alpha = 0.06f * depthAlpha))
+                            }
+                            // Wireframe with depth-aware alpha
+                            drawPath(path = reusablePath, color = nodeColor.copy(alpha = (if (isSelected) 1f else 0.85f) * depthAlpha), style = Stroke(width = (if (isSelected) 2.2f else 1.5f) * scale))
                         }
+                        // Inner glow sphere
+                        drawCircle(color = nodeColor.copy(alpha = 0.12f * depthAlpha), radius = scaledRadius * 0.55f, center = screenCenter)
 
                     } else if (node.type == NodeType.RESOURCE) {
-                        // ── Tetrahedron wireframe (cached geometry) ──
                         val r = node.radius * 1.5f
                         val vertices = buildTetrahedronVertices(r)
-
                         for (faceIdx in TETRAHEDRON_FACES) {
                             val pA = projectVertex(node.x, node.y, node.z, vertices[faceIdx[0]], cosX, sinX, cosY, sinY, halfW, halfH)
                             val pB = projectVertex(node.x, node.y, node.z, vertices[faceIdx[1]], cosX, sinX, cosY, sinY, halfW, halfH)
                             val pC = projectVertex(node.x, node.y, node.z, vertices[faceIdx[2]], cosX, sinX, cosY, sinY, halfW, halfH)
-
                             val sA = toScreen(pA, scale, halfW, halfH, offsetX, offsetY)
                             val sB = toScreen(pB, scale, halfW, halfH, offsetX, offsetY)
                             val sC = toScreen(pC, scale, halfW, halfH, offsetX, offsetY)
-
+                            val avgFaceZ = (pA[2] + pB[2] + pC[2]) / 3f
                             reusablePath.reset()
                             reusablePath.moveTo(sA.x, sA.y)
                             reusablePath.lineTo(sB.x, sB.y)
                             reusablePath.lineTo(sC.x, sC.y)
                             reusablePath.close()
-                            drawPath(path = reusablePath, color = nodeColor, style = Stroke(width = 1.5f * scale))
+                            if (avgFaceZ > projectedZ[i]) {
+                                drawPath(path = reusablePath, color = nodeColor.copy(alpha = 0.09f * depthAlpha))
+                            }
+                            drawPath(path = reusablePath, color = nodeColor.copy(alpha = (if (isSelected) 1f else 0.85f) * depthAlpha), style = Stroke(width = (if (isSelected) 2.2f else 1.5f) * scale))
                         }
-                        
+                        drawCircle(color = nodeColor.copy(alpha = 0.10f * depthAlpha), radius = scaledRadius * 0.45f, center = screenCenter)
+
                     } else {
-                        // Spherical leaf nodes
-                        drawCircle(color = nodeColorAlpha03[node.type] ?: nodeColor.copy(alpha = 0.3f), radius = scaledRadius, center = screenCenter)
-                        // Glowing Ring Frame
-                        drawCircle(color = nodeColor, radius = scaledRadius, center = screenCenter, style = Stroke(width = 2f * scale))
-                        // Solid core dot
-                        drawCircle(color = nodeColorAlpha08[node.type] ?: nodeColor.copy(alpha = 0.8f), radius = scaledRadius * 0.3f, center = screenCenter)
+                        // Spherical leaf nodes with depth fog
+                        drawCircle(color = nodeColor.copy(alpha = 0.28f * depthAlpha), radius = scaledRadius, center = screenCenter)
+                        drawCircle(color = nodeColor.copy(alpha = depthAlpha), radius = scaledRadius, center = screenCenter, style = Stroke(width = 1.8f * scale))
+                        drawCircle(color = nodeColor.copy(alpha = 0.85f * depthAlpha), radius = scaledRadius * 0.32f, center = screenCenter)
                     }
                 }
             }
@@ -801,53 +809,136 @@ fun KnowledgeGraphScreen(
             )
         }
         
-        // Controls Overlay (Navigation)
+        // Controls Overlay (Navigation + Physics)
         Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
                 .padding(top = 72.dp, end = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
             horizontalAlignment = Alignment.End
         ) {
-            
             // Zoom Controls
             Surface(
-                color = GrayMatterColors.SurfaceDark.copy(alpha = 0.85f),
+                color = GrayMatterColors.SurfaceDark.copy(alpha = 0.88f),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Row(modifier = Modifier.padding(8.dp)) {
+                Row(modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)) {
                     IconButton(onClick = { scale = (scale / 1.25f).coerceIn(0.1f, 5f) }, modifier = Modifier.size(32.dp)) {
-                        Text("-", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        Text("-", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     }
                     IconButton(onClick = { scale = (scale * 1.25f).coerceIn(0.1f, 5f) }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Add, "Zoom In", tint = Color.White)
+                        Icon(Icons.Default.Add, "Zoom In", tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                 }
             }
 
-            // Navigation & Rotation Controls
+            // Rotation Controls
             Surface(
-                color = GrayMatterColors.SurfaceDark.copy(alpha = 0.85f),
+                color = GrayMatterColors.SurfaceDark.copy(alpha = 0.88f),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    IconButton(onClick = { globalRotX -= 0.15f }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.KeyboardArrowUp, "Rotate Up", tint = Color.White)
+                Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    IconButton(onClick = { globalRotX -= 0.15f; simulator.wake() }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.KeyboardArrowUp, "Rotate Up", tint = Color.White, modifier = Modifier.size(20.dp))
                     }
                     Row {
-                        IconButton(onClick = { globalRotY -= 0.15f }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Rotate Left", tint = Color.White)
+                        IconButton(onClick = { globalRotY -= 0.15f; simulator.wake() }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Rotate Left", tint = Color.White, modifier = Modifier.size(20.dp))
                         }
-                        IconButton(onClick = { offset = Offset.Zero; scale = 1f; globalRotX = 0f; globalRotY = 0f }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.Refresh, "Reset", tint = Color.White)
+                        IconButton(onClick = {
+                            offset = Offset.Zero; scale = 1f; globalRotX = 0f; globalRotY = 0f
+                        }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Refresh, "Reset", tint = GrayMatterColors.Primary, modifier = Modifier.size(18.dp))
                         }
-                        IconButton(onClick = { globalRotY += 0.15f }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Rotate Right", tint = Color.White)
+                        IconButton(onClick = { globalRotY += 0.15f; simulator.wake() }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Rotate Right", tint = Color.White, modifier = Modifier.size(20.dp))
                         }
                     }
-                    IconButton(onClick = { globalRotX += 0.15f }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.KeyboardArrowDown, "Rotate Down", tint = Color.White)
+                    IconButton(onClick = { globalRotX += 0.15f; simulator.wake() }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.KeyboardArrowDown, "Rotate Down", tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
+
+            // Ambient Rotate + Physics Panel Toggle
+            Surface(
+                color = GrayMatterColors.SurfaceDark.copy(alpha = 0.88f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // Ambient rotation toggle
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { ambientRotEnabled = !ambientRotEnabled }
+                    ) {
+                        Text(
+                            text = "Auto",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (ambientRotEnabled) GrayMatterColors.Primary else GrayMatterColors.Neutral500
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(RoundedCornerShape(5.dp))
+                                .background(if (ambientRotEnabled) GrayMatterColors.Primary else GrayMatterColors.Neutral600)
+                        )
+                    }
+                    // Physics panel toggle
+                    Text(
+                        text = if (showPhysicsPanel) "▾ Physics" else "▸ Physics",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = if (showPhysicsPanel) GrayMatterColors.Primary else GrayMatterColors.Neutral400,
+                        modifier = Modifier.clickable { showPhysicsPanel = !showPhysicsPanel }
+                    )
+                }
+            }
+
+            // Expandable Physics Sliders Panel
+            AnimatedVisibility(visible = showPhysicsPanel, enter = fadeIn(), exit = fadeOut()) {
+                Surface(
+                    color = GrayMatterColors.SurfaceDark.copy(alpha = 0.92f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp).width(140.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            "Repulsion",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = GrayMatterColors.Neutral400
+                        )
+                        Slider(
+                            value = repulsionSlider,
+                            onValueChange = { repulsionSlider = it; simulator.wake() },
+                            modifier = Modifier.height(28.dp),
+                            colors = SliderDefaults.colors(
+                                thumbColor = GrayMatterColors.Primary,
+                                activeTrackColor = GrayMatterColors.Primary.copy(alpha = 0.7f),
+                                inactiveTrackColor = GrayMatterColors.Neutral600
+                            )
+                        )
+                        Text(
+                            "Spring",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = GrayMatterColors.Neutral400
+                        )
+                        Slider(
+                            value = springSlider,
+                            onValueChange = { springSlider = it; simulator.wake() },
+                            modifier = Modifier.height(28.dp),
+                            colors = SliderDefaults.colors(
+                                thumbColor = GrayMatterColors.TypeLink,
+                                activeTrackColor = GrayMatterColors.TypeLink.copy(alpha = 0.7f),
+                                inactiveTrackColor = GrayMatterColors.Neutral600
+                            )
+                        )
                     }
                 }
             }
