@@ -12,6 +12,11 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -809,133 +814,178 @@ fun KnowledgeGraphScreen(
             )
         }
         
-        // Controls Overlay (Navigation + Physics)
+        // ─── Controls Console (Compact Bottom-Right) ──────────────────────────
         Column(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .statusBarsPadding()
-                .padding(top = 72.dp, end = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(bottom = 90.dp, end = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
             horizontalAlignment = Alignment.End
         ) {
-            // Zoom Controls
+            // Main console card
             Surface(
-                color = GrayMatterColors.SurfaceDark.copy(alpha = 0.88f),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)) {
-                    IconButton(onClick = { scale = (scale / 1.25f).coerceIn(0.1f, 5f) }, modifier = Modifier.size(32.dp)) {
-                        Text("-", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                    }
-                    IconButton(onClick = { scale = (scale * 1.25f).coerceIn(0.1f, 5f) }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Add, "Zoom In", tint = Color.White, modifier = Modifier.size(18.dp))
-                    }
-                }
-            }
-
-            // Rotation Controls
-            Surface(
-                color = GrayMatterColors.SurfaceDark.copy(alpha = 0.88f),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    IconButton(onClick = { globalRotX -= 0.15f; simulator.wake() }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.KeyboardArrowUp, "Rotate Up", tint = Color.White, modifier = Modifier.size(20.dp))
-                    }
-                    Row {
-                        IconButton(onClick = { globalRotY -= 0.15f; simulator.wake() }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Rotate Left", tint = Color.White, modifier = Modifier.size(20.dp))
-                        }
-                        IconButton(onClick = {
-                            offset = Offset.Zero; scale = 1f; globalRotX = 0f; globalRotY = 0f
-                        }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.Refresh, "Reset", tint = GrayMatterColors.Primary, modifier = Modifier.size(18.dp))
-                        }
-                        IconButton(onClick = { globalRotY += 0.15f; simulator.wake() }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Rotate Right", tint = Color.White, modifier = Modifier.size(20.dp))
-                        }
-                    }
-                    IconButton(onClick = { globalRotX += 0.15f; simulator.wake() }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.KeyboardArrowDown, "Rotate Down", tint = Color.White, modifier = Modifier.size(20.dp))
-                    }
-                }
-            }
-
-            // Ambient Rotate + Physics Panel Toggle
-            Surface(
-                color = GrayMatterColors.SurfaceDark.copy(alpha = 0.88f),
-                shape = RoundedCornerShape(12.dp)
+                color = Color(0xFF0D1117).copy(alpha = 0.92f),
+                shape = RoundedCornerShape(16.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                    0.7.dp, Color.White.copy(alpha = 0.08f)
+                ),
+                tonalElevation = 0.dp,
+                shadowElevation = 8.dp
             ) {
                 Column(
                     modifier = Modifier.padding(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    // Ambient rotation toggle
+                    // ── Zoom row ──
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { ambientRotEnabled = !ambientRotEnabled }
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        // Zoom out
+                        Surface(
+                            color = Color.White.copy(alpha = 0.06f),
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier.size(28.dp).repeatingClickable { scale = (scale / 1.1f).coerceIn(0.1f, 5f) }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("−", color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp, fontWeight = FontWeight.Light)
+                            }
+                        }
+                        // Scale readout
+                        Text(
+                            text = "${(scale * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                            color = GrayMatterColors.Neutral400,
+                            modifier = Modifier.width(32.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        // Zoom in
+                        Surface(
+                            color = Color.White.copy(alpha = 0.06f),
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier.size(28.dp).repeatingClickable { scale = (scale * 1.1f).coerceIn(0.1f, 5f) }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Add, "Zoom In", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(14.dp))
+                            }
+                        }
+                    }
+
+                    // ── Divider ──
+                    Box(modifier = Modifier.width(96.dp).height(0.5.dp).background(Color.White.copy(alpha = 0.07f)))
+
+                    // ── D-pad rotation ──
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        // Up
+                        Surface(
+                            color = Color.White.copy(alpha = 0.06f),
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier.size(28.dp).repeatingClickable { globalRotX -= 0.05f; simulator.wake() }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.KeyboardArrowUp, "Up", tint = Color.White.copy(alpha = 0.75f), modifier = Modifier.size(16.dp))
+                            }
+                        }
+                        // Middle row (Left & Right only)
+                        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Surface(
+                                color = Color.White.copy(alpha = 0.06f),
+                                shape = RoundedCornerShape(6.dp),
+                                modifier = Modifier.size(28.dp).repeatingClickable { globalRotY -= 0.05f; simulator.wake() }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Left", tint = Color.White.copy(alpha = 0.75f), modifier = Modifier.size(16.dp))
+                                }
+                            }
+                            Surface(
+                                color = Color.White.copy(alpha = 0.06f),
+                                shape = RoundedCornerShape(6.dp),
+                                modifier = Modifier.size(28.dp).repeatingClickable { globalRotY += 0.05f; simulator.wake() }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Right", tint = Color.White.copy(alpha = 0.75f), modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
+                        // Down
+                        Surface(
+                            color = Color.White.copy(alpha = 0.06f),
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier.size(28.dp).repeatingClickable { globalRotX += 0.05f; simulator.wake() }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.KeyboardArrowDown, "Down", tint = Color.White.copy(alpha = 0.75f), modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+
+                    // ── Divider ──
+                    Box(modifier = Modifier.width(96.dp).height(0.5.dp).background(Color.White.copy(alpha = 0.07f)))
+
+                    // ── Physics toggle ──
+                    Row(
+                        modifier = Modifier
+                            .width(96.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(if (showPhysicsPanel) GrayMatterColors.Primary.copy(alpha = 0.12f) else Color.Transparent)
+                            .clickable { showPhysicsPanel = !showPhysicsPanel }
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "Auto",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (ambientRotEnabled) GrayMatterColors.Primary else GrayMatterColors.Neutral500
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .clip(RoundedCornerShape(5.dp))
-                                .background(if (ambientRotEnabled) GrayMatterColors.Primary else GrayMatterColors.Neutral600)
+                            text = if (showPhysicsPanel) "⬥ Physics" else "⬦ Physics",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.SemiBold),
+                            color = if (showPhysicsPanel) GrayMatterColors.Primary else GrayMatterColors.Neutral400
                         )
                     }
-                    // Physics panel toggle
-                    Text(
-                        text = if (showPhysicsPanel) "▾ Physics" else "▸ Physics",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = if (showPhysicsPanel) GrayMatterColors.Primary else GrayMatterColors.Neutral400,
-                        modifier = Modifier.clickable { showPhysicsPanel = !showPhysicsPanel }
-                    )
                 }
             }
 
-            // Expandable Physics Sliders Panel
+            // Physics sliders panel (below console)
             AnimatedVisibility(visible = showPhysicsPanel, enter = fadeIn(), exit = fadeOut()) {
                 Surface(
-                    color = GrayMatterColors.SurfaceDark.copy(alpha = 0.92f),
-                    shape = RoundedCornerShape(12.dp)
+                    color = Color(0xFF0D1117).copy(alpha = 0.92f),
+                    shape = RoundedCornerShape(14.dp),
+                    border = androidx.compose.foundation.BorderStroke(0.7.dp, Color.White.copy(alpha = 0.08f)),
+                    shadowElevation = 8.dp
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp).width(140.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp).width(146.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            "Repulsion",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = GrayMatterColors.Neutral400
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(GrayMatterColors.Primary))
+                            Spacer(Modifier.width(5.dp))
+                            Text("Repulsion", style = MaterialTheme.typography.labelSmall, color = GrayMatterColors.Neutral400)
+                        }
                         Slider(
                             value = repulsionSlider,
                             onValueChange = { repulsionSlider = it; simulator.wake() },
-                            modifier = Modifier.height(28.dp),
+                            modifier = Modifier.height(26.dp),
                             colors = SliderDefaults.colors(
                                 thumbColor = GrayMatterColors.Primary,
-                                activeTrackColor = GrayMatterColors.Primary.copy(alpha = 0.7f),
+                                activeTrackColor = GrayMatterColors.Primary.copy(alpha = 0.6f),
                                 inactiveTrackColor = GrayMatterColors.Neutral600
                             )
                         )
-                        Text(
-                            "Spring",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = GrayMatterColors.Neutral400
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(GrayMatterColors.TypeLink))
+                            Spacer(Modifier.width(5.dp))
+                            Text("Spring", style = MaterialTheme.typography.labelSmall, color = GrayMatterColors.Neutral400)
+                        }
                         Slider(
                             value = springSlider,
                             onValueChange = { springSlider = it; simulator.wake() },
-                            modifier = Modifier.height(28.dp),
+                            modifier = Modifier.height(26.dp),
                             colors = SliderDefaults.colors(
                                 thumbColor = GrayMatterColors.TypeLink,
-                                activeTrackColor = GrayMatterColors.TypeLink.copy(alpha = 0.7f),
+                                activeTrackColor = GrayMatterColors.TypeLink.copy(alpha = 0.6f),
                                 inactiveTrackColor = GrayMatterColors.Neutral600
                             )
                         )
@@ -993,24 +1043,28 @@ fun KnowledgeGraphScreen(
                             label = { Text(name, color = Color.Unspecified) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = when(name) {
-                                    "Topics" -> Color.White.copy(alpha = 0.3f)
-                                    "Resources" -> Color.White.copy(alpha = 0.3f)
-                                    "Annotations" -> GrayMatterColors.TypeAnnotation.copy(alpha = 0.3f)
-                                    "Bookmarks" -> GrayMatterColors.TypeBookmark.copy(alpha = 0.3f)
-                                    "Templates" -> GrayMatterColors.TypeTemplate.copy(alpha = 0.3f)
-                                    "Dict" -> GrayMatterColors.TypeLookupMain.copy(alpha = 0.3f)
-                                    "Visuals" -> GrayMatterColors.TypeVisual.copy(alpha = 0.3f)
-                                    else -> GrayMatterColors.TypeOpinion.copy(alpha = 0.3f)
+                                    "Topics"    -> Color.White.copy(alpha = 0.22f)
+                                    "Resources" -> Color.White.copy(alpha = 0.22f)
+                                    "Opinions"  -> GrayMatterColors.TypeAnnotation.copy(alpha = 0.25f)
+                                    "Bookmarks" -> GrayMatterColors.TypeBookmark.copy(alpha = 0.25f)
+                                    "Templates" -> GrayMatterColors.TypeTemplate.copy(alpha = 0.25f)
+                                    "Lookup"    -> GrayMatterColors.TypeLookupMain.copy(alpha = 0.25f)
+                                    "Visuals"   -> GrayMatterColors.TypeVisual.copy(alpha = 0.25f)
+                                    else        -> GrayMatterColors.TypeOpinion.copy(alpha = 0.25f)
                                 },
                                 selectedLabelColor = when(name) {
-                                    "Topics" -> Color.White
+                                    "Topics"    -> Color.White
                                     "Resources" -> Color.White
-                                    "Annotations" -> GrayMatterColors.TypeAnnotation
+                                    "Opinions"  -> GrayMatterColors.TypeAnnotation
                                     "Bookmarks" -> GrayMatterColors.TypeBookmark
                                     "Templates" -> GrayMatterColors.TypeTemplate
-                                    "Dict" -> GrayMatterColors.TypeLookupMain
-                                    "Visuals" -> GrayMatterColors.TypeVisual
-                                    else -> GrayMatterColors.TypeOpinion
+                                    "Lookup"    -> GrayMatterColors.TypeLookupMain
+                                    "Visuals"   -> GrayMatterColors.TypeVisual
+                                    else        -> GrayMatterColors.TypeOpinion
+                                },
+                                labelColor = when(name) {
+                                    "Lookup" -> GrayMatterColors.TypeLookupMain
+                                    else     -> GrayMatterColors.Neutral400
                                 }
                             )
                         )
@@ -1175,4 +1229,28 @@ private fun stripMarkdown(text: String): String {
         .replace(Regex("\\[Page \\d+\\]"), "")
         .replace(Regex("[#*>\\[\\]]"), "")
         .trim().replace(Regex("\\s+"), " ")
+}
+
+// ─── Continuous Press Extension ───────────────────────────────────────────────
+
+private fun Modifier.repeatingClickable(
+    initialDelayMillis: Long = 300,
+    repeatDelayMillis: Long = 30,
+    onClick: () -> Unit
+): Modifier = this.pointerInput(Unit) {
+    coroutineScope {
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false)
+            val heldJob = launch {
+                onClick()
+                delay(initialDelayMillis)
+                while (isActive) {
+                    onClick()
+                    delay(repeatDelayMillis)
+                }
+            }
+            waitForUpOrCancellation()
+            heldJob.cancel()
+        }
+    }
 }
