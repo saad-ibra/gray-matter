@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.domain.ResourceType
+import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
 fun RecentItemCard(
@@ -76,7 +77,8 @@ fun RecentItemCard(
                         text = title,
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                         color = GrayMatterColors.TextPrimary,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = time,

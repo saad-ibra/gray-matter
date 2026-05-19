@@ -162,78 +162,80 @@ fun BackupSettingsScreen(
                 }
             }
 
-            // ── Schedule Section ──
-            item {
-                SectionHeader(icon = Icons.Default.Schedule, title = "BACKUP SCHEDULE")
-            }
-            item {
-                SettingsCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text("Frequency", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                BackupFrequency.entries.forEach { freq ->
-                                    FilterChip(
-                                        selected = state.frequency == freq,
-                                        onClick = { viewModel.setFrequency(freq) },
-                                        label = { Text(freq.label) },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
-                                            selectedLabelColor = GrayMatterColors.Primary
+            if (state.isBackupEnabled) {
+                // ── Schedule Section ──
+                item {
+                    SectionHeader(icon = Icons.Default.Schedule, title = "BACKUP SCHEDULE")
+                }
+                item {
+                    SettingsCard {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text("Frequency", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    BackupFrequency.entries.forEach { freq ->
+                                        FilterChip(
+                                            selected = state.frequency == freq,
+                                            onClick = { viewModel.setFrequency(freq) },
+                                            label = { Text(freq.label) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
+                                                selectedLabelColor = GrayMatterColors.Primary
+                                            )
                                         )
+                                    }
+                                }
+                            }
+
+                            Divider(color = GrayMatterColors.Neutral800, thickness = 0.5.dp)
+
+                            var showTimePicker by remember { mutableStateOf(false) }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Time of day", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
+
+                                val timeStr = if (state.is24HourFormat) {
+                                    String.format("%02d:%02d", state.backupTimeHour, state.backupTimeMinute)
+                                } else {
+                                    val hour = if (state.backupTimeHour % 12 == 0) 12 else state.backupTimeHour % 12
+                                    val amPm = if (state.backupTimeHour < 12) "AM" else "PM"
+                                    String.format("%02d:%02d %s", hour, state.backupTimeMinute, amPm)
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(GrayMatterColors.Neutral900)
+                                        .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                                        .clickable { showTimePicker = true }
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        timeStr,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = GrayMatterColors.Primary,
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                 }
                             }
-                        }
 
-                        Divider(color = GrayMatterColors.Neutral800, thickness = 0.5.dp)
-
-                        var showTimePicker by remember { mutableStateOf(false) }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Time of day", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
-
-                            val timeStr = if (state.is24HourFormat) {
-                                String.format("%02d:%02d", state.backupTimeHour, state.backupTimeMinute)
-                            } else {
-                                val hour = if (state.backupTimeHour % 12 == 0) 12 else state.backupTimeHour % 12
-                                val amPm = if (state.backupTimeHour < 12) "AM" else "PM"
-                                String.format("%02d:%02d %s", hour, state.backupTimeMinute, amPm)
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(GrayMatterColors.Neutral900)
-                                    .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
-                                    .clickable { showTimePicker = true }
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                            ) {
-                                Text(
-                                    timeStr,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = GrayMatterColors.Primary,
-                                    fontWeight = FontWeight.SemiBold
+                            if (showTimePicker) {
+                                TimePickerDialog(
+                                    initialHour = state.backupTimeHour,
+                                    initialMinute = state.backupTimeMinute,
+                                    is24Hour = state.is24HourFormat,
+                                    onFormatToggle = { viewModel.set24HourFormat(it) },
+                                    onDismiss = { showTimePicker = false },
+                                    onConfirm = { hour, minute ->
+                                        viewModel.setBackupTime(hour, minute)
+                                        showTimePicker = false
+                                    }
                                 )
                             }
-                        }
-
-                        if (showTimePicker) {
-                            TimePickerDialog(
-                                initialHour = state.backupTimeHour,
-                                initialMinute = state.backupTimeMinute,
-                                is24Hour = state.is24HourFormat,
-                                onFormatToggle = { viewModel.set24HourFormat(it) },
-                                onDismiss = { showTimePicker = false },
-                                onConfirm = { hour, minute ->
-                                    viewModel.setBackupTime(hour, minute)
-                                    showTimePicker = false
-                                }
-                            )
                         }
                     }
                 }
@@ -299,7 +301,7 @@ fun BackupSettingsScreen(
 
             // ── Actions ──
             item {
-                SectionHeader(icon = Icons.Default.PlayArrow, title = "ACTIONS")
+                SectionHeader(icon = Icons.Default.Bolt, title = "ACTIONS")
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
