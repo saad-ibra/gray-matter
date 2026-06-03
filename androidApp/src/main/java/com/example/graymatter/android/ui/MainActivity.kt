@@ -40,6 +40,9 @@ class MainActivity : FragmentActivity() {
             window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
         
+        // Keep the screen awake
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        
         // Check biometric availability (auto-unlocks if not available)
         biometricAuthManager.checkAvailability(this)
         

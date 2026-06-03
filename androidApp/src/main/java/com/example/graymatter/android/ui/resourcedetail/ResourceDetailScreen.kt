@@ -284,14 +284,10 @@ fun ResourceDetailScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(
-                                    if (description.isNotEmpty()) GrayMatterColors.TypeNoteDescription.copy(alpha = 0.12f)
-                                    else GrayMatterColors.SurfaceDark
-                                )
+                                .background(GrayMatterColors.TypeOpinion.copy(alpha = 0.12f))
                                 .border(
                                     1.5.dp,
-                                    if (description.isNotEmpty()) GrayMatterColors.TypeNoteDescription.copy(alpha = 0.4f)
-                                    else GrayMatterColors.Neutral800,
+                                    GrayMatterColors.TypeOpinion.copy(alpha = 0.4f),
                                     RoundedCornerShape(16.dp)
                                 )
                                 .clickable { showDescriptionEditor = true }
@@ -305,12 +301,12 @@ fun ResourceDetailScreen(
                                 Icon(
                                     imageVector = if (description.isNotEmpty()) Icons.Default.EditNote else Icons.Default.Edit,
                                     contentDescription = null,
-                                    tint = GrayMatterColors.TypeNoteDescription
+                                    tint = GrayMatterColors.TypeOpinion
                                 )
                                 Text(
                                     text = if (description.isNotEmpty()) "Edit Resource Description" else "Add Resource Description",
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = GrayMatterColors.TypeNoteDescription
+                                    color = GrayMatterColors.TypeOpinion
                                 )
                             }
                         }

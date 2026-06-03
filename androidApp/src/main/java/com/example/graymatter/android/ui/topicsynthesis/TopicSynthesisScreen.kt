@@ -424,8 +424,8 @@ private fun OverallOpinionSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(if (hasOpinion) GrayMatterColors.TypeOpinion.copy(alpha = 0.12f) else GrayMatterColors.SurfaceDark)
-                .border(1.5.dp, if (hasOpinion) GrayMatterColors.TypeOpinion.copy(alpha = 0.4f) else GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+                .background(GrayMatterColors.TypeOpinion.copy(alpha = 0.12f))
+                .border(1.5.dp, GrayMatterColors.TypeOpinion.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
                 .clickable(onClick = onClick)
                 .padding(20.dp),
             contentAlignment = Alignment.Center

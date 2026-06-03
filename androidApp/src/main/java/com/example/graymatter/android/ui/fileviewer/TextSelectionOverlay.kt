@@ -772,7 +772,8 @@ fun TextSelectionOverlay(
                 Row(
                     modifier = Modifier
                         .background(GrayMatterColors.SurfaceDark, RoundedCornerShape(8.dp))
-                        .padding(4.dp)
+                        .padding(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = {
                         val textChars = selectedCharacters.value
