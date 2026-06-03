@@ -282,7 +282,8 @@ fun TextSelectionOverlay(
             val cy = char.y + char.height / 2f
             val dx = cx - pdfOffset.x
             val dy = cy - pdfOffset.y
-            dx * dx + dy * dy
+            // Anisotropic weighting: penalize vertical distance to prevent jumping between lines
+            (dx * dx) + (dy * dy * 4f)
         }?.index ?: -1
     }
 
@@ -519,6 +520,8 @@ fun TextSelectionOverlay(
                         val ehInfo = endHandleInfo.value
                         val sh = shInfo?.first
                         val eh = ehInfo?.first
+                        val shHeight = shInfo?.second ?: 0f
+                        val ehHeight = ehInfo?.second ?: 0f
 
                         val distStart = if (sh != null) (down.position - sh).getDistance() else Float.MAX_VALUE
                         val distEnd = if (eh != null) (down.position - eh).getDistance() else Float.MAX_VALUE
@@ -544,8 +547,13 @@ fun TextSelectionOverlay(
                                     // Use absolute position tracking instead of deltas for 1:1 finger tracking
                                     val currentScreenPos = change.position + touchOffset
                                     
+                                    // Adjust handle coordinate up to the vertical center of the text line
+                                    val hHeight = if (isStart) shHeight else ehHeight
+                                    val vPad = 5.dp.value * density * zoomScale
+                                    val adjustedScreenPos = currentScreenPos.copy(y = currentScreenPos.y - vPad - (hHeight / 2f))
+                                    
                                     // Convert screen position back to document space and save
-                                    val newDocPos = screenToPdf(currentScreenPos)
+                                    val newDocPos = screenToPdf(adjustedScreenPos)
                                     if (isStart) dragStart = newDocPos
                                     else dragEnd = newDocPos
                                 }
@@ -562,8 +570,29 @@ fun TextSelectionOverlay(
                 detectDragGesturesAfterLongPress(
                     onDragStart = { offset ->
                         val docPos = screenToPdf(offset)
-                        dragStart = docPos
-                        dragEnd = docPos
+                        val charIdx = getCharIndexAt(docPos, expandHitArea = true)
+                        
+                        if (charIdx != -1) {
+                            var startIdx = charIdx
+                            var endIdx = charIdx
+                            
+                            // Expand left to word boundary
+                            while (startIdx > 0 && characters[startIdx - 1].unicode.any { it.isLetterOrDigit() || it == '-' || it == '\'' }) {
+                                startIdx--
+                            }
+                            // Expand right to word boundary
+                            while (endIdx < characters.size - 1 && characters[endIdx + 1].unicode.any { it.isLetterOrDigit() || it == '-' || it == '\'' }) {
+                                endIdx++
+                            }
+                            
+                            val startChar = characters[startIdx]
+                            val endChar = characters[endIdx]
+                            dragStart = Offset(startChar.x + startChar.width / 2f, startChar.y + startChar.height / 2f)
+                            dragEnd = Offset(endChar.x + endChar.width / 2f, endChar.y + endChar.height / 2f)
+                        } else {
+                            dragStart = docPos
+                            dragEnd = docPos
+                        }
                         showPopup = false
                         showAnnotationPopupId = null
                         showGlobalDictPopupId = null
