@@ -235,11 +235,12 @@ fun TextSelectionOverlay(
         val cropLeft = autoCropRect?.left ?: 0f
         val cropTop = autoCropRect?.top ?: 0f
         
-        val padding = if (autoCropRect != null) cropPadding else 0
+        val actualLeftPixel = if (autoCropRect != null) (cropLeft * baseRenderScale - cropPadding).toInt().coerceAtLeast(0).toFloat() else 0f
+        val actualTopPixel = if (autoCropRect != null) (cropTop * baseRenderScale - cropPadding).toInt().coerceAtLeast(0).toFloat() else 0f
         
         return Offset(
-            x = (xInBmp - padding) / baseRenderScale + cropLeft,
-            y = (yInBmp - padding) / baseRenderScale + cropTop
+            x = (xInBmp + actualLeftPixel) / baseRenderScale,
+            y = (yInBmp + actualTopPixel) / baseRenderScale
         )
     }
 
@@ -248,10 +249,11 @@ fun TextSelectionOverlay(
         val cropLeft = autoCropRect?.left ?: 0f
         val cropTop = autoCropRect?.top ?: 0f
         
-        val padding = if (autoCropRect != null) cropPadding else 0
+        val actualLeftPixel = if (autoCropRect != null) (cropLeft * baseRenderScale - cropPadding).toInt().coerceAtLeast(0).toFloat() else 0f
+        val actualTopPixel = if (autoCropRect != null) (cropTop * baseRenderScale - cropPadding).toInt().coerceAtLeast(0).toFloat() else 0f
         
-        val croppedX = (pdfX - cropLeft) * baseRenderScale + padding
-        val croppedY = (pdfY - cropTop) * baseRenderScale + padding
+        val croppedX = (pdfX * baseRenderScale) - actualLeftPixel
+        val croppedY = (pdfY * baseRenderScale) - actualTopPixel
 
         val screenX = croppedX * scale + offsetX
         val screenY = croppedY * scale + offsetY
