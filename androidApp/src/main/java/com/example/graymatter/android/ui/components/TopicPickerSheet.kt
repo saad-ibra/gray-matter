@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.domain.Topic
 
 /**
@@ -37,8 +38,8 @@ fun TopicPickerSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = GrayMatterColors.SurfaceDark,
-        dragHandle = { BottomSheetDefaults.DragHandle(color = GrayMatterColors.Neutral700) }
+        containerColor = GrayMatterTheme.colors.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle(color = GrayMatterTheme.colors.neutral700) }
     ) {
         Column(
             modifier = Modifier
@@ -54,12 +55,12 @@ fun TopicPickerSheet(
                 Text(
                     text = "Assign Topic",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = GrayMatterColors.TextPrimary
+                    color = GrayMatterTheme.colors.textPrimary
                 )
                 Text(
                     text = "Regarding: $title",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = GrayMatterColors.TextSecondary
+                    color = GrayMatterTheme.colors.textSecondary
                 )
     
                 Spacer(modifier = Modifier.height(24.dp))
@@ -72,10 +73,10 @@ fun TopicPickerSheet(
                     modifier = Modifier.fillMaxWidth(),
                     leadingIcon = { Icon(Icons.Default.Search, null) },
                     colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedContainerColor = GrayMatterColors.SurfaceInput,
-                        focusedContainerColor = GrayMatterColors.SurfaceInput,
-                        unfocusedBorderColor = GrayMatterColors.Neutral800,
-                        focusedBorderColor = GrayMatterColors.Primary,
+                        unfocusedContainerColor = GrayMatterTheme.colors.surfaceInput,
+                        focusedContainerColor = GrayMatterTheme.colors.surfaceInput,
+                        unfocusedBorderColor = GrayMatterTheme.colors.neutral800,
+                        focusedBorderColor = GrayMatterTheme.colors.primary,
                         unfocusedTextColor = Color.White,
                         focusedTextColor = Color.White
                     ),
@@ -83,7 +84,7 @@ fun TopicPickerSheet(
                     trailingIcon = {
                         if (searchQuery.isNotBlank() && topics.none { it.name.equals(searchQuery, true) }) {
                             IconButton(onClick = { onCreateNewTopic(searchQuery) }) {
-                                Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary)
+                                Icon(Icons.Default.Add, null, tint = GrayMatterTheme.colors.primary)
                             }
                         }
                     }
@@ -119,7 +120,7 @@ fun TopicPickerSheet(
                                 .padding(vertical = 12.dp, horizontal = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Folder, null, tint = GrayMatterColors.Primary)
+                            Icon(Icons.Default.Folder, null, tint = GrayMatterTheme.colors.primary)
                             Spacer(modifier = Modifier.width(16.dp))
                             Text(topic.name, color = Color.White)
                         }
@@ -131,7 +132,7 @@ fun TopicPickerSheet(
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Neutral800),
+                    colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.neutral800),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text("Cancel", color = Color.White)

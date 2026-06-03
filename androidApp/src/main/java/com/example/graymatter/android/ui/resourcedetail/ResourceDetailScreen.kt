@@ -1,5 +1,6 @@
 package com.example.graymatter.android.ui.resourcedetail
 
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import androidx.compose.animation.core.*
 import androidx.compose.animation.*
 import androidx.compose.animation.animateColorAsState
@@ -164,14 +165,14 @@ fun ResourceDetailScreen(
         Scaffold(
             modifier = Modifier
             .fillMaxSize()
-            .background(GrayMatterColors.BackgroundDark),
-        containerColor = GrayMatterColors.BackgroundDark,
+            .background(GrayMatterTheme.colors.background),
+        containerColor = GrayMatterTheme.colors.background,
         floatingActionButton = {
             if (!isEditing && !showDescriptionEditor) {
                 FloatingActionButton(
                     onClick = { showAddDialog = true },
-                    containerColor = GrayMatterColors.TextPrimary,
-                    contentColor = GrayMatterColors.BackgroundDark,
+                    containerColor = GrayMatterTheme.colors.textPrimary,
+                    contentColor = GrayMatterTheme.colors.background,
                     shape = RoundedCornerShape(18.dp),
                     modifier = Modifier.size(60.dp)
                 ) {
@@ -351,7 +352,7 @@ fun ResourceDetailScreen(
                                             letterSpacing = 1.2.sp,
                                             fontWeight = FontWeight.ExtraBold
                                         ),
-                                        color = GrayMatterColors.TextPrimary.copy(alpha = 0.9f)
+                                        color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.9f)
                                     )
                                 }
 
@@ -418,7 +419,7 @@ fun ResourceDetailScreen(
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold
                         ),
-                        color = GrayMatterColors.TextPrimary
+                        color = GrayMatterTheme.colors.textPrimary
                     )
 
                     // Filter bottom sheet / dropdown
@@ -435,7 +436,7 @@ fun ResourceDetailScreen(
                         
                         AlertDialog(
                             onDismissRequest = { showFilterMenu = false },
-                            containerColor = GrayMatterColors.SurfaceDark,
+                            containerColor = GrayMatterTheme.colors.surface,
                             title = {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -448,13 +449,13 @@ fun ResourceDetailScreen(
                                             onClick = { selectedFilters = filterNames },
                                             contentPadding = PaddingValues(horizontal = 8.dp)
                                         ) {
-                                            Text("All", color = GrayMatterColors.Primary, fontSize = 13.sp)
+                                            Text("All", color = GrayMatterTheme.colors.primary, fontSize = 13.sp)
                                         }
                                         TextButton(
                                             onClick = { selectedFilters = emptySet() },
                                             contentPadding = PaddingValues(horizontal = 8.dp)
                                         ) {
-                                            Text("None", color = GrayMatterColors.Primary, fontSize = 13.sp)
+                                            Text("None", color = GrayMatterTheme.colors.primary, fontSize = 13.sp)
                                         }
                                     }
                                 }
@@ -487,12 +488,12 @@ fun ResourceDetailScreen(
                                                     }
                                                 },
                                                 colors = CheckboxDefaults.colors(
-                                                    checkedColor = GrayMatterColors.Primary,
-                                                    uncheckedColor = GrayMatterColors.Neutral500,
+                                                    checkedColor = GrayMatterTheme.colors.primary,
+                                                    uncheckedColor = GrayMatterTheme.colors.neutral500,
                                                     checkmarkColor = Color.Black
                                                 )
                                             )
-                                            Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = if (isSelected) GrayMatterColors.Primary else GrayMatterColors.Neutral500)
+                                            Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = if (isSelected) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral500)
                                             Text(filter, color = Color.White)
                                         }
                                     }
@@ -500,7 +501,7 @@ fun ResourceDetailScreen(
                             },
                             confirmButton = {
                                 TextButton(onClick = { showFilterMenu = false }) {
-                                    Text("Done", color = GrayMatterColors.Primary)
+                                    Text("Done", color = GrayMatterTheme.colors.primary)
                                 }
                             }
                         )
@@ -598,8 +599,8 @@ fun ResourceDetailScreen(
             AlertDialog(
                 onDismissRequest = { showDeleteConfirm = false },
                 title = { Text("Delete Resource", color = Color.White) },
-                text = { Text("Are you sure you want to delete this resource and all its opinions? This action cannot be undone.", color = GrayMatterColors.TextSecondary) },
-                containerColor = Color(0xFF1A1A1E),
+                text = { Text("Are you sure you want to delete this resource and all its opinions? This action cannot be undone.", color = GrayMatterTheme.colors.textSecondary) },
+                containerColor = GrayMatterTheme.colors.neutral800,
                 confirmButton = {
                     TextButton(onClick = {
                         showDeleteConfirm = false
@@ -608,7 +609,7 @@ fun ResourceDetailScreen(
                         }
                         onDeleteResourceEntry()
                     }) {
-                        Text("Delete", color = GrayMatterColors.Error)
+                        Text("Delete", color = GrayMatterTheme.colors.error)
                     }
                 },
                 dismissButton = {
@@ -744,7 +745,7 @@ private fun RenameDialog(
     var name by remember { mutableStateOf(currentName) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1A1A1E),
+        containerColor = GrayMatterTheme.colors.neutral800,
         title = { Text("Rename Resource", color = Color.White) },
         text = {
             OutlinedTextField(
@@ -761,7 +762,7 @@ private fun RenameDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(name) }) {
-                Text("Rename", color = GrayMatterColors.Primary)
+                Text("Rename", color = GrayMatterTheme.colors.primary)
             }
         },
         dismissButton = {
@@ -780,7 +781,7 @@ private fun SectionHeader(text: String) {
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.5.sp
         ),
-        color = GrayMatterColors.Neutral500
+        color = GrayMatterTheme.colors.neutral500
     )
 }
 
@@ -789,18 +790,18 @@ private fun DescriptionEditor(value: String, onValueChange: (String) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(GrayMatterColors.SurfaceDark, RoundedCornerShape(12.dp))
-            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+            .background(GrayMatterTheme.colors.surface, RoundedCornerShape(12.dp))
+            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(12.dp))
             .padding(16.dp)
     ) {
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterTheme.colors.textPrimary),
             modifier = Modifier.fillMaxWidth(),
-            cursorBrush = SolidColor(GrayMatterColors.Primary),
+            cursorBrush = SolidColor(GrayMatterTheme.colors.primary),
             decorationBox = { inner ->
-                if (value.isEmpty()) Text("Add a description...", color = GrayMatterColors.Neutral700)
+                if (value.isEmpty()) Text("Add a description...", color = GrayMatterTheme.colors.neutral700)
                 inner()
             }
         )
@@ -826,16 +827,16 @@ private fun ResourceDetailHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBackClick) {
-            Icon(Icons.Default.KeyboardArrowLeft, "Back", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(32.dp))
+            Icon(Icons.Default.KeyboardArrowLeft, "Back", tint = GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(32.dp))
         }
-        Text("Resource Details", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
+        Text("Resource Details", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textPrimary)
         Row {
             if (isEditing) {
                 IconButton(onClick = onDeleteClick) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete",
-                        tint = GrayMatterColors.Error,
+                        tint = GrayMatterTheme.colors.error,
                         modifier = Modifier.size(26.dp)
                     )
                 }
@@ -854,19 +855,19 @@ private fun ResourceDetailHeader(
                         Icon(
                             Icons.Default.MoreVert,
                             contentDescription = "Menu",
-                            tint = GrayMatterColors.TextPrimary
+                            tint = GrayMatterTheme.colors.textPrimary
                         )
                     }
                     DropdownMenu(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false },
-                        modifier = Modifier.background(GrayMatterColors.SurfaceDark)
+                        modifier = Modifier.background(GrayMatterTheme.colors.surface)
                     ) {
                         if (onFilterClick != null) {
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        Icon(Icons.Default.FilterList, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                        Icon(Icons.Default.FilterList, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
                                         Text("Filter Timeline", color = Color.White)
                                     }
                                 },
@@ -877,7 +878,7 @@ private fun ResourceDetailHeader(
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        Icon(Icons.Default.Description, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                        Icon(Icons.Default.Description, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
                                         Text("Export as Markdown", color = Color.White)
                                     }
                                 },
@@ -888,7 +889,7 @@ private fun ResourceDetailHeader(
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        Icon(Icons.Default.PictureAsPdf, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                        Icon(Icons.Default.PictureAsPdf, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
                                         Text("Export as PDF", color = Color.White)
                                     }
                                 },
@@ -906,11 +907,11 @@ private fun ResourceDetailHeader(
                                 onClick = { menuExpanded = false; onViewInRelatrixClick() }
                             )
                         }
-                        Divider(color = GrayMatterColors.Neutral800, modifier = Modifier.padding(vertical = 4.dp))
+                        Divider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))
                         DropdownMenuItem(
                             text = {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Icon(Icons.Default.Edit, null, tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(20.dp))
+                                    Icon(Icons.Default.Edit, null, tint = GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(20.dp))
                                     Text("Edit Resource", color = Color.White)
                                 }
                             },
@@ -942,8 +943,8 @@ private fun ResourceCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(GrayMatterColors.SurfaceDark)
-            .border(1.2.dp, GrayMatterColors.Neutral800, RoundedCornerShape(20.dp))
+            .background(GrayMatterTheme.colors.surface)
+            .border(1.2.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(20.dp))
             .clickable(onClick = onOpenClick)
             .padding(24.dp)
     ) {
@@ -956,22 +957,22 @@ private fun ResourceCard(
                 Text(
                     title,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = GrayMatterColors.TextPrimary,
+                    color = GrayMatterTheme.colors.textPrimary,
                     modifier = Modifier.weight(1f).clickable(onClick = onRenameClick)
                 )
                 Icon(
                     Icons.Default.OpenInNew,
                     contentDescription = "Open",
-                    tint = GrayMatterColors.Primary,
+                    tint = GrayMatterTheme.colors.primary,
                     modifier = Modifier.size(20.dp)
                 )
             }
 
-            Text(url, style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500, maxLines = 2)
+            Text(url, style = MaterialTheme.typography.bodySmall, color = GrayMatterTheme.colors.neutral500, maxLines = 2)
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Default.Schedule, null, tint = GrayMatterColors.Neutral600, modifier = Modifier.size(16.dp))
-                Text(savedTimeAgo, style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral600)
+                Icon(Icons.Default.Schedule, null, tint = GrayMatterTheme.colors.neutral600, modifier = Modifier.size(16.dp))
+                Text(savedTimeAgo, style = MaterialTheme.typography.bodySmall, color = GrayMatterTheme.colors.neutral600)
             }
 
             // Reading Progress Indicator
@@ -985,19 +986,19 @@ private fun ResourceCard(
                         Text(
                             "${(readingProgress.percentComplete * 100).toInt()}% Read",
                             style = MaterialTheme.typography.labelSmall,
-                            color = GrayMatterColors.Primary
+                            color = GrayMatterTheme.colors.primary
                         )
                         Text(
                             "Page ${readingProgress.currentPage + 1} of ${readingProgress.totalPages}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = GrayMatterColors.Neutral500
+                            color = GrayMatterTheme.colors.neutral500
                         )
                     }
                     LinearProgressIndicator(
                         progress = readingProgress.percentComplete.toFloat(),
                         modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
-                        color = GrayMatterColors.Primary,
-                        trackColor = GrayMatterColors.Neutral800
+                        color = GrayMatterTheme.colors.primary,
+                        trackColor = GrayMatterTheme.colors.neutral800
                     )
                 }
             } else if (showEditButton) {
@@ -1006,8 +1007,8 @@ private fun ResourceCard(
                     onClick = onEditClick,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = GrayMatterColors.Primary,
-                        contentColor = GrayMatterColors.OnPrimary
+                        containerColor = GrayMatterTheme.colors.primary,
+                        contentColor = GrayMatterTheme.colors.onPrimary
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -1021,8 +1022,8 @@ private fun ResourceCard(
                     onClick = onOpenClick,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = GrayMatterColors.Neutral900,
-                        contentColor = GrayMatterColors.Primary
+                        containerColor = GrayMatterTheme.colors.neutral900,
+                        contentColor = GrayMatterTheme.colors.primary
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -1122,7 +1123,7 @@ private fun OpinionTimelineItem(
     fun highlightText(
         fullText: String,
         query: String?,
-        baseColor: Color = GrayMatterColors.TextPrimary,
+        baseColor: Color = GrayMatterTheme.colors.textPrimary,
         baseAlpha: Float = 1f
     ): androidx.compose.ui.text.AnnotatedString {
         return remember(fullText, query) {
@@ -1193,6 +1194,7 @@ private fun OpinionTimelineItem(
         !initialSearchQuery.isNullOrBlank() && opinion.text.contains(initialSearchQuery, ignoreCase = true)
     }
 
+    val primaryColor = GrayMatterTheme.colors.primary
     LaunchedEffect(isFocused, isEditing, pulseTrigger, containsQuery) {
         if (isFocused || isEditing || containsQuery) {
             val viewportHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
@@ -1215,7 +1217,7 @@ private fun OpinionTimelineItem(
             
             // Pulse effect for focus
             if (isFocused) {
-                val pulseColor = GrayMatterColors.Primary.copy(alpha = 0.25f)
+                val pulseColor = primaryColor.copy(alpha = 0.25f)
                 backgroundColor.animateTo(pulseColor, tween(150, easing = androidx.compose.animation.core.FastOutSlowInEasing))
                 backgroundColor.animateTo(Color.Transparent, tween(800, easing = androidx.compose.animation.core.LinearOutSlowInEasing))
             }
@@ -1239,7 +1241,7 @@ private fun OpinionTimelineItem(
         ) {
             val dotSize = if (isFirst) 12.dp else 8.dp
             val dotTopPadding = 12.dp
-            val lineColor = GrayMatterColors.Neutral800
+            val lineColor = GrayMatterTheme.colors.neutral800
             
             if (!isFirst) {
                 Box(
@@ -1266,8 +1268,8 @@ private fun OpinionTimelineItem(
                     .size(dotSize)
                     .scale(dotScale)
                     .clip(CircleShape)
-                    .background(if (isFirst) GrayMatterColors.Primary else GrayMatterColors.Neutral600)
-                    .border(2.dp, GrayMatterColors.BackgroundDark, CircleShape)
+                    .background(if (isFirst) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral600)
+                    .border(2.dp, GrayMatterTheme.colors.background, CircleShape)
             )
         }
         
@@ -1279,8 +1281,8 @@ private fun OpinionTimelineItem(
                 .weight(1f)
                 .padding(bottom = if (isLast) 16.dp else 24.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(GrayMatterColors.SurfaceDark)
-                .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+                .background(GrayMatterTheme.colors.surface)
+                .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(16.dp))
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
@@ -1295,7 +1297,7 @@ private fun OpinionTimelineItem(
                             fontWeight = FontWeight.Bold,
                             fontFamily = com.example.graymatter.android.ui.theme.InterFontFamily
                         ),
-                        color = GrayMatterColors.Neutral500,
+                        color = GrayMatterTheme.colors.neutral500,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                     
@@ -1341,12 +1343,12 @@ private fun OpinionTimelineItem(
                             Text(
                                 text = formatDate(opinion.createdAt).uppercase(), 
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp), 
-                                color = GrayMatterColors.Neutral600
+                                color = GrayMatterTheme.colors.neutral600
                             )
                             Text(
                                 text = formatTime(opinion.createdAt).uppercase(), 
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp), 
-                                color = GrayMatterColors.Neutral600.copy(alpha = 0.8f)
+                                color = GrayMatterTheme.colors.neutral600.copy(alpha = 0.8f)
                             )
                         }
                     }
@@ -1358,17 +1360,17 @@ private fun OpinionTimelineItem(
                     val isDictionary = opinion.text.startsWith("[DICT")
                     Box {
                         IconButton(onClick = { showItemMenu = true }, modifier = Modifier.size(24.dp)) {
-                            Icon(Icons.Default.MoreVert, "More options", tint = GrayMatterColors.Neutral500, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.MoreVert, "More options", tint = GrayMatterTheme.colors.neutral500, modifier = Modifier.size(18.dp))
                         }
                         DropdownMenu(
                             expanded = showItemMenu,
                             onDismissRequest = { showItemMenu = false },
-                            modifier = Modifier.background(GrayMatterColors.SurfaceDark)
+                            modifier = Modifier.background(GrayMatterTheme.colors.surface)
                         ) {
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        Icon(Icons.Default.Hub, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.Default.Hub, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(18.dp))
                                         Text("View in Relatrix", color = Color.White, style = MaterialTheme.typography.bodyMedium)
                                     }
                                 },
@@ -1421,7 +1423,7 @@ private fun OpinionTimelineItem(
                                 DropdownMenuItem(
                                     text = {
                                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                            Icon(Icons.Default.Edit, null, tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(18.dp))
+                                            Icon(Icons.Default.Edit, null, tint = GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(18.dp))
                                             Text("Edit Entry", color = Color.White, style = MaterialTheme.typography.bodyMedium)
                                         }
                                     },
@@ -1431,14 +1433,14 @@ private fun OpinionTimelineItem(
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        Icon(Icons.Default.Delete, null, tint = GrayMatterColors.Error, modifier = Modifier.size(18.dp))
-                                        Text("Delete", color = GrayMatterColors.Error, style = MaterialTheme.typography.bodyMedium)
+                                        Icon(Icons.Default.Delete, null, tint = GrayMatterTheme.colors.error, modifier = Modifier.size(18.dp))
+                                        Text("Delete", color = GrayMatterTheme.colors.error, style = MaterialTheme.typography.bodyMedium)
                                     }
                                 },
                                 onClick = { showItemMenu = false; onDelete() }
                             )
                             if (opinion.pageNumber != null) {
-                                Divider(color = GrayMatterColors.Neutral800, modifier = Modifier.padding(vertical = 4.dp))
+                                Divider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))
                                 DropdownMenuItem(
                                     text = {
                                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -1471,7 +1473,7 @@ private fun OpinionTimelineItem(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     // Knowledge Connections in Edit Mode
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("TIMELINE LINKS", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = GrayMatterColors.Neutral500)
+                        Text("TIMELINE LINKS", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = GrayMatterTheme.colors.neutral500)
                         TextButton(
                             onClick = {
                                 referenceSelectorViewModel?.clearSelection()
@@ -1561,7 +1563,7 @@ private fun OpinionTimelineItem(
                                 Text(
                                     text = "\"$quote\"",
                                     style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic, lineHeight = 24.sp),
-                                    color = GrayMatterColors.Neutral400,
+                                    color = GrayMatterTheme.colors.neutral400,
                                     modifier = Modifier.padding(12.dp)
                                 )
                             }
@@ -1619,7 +1621,7 @@ private fun OpinionTimelineItem(
                                     .fillMaxWidth()
                                     .height(220.dp)
                                     .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-                                    .background(GrayMatterColors.Neutral900)
+                                    .background(GrayMatterTheme.colors.neutral900)
                                     .clickable { onImageClick(opinion.imagePath!!) }
                             ) {
                                 AsyncImage(
@@ -1642,7 +1644,7 @@ private fun OpinionTimelineItem(
                             // Caption (if any)
                             if (cleanTextForContent.isNotBlank()) {
                                 Text(
-                                    text = highlightText(cleanTextForContent, initialSearchQuery, GrayMatterColors.TextSecondary),
+                                    text = highlightText(cleanTextForContent, initialSearchQuery, GrayMatterTheme.colors.textSecondary),
                                     style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
                                     modifier = Modifier.padding(12.dp)
                                 )
@@ -1687,7 +1689,7 @@ private fun OpinionTimelineItem(
                             Row(modifier = Modifier.fillMaxWidth()) {
                                 Box(modifier = Modifier.width(4.dp).height(IntrinsicSize.Min).background(GrayMatterColors.TypeAnnotation)) // Orange accent
                                 Text(
-                                    text = highlightText("\"$quote\"", initialSearchQuery, GrayMatterColors.Neutral400),
+                                    text = highlightText("\"$quote\"", initialSearchQuery, GrayMatterTheme.colors.neutral400),
                                     style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic, lineHeight = 24.sp),
                                     modifier = Modifier.padding(12.dp)
                                 )
@@ -1696,7 +1698,7 @@ private fun OpinionTimelineItem(
                         // Reflection
                         if (reflection.isNotEmpty()) {
                             Text(
-                                text = highlightText(reflection, initialSearchQuery, GrayMatterColors.TextPrimary),
+                                text = highlightText(reflection, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
                                 style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
@@ -1732,10 +1734,10 @@ private fun OpinionTimelineItem(
                                         Text(
                                             text = heading,
                                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = GrayMatterColors.Neutral500
+                                            color = GrayMatterTheme.colors.neutral500
                                         )
                                         Text(
-                                            text = highlightText(response, initialSearchQuery, GrayMatterColors.TextPrimary),
+                                            text = highlightText(response, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
                                             style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                                         )
                                     }
@@ -1754,7 +1756,7 @@ private fun OpinionTimelineItem(
                                 .padding(16.dp)
                         ) {
                             Text(
-                                text = highlightText(displayContent, initialSearchQuery, GrayMatterColors.TextPrimary),
+                                text = highlightText(displayContent, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
                                 style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
@@ -1772,7 +1774,7 @@ private fun OpinionTimelineItem(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = highlightText(displayText, initialSearchQuery, GrayMatterColors.TextPrimary),
+                            text = highlightText(displayText, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
                             style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                         )
                     }
@@ -1788,7 +1790,7 @@ private fun OpinionTimelineItem(
                                 .padding(16.dp)
                         ) {
                             Text(
-                                text = highlightText(cleanText, initialSearchQuery, GrayMatterColors.TextPrimary),
+                                text = highlightText(cleanText, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
                                 style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
@@ -1803,7 +1805,7 @@ private fun OpinionTimelineItem(
                             .padding(top = 12.dp)
                             .height(200.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(GrayMatterColors.Neutral900)
+                            .background(GrayMatterTheme.colors.neutral900)
                             .clickable { onImageClick(opinion.imagePath!!) }
                     ) {
                         AsyncImage(
@@ -1849,11 +1851,11 @@ private fun OpinionTimelineItem(
                                 label = { Text(linkText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
                                 leadingIcon = { Icon(icon, null, modifier = Modifier.size(16.dp)) },
                                 colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = GrayMatterColors.SurfaceDark,
-                                    labelColor = GrayMatterColors.Primary,
-                                    leadingIconContentColor = GrayMatterColors.Primary
+                                    containerColor = GrayMatterTheme.colors.surface,
+                                    labelColor = GrayMatterTheme.colors.primary,
+                                    leadingIconContentColor = GrayMatterTheme.colors.primary
                                 ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, GrayMatterColors.Neutral700)
+                                border = androidx.compose.foundation.BorderStroke(1.dp, GrayMatterTheme.colors.neutral700)
                             )
                         }
                     }
@@ -1932,19 +1934,19 @@ private fun DynamicEntryEditor(
                 Text(
                     text = heading.uppercase(),
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                    color = GrayMatterColors.Neutral500
+                    color = GrayMatterTheme.colors.neutral500
                 )
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
-                        .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                        .background(GrayMatterTheme.colors.surfaceInput, RoundedCornerShape(12.dp))
+                        .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(12.dp))
                         .padding(12.dp)
                 ) {
                     BasicTextField(
                         value = fieldValues[heading] ?: "",
                         onValueChange = { onFieldChange(heading, it) },
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterTheme.colors.textPrimary),
                         modifier = Modifier.fillMaxWidth(),
                         cursorBrush = SolidColor(GrayMatterColors.TypeTemplate)
                     )
@@ -1960,19 +1962,19 @@ private fun DynamicEntryEditor(
                     Text(
                         text = "$heading (Legacy)".uppercase(),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                        color = GrayMatterColors.Neutral500
+                        color = GrayMatterTheme.colors.neutral500
                     )
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
-                            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                            .background(GrayMatterTheme.colors.surfaceInput, RoundedCornerShape(12.dp))
+                            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(12.dp))
                             .padding(12.dp)
                     ) {
                         BasicTextField(
                             value = value,
                             onValueChange = { onFieldChange(heading, it) },
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterTheme.colors.textPrimary),
                             modifier = Modifier.fillMaxWidth(),
                             cursorBrush = SolidColor(GrayMatterColors.TypeTemplate)
                         )
@@ -1987,7 +1989,7 @@ private fun DynamicEntryEditor(
             colors = SliderDefaults.colors(
                 thumbColor = Color.White, 
                 activeTrackColor = Color.White,
-                inactiveTrackColor = GrayMatterColors.Neutral800
+                inactiveTrackColor = GrayMatterTheme.colors.neutral800
             )
         )
     }
@@ -2041,7 +2043,7 @@ private fun DateChip(timestamp: Long, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(GrayMatterColors.Neutral900)
+            .background(GrayMatterTheme.colors.neutral900)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
@@ -2049,14 +2051,14 @@ private fun DateChip(timestamp: Long, onClick: () -> Unit) {
             Column {
                 Text(
                     text = formatDate(timestamp).uppercase(), 
-                    style = MaterialTheme.typography.labelSmall.copy(color = GrayMatterColors.Primary, fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.labelSmall.copy(color = GrayMatterTheme.colors.primary, fontWeight = FontWeight.Bold)
                 )
                 Text(
                     text = formatTime(timestamp).uppercase(), 
-                    style = MaterialTheme.typography.labelSmall.copy(color = GrayMatterColors.Primary.copy(alpha = 0.7f), fontWeight = FontWeight.Medium, fontSize = 10.sp)
+                    style = MaterialTheme.typography.labelSmall.copy(color = GrayMatterTheme.colors.primary.copy(alpha = 0.7f), fontWeight = FontWeight.Medium, fontSize = 10.sp)
                 )
             }
-            Icon(Icons.Default.CalendarToday, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(14.dp))
+            Icon(Icons.Default.CalendarToday, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(14.dp))
         }
     }
 }
@@ -2066,18 +2068,18 @@ private fun ConfidenceBadge(score: Int) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(GrayMatterColors.SurfaceDark)
-            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(50))
+            .background(GrayMatterTheme.colors.surface)
+            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(50))
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Icon(
                 imageVector = if (score > 50) Icons.Default.TrendingUp else Icons.Default.ArrowForward,
                 contentDescription = null,
-                tint = GrayMatterColors.Primary,
+                tint = GrayMatterTheme.colors.primary,
                 modifier = Modifier.size(12.dp)
             )
-            Text("${score/10}/10", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary, maxLines = 1, softWrap = false)
+            Text("${score/10}/10", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textPrimary, maxLines = 1, softWrap = false)
         }
     }
 }
@@ -2085,8 +2087,8 @@ private fun ConfidenceBadge(score: Int) {
 @Composable
 private fun OpinionEditor(text: String, confidence: Float, onTextChange: (String) -> Unit, onConfidenceChange: (Float) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(modifier = Modifier.fillMaxWidth().background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp)).border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp)).padding(12.dp)) {
-            BasicTextField(value = text, onValueChange = onTextChange, textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary), modifier = Modifier.fillMaxWidth(), cursorBrush = SolidColor(GrayMatterColors.Primary))
+        Box(modifier = Modifier.fillMaxWidth().background(GrayMatterTheme.colors.surfaceInput, RoundedCornerShape(12.dp)).border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(12.dp)).padding(12.dp)) {
+            BasicTextField(value = text, onValueChange = onTextChange, textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterTheme.colors.textPrimary), modifier = Modifier.fillMaxWidth(), cursorBrush = SolidColor(GrayMatterTheme.colors.primary))
         }
         Slider(
             value = confidence, 
@@ -2094,7 +2096,7 @@ private fun OpinionEditor(text: String, confidence: Float, onTextChange: (String
             colors = SliderDefaults.colors(
                 thumbColor = Color.White, 
                 activeTrackColor = Color.White,
-                inactiveTrackColor = GrayMatterColors.Neutral800
+                inactiveTrackColor = GrayMatterTheme.colors.neutral800
             )
         )
     }
@@ -2111,21 +2113,21 @@ private fun DateTimePicker(initialTimestamp: Long, onDismiss: () -> Unit, onConf
     if (!isTimeStep) {
         DatePickerDialog(
             onDismissRequest = onDismiss,
-            confirmButton = { TextButton(onClick = { isTimeStep = true }) { Text("Next", color = GrayMatterColors.Primary) } },
-            dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = GrayMatterColors.Neutral500) } },
-            colors = DatePickerDefaults.colors(containerColor = GrayMatterColors.SurfaceDark)
+            confirmButton = { TextButton(onClick = { isTimeStep = true }) { Text("Next", color = GrayMatterTheme.colors.primary) } },
+            dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = GrayMatterTheme.colors.neutral500) } },
+            colors = DatePickerDefaults.colors(containerColor = GrayMatterTheme.colors.surface)
         ) {
-            DatePicker(state = datePickerState, colors = DatePickerDefaults.colors(selectedDayContainerColor = GrayMatterColors.Primary, selectedDayContentColor = GrayMatterColors.OnPrimary, todayContentColor = GrayMatterColors.Primary, todayDateBorderColor = GrayMatterColors.Primary))
+            DatePicker(state = datePickerState, colors = DatePickerDefaults.colors(selectedDayContainerColor = GrayMatterTheme.colors.primary, selectedDayContentColor = GrayMatterTheme.colors.onPrimary, todayContentColor = GrayMatterTheme.colors.primary, todayDateBorderColor = GrayMatterTheme.colors.primary))
         }
     } else {
         androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
-            Box(modifier = Modifier.clip(RoundedCornerShape(28.dp)).background(GrayMatterColors.SurfaceDark).padding(24.dp)) {
+            Box(modifier = Modifier.clip(RoundedCornerShape(28.dp)).background(GrayMatterTheme.colors.surface).padding(24.dp)) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Select Time", style = MaterialTheme.typography.titleMedium, color = GrayMatterColors.TextPrimary)
+                    Text("Select Time", style = MaterialTheme.typography.titleMedium, color = GrayMatterTheme.colors.textPrimary)
                     Spacer(modifier = Modifier.height(24.dp))
-                    TimePicker(state = timePickerState, colors = TimePickerDefaults.colors(selectorColor = GrayMatterColors.Primary, clockDialSelectedContentColor = GrayMatterColors.OnPrimary))
+                    TimePicker(state = timePickerState, colors = TimePickerDefaults.colors(selectorColor = GrayMatterTheme.colors.primary, clockDialSelectedContentColor = GrayMatterTheme.colors.onPrimary))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        TextButton(onClick = { isTimeStep = false }) { Text("Back", color = GrayMatterColors.Neutral500) }
+                        TextButton(onClick = { isTimeStep = false }) { Text("Back", color = GrayMatterTheme.colors.neutral500) }
                         TextButton(onClick = {
                             val resultCal = Calendar.getInstance()
                             datePickerState.selectedDateMillis?.let { resultCal.timeInMillis = it }
@@ -2133,7 +2135,7 @@ private fun DateTimePicker(initialTimestamp: Long, onDismiss: () -> Unit, onConf
                             resultCal.set(Calendar.MINUTE, timePickerState.minute)
                             onConfirm(resultCal.timeInMillis)
                             onDismiss()
-                        }) { Text("OK", color = GrayMatterColors.Primary) }
+                        }) { Text("OK", color = GrayMatterTheme.colors.primary) }
                     }
                 }
             }
@@ -2180,15 +2182,15 @@ private fun OpinionEditDialog(
     }
 
     val isVisualMode = currentImagePath != null
-    val accentColor = if (isVisualMode) GrayMatterColors.TypeVisual else GrayMatterColors.Primary
+    val accentColor = if (isVisualMode) GrayMatterColors.TypeVisual else GrayMatterTheme.colors.primary
     
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
-                .background(GrayMatterColors.SurfaceDark)
-                .border(1.dp, if (isVisualMode) GrayMatterColors.TypeVisual.copy(alpha = 0.3f) else GrayMatterColors.Neutral800, RoundedCornerShape(24.dp))
+                .background(GrayMatterTheme.colors.surface)
+                .border(1.dp, if (isVisualMode) GrayMatterColors.TypeVisual.copy(alpha = 0.3f) else GrayMatterTheme.colors.neutral800, RoundedCornerShape(24.dp))
                 .padding(20.dp)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -2205,7 +2207,7 @@ private fun OpinionEditDialog(
                         Text(
                             if (isVisualMode) "Add Visual" else "Add Knowledge Entry",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = GrayMatterColors.TextPrimary
+                            color = GrayMatterTheme.colors.textPrimary
                         )
                     }
                     
@@ -2239,7 +2241,7 @@ private fun OpinionEditDialog(
                             .fillMaxWidth()
                             .height(200.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(GrayMatterColors.Neutral900)
+                            .background(GrayMatterTheme.colors.neutral900)
                     ) {
                         AsyncImage(
                             model = java.io.File(currentImagePath!!),
@@ -2264,15 +2266,15 @@ private fun OpinionEditDialog(
                     BasicTextField(
                         value = text,
                         onValueChange = { text = it },
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = GrayMatterColors.TextPrimary),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = GrayMatterTheme.colors.textPrimary),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
+                            .background(GrayMatterTheme.colors.surfaceInput, RoundedCornerShape(12.dp))
                             .border(1.dp, GrayMatterColors.TypeVisual.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
                             .padding(14.dp),
                         cursorBrush = SolidColor(GrayMatterColors.TypeVisual),
                         decorationBox = { inner ->
-                            if (text.isEmpty()) Text("Add a caption (optional)...", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyMedium)
+                            if (text.isEmpty()) Text("Add a caption (optional)...", color = GrayMatterTheme.colors.neutral600, style = MaterialTheme.typography.bodyMedium)
                             inner()
                         }
                     )
@@ -2289,7 +2291,7 @@ private fun OpinionEditDialog(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.Neutral500)
+                                Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.neutral500)
                                 IconButton(
                                     onClick = {
                                         viewModel?.clearSelection()
@@ -2297,7 +2299,7 @@ private fun OpinionEditDialog(
                                     },
                                     modifier = Modifier.size(24.dp)
                                 ) {
-                                    Icon(Icons.Default.Add, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                                    Icon(Icons.Default.Add, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
                                 }
                             }
                             
@@ -2318,9 +2320,9 @@ private fun OpinionEditDialog(
                                             label = { Text(refText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
                                             trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
                                             colors = InputChipDefaults.inputChipColors(
-                                                containerColor = GrayMatterColors.SurfaceInput,
+                                                containerColor = GrayMatterTheme.colors.surfaceInput,
                                                 labelColor = Color.White,
-                                                trailingIconColor = GrayMatterColors.Neutral500
+                                                trailingIconColor = GrayMatterTheme.colors.neutral500
                                             ),
                                             border = null
                                         )
@@ -2344,16 +2346,16 @@ private fun OpinionEditDialog(
                         BasicTextField(
                             value = text,
                             onValueChange = { text = it },
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterTheme.colors.textPrimary),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(120.dp)
-                                .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
-                                .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                                .background(GrayMatterTheme.colors.surfaceInput, RoundedCornerShape(12.dp))
+                                .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(12.dp))
                                 .padding(16.dp),
-                            cursorBrush = SolidColor(GrayMatterColors.Primary),
+                            cursorBrush = SolidColor(GrayMatterTheme.colors.primary),
                             decorationBox = { inner ->
-                                if (text.isEmpty()) Text("Type your opinion here...", color = GrayMatterColors.Neutral600)
+                                if (text.isEmpty()) Text("Type your opinion here...", color = GrayMatterTheme.colors.neutral600)
                                 inner()
                             }
                         )
@@ -2362,21 +2364,21 @@ private fun OpinionEditDialog(
                 
                 // Confidence slider
                 Column {
-                    Text("Confidence: ${(confidence * 10).toInt()}/10", style = MaterialTheme.typography.labelMedium, color = GrayMatterColors.Neutral500)
+                    Text("Confidence: ${(confidence * 10).toInt()}/10", style = MaterialTheme.typography.labelMedium, color = GrayMatterTheme.colors.neutral500)
                     Slider(
                         value = confidence,
                         onValueChange = { confidence = it },
                         colors = SliderDefaults.colors(
                             thumbColor = Color.White,
                             activeTrackColor = Color.White,
-                            inactiveTrackColor = GrayMatterColors.Neutral800
+                            inactiveTrackColor = GrayMatterTheme.colors.neutral800
                         )
                     )
                 }
 
                 // Actions
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text("Cancel", color = GrayMatterColors.Neutral500) }
+                    TextButton(onClick = onDismiss) { Text("Cancel", color = GrayMatterTheme.colors.neutral500) }
                     Button(
                         onClick = { 
                             val finalText = if (selectedTemplate != null) {
@@ -2396,7 +2398,7 @@ private fun OpinionEditDialog(
                             }
                             onConfirm(finalText, (confidence * 100).toInt(), selectedReferences, currentImagePath) 
                         }, 
-                        colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = if (isVisualMode) Color.White else GrayMatterColors.OnPrimary)
+                        colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = if (isVisualMode) Color.White else GrayMatterTheme.colors.onPrimary)
                     ) { Text(if (isVisualMode) "Save Visual" else "Save") }
                 }
             }
@@ -2411,8 +2413,8 @@ private fun OpinionEditDialog(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(GrayMatterColors.SurfaceDark, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                        .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                        .background(GrayMatterTheme.colors.surface, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                        .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                         .padding(horizontal = 24.dp, vertical = 20.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -2421,9 +2423,9 @@ private fun OpinionEditDialog(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Add Image", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
+                            Text("Add Image", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textPrimary)
                             IconButton(onClick = { showImagePicker = false }) {
-                                Icon(Icons.Default.Close, null, tint = GrayMatterColors.Neutral600)
+                                Icon(Icons.Default.Close, null, tint = GrayMatterTheme.colors.neutral600)
                             }
                         }
                         
@@ -2436,7 +2438,7 @@ private fun OpinionEditDialog(
                                 tempCameraUri = com.example.graymatter.android.util.FileUtils.createTempImageUri(context)
                                 tempCameraUri?.let { cameraLauncher.launch(it) }
                             },
-                            color = GrayMatterColors.SurfaceInput,
+                            color = GrayMatterTheme.colors.surfaceInput,
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -2452,8 +2454,8 @@ private fun OpinionEditDialog(
                                     Icon(Icons.Default.PhotoCamera, null, tint = GrayMatterColors.TypeVisual, modifier = Modifier.size(22.dp))
                                 }
                                 Column {
-                                    Text("Take Photo", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = GrayMatterColors.TextPrimary)
-                                    Text("Capture with camera", style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500)
+                                    Text("Take Photo", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = GrayMatterTheme.colors.textPrimary)
+                                    Text("Capture with camera", style = MaterialTheme.typography.bodySmall, color = GrayMatterTheme.colors.neutral500)
                                 }
                             }
                         }
@@ -2464,7 +2466,7 @@ private fun OpinionEditDialog(
                                 showImagePicker = false
                                 galleryLauncher.launch("image/*")
                             },
-                            color = GrayMatterColors.SurfaceInput,
+                            color = GrayMatterTheme.colors.surfaceInput,
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -2480,8 +2482,8 @@ private fun OpinionEditDialog(
                                     Icon(Icons.Default.PhotoLibrary, null, tint = GrayMatterColors.TypeVisual, modifier = Modifier.size(22.dp))
                                 }
                                 Column {
-                                    Text("Choose from Gallery", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = GrayMatterColors.TextPrimary)
-                                    Text("Pick an existing image", style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500)
+                                    Text("Choose from Gallery", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = GrayMatterTheme.colors.textPrimary)
+                                    Text("Pick an existing image", style = MaterialTheme.typography.bodySmall, color = GrayMatterTheme.colors.neutral500)
                                 }
                             }
                         }

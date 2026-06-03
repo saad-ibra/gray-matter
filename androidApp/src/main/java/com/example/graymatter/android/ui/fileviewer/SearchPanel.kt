@@ -34,6 +34,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.domain.SearchResult
 
 /**
@@ -143,12 +144,12 @@ fun SearchPanel(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(10.dp))
-                            .background(GrayMatterColors.Error.copy(alpha = 0.12f))
+                            .background(GrayMatterTheme.colors.error.copy(alpha = 0.12f))
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
                             "0",
-                            color = GrayMatterColors.Error.copy(alpha = 0.7f),
+                            color = GrayMatterTheme.colors.error.copy(alpha = 0.7f),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )

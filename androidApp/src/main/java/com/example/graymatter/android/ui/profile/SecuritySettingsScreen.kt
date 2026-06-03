@@ -22,6 +22,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.viewmodel.SecurityViewModel
 
@@ -46,21 +47,21 @@ fun SecuritySettingsScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = GrayMatterColors.BackgroundDark,
+        containerColor = GrayMatterTheme.colors.background,
         topBar = {
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Icon(Icons.Outlined.Security, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(24.dp))
-                        Text("Security", color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.Bold)
+                        Icon(Icons.Outlined.Security, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(24.dp))
+                        Text("Security", color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.Bold)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = GrayMatterColors.TextPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = GrayMatterTheme.colors.textPrimary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = GrayMatterColors.BackgroundDark)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = GrayMatterTheme.colors.background)
             )
         }
     ) { padding ->
@@ -85,7 +86,7 @@ fun SecuritySettingsScreen(
                         onCheckedChange = { viewModel.setAppLockEnabled(it) }
                     )
                     
-                    Divider(color = GrayMatterColors.Neutral800, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 12.dp))
+                    Divider(color = GrayMatterTheme.colors.neutral800, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 12.dp))
                     
                     SecurityToggleItem(
                         icon = Icons.Default.VisibilityOff,
@@ -117,31 +118,31 @@ fun SecuritySettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Master Password", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
+                            Text("Master Password", style = MaterialTheme.typography.titleSmall, color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.SemiBold)
                             Text(
                                 if (state.isMasterPasswordSet) "Used to encrypt portable backups" else "Required for creating backups",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (state.isMasterPasswordSet) GrayMatterColors.Primary else GrayMatterColors.Neutral500
+                                color = if (state.isMasterPasswordSet) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral500
                             )
                         }
                         FilledTonalButton(
                             onClick = { showPasswordDialog = true },
                             colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = GrayMatterColors.Primary.copy(alpha = 0.15f),
-                                contentColor = GrayMatterColors.Primary
+                                containerColor = GrayMatterTheme.colors.primary.copy(alpha = 0.15f),
+                                contentColor = GrayMatterTheme.colors.primary
                             )
                         ) {
                             Text(if (state.isMasterPasswordSet) "Change" else "Set")
                         }
                     }
                     
-                    Divider(color = GrayMatterColors.Neutral800, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 16.dp))
+                    Divider(color = GrayMatterTheme.colors.neutral800, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 16.dp))
                     
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Icon(Icons.Default.VerifiedUser, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.VerifiedUser, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
                         Column {
-                            Text("Vault Encryption", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
-                            Text("Hardware-backed security", style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500)
+                            Text("Vault Encryption", style = MaterialTheme.typography.titleSmall, color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.SemiBold)
+                            Text("Hardware-backed security", style = MaterialTheme.typography.bodySmall, color = GrayMatterTheme.colors.neutral500)
                         }
                     }
                 }
@@ -178,20 +179,20 @@ private fun SecurityToggleItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Icon(icon, null, tint = GrayMatterColors.Neutral400, modifier = Modifier.size(24.dp))
+            Icon(icon, null, tint = GrayMatterTheme.colors.neutral400, modifier = Modifier.size(24.dp))
             Column {
-                Text(title, style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500)
+                Text(title, style = MaterialTheme.typography.titleSmall, color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.SemiBold)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = GrayMatterTheme.colors.neutral500)
             }
         }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = GrayMatterColors.OnPrimary,
-                checkedTrackColor = GrayMatterColors.Primary,
-                uncheckedThumbColor = GrayMatterColors.Neutral500,
-                uncheckedTrackColor = GrayMatterColors.Neutral800
+                checkedThumbColor = GrayMatterTheme.colors.onPrimary,
+                checkedTrackColor = GrayMatterTheme.colors.primary,
+                uncheckedThumbColor = GrayMatterTheme.colors.neutral500,
+                uncheckedTrackColor = GrayMatterTheme.colors.neutral800
             )
         )
     }
@@ -204,11 +205,11 @@ private fun SectionHeader(icon: ImageVector, title: String) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(vertical = 4.dp)
     ) {
-        Icon(icon, null, tint = GrayMatterColors.Neutral500, modifier = Modifier.size(16.dp))
+        Icon(icon, null, tint = GrayMatterTheme.colors.neutral500, modifier = Modifier.size(16.dp))
         Text(
             title,
             style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold),
-            color = GrayMatterColors.Neutral500
+            color = GrayMatterTheme.colors.neutral500
         )
     }
 }
@@ -219,8 +220,8 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(GrayMatterColors.SurfaceDark)
-            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+            .background(GrayMatterTheme.colors.surface)
+            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(16.dp))
             .padding(16.dp),
         content = content
     )
@@ -245,7 +246,7 @@ private fun PasswordDialog(
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = GrayMatterColors.SurfaceDark,
+            color = GrayMatterTheme.colors.surface,
             tonalElevation = 8.dp,
             modifier = Modifier.fillMaxWidth().wrapContentHeight()
         ) {
@@ -265,21 +266,21 @@ private fun PasswordDialog(
                         modifier = Modifier
                             .size(56.dp)
                             .clip(CircleShape)
-                            .background(GrayMatterColors.Primary.copy(alpha = 0.15f)),
+                            .background(GrayMatterTheme.colors.primary.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Lock, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(28.dp))
+                        Icon(Icons.Default.Lock, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(28.dp))
                     }
                     Text(
                         text = if (isPasswordSet) "Change Password" else "Set Master Password",
                         style = MaterialTheme.typography.titleLarge,
-                        color = GrayMatterColors.TextPrimary,
+                        color = GrayMatterTheme.colors.textPrimary,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = "This encrypts your backups. If forgotten, backups cannot be recovered.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = GrayMatterColors.Neutral400,
+                        color = GrayMatterTheme.colors.neutral400,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
@@ -297,19 +298,19 @@ private fun PasswordDialog(
                                     Icon(
                                         if (showOldPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                         null,
-                                        tint = GrayMatterColors.Neutral500
+                                        tint = GrayMatterTheme.colors.neutral500
                                     )
                                 }
                             },
                             singleLine = true,
                             isError = oldPasswordError != null,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = GrayMatterColors.Primary,
-                                unfocusedBorderColor = GrayMatterColors.Neutral700,
+                                focusedBorderColor = GrayMatterTheme.colors.primary,
+                                unfocusedBorderColor = GrayMatterTheme.colors.neutral700,
                                 errorBorderColor = MaterialTheme.colorScheme.error,
-                                focusedTextColor = GrayMatterColors.TextPrimary,
-                                unfocusedTextColor = GrayMatterColors.TextPrimary,
-                                cursorColor = GrayMatterColors.Primary
+                                focusedTextColor = GrayMatterTheme.colors.textPrimary,
+                                unfocusedTextColor = GrayMatterTheme.colors.textPrimary,
+                                cursorColor = GrayMatterTheme.colors.primary
                             ),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
@@ -329,17 +330,17 @@ private fun PasswordDialog(
                                 Icon(
                                     if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                     null,
-                                    tint = GrayMatterColors.Neutral500
+                                    tint = GrayMatterTheme.colors.neutral500
                                 )
                             }
                         },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = GrayMatterColors.Primary,
-                            unfocusedBorderColor = GrayMatterColors.Neutral700,
-                            focusedTextColor = GrayMatterColors.TextPrimary,
-                            unfocusedTextColor = GrayMatterColors.TextPrimary,
-                            cursorColor = GrayMatterColors.Primary
+                            focusedBorderColor = GrayMatterTheme.colors.primary,
+                            unfocusedBorderColor = GrayMatterTheme.colors.neutral700,
+                            focusedTextColor = GrayMatterTheme.colors.textPrimary,
+                            unfocusedTextColor = GrayMatterTheme.colors.textPrimary,
+                            cursorColor = GrayMatterTheme.colors.primary
                         ),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
@@ -355,17 +356,17 @@ private fun PasswordDialog(
                                 Icon(
                                     if (showConfirmPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                     null,
-                                    tint = GrayMatterColors.Neutral500
+                                    tint = GrayMatterTheme.colors.neutral500
                                 )
                             }
                         },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = GrayMatterColors.Primary,
-                            unfocusedBorderColor = GrayMatterColors.Neutral700,
-                            focusedTextColor = GrayMatterColors.TextPrimary,
-                            unfocusedTextColor = GrayMatterColors.TextPrimary,
-                            cursorColor = GrayMatterColors.Primary
+                            focusedBorderColor = GrayMatterTheme.colors.primary,
+                            unfocusedBorderColor = GrayMatterTheme.colors.neutral700,
+                            focusedTextColor = GrayMatterTheme.colors.textPrimary,
+                            unfocusedTextColor = GrayMatterTheme.colors.textPrimary,
+                            cursorColor = GrayMatterTheme.colors.primary
                         ),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
@@ -385,7 +386,7 @@ private fun PasswordDialog(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Cancel", color = GrayMatterColors.Neutral400)
+                        Text("Cancel", color = GrayMatterTheme.colors.neutral400)
                     }
                     Button(
                         onClick = {
@@ -400,7 +401,7 @@ private fun PasswordDialog(
                                 else -> onConfirm(password)
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary),
+                        colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.weight(1f)
                     ) {

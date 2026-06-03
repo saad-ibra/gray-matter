@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.domain.CustomTemplate
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 
 @Composable
 fun TemplateSelector(
@@ -45,7 +46,7 @@ fun TemplateSelector(
         DropdownMenu(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
-            modifier = Modifier.background(GrayMatterColors.SurfaceDark)
+            modifier = Modifier.background(GrayMatterTheme.colors.surface)
         ) {
             DropdownMenuItem(
                 text = { Text("None (Plain)", color = Color.White) },
@@ -65,7 +66,7 @@ fun TemplateSelector(
                 )
             }
             
-            Divider(color = GrayMatterColors.Neutral800, modifier = Modifier.padding(vertical = 4.dp))
+            Divider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))
             
             DropdownMenuItem(
                 text = { 
@@ -97,7 +98,7 @@ fun DynamicEntryForm(
                 Text(
                     text = heading.uppercase(),
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                    color = GrayMatterColors.Neutral500
+                    color = GrayMatterTheme.colors.neutral500
                 )
                 Box(
                     modifier = Modifier
@@ -106,7 +107,7 @@ fun DynamicEntryForm(
                         .background(GrayMatterColors.Neutral950)
                         .border(
                             width = 1.dp,
-                            color = GrayMatterColors.Neutral800,
+                            color = GrayMatterTheme.colors.neutral800,
                             shape = RoundedCornerShape(16.dp)
                         )
                         .padding(16.dp)
@@ -119,7 +120,7 @@ fun DynamicEntryForm(
                         cursorBrush = SolidColor(GrayMatterColors.TypeTemplate),
                         decorationBox = { inner ->
                             if ((fieldValues[heading] ?: "").isEmpty()) {
-                                Text("Enter $heading...", color = GrayMatterColors.Neutral700)
+                                Text("Enter $heading...", color = GrayMatterTheme.colors.neutral700)
                             }
                             inner()
                         }

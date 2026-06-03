@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import kotlinx.coroutines.delay
 
 @Composable
@@ -44,7 +45,7 @@ fun UndoSnackbar(
             .fillMaxWidth()
             .padding(16.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(GrayMatterColors.SurfaceDark)
+            .background(GrayMatterTheme.colors.surface)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(
@@ -54,7 +55,7 @@ fun UndoSnackbar(
         ) {
             Text(
                 text = message,
-                color = GrayMatterColors.TextPrimary,
+                color = GrayMatterTheme.colors.textPrimary,
                 style = MaterialTheme.typography.bodyMedium
             )
 
@@ -65,7 +66,7 @@ fun UndoSnackbar(
                 }) {
                     Text(
                         text = "UNDO",
-                        color = GrayMatterColors.Primary,
+                        color = GrayMatterTheme.colors.primary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -76,8 +77,8 @@ fun UndoSnackbar(
                     CircularProgressIndicator(
                         progress = progress,
                         modifier = Modifier.size(24.dp),
-                        color = GrayMatterColors.Primary,
-                        trackColor = GrayMatterColors.Neutral800,
+                        color = GrayMatterTheme.colors.primary,
+                        trackColor = GrayMatterTheme.colors.neutral800,
                         strokeWidth = 2.dp
                     )
                 }

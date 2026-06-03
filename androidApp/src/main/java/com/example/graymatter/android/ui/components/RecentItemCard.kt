@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.domain.ResourceType
 import androidx.compose.ui.text.style.TextOverflow
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 
 @Composable
 fun RecentItemCard(
@@ -42,8 +43,8 @@ fun RecentItemCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(GrayMatterColors.SurfaceDark)
-            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(20.dp))
+            .background(GrayMatterTheme.colors.surface)
+            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(20.dp))
             .clickable(onClick = onClick)
             .padding(20.dp)
     ) {
@@ -61,14 +62,14 @@ fun RecentItemCard(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)
-                        .background(GrayMatterColors.BackgroundDark)
-                        .border(1.dp, GrayMatterColors.Neutral700, CircleShape),
+                        .background(GrayMatterTheme.colors.background)
+                        .border(1.dp, GrayMatterTheme.colors.neutral700, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = if (type == ResourceType.MARKDOWN) GrayMatterColors.Primary else GrayMatterColors.Neutral500,
+                        tint = if (type == ResourceType.MARKDOWN) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral500,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -76,18 +77,18 @@ fun RecentItemCard(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                        color = GrayMatterColors.TextPrimary,
+                        color = GrayMatterTheme.colors.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = time,
                         style = MaterialTheme.typography.labelSmall,
-                        color = GrayMatterColors.Neutral600
+                        color = GrayMatterTheme.colors.neutral600
                     )
                 }
             }
-            Icon(Icons.Default.ChevronRight, null, tint = GrayMatterColors.Neutral700, modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.ChevronRight, null, tint = GrayMatterTheme.colors.neutral700, modifier = Modifier.size(20.dp))
         }
     }
 }

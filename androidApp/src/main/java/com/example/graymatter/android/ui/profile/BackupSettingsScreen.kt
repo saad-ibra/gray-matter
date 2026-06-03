@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.backup.BackupFrequency
 import com.example.graymatter.android.backup.BackupInfo
 import com.example.graymatter.android.ui.theme.GrayMatterColors
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.viewmodel.BackupUiState
 import com.example.graymatter.android.ui.viewmodel.BackupViewModel
 import java.io.File
@@ -81,21 +82,21 @@ fun BackupSettingsScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = GrayMatterColors.BackgroundDark,
+        containerColor = GrayMatterTheme.colors.background,
         topBar = {
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Icon(Icons.Default.Backup, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(24.dp))
-                        Text("Backup", color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.Bold)
+                        Icon(Icons.Default.Backup, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(24.dp))
+                        Text("Backup", color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.Bold)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = GrayMatterColors.TextPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = GrayMatterTheme.colors.textPrimary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = GrayMatterColors.BackgroundDark)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = GrayMatterTheme.colors.background)
             )
         }
     ) { padding ->
@@ -140,11 +141,11 @@ fun BackupSettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text("Automatic Backups", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
+                            Text("Automatic Backups", style = MaterialTheme.typography.titleSmall, color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.SemiBold)
                             Text(
                                 if (state.isBackupEnabled) "Backups are scheduled" else "Backups are disabled",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = GrayMatterColors.Neutral500
+                                color = GrayMatterTheme.colors.neutral500
                             )
                         }
                         Switch(
@@ -152,10 +153,10 @@ fun BackupSettingsScreen(
                             onCheckedChange = { viewModel.setBackupEnabled(it) },
                             enabled = state.isPasswordSet,
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = GrayMatterColors.Primary,
-                                checkedTrackColor = GrayMatterColors.Primary.copy(alpha = 0.3f),
-                                uncheckedThumbColor = GrayMatterColors.Neutral500,
-                                uncheckedTrackColor = GrayMatterColors.Neutral800
+                                checkedThumbColor = GrayMatterTheme.colors.primary,
+                                checkedTrackColor = GrayMatterTheme.colors.primary.copy(alpha = 0.3f),
+                                uncheckedThumbColor = GrayMatterTheme.colors.neutral500,
+                                uncheckedTrackColor = GrayMatterTheme.colors.neutral800
                             )
                         )
                     }
@@ -171,7 +172,7 @@ fun BackupSettingsScreen(
                     SettingsCard {
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Text("Frequency", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
+                                Text("Frequency", style = MaterialTheme.typography.titleSmall, color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.SemiBold)
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     BackupFrequency.entries.forEach { freq ->
                                         FilterChip(
@@ -179,15 +180,15 @@ fun BackupSettingsScreen(
                                             onClick = { viewModel.setFrequency(freq) },
                                             label = { Text(freq.label) },
                                             colors = FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
-                                                selectedLabelColor = GrayMatterColors.Primary
+                                                selectedContainerColor = GrayMatterTheme.colors.primary.copy(alpha = 0.2f),
+                                                selectedLabelColor = GrayMatterTheme.colors.primary
                                             )
                                         )
                                     }
                                 }
                             }
 
-                            Divider(color = GrayMatterColors.Neutral800, thickness = 0.5.dp)
+                            Divider(color = GrayMatterTheme.colors.neutral800, thickness = 0.5.dp)
 
                             var showTimePicker by remember { mutableStateOf(false) }
 
@@ -196,7 +197,7 @@ fun BackupSettingsScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Time of day", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
+                                Text("Time of day", style = MaterialTheme.typography.titleSmall, color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.SemiBold)
 
                                 val timeStr = if (state.is24HourFormat) {
                                     String.format("%02d:%02d", state.backupTimeHour, state.backupTimeMinute)
@@ -209,15 +210,15 @@ fun BackupSettingsScreen(
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(GrayMatterColors.Neutral900)
-                                        .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                                        .background(GrayMatterTheme.colors.neutral900)
+                                        .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(12.dp))
                                         .clickable { showTimePicker = true }
                                         .padding(horizontal = 16.dp, vertical = 8.dp)
                                 ) {
                                     Text(
                                         timeStr,
                                         style = MaterialTheme.typography.titleMedium,
-                                        color = GrayMatterColors.Primary,
+                                        color = GrayMatterTheme.colors.primary,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
@@ -250,7 +251,7 @@ fun BackupSettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Keep Backups", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.SemiBold)
+                            Text("Keep Backups", style = MaterialTheme.typography.titleSmall, color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.SemiBold)
                             
                             var backupCountStr by remember(state.maxBackups) { mutableStateOf(state.maxBackups.toString()) }
                             var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -280,12 +281,12 @@ fun BackupSettingsScreen(
                                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
                                     singleLine = true,
                                     modifier = Modifier.width(80.dp).height(50.dp),
-                                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = GrayMatterColors.TextPrimary, textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+                                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = GrayMatterTheme.colors.textPrimary, textAlign = androidx.compose.ui.text.style.TextAlign.Center),
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = GrayMatterColors.Primary,
-                                        unfocusedBorderColor = GrayMatterColors.Neutral700,
+                                        focusedBorderColor = GrayMatterTheme.colors.primary,
+                                        unfocusedBorderColor = GrayMatterTheme.colors.neutral700,
                                         errorBorderColor = MaterialTheme.colorScheme.error,
-                                        cursorColor = GrayMatterColors.Primary
+                                        cursorColor = GrayMatterTheme.colors.primary
                                     ),
                                     shape = RoundedCornerShape(8.dp)
                                 )
@@ -310,13 +311,13 @@ fun BackupSettingsScreen(
                         enabled = state.isPasswordSet && !state.isBackingUp,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = GrayMatterColors.Primary,
-                            contentColor = GrayMatterColors.OnPrimary
+                            containerColor = GrayMatterTheme.colors.primary,
+                            contentColor = GrayMatterTheme.colors.onPrimary
                         ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         if (state.isBackingUp) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = GrayMatterColors.OnPrimary)
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = GrayMatterTheme.colors.onPrimary)
                         } else {
                             Icon(Icons.Default.Backup, null, modifier = Modifier.size(18.dp))
                         }
@@ -330,10 +331,10 @@ fun BackupSettingsScreen(
                         enabled = !state.isRestoring,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = GrayMatterColors.Primary)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = GrayMatterTheme.colors.primary)
                     ) {
                         if (state.isRestoring) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = GrayMatterColors.Primary)
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = GrayMatterTheme.colors.primary)
                         } else {
                             Icon(Icons.Default.Restore, null, modifier = Modifier.size(18.dp))
                         }
@@ -385,9 +386,9 @@ fun BackupSettingsScreen(
     showDeleteConfirm?.let { backup ->
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = null },
-            containerColor = GrayMatterColors.SurfaceDark,
-            title = { Text("Delete Backup?", color = GrayMatterColors.TextPrimary) },
-            text = { Text("This will permanently delete ${backup.name}.", color = GrayMatterColors.Neutral400) },
+            containerColor = GrayMatterTheme.colors.surface,
+            title = { Text("Delete Backup?", color = GrayMatterTheme.colors.textPrimary) },
+            text = { Text("This will permanently delete ${backup.name}.", color = GrayMatterTheme.colors.neutral400) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteBackup(backup.file)
@@ -395,7 +396,7 @@ fun BackupSettingsScreen(
                 }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = null }) { Text("Cancel", color = GrayMatterColors.Neutral500) }
+                TextButton(onClick = { showDeleteConfirm = null }) { Text("Cancel", color = GrayMatterTheme.colors.neutral500) }
             }
         )
     }
@@ -408,11 +409,11 @@ private fun SectionHeader(icon: androidx.compose.ui.graphics.vector.ImageVector,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(vertical = 4.dp)
     ) {
-        Icon(icon, null, tint = GrayMatterColors.Neutral500, modifier = Modifier.size(16.dp))
+        Icon(icon, null, tint = GrayMatterTheme.colors.neutral500, modifier = Modifier.size(16.dp))
         Text(
             title,
             style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold),
-            color = GrayMatterColors.Neutral500
+            color = GrayMatterTheme.colors.neutral500
         )
     }
 }
@@ -423,8 +424,8 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(GrayMatterColors.SurfaceDark)
-            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+            .background(GrayMatterTheme.colors.surface)
+            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(16.dp))
             .padding(16.dp),
         content = content
     )
@@ -440,8 +441,8 @@ private fun BackupListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(GrayMatterColors.SurfaceDark)
-            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+            .background(GrayMatterTheme.colors.surface)
+            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(12.dp))
             .padding(14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -450,21 +451,21 @@ private fun BackupListItem(
             Text(
                 formatDate(backup.timestamp),
                 style = MaterialTheme.typography.bodyMedium,
-                color = GrayMatterColors.TextPrimary,
+                color = GrayMatterTheme.colors.textPrimary,
                 fontWeight = FontWeight.Medium
             )
             Text(
                 formatSize(backup.sizeBytes),
                 style = MaterialTheme.typography.bodySmall,
-                color = GrayMatterColors.Neutral500
+                color = GrayMatterTheme.colors.neutral500
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             IconButton(onClick = onExport, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.Upload, "Export", tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Upload, "Export", tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
             }
             IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.Delete, "Delete", tint = GrayMatterColors.Neutral500, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Delete, "Delete", tint = GrayMatterTheme.colors.neutral500, modifier = Modifier.size(20.dp))
             }
         }
     }
@@ -476,15 +477,15 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (String) -> U
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = GrayMatterColors.SurfaceDark,
+        containerColor = GrayMatterTheme.colors.surface,
         icon = { Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(32.dp)) },
-        title = { Text("Restore Backup?", color = GrayMatterColors.TextPrimary) },
+        title = { Text("Restore Backup?", color = GrayMatterTheme.colors.textPrimary) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     "This will replace ALL current data with the backup. This action cannot be undone.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = GrayMatterColors.Neutral400
+                    color = GrayMatterTheme.colors.neutral400
                 )
                 OutlinedTextField(
                     value = password,
@@ -493,11 +494,11 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (String) -> U
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = GrayMatterColors.Primary,
-                        unfocusedBorderColor = GrayMatterColors.Neutral700,
-                        focusedTextColor = GrayMatterColors.TextPrimary,
-                        unfocusedTextColor = GrayMatterColors.TextPrimary,
-                        cursorColor = GrayMatterColors.Primary
+                        focusedBorderColor = GrayMatterTheme.colors.primary,
+                        unfocusedBorderColor = GrayMatterTheme.colors.neutral700,
+                        focusedTextColor = GrayMatterTheme.colors.textPrimary,
+                        unfocusedTextColor = GrayMatterTheme.colors.textPrimary,
+                        cursorColor = GrayMatterTheme.colors.primary
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -510,7 +511,7 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (String) -> U
             ) { Text("Restore", color = MaterialTheme.colorScheme.error) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel", color = GrayMatterColors.Neutral500) }
+            TextButton(onClick = onDismiss) { Text("Cancel", color = GrayMatterTheme.colors.neutral500) }
         }
     )
 }
@@ -534,7 +535,7 @@ private fun TimePickerDialog(
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = GrayMatterColors.SurfaceDark,
+            color = GrayMatterTheme.colors.surface,
             modifier = Modifier.fillMaxWidth().wrapContentHeight()
         ) {
             Column(
@@ -550,7 +551,7 @@ private fun TimePickerDialog(
                     Text(
                         "Select Time",
                         style = MaterialTheme.typography.titleLarge,
-                        color = GrayMatterColors.TextPrimary,
+                        color = GrayMatterTheme.colors.textPrimary,
                         fontWeight = FontWeight.Bold
                     )
                     
@@ -560,8 +561,8 @@ private fun TimePickerDialog(
                             onClick = { onFormatToggle(true) },
                             label = { Text("24h") },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
-                                selectedLabelColor = GrayMatterColors.Primary
+                                selectedContainerColor = GrayMatterTheme.colors.primary.copy(alpha = 0.2f),
+                                selectedLabelColor = GrayMatterTheme.colors.primary
                             )
                         )
                         FilterChip(
@@ -569,8 +570,8 @@ private fun TimePickerDialog(
                             onClick = { onFormatToggle(false) },
                             label = { Text("12h") },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
-                                selectedLabelColor = GrayMatterColors.Primary
+                                selectedContainerColor = GrayMatterTheme.colors.primary.copy(alpha = 0.2f),
+                                selectedLabelColor = GrayMatterTheme.colors.primary
                             )
                         )
                     }
@@ -579,19 +580,19 @@ private fun TimePickerDialog(
                 TimePicker(
                     state = timePickerState,
                     colors = TimePickerDefaults.colors(
-                        clockDialColor = GrayMatterColors.Neutral900,
-                        clockDialSelectedContentColor = GrayMatterColors.OnPrimary,
-                        clockDialUnselectedContentColor = GrayMatterColors.TextPrimary,
-                        selectorColor = GrayMatterColors.Primary,
-                        periodSelectorBorderColor = GrayMatterColors.Neutral700,
-                        periodSelectorSelectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
+                        clockDialColor = GrayMatterTheme.colors.neutral900,
+                        clockDialSelectedContentColor = GrayMatterTheme.colors.onPrimary,
+                        clockDialUnselectedContentColor = GrayMatterTheme.colors.textPrimary,
+                        selectorColor = GrayMatterTheme.colors.primary,
+                        periodSelectorBorderColor = GrayMatterTheme.colors.neutral700,
+                        periodSelectorSelectedContainerColor = GrayMatterTheme.colors.primary.copy(alpha = 0.2f),
                         periodSelectorUnselectedContainerColor = Color.Transparent,
-                        periodSelectorSelectedContentColor = GrayMatterColors.Primary,
-                        periodSelectorUnselectedContentColor = GrayMatterColors.Neutral500,
-                        timeSelectorSelectedContainerColor = GrayMatterColors.Primary.copy(alpha = 0.2f),
-                        timeSelectorUnselectedContainerColor = GrayMatterColors.Neutral900,
-                        timeSelectorSelectedContentColor = GrayMatterColors.Primary,
-                        timeSelectorUnselectedContentColor = GrayMatterColors.TextPrimary
+                        periodSelectorSelectedContentColor = GrayMatterTheme.colors.primary,
+                        periodSelectorUnselectedContentColor = GrayMatterTheme.colors.neutral500,
+                        timeSelectorSelectedContainerColor = GrayMatterTheme.colors.primary.copy(alpha = 0.2f),
+                        timeSelectorUnselectedContainerColor = GrayMatterTheme.colors.neutral900,
+                        timeSelectorSelectedContentColor = GrayMatterTheme.colors.primary,
+                        timeSelectorUnselectedContentColor = GrayMatterTheme.colors.textPrimary
                     )
                 )
 
@@ -601,12 +602,12 @@ private fun TimePickerDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel", color = GrayMatterColors.Neutral400)
+                        Text("Cancel", color = GrayMatterTheme.colors.neutral400)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = { onConfirm(timePickerState.hour, timePickerState.minute) },
-                        colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary)
+                        colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary)
                     ) {
                         Text("Confirm")
                     }

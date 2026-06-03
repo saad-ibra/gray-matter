@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.domain.CustomTemplate
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -44,8 +45,8 @@ fun TemplateEditorDialog(
                 .fillMaxWidth()
                 .padding(16.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(GrayMatterColors.SurfaceDark)
-                .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(24.dp))
+                .background(GrayMatterTheme.colors.surface)
+                .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(24.dp))
         ) {
             Column(
                 modifier = Modifier
@@ -61,15 +62,15 @@ fun TemplateEditorDialog(
                     Text(
                         text = if (template.name.isEmpty()) "Create Template" else "Edit Template",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = GrayMatterColors.TextPrimary
+                        color = GrayMatterTheme.colors.textPrimary
                     )
                     if (onDelete != null && template.name.isNotEmpty()) {
                         IconButton(onClick = { onDelete(template.id) }) {
-                            Icon(Icons.Default.Delete, "Delete Template", tint = GrayMatterColors.Error)
+                            Icon(Icons.Default.Delete, "Delete Template", tint = GrayMatterTheme.colors.error)
                         }
                     } else {
                         IconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.Close, "Close", tint = GrayMatterColors.Neutral500)
+                            Icon(Icons.Default.Close, "Close", tint = GrayMatterTheme.colors.neutral500)
                         }
                     }
                 }
@@ -82,15 +83,15 @@ fun TemplateEditorDialog(
                     label = { Text("Template Name") },
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
-                        unfocusedContainerColor = GrayMatterColors.SurfaceInput,
-                        focusedContainerColor = GrayMatterColors.SurfaceInput,
+                        unfocusedContainerColor = GrayMatterTheme.colors.surfaceInput,
+                        focusedContainerColor = GrayMatterTheme.colors.surfaceInput,
                         unfocusedIndicatorColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedTextColor = Color.White,
                         focusedTextColor = Color.White,
                         cursorColor = GrayMatterColors.TypeTemplate,
                         focusedLabelColor = GrayMatterColors.TypeTemplate,
-                        unfocusedLabelColor = GrayMatterColors.Neutral500
+                        unfocusedLabelColor = GrayMatterTheme.colors.neutral500
                     ),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -100,7 +101,7 @@ fun TemplateEditorDialog(
                 Text(
                     text = "HEADINGS",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                    color = GrayMatterColors.Neutral500
+                    color = GrayMatterTheme.colors.neutral500
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -122,8 +123,8 @@ fun TemplateEditorDialog(
                             placeholder = { Text("Heading ${index + 1}") },
                             modifier = Modifier.weight(1f),
                             colors = TextFieldDefaults.colors(
-                                unfocusedContainerColor = GrayMatterColors.SurfaceInput,
-                                focusedContainerColor = GrayMatterColors.SurfaceInput,
+                                unfocusedContainerColor = GrayMatterTheme.colors.surfaceInput,
+                                focusedContainerColor = GrayMatterTheme.colors.surfaceInput,
                                 unfocusedIndicatorColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedTextColor = Color.White,
@@ -135,7 +136,7 @@ fun TemplateEditorDialog(
                         IconButton(onClick = {
                             headings = headings.toMutableList().apply { removeAt(index) }
                         }) {
-                            Icon(Icons.Default.RemoveCircleOutline, "Remove Heading", tint = GrayMatterColors.Error)
+                            Icon(Icons.Default.RemoveCircleOutline, "Remove Heading", tint = GrayMatterTheme.colors.error)
                         }
                     }
                 }

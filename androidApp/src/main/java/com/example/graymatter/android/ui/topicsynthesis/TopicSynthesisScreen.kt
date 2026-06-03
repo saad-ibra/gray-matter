@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.domain.Resource
 import com.example.graymatter.domain.ResourceType
 import com.example.graymatter.domain.Topic
@@ -127,8 +128,8 @@ fun TopicSynthesisScreen(
         Scaffold(
             modifier = modifier
                 .fillMaxSize()
-                .background(GrayMatterColors.BackgroundDark),
-            containerColor = GrayMatterColors.BackgroundDark
+                .background(GrayMatterTheme.colors.background),
+            containerColor = GrayMatterTheme.colors.background
         ) { paddingValues ->
             Column(
                 modifier = Modifier
@@ -180,14 +181,14 @@ fun TopicSynthesisScreen(
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text("Delete Topic", color = Color.White) },
-            text = { Text("Are you sure you want to delete this topic? Resources within this topic will not be deleted, but they will be unassigned from this topic.", color = GrayMatterColors.TextSecondary) },
-            containerColor = Color(0xFF1A1A1E),
+            text = { Text("Are you sure you want to delete this topic? Resources within this topic will not be deleted, but they will be unassigned from this topic.", color = GrayMatterTheme.colors.textSecondary) },
+            containerColor = GrayMatterTheme.colors.neutral800,
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm = false
                     onDeleteTopic()
                 }) {
-                    Text("Delete", color = GrayMatterColors.Error)
+                    Text("Delete", color = GrayMatterTheme.colors.error)
                 }
             },
             dismissButton = {
@@ -224,13 +225,13 @@ private fun TopicHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(GrayMatterColors.BackgroundDark)
+            .background(GrayMatterTheme.colors.background)
             .statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBackClick, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.Default.KeyboardArrowLeft, "Back", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(28.dp))
+            Icon(Icons.Default.KeyboardArrowLeft, "Back", tint = GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(28.dp))
         }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -241,13 +242,13 @@ private fun TopicHeader(
             Text(
                 text = "TOPIC", 
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp), 
-                color = GrayMatterColors.Neutral500,
+                color = GrayMatterTheme.colors.neutral500,
                 textAlign = TextAlign.Center
             )
             Text(
                 text = topicName, 
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), 
-                color = GrayMatterColors.TextPrimary,
+                color = GrayMatterTheme.colors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center
@@ -258,43 +259,43 @@ private fun TopicHeader(
         
         Box {
             IconButton(onClick = { showMenu = true }, modifier = Modifier.size(48.dp)) {
-                Icon(Icons.Default.MoreVert, "Menu", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(24.dp))
+                Icon(Icons.Default.MoreVert, "Menu", tint = GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(24.dp))
             }
             
             DropdownMenu(
                 expanded = showMenu,
                 onDismissRequest = { showMenu = false },
-                modifier = Modifier.background(GrayMatterColors.SurfaceDark)
+                modifier = Modifier.background(GrayMatterTheme.colors.surface)
             ) {
                 DropdownMenuItem(
-                    text = { Text("Rename Topic", color = GrayMatterColors.TextPrimary) },
+                    text = { Text("Rename Topic", color = GrayMatterTheme.colors.textPrimary) },
                     onClick = {
                         showMenu = false
                         onRenameClick()
                     },
-                    leadingIcon = { Icon(Icons.Default.Edit, null, tint = GrayMatterColors.Primary) }
+                    leadingIcon = { Icon(Icons.Default.Edit, null, tint = GrayMatterTheme.colors.primary) }
                 )
 
                 DropdownMenuItem(
-                    text = { Text("Export to PDF", color = GrayMatterColors.TextPrimary) },
+                    text = { Text("Export to PDF", color = GrayMatterTheme.colors.textPrimary) },
                     onClick = {
                         showMenu = false
                         onExportPdfClick()
                     },
-                    leadingIcon = { Icon(Icons.Default.PictureAsPdf, null, tint = GrayMatterColors.Primary) }
+                    leadingIcon = { Icon(Icons.Default.PictureAsPdf, null, tint = GrayMatterTheme.colors.primary) }
                 )
 
                 DropdownMenuItem(
-                    text = { Text("Export to Markdown", color = GrayMatterColors.TextPrimary) },
+                    text = { Text("Export to Markdown", color = GrayMatterTheme.colors.textPrimary) },
                     onClick = {
                         showMenu = false
                         onExportClick()
                     },
-                    leadingIcon = { Icon(Icons.Default.Description, null, tint = GrayMatterColors.Primary) }
+                    leadingIcon = { Icon(Icons.Default.Description, null, tint = GrayMatterTheme.colors.primary) }
                 )
                 
                 DropdownMenuItem(
-                    text = { Text("View in Relatrix", color = GrayMatterColors.TextPrimary) },
+                    text = { Text("View in Relatrix", color = GrayMatterTheme.colors.textPrimary) },
                     onClick = {
                         showMenu = false
                         onViewInGraphClick()
@@ -302,15 +303,15 @@ private fun TopicHeader(
                     leadingIcon = { Icon(Icons.Default.Hub, null, tint = Color.White) }
                 )
                 
-                Divider(color = GrayMatterColors.Neutral800)
+                Divider(color = GrayMatterTheme.colors.neutral800)
                 
                 DropdownMenuItem(
-                    text = { Text("Delete Topic", color = GrayMatterColors.Error) },
+                    text = { Text("Delete Topic", color = GrayMatterTheme.colors.error) },
                     onClick = {
                         showMenu = false
                         onDeleteClick()
                     },
-                    leadingIcon = { Icon(Icons.Default.Delete, null, tint = GrayMatterColors.Error) }
+                    leadingIcon = { Icon(Icons.Default.Delete, null, tint = GrayMatterTheme.colors.error) }
                 )
             }
         }
@@ -329,9 +330,9 @@ private fun ResourcesHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("RESOURCES ($count)", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = GrayMatterColors.Neutral500)
+        Text("RESOURCES ($count)", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = GrayMatterTheme.colors.neutral500)
         IconButton(onClick = onAddClick) {
-            Icon(Icons.Default.Add, "Add Resource", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.Add, "Add Resource", tint = GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(20.dp))
         }
     }
 }
@@ -359,8 +360,8 @@ private fun ResourceItem(
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(GrayMatterColors.SurfaceDark)
-            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+            .background(GrayMatterTheme.colors.surface)
+            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(16.dp)
     ) {
@@ -373,14 +374,14 @@ private fun ResourceItem(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(GrayMatterColors.BackgroundDark)
-                    .border(1.dp, GrayMatterColors.Neutral800, CircleShape),
+                    .background(GrayMatterTheme.colors.background)
+                    .border(1.dp, GrayMatterTheme.colors.neutral800, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = if (resource.type == ResourceType.MARKDOWN) GrayMatterColors.Primary else GrayMatterColors.Neutral500,
+                    tint = if (resource.type == ResourceType.MARKDOWN) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral500,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -388,17 +389,17 @@ private fun ResourceItem(
                 Text(
                     text = resource.title ?: resource.url ?: "Untitled",
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                    color = GrayMatterColors.TextPrimary,
+                    color = GrayMatterTheme.colors.textPrimary,
                     maxLines = 1
                 )
                 Text(
                     text = if (resource.type == ResourceType.WEB_LINK) resource.url ?: "URL" else typeLabel,
                     style = MaterialTheme.typography.bodySmall,
-                    color = GrayMatterColors.Neutral600,
+                    color = GrayMatterTheme.colors.neutral600,
                     maxLines = 1
                 )
             }
-            Icon(Icons.Default.ChevronRight, null, tint = GrayMatterColors.Neutral700)
+            Icon(Icons.Default.ChevronRight, null, tint = GrayMatterTheme.colors.neutral700)
         }
     }
 }
@@ -416,7 +417,7 @@ private fun OverallOpinionSection(
             Text(
                 text = "TOPIC OVERVIEW",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                color = GrayMatterColors.Neutral500
+                color = GrayMatterTheme.colors.neutral500
             )
         }
         Spacer(modifier = Modifier.height(12.dp))

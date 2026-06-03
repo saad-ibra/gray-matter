@@ -11,10 +11,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.List
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +28,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.graymatter.android.ui.navigation.GrayMatterNavigation
 import com.example.graymatter.android.ui.navigation.NavigationDestination
 import com.example.graymatter.android.ui.theme.GrayMatterColors
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 
 @Composable
 fun GrayMatterApp(
@@ -37,7 +37,7 @@ fun GrayMatterApp(
     // Wrap in a Surface to ensure the background color draws behind the system bars
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = GrayMatterColors.BackgroundDark
+        color = GrayMatterTheme.colors.background
     ) {
         GrayMatterNavigation(
             navController = navController,
@@ -53,24 +53,24 @@ fun GrayMatterBottomBar(
     currentRoute: String?,
     onNavigateToHome: () -> Unit,
     onNavigateToLibrary: () -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToRelatrix: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(GrayMatterColors.BackgroundDark.copy(alpha = 0.98f))
+            .background(GrayMatterTheme.colors.background.copy(alpha = 0.98f))
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(0.5.dp)
-                .background(GrayMatterColors.Neutral800)
+                .background(GrayMatterTheme.colors.neutral800)
         )
         
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp),
+                .height(56.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -91,11 +91,12 @@ fun GrayMatterBottomBar(
             )
 
             NavBarItem(
-                selected = currentRoute == NavigationDestination.Profile.route,
-                activeIcon = Icons.Filled.Person,
-                inactiveIcon = Icons.Outlined.Person,
-                onClick = onNavigateToProfile,
-                modifier = Modifier.weight(1f)
+                selected = currentRoute == NavigationDestination.KnowledgeGraph.route,
+                activeIcon = Icons.Filled.Hub,
+                inactiveIcon = Icons.Filled.Hub, // Hub doesn't have an outlined version by default in standard icons, so using filled
+                onClick = onNavigateToRelatrix,
+                modifier = Modifier.weight(1f),
+                iconSize = 18.dp
             )
         }
     }
@@ -107,12 +108,13 @@ private fun NavBarItem(
     activeIcon: androidx.compose.ui.graphics.vector.ImageVector,
     inactiveIcon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    iconSize: androidx.compose.ui.unit.Dp = 22.dp
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     
     val iconColor by animateColorAsState(
-        targetValue = if (selected) GrayMatterColors.Primary else GrayMatterColors.Neutral500,
+        targetValue = if (selected) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral500,
         label = "color"
     )
     val scale by animateFloatAsState(
@@ -142,7 +144,7 @@ private fun NavBarItem(
                 imageVector = if (selected) activeIcon else inactiveIcon,
                 contentDescription = null,
                 modifier = Modifier
-                    .size(26.dp)
+                    .size(iconSize)
                     .scale(scale),
                 tint = iconColor
             )
@@ -154,7 +156,7 @@ private fun NavBarItem(
                         .width(indicatorWidth)
                         .height(3.dp)
                         .clip(CircleShape)
-                        .background(GrayMatterColors.Primary)
+                        .background(GrayMatterTheme.colors.primary)
                 )
             }
         }
@@ -166,12 +168,12 @@ fun GrayMatterNavigationRail(
     currentRoute: String?,
     onNavigateToHome: () -> Unit,
     onNavigateToLibrary: () -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToRelatrix: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxHeight()
-            .background(GrayMatterColors.BackgroundDark.copy(alpha = 0.98f))
+            .background(GrayMatterTheme.colors.background.copy(alpha = 0.98f))
     ) {
         Column(
             modifier = Modifier
@@ -197,11 +199,12 @@ fun GrayMatterNavigationRail(
             )
 
             NavBarItem(
-                selected = currentRoute == NavigationDestination.Profile.route,
-                activeIcon = Icons.Filled.Person,
-                inactiveIcon = Icons.Outlined.Person,
-                onClick = onNavigateToProfile,
-                modifier = Modifier.weight(1f).fillMaxWidth()
+                selected = currentRoute == NavigationDestination.KnowledgeGraph.route,
+                activeIcon = Icons.Filled.Hub,
+                inactiveIcon = Icons.Filled.Hub,
+                onClick = onNavigateToRelatrix,
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                iconSize = 18.dp
             )
         }
         
@@ -209,7 +212,7 @@ fun GrayMatterNavigationRail(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(0.5.dp)
-                .background(GrayMatterColors.Neutral800)
+                .background(GrayMatterTheme.colors.neutral800)
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.example.graymatter.android.ui.newentry
 
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
@@ -241,7 +242,7 @@ fun NewEntryScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(GrayMatterColors.BackgroundDark)
+            .background(GrayMatterTheme.colors.background)
     ) {
         // Header
         NewEntryHeader(onBackClick = onNavigateBack, modifier = Modifier.statusBarsPadding())
@@ -292,13 +293,13 @@ fun NewEntryScreen(
                     Icon(
                         if (showDescription) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
                         null,
-                        tint = GrayMatterColors.Neutral500,
+                        tint = GrayMatterTheme.colors.neutral500,
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
                         text = "Description (optional)",
                         style = MaterialTheme.typography.labelLarge,
-                        color = GrayMatterColors.Neutral500
+                        color = GrayMatterTheme.colors.neutral500
                     )
                 }
                 
@@ -312,18 +313,18 @@ fun NewEntryScreen(
                             .fillMaxWidth()
                             .height(100.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(GrayMatterColors.SurfaceInput)
-                            .border(1.dp, GrayMatterColors.SurfaceBorder, RoundedCornerShape(12.dp))
+                            .background(GrayMatterTheme.colors.surfaceInput)
+                            .border(1.dp, GrayMatterTheme.colors.surfaceBorder, RoundedCornerShape(12.dp))
                             .padding(12.dp)
                     ) {
                         BasicTextField(
                             description,
                             onValueChange = { draftingViewModel.updateDescription(it) },
-                            textStyle = MaterialTheme.typography.bodyMedium.copy(color = GrayMatterColors.TextPrimary),
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(color = GrayMatterTheme.colors.textPrimary),
                             modifier = Modifier.fillMaxSize(),
-                            cursorBrush = SolidColor(GrayMatterColors.Primary),
+                            cursorBrush = SolidColor(GrayMatterTheme.colors.primary),
                             decorationBox = { inner ->
-                                if (description.isEmpty()) Text("Add context about this source...", color = GrayMatterColors.Neutral700, style = MaterialTheme.typography.bodyMedium)
+                                if (description.isEmpty()) Text("Add context about this source...", color = GrayMatterTheme.colors.neutral700, style = MaterialTheme.typography.bodyMedium)
                                 inner()
                             }
                         )
@@ -357,8 +358,8 @@ fun NewEntryScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(GrayMatterColors.Primary.copy(alpha = 0.06f))
-                            .border(1.dp, GrayMatterColors.Primary.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+                            .background(GrayMatterTheme.colors.primary.copy(alpha = 0.06f))
+                            .border(1.dp, GrayMatterTheme.colors.primary.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
@@ -369,7 +370,7 @@ fun NewEntryScreen(
                             Icon(
                                 Icons.Default.Link,
                                 null,
-                                tint = GrayMatterColors.Primary,
+                                tint = GrayMatterTheme.colors.primary,
                                 modifier = Modifier.size(18.dp)
                             )
                             Text(
@@ -378,7 +379,7 @@ fun NewEntryScreen(
                                     letterSpacing = 1.5.sp,
                                     fontWeight = FontWeight.Bold
                                 ),
-                                color = GrayMatterColors.TextSecondary
+                                color = GrayMatterTheme.colors.textSecondary
                             )
                         }
 
@@ -393,10 +394,10 @@ fun NewEntryScreen(
                                 autoExtractedRefs.forEach { ref ->
                                     Surface(
                                         shape = RoundedCornerShape(8.dp),
-                                        color = GrayMatterColors.Primary.copy(alpha = 0.12f),
+                                        color = GrayMatterTheme.colors.primary.copy(alpha = 0.12f),
                                         modifier = Modifier.border(
                                             0.5.dp,
-                                            GrayMatterColors.Primary.copy(alpha = 0.3f),
+                                            GrayMatterTheme.colors.primary.copy(alpha = 0.3f),
                                             RoundedCornerShape(8.dp)
                                         )
                                     ) {
@@ -407,14 +408,14 @@ fun NewEntryScreen(
                                             Icon(
                                                 Icons.Default.Tag,
                                                 null,
-                                                tint = GrayMatterColors.Primary.copy(alpha = 0.7f),
+                                                tint = GrayMatterTheme.colors.primary.copy(alpha = 0.7f),
                                                 modifier = Modifier.size(12.dp)
                                             )
                                             Spacer(Modifier.width(4.dp))
                                             Text(
                                                 ref,
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = GrayMatterColors.Primary,
+                                                color = GrayMatterTheme.colors.primary,
                                                 maxLines = 1
                                             )
                                         }
@@ -461,7 +462,7 @@ fun NewEntryScreen(
                         Text(
                             "Links are extracted from note content. Edit within the note.",
                             style = MaterialTheme.typography.labelSmall,
-                            color = GrayMatterColors.Neutral600
+                            color = GrayMatterTheme.colors.neutral600
                         )
                     }
                 }
@@ -515,7 +516,7 @@ fun NewEntryScreen(
                 // Knowledge Connections Section
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("KNOWLEDGE LINKS", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterColors.TextSecondary)
+                        Text("KNOWLEDGE LINKS", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textSecondary)
                         TextButton(
                             onClick = { 
                                 referenceSelectorViewModel.clearSelection()
@@ -546,7 +547,7 @@ fun NewEntryScreen(
                             }
                         }
                     } else {
-                        Text("No specific links added.", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyMedium)
+                        Text("No specific links added.", color = GrayMatterTheme.colors.neutral600, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
 
@@ -694,8 +695,8 @@ fun NewEntryScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                        .background(GrayMatterColors.SurfaceDark)
-                        .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                        .background(GrayMatterTheme.colors.surface)
+                        .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                         .clickable(enabled = false) {} // prevent dismiss when tapping sheet
                         .padding(horizontal = 24.dp, vertical = 20.dp)
                 ) {
@@ -705,9 +706,9 @@ fun NewEntryScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Add Image", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
+                            Text("Add Image", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textPrimary)
                             IconButton(onClick = { showImageSourcePicker = false }) {
-                                Icon(Icons.Default.Close, null, tint = GrayMatterColors.Neutral600)
+                                Icon(Icons.Default.Close, null, tint = GrayMatterTheme.colors.neutral600)
                             }
                         }
 
@@ -720,7 +721,7 @@ fun NewEntryScreen(
                                 tempCameraUri = com.example.graymatter.android.util.FileUtils.createTempImageUri(context)
                                 tempCameraUri?.let { cameraLauncher.launch(it) }
                             },
-                            color = GrayMatterColors.SurfaceInput,
+                            color = GrayMatterTheme.colors.surfaceInput,
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -736,8 +737,8 @@ fun NewEntryScreen(
                                     Icon(Icons.Default.PhotoCamera, null, tint = GrayMatterColors.TypeVisual, modifier = Modifier.size(22.dp))
                                 }
                                 Column {
-                                    Text("Take Photo", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = GrayMatterColors.TextPrimary)
-                                    Text("Capture with camera", style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500)
+                                    Text("Take Photo", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = GrayMatterTheme.colors.textPrimary)
+                                    Text("Capture with camera", style = MaterialTheme.typography.bodySmall, color = GrayMatterTheme.colors.neutral500)
                                 }
                             }
                         }
@@ -748,7 +749,7 @@ fun NewEntryScreen(
                                 showImageSourcePicker = false
                                 galleryPickerLauncher.launch("image/*")
                             },
-                            color = GrayMatterColors.SurfaceInput,
+                            color = GrayMatterTheme.colors.surfaceInput,
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -764,8 +765,8 @@ fun NewEntryScreen(
                                     Icon(Icons.Default.PhotoLibrary, null, tint = GrayMatterColors.TypeVisual, modifier = Modifier.size(22.dp))
                                 }
                                 Column {
-                                    Text("Choose from Gallery", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = GrayMatterColors.TextPrimary)
-                                    Text("Pick an existing image", style = MaterialTheme.typography.bodySmall, color = GrayMatterColors.Neutral500)
+                                    Text("Choose from Gallery", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = GrayMatterTheme.colors.textPrimary)
+                                    Text("Pick an existing image", style = MaterialTheme.typography.bodySmall, color = GrayMatterTheme.colors.neutral500)
                                 }
                             }
                         }
@@ -788,9 +789,9 @@ private fun NewEntryHeader(onBackClick: () -> Unit, modifier: Modifier = Modifie
             .padding(horizontal = 16.dp, vertical = 16.dp)
     ) {
         IconButton(onClick = onBackClick, modifier = Modifier.align(Alignment.CenterStart)) {
-            Icon(Icons.Default.Close, "Close", tint = GrayMatterColors.TextPrimary, modifier = Modifier.size(24.dp))
+            Icon(Icons.Default.Close, "Close", tint = GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(24.dp))
         }
-        Text("New Resource", style = MaterialTheme.typography.titleLarge, color = GrayMatterColors.TextPrimary, modifier = Modifier.align(Alignment.Center))
+        Text("New Resource", style = MaterialTheme.typography.titleLarge, color = GrayMatterTheme.colors.textPrimary, modifier = Modifier.align(Alignment.Center))
     }
 }
 
@@ -811,14 +812,14 @@ private fun SourceMaterialSection(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("SOURCE MATERIAL", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterColors.TextSecondary)
+        Text("SOURCE MATERIAL", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textSecondary)
         
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .background(GrayMatterColors.SurfaceBorder)
-                .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                .background(GrayMatterTheme.colors.surfaceBorder)
+                .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(12.dp))
                 .padding(4.dp)
         ) {
             TabButton("Link", Icons.Default.Link, selectedTab == 0, { onTabChange(0) }, Modifier.weight(1f))
@@ -848,7 +849,7 @@ private fun SourceMaterialSection(
                                         Icon(
                                             Icons.Default.ArrowForward, 
                                             "Load Title", 
-                                            tint = GrayMatterColors.Primary,
+                                            tint = GrayMatterTheme.colors.primary,
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
@@ -859,7 +860,7 @@ private fun SourceMaterialSection(
                                         Icon(
                                             Icons.Default.Close, 
                                             "Clear", 
-                                            tint = GrayMatterColors.Neutral600,
+                                            tint = GrayMatterTheme.colors.neutral600,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
@@ -895,8 +896,8 @@ private fun AddNoteContentButton(onClick: () -> Unit, hasContent: Boolean) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(GrayMatterColors.Neutral900)
-            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+            .background(GrayMatterTheme.colors.neutral900)
+            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(20.dp),
         contentAlignment = Alignment.Center
@@ -905,12 +906,12 @@ private fun AddNoteContentButton(onClick: () -> Unit, hasContent: Boolean) {
             Icon(
                 imageVector = if (hasContent) Icons.Default.EditNote else Icons.Default.Add,
                 contentDescription = null,
-                tint = GrayMatterColors.Primary
+                tint = GrayMatterTheme.colors.primary
             )
             Text(
                 text = if (hasContent) "Edit Note Content" else "Add Note Content",
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = GrayMatterColors.Primary
+                color = GrayMatterTheme.colors.primary
             )
         }
     }
@@ -924,17 +925,17 @@ private fun InputField(
     leadingIcon: androidx.compose.ui.graphics.vector.ImageVector,
     trailingContent: (@Composable () -> Unit)? = null
 ) {
-    Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(GrayMatterColors.SurfaceInput).border(1.dp, GrayMatterColors.SurfaceBorder, RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 12.dp)) {
+    Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(GrayMatterTheme.colors.surfaceInput).border(1.dp, GrayMatterTheme.colors.surfaceBorder, RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Icon(leadingIcon, null, tint = GrayMatterColors.Neutral500, modifier = Modifier.size(20.dp))
+            Icon(leadingIcon, null, tint = GrayMatterTheme.colors.neutral500, modifier = Modifier.size(20.dp))
             BasicTextField(
                 value = value, 
                 onValueChange = onValueChange, 
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary), 
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterTheme.colors.textPrimary), 
                 modifier = Modifier.weight(1f), 
-                cursorBrush = SolidColor(GrayMatterColors.Primary), 
+                cursorBrush = SolidColor(GrayMatterTheme.colors.primary), 
                 decorationBox = { inner -> 
-                    if (value.isEmpty()) Text(placeholder, color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyLarge)
+                    if (value.isEmpty()) Text(placeholder, color = GrayMatterTheme.colors.neutral600, style = MaterialTheme.typography.bodyLarge)
                     inner() 
                 }
             )
@@ -947,20 +948,20 @@ private fun InputField(
 
 @Composable
 private fun FilePickerField(fileName: String?, onPickFile: () -> Unit) {
-    Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(GrayMatterColors.SurfaceInput).border(2.dp, GrayMatterColors.SurfaceBorder, RoundedCornerShape(12.dp)).clickable(onClick = onPickFile).padding(24.dp), contentAlignment = Alignment.Center) {
+    Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(GrayMatterTheme.colors.surfaceInput).border(2.dp, GrayMatterTheme.colors.surfaceBorder, RoundedCornerShape(12.dp)).clickable(onClick = onPickFile).padding(24.dp), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Icon(if (fileName != null) Icons.Default.AttachFile else Icons.Default.CloudUpload, null, tint = if (fileName != null) GrayMatterColors.Primary else GrayMatterColors.Neutral600, modifier = Modifier.size(if (fileName != null) 32.dp else 40.dp))
-            Text(fileName ?: "Choose a file", style = MaterialTheme.typography.bodyMedium, color = if (fileName != null) GrayMatterColors.TextPrimary else GrayMatterColors.TextSecondary)
+            Icon(if (fileName != null) Icons.Default.AttachFile else Icons.Default.CloudUpload, null, tint = if (fileName != null) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral600, modifier = Modifier.size(if (fileName != null) 32.dp else 40.dp))
+            Text(fileName ?: "Choose a file", style = MaterialTheme.typography.bodyMedium, color = if (fileName != null) GrayMatterTheme.colors.textPrimary else GrayMatterTheme.colors.textSecondary)
         }
     }
 }
 
 @Composable
 private fun TabButton(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Box(modifier = modifier.clip(RoundedCornerShape(8.dp)).background(if (selected) GrayMatterColors.Primary else Color.Transparent).clickable(onClick = onClick).padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
+    Box(modifier = modifier.clip(RoundedCornerShape(8.dp)).background(if (selected) GrayMatterTheme.colors.primary else Color.Transparent).clickable(onClick = onClick).padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, null, modifier = Modifier.size(18.dp), tint = if (selected) GrayMatterColors.OnPrimary else GrayMatterColors.TextSecondary)
-            Text(text, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium), color = if (selected) GrayMatterColors.OnPrimary else GrayMatterColors.TextSecondary)
+            Icon(icon, null, modifier = Modifier.size(18.dp), tint = if (selected) GrayMatterTheme.colors.onPrimary else GrayMatterTheme.colors.textSecondary)
+            Text(text, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium), color = if (selected) GrayMatterTheme.colors.onPrimary else GrayMatterTheme.colors.textSecondary)
         }
     }
 }
@@ -1002,7 +1003,7 @@ private fun CustomizedOpinionSection(
                         else -> "OPINION"
                     },
                     style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold),
-                    color = GrayMatterColors.TextSecondary
+                    color = GrayMatterTheme.colors.textSecondary
                 )
             }
             
@@ -1030,7 +1031,7 @@ private fun CustomizedOpinionSection(
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(GrayMatterColors.Neutral900)
+                    .background(GrayMatterTheme.colors.neutral900)
             ) {
                 AsyncImage(
                     model = java.io.File(currentImagePath!!),
@@ -1055,15 +1056,15 @@ private fun CustomizedOpinionSection(
             BasicTextField(
                 value = opinionInput,
                 onValueChange = onOpinionChange,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(color = GrayMatterColors.TextPrimary),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = GrayMatterTheme.colors.textPrimary),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(GrayMatterColors.SurfaceInput, RoundedCornerShape(12.dp))
+                    .background(GrayMatterTheme.colors.surfaceInput, RoundedCornerShape(12.dp))
                     .border(1.dp, GrayMatterColors.TypeVisual.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
                     .padding(14.dp),
                 cursorBrush = SolidColor(GrayMatterColors.TypeVisual),
                 decorationBox = { inner ->
-                    if (opinionInput.isEmpty()) Text("Add a caption (optional)...", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyMedium)
+                    if (opinionInput.isEmpty()) Text("Add a caption (optional)...", color = GrayMatterTheme.colors.neutral600, style = MaterialTheme.typography.bodyMedium)
                     inner()
                 }
             )
@@ -1078,11 +1079,11 @@ private fun CustomizedOpinionSection(
                 BasicTextField(
                     value = opinionInput, 
                     onValueChange = onOpinionChange, 
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterColors.TextPrimary, lineHeight = 24.sp), 
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterTheme.colors.textPrimary, lineHeight = 24.sp), 
                     modifier = Modifier.fillMaxSize(), 
                     cursorBrush = SolidColor(GrayMatterColors.TypeOpinion), 
                     decorationBox = { inner -> 
-                        if (opinionInput.isEmpty()) Text("Type your understanding here...", color = GrayMatterColors.Neutral600, style = MaterialTheme.typography.bodyLarge)
+                        if (opinionInput.isEmpty()) Text("Type your understanding here...", color = GrayMatterTheme.colors.neutral600, style = MaterialTheme.typography.bodyLarge)
                         inner() 
                     }
                 )
@@ -1106,8 +1107,8 @@ private fun ConfidenceLevelSection(
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("CONFIDENCE LEVEL", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterColors.TextSecondary)
-            Text("${(confidence * 100).toInt()}%", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
+            Text("CONFIDENCE LEVEL", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textSecondary)
+            Text("${(confidence * 100).toInt()}%", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textPrimary)
         }
         Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(bgColor).border(1.dp, borderColor, RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 12.dp)) {
             Slider(
@@ -1117,7 +1118,7 @@ private fun ConfidenceLevelSection(
                 colors = SliderDefaults.colors(
                     thumbColor = Color.White, 
                     activeTrackColor = Color.White, 
-                    inactiveTrackColor = GrayMatterColors.Neutral800
+                    inactiveTrackColor = GrayMatterTheme.colors.neutral800
                 )
             )
         }
@@ -1126,8 +1127,8 @@ private fun ConfidenceLevelSection(
 
 @Composable
 private fun SaveButton(onClick: () -> Unit, enabled: Boolean, isLoading: Boolean, modifier: Modifier) {
-    Button(onClick = onClick, enabled = enabled, modifier = modifier.height(56.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary, contentColor = GrayMatterColors.OnPrimary, disabledContainerColor = GrayMatterColors.Neutral700, disabledContentColor = GrayMatterColors.Neutral500)) {
-        if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = GrayMatterColors.OnPrimary, strokeWidth = 2.dp)
+    Button(onClick = onClick, enabled = enabled, modifier = modifier.height(56.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary, contentColor = GrayMatterTheme.colors.onPrimary, disabledContainerColor = GrayMatterTheme.colors.neutral700, disabledContentColor = GrayMatterTheme.colors.neutral500)) {
+        if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = GrayMatterTheme.colors.onPrimary, strokeWidth = 2.dp)
         else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(Icons.Default.Check, null, modifier = Modifier.size(20.dp))
             Text("Save Entry", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))

@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
@@ -270,22 +271,13 @@ fun TextSelectionOverlay(
     fun getCharIndexAt(pdfOffset: Offset, expandHitArea: Boolean = false): Int {
         if (characters.isEmpty()) return -1
         
-        val padX = if (expandHitArea) 15f / baseRenderScale / scale / zoomScale else 0f
-        val padY = if (expandHitArea) 15f / baseRenderScale / scale / zoomScale else 0f
-
-        val exactMatch = characters.indexOfFirst { char ->
-            val bounds = android.graphics.RectF(char.x - padX, char.y - padY, char.x + char.width + padX, char.y + char.height + padY)
-            bounds.contains(pdfOffset.x, pdfOffset.y)
-        }
-        if (exactMatch != -1) return exactMatch
-        
         return characters.withIndex().minByOrNull { (_, char) ->
             val cx = char.x + char.width / 2f
             val cy = char.y + char.height / 2f
             val dx = cx - pdfOffset.x
             val dy = cy - pdfOffset.y
             // Anisotropic weighting: penalize vertical distance to prevent jumping between lines
-            (dx * dx) + (dy * dy * 4f)
+            (dx * dx) + (dy * dy * 8f) // Increased vertical penalty to prevent line jumping on skewed OCR
         }?.index ?: -1
     }
 
@@ -835,7 +827,8 @@ fun TextSelectionOverlay(
                             Box(
                                 modifier = Modifier
                                     .size(24.dp)
-                                    .background(colorValue, CircleShape)
+                                    .clip(CircleShape)
+                                    .background(colorValue)
                                     .clickable {
                                         val textChars = selectedCharacters.value
                                         val text = textChars.joinToString("") { it.unicode }

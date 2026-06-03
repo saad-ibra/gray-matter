@@ -1,5 +1,6 @@
 package com.example.graymatter.android.ui.template
 
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -43,7 +44,7 @@ fun TemplatesManagementScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(GrayMatterColors.BackgroundDark)
+            .background(GrayMatterTheme.colors.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
@@ -54,12 +55,12 @@ fun TemplatesManagementScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBackClick) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = GrayMatterColors.TextPrimary)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = GrayMatterTheme.colors.textPrimary)
                 }
                 Text(
                     text = "Template Management",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = GrayMatterColors.TextPrimary,
+                    color = GrayMatterTheme.colors.textPrimary,
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
@@ -74,7 +75,7 @@ fun TemplatesManagementScreen(
                             editingTemplate = CustomTemplate(java.util.UUID.randomUUID().toString(), "", listOf(""))
                             showEditor = true
                         }) {
-                            Icon(Icons.Default.Add, null, tint = GrayMatterColors.TextPrimary)
+                            Icon(Icons.Default.Add, null, tint = GrayMatterTheme.colors.textPrimary)
                         }
                     }
                 }
@@ -111,8 +112,8 @@ fun TemplatesManagementScreen(
             AlertDialog(
                 onDismissRequest = { templateToDeleteId = null },
                 title = { Text("Delete Template", color = Color.White) },
-                text = { Text("Are you sure you want to delete '${template?.name ?: "this template"}'? This cannot be undone once the undo window closes.", color = GrayMatterColors.TextSecondary) },
-                containerColor = Color(0xFF1A1A1E),
+                text = { Text("Are you sure you want to delete '${template?.name ?: "this template"}'? This cannot be undone once the undo window closes.", color = GrayMatterTheme.colors.textSecondary) },
+                containerColor = GrayMatterTheme.colors.neutral800,
                 confirmButton = {
                     TextButton(onClick = {
                         val toDelete = templates.find { it.id == templateToDeleteId }
@@ -132,7 +133,7 @@ fun TemplatesManagementScreen(
                         }
                         templateToDeleteId = null
                     }) {
-                        Text("Delete", color = GrayMatterColors.Error)
+                        Text("Delete", color = GrayMatterTheme.colors.error)
                     }
                 },
                 dismissButton = {
@@ -162,7 +163,7 @@ private fun SectionHeader(title: String, action: @Composable () -> Unit = {}) {
         Text(
             text = title,
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-            color = GrayMatterColors.Neutral500
+            color = GrayMatterTheme.colors.neutral500
         )
         action()
     }
@@ -175,8 +176,8 @@ private fun TemplateItem(template: CustomTemplate, onClick: () -> Unit) {
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(GrayMatterColors.SurfaceDark)
-            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+            .background(GrayMatterTheme.colors.surface)
+            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(20.dp)
     ) {
@@ -189,15 +190,15 @@ private fun TemplateItem(template: CustomTemplate, onClick: () -> Unit) {
                 Text(
                     text = template.name,
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = GrayMatterColors.TextPrimary
+                    color = GrayMatterTheme.colors.textPrimary
                 )
                 Text(
                     text = "${template.headings.size} headings",
                     style = MaterialTheme.typography.labelSmall,
-                    color = GrayMatterColors.TextSecondary
+                    color = GrayMatterTheme.colors.textSecondary
                 )
             }
-            Icon(Icons.Default.ChevronRight, null, tint = GrayMatterColors.Neutral700)
+            Icon(Icons.Default.ChevronRight, null, tint = GrayMatterTheme.colors.neutral700)
         }
     }
 }
@@ -220,8 +221,8 @@ private fun TemplateEditorDialog(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = GrayMatterColors.SurfaceDark,
-        dragHandle = { BottomSheetDefaults.DragHandle(color = GrayMatterColors.Neutral700) }
+        containerColor = GrayMatterTheme.colors.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle(color = GrayMatterTheme.colors.neutral700) }
     ) {
         Column(
             modifier = Modifier
@@ -239,10 +240,10 @@ private fun TemplateEditorDialog(
                 Text(
                     text = "Edit Template",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = GrayMatterColors.TextPrimary
+                    color = GrayMatterTheme.colors.textPrimary
                 )
                 IconButton(onClick = { onDelete(template.id) }) {
-                    Icon(Icons.Default.Delete, null, tint = GrayMatterColors.Error)
+                    Icon(Icons.Default.Delete, null, tint = GrayMatterTheme.colors.error)
                 }
             }
 
@@ -254,8 +255,8 @@ private fun TemplateEditorDialog(
                 label = { Text("Template Name") },
                 modifier = Modifier.fillMaxWidth(),
                 colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = GrayMatterColors.SurfaceInput,
-                    focusedContainerColor = GrayMatterColors.SurfaceInput,
+                    unfocusedContainerColor = GrayMatterTheme.colors.surfaceInput,
+                    focusedContainerColor = GrayMatterTheme.colors.surfaceInput,
                     unfocusedIndicatorColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedTextColor = Color.White,
@@ -269,7 +270,7 @@ private fun TemplateEditorDialog(
             Text(
                 text = "HEADINGS",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = GrayMatterColors.Neutral500
+                color = GrayMatterTheme.colors.neutral500
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -291,8 +292,8 @@ private fun TemplateEditorDialog(
                         placeholder = { Text("Heading ${index + 1}") },
                         modifier = Modifier.weight(1f),
                         colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = GrayMatterColors.SurfaceInput,
-                            focusedContainerColor = GrayMatterColors.SurfaceInput,
+                            unfocusedContainerColor = GrayMatterTheme.colors.surfaceInput,
+                            focusedContainerColor = GrayMatterTheme.colors.surfaceInput,
                             unfocusedIndicatorColor = Color.Transparent,
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedTextColor = Color.White,
@@ -303,7 +304,7 @@ private fun TemplateEditorDialog(
                     IconButton(onClick = {
                         headings = headings.toMutableList().apply { removeAt(index) }
                     }) {
-                        Icon(Icons.Default.RemoveCircleOutline, null, tint = GrayMatterColors.Error)
+                        Icon(Icons.Default.RemoveCircleOutline, null, tint = GrayMatterTheme.colors.error)
                     }
                 }
             }

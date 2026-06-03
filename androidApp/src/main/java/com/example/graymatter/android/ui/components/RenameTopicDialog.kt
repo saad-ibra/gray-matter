@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.example.graymatter.android.ui.theme.GrayMatterColors
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 
 @Composable
 fun RenameTopicDialog(
@@ -28,13 +29,13 @@ fun RenameTopicDialog(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
-                    cursorColor = GrayMatterColors.Primary,
-                    focusedLabelColor = GrayMatterColors.Primary,
-                    unfocusedLabelColor = GrayMatterColors.Neutral500
+                    cursorColor = GrayMatterTheme.colors.primary,
+                    focusedLabelColor = GrayMatterTheme.colors.primary,
+                    unfocusedLabelColor = GrayMatterTheme.colors.neutral500
                 )
             )
         },
-        containerColor = Color(0xFF1A1A1E),
+        containerColor = GrayMatterTheme.colors.neutral800,
         confirmButton = {
             TextButton(
                 onClick = {
@@ -43,7 +44,7 @@ fun RenameTopicDialog(
                     }
                 }
             ) {
-                Text("Rename", color = GrayMatterColors.Primary)
+                Text("Rename", color = GrayMatterTheme.colors.primary)
             }
         },
         dismissButton = {

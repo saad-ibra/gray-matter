@@ -1,5 +1,6 @@
 package com.example.graymatter.android.ui.library
 
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -168,7 +169,7 @@ fun LibraryScreen(
 
     Box(modifier = modifier
         .fillMaxSize()
-        .background(GrayMatterColors.BackgroundDark)
+        .background(GrayMatterTheme.colors.background)
         .onGloballyPositioned { screenPositionInRoot.value = it.positionInRoot() }
     ) {
         Column(
@@ -184,8 +185,8 @@ fun LibraryScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(GrayMatterColors.SurfaceDark)
-                    .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                    .background(GrayMatterTheme.colors.surface)
+                    .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(12.dp))
                     .clickable { showGlobalSearch = true }
                     .padding(horizontal = 16.dp, vertical = 14.dp)
             ) {
@@ -196,13 +197,13 @@ fun LibraryScreen(
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = null,
-                        tint = GrayMatterColors.Neutral500,
+                        tint = GrayMatterTheme.colors.neutral500,
                         modifier = Modifier.size(22.dp)
                     )
                     Text(
                         text = "Search",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = GrayMatterColors.Neutral600
+                        color = GrayMatterTheme.colors.neutral600
                     )
                 }
             }
@@ -221,21 +222,21 @@ fun LibraryScreen(
                         Icon(
                             imageVector = Icons.Default.MenuBook,
                             contentDescription = null,
-                            tint = GrayMatterColors.Neutral600,
+                            tint = GrayMatterTheme.colors.neutral600,
                             modifier = Modifier.size(64.dp)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "No resources yet. Start by adding a new entry.",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = GrayMatterColors.Neutral500,
+                            color = GrayMatterTheme.colors.neutral500,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                             modifier = Modifier.padding(horizontal = 48.dp)
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                         Button(
                             onClick = onNavigateToHome,
-                            colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary)
+                            colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary)
                         ) {
                             Text("Go Home", color = Color.Black)
                         }
@@ -437,7 +438,7 @@ fun LibraryScreen(
             val overTrashValue = isOverTrash.value
             val scale by animateFloatAsState(if (overTrashValue) 1.2f else 1f, label = "trashScale")
             val containerColor by animateColorAsState(
-                targetValue = if (overTrashValue) GrayMatterColors.Error else GrayMatterColors.SurfaceDark,
+                targetValue = if (overTrashValue) GrayMatterTheme.colors.error else GrayMatterTheme.colors.surface,
                 label = "trashColor"
             )
             
@@ -447,7 +448,7 @@ fun LibraryScreen(
                     .scale(scale)
                     .clip(CircleShape)
                     .background(containerColor)
-                    .border(2.dp, GrayMatterColors.Error.copy(alpha = 0.5f), CircleShape)
+                    .border(2.dp, GrayMatterTheme.colors.error.copy(alpha = 0.5f), CircleShape)
                     .onGloballyPositioned { coords ->
                         trashZoneBoundsInRoot.value = coords.boundsInRoot()
                     },
@@ -456,7 +457,7 @@ fun LibraryScreen(
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Drop to Delete",
-                    tint = if (overTrashValue) Color.White else GrayMatterColors.Error,
+                    tint = if (overTrashValue) Color.White else GrayMatterTheme.colors.error,
                     modifier = Modifier.size(32.dp)
                 )
             }
@@ -580,10 +581,10 @@ private fun TopicCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(if (isSelected) GrayMatterColors.Primary.copy(alpha = 0.2f) else GrayMatterColors.SurfaceDark)
+            .background(if (isSelected) GrayMatterTheme.colors.primary.copy(alpha = 0.2f) else GrayMatterTheme.colors.surface)
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) GrayMatterColors.Primary else GrayMatterColors.Neutral800,
+                color = if (isSelected) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral800,
                 shape = RoundedCornerShape(16.dp)
             )
             .clickable(enabled = enabled, onClick = onClick)
@@ -601,8 +602,8 @@ private fun TopicCard(
                         .wrapContentWidth()
                         .height(36.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(GrayMatterColors.BackgroundDark.copy(alpha = 0.4f))
-                        .border(1.dp, GrayMatterColors.Neutral700.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                        .background(GrayMatterTheme.colors.background.copy(alpha = 0.4f))
+                        .border(1.dp, GrayMatterTheme.colors.neutral700.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
                         .padding(horizontal = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -613,49 +614,49 @@ private fun TopicCard(
                             fontWeight = FontWeight.Normal,
                             letterSpacing = 1.sp
                         ),
-                        color = GrayMatterColors.TextPrimary
+                        color = GrayMatterTheme.colors.textPrimary
                     )
                 }
                 
                 if (enabled) {
                     Box {
                         IconButton(onClick = { showMenu = true }, modifier = Modifier.size(24.dp).offset(x = 8.dp, y = (-8).dp)) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = GrayMatterColors.Neutral500)
+                            Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = GrayMatterTheme.colors.neutral500)
                         }
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false },
-                            modifier = Modifier.background(GrayMatterColors.SurfaceDark)
+                            modifier = Modifier.background(GrayMatterTheme.colors.surface)
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Rename Topic", color = GrayMatterColors.TextPrimary) },
+                                text = { Text("Rename Topic", color = GrayMatterTheme.colors.textPrimary) },
                                 onClick = {
                                     showMenu = false
                                     onRename()
                                 },
-                                leadingIcon = { Icon(Icons.Default.Edit, null, tint = GrayMatterColors.Primary) }
+                                leadingIcon = { Icon(Icons.Default.Edit, null, tint = GrayMatterTheme.colors.primary) }
                             )
 
                             DropdownMenuItem(
-                                text = { Text("Export as PDF", color = GrayMatterColors.TextPrimary) },
+                                text = { Text("Export as PDF", color = GrayMatterTheme.colors.textPrimary) },
                                 onClick = {
                                     showMenu = false
                                     onExportPdf()
                                 },
-                                leadingIcon = { Icon(Icons.Default.PictureAsPdf, null, tint = GrayMatterColors.Primary) }
+                                leadingIcon = { Icon(Icons.Default.PictureAsPdf, null, tint = GrayMatterTheme.colors.primary) }
                             )
 
                             DropdownMenuItem(
-                                text = { Text("Export as Markdown", color = GrayMatterColors.TextPrimary) },
+                                text = { Text("Export as Markdown", color = GrayMatterTheme.colors.textPrimary) },
                                 onClick = {
                                     showMenu = false
                                     onExportMarkdown()
                                 },
-                                leadingIcon = { Icon(Icons.Default.Description, null, tint = GrayMatterColors.Primary) }
+                                leadingIcon = { Icon(Icons.Default.Description, null, tint = GrayMatterTheme.colors.primary) }
                             )
 
                             DropdownMenuItem(
-                                text = { Text("View in Relatrix", color = GrayMatterColors.TextPrimary) },
+                                text = { Text("View in Relatrix", color = GrayMatterTheme.colors.textPrimary) },
                                 onClick = {
                                     showMenu = false
                                     onViewInRelatrix()
@@ -663,15 +664,15 @@ private fun TopicCard(
                                 leadingIcon = { Icon(Icons.Default.Hub, null, tint = Color.White) }
                             )
 
-                            Divider(color = GrayMatterColors.Neutral800, modifier = Modifier.padding(vertical = 4.dp))
+                            Divider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))
 
                             DropdownMenuItem(
-                                text = { Text("Delete", color = GrayMatterColors.Error) },
+                                text = { Text("Delete", color = GrayMatterTheme.colors.error) },
                                 onClick = {
                                     showMenu = false
                                     onDelete()
                                 },
-                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = GrayMatterColors.Error) }
+                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = GrayMatterTheme.colors.error) }
                             )
                         }
                     }
@@ -685,7 +686,7 @@ private fun TopicCard(
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp
                     ),
-                    color = GrayMatterColors.TextPrimary,
+                    color = GrayMatterTheme.colors.textPrimary,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
@@ -695,14 +696,14 @@ private fun TopicCard(
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Medium
                     ),
-                    color = GrayMatterColors.Neutral500
+                    color = GrayMatterTheme.colors.neutral500
                 )
             }
             
             Text(
                 text = "Updated ${formatTimeAgo(topic.updatedAt)}",
                 style = MaterialTheme.typography.labelSmall,
-                color = GrayMatterColors.Neutral600
+                color = GrayMatterTheme.colors.neutral600
             )
         }
     }
@@ -720,7 +721,7 @@ private fun SelectionActionBar(
             .padding(16.dp)
             .navigationBarsPadding(),
         shape = RoundedCornerShape(16.dp),
-        color = GrayMatterColors.SurfaceDark,
+        color = GrayMatterTheme.colors.surface,
         tonalElevation = 8.dp,
         shadowElevation = 8.dp
     ) {
@@ -731,14 +732,14 @@ private fun SelectionActionBar(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 IconButton(onClick = onClear) {
-                    Icon(Icons.Default.Close, null, tint = GrayMatterColors.TextPrimary)
+                    Icon(Icons.Default.Close, null, tint = GrayMatterTheme.colors.textPrimary)
                 }
-                Text("$count selected", style = MaterialTheme.typography.titleSmall, color = GrayMatterColors.TextPrimary)
+                Text("$count selected", style = MaterialTheme.typography.titleSmall, color = GrayMatterTheme.colors.textPrimary)
             }
             
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, "Delete", tint = GrayMatterColors.Error)
+                    Icon(Icons.Default.Delete, "Delete", tint = GrayMatterTheme.colors.error)
                 }
             }
         }

@@ -27,6 +27,10 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.geometry.Offset
@@ -427,6 +431,7 @@ fun PdfViewerContent(
                                     }
                                 }
                             ) {
+
                                 Image(
                                     bitmap = b.asImageBitmap(),
                                     contentDescription = null,
@@ -438,11 +443,42 @@ fun PdfViewerContent(
                                             scaleY = zoomScale
                                             translationX = panOffset.x
                                             translationY = panOffset.y
+                                        }
+                                        .drawWithContent {
+                                            drawContent()
                                         },
                                     contentScale = ContentScale.Fit,
                                     colorFilter = themeColorFilter
                                 )
-                                
+
+                                if (theme == "console") {
+                                    androidx.compose.foundation.Canvas(
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        // Scanlines
+                                        val lineSpacing = 4.dp.toPx()
+                                        var y = 0f
+                                        while (y < size.height) {
+                                            drawLine(
+                                                color = Color.Black.copy(alpha = 0.3f),
+                                                start = Offset(0f, y),
+                                                end = Offset(size.width, y),
+                                                strokeWidth = 1.dp.toPx()
+                                            )
+                                            y += lineSpacing
+                                        }
+
+                                        // Vignette / Glow
+                                        drawRect(
+                                            brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                                                colors = listOf(Color.Transparent, Color(0xFF0A0A0A).copy(alpha = 0.6f)),
+                                                center = Offset(size.width / 2, size.height / 2),
+                                                radius = size.width.coerceAtLeast(size.height) * 0.7f
+                                            )
+                                        )
+                                    }
+                                }
+                               
                                 // Text Selection Overlay (only on active page)
                                 if (targetPage == currentPage && extractedCharacters.isNotEmpty() && imageLayoutSize != IntSize.Zero) {
                                     TextSelectionOverlay(
@@ -483,8 +519,17 @@ fun PdfViewerContent(
  */
 private fun getPdfThemeFilter(theme: String): ColorFilter? {
     return when (theme) {
-        "night", "amoled_black" -> {
-            // Invert colors: Black text on White -> White text on Black
+        "night" -> {
+            // Soft inversion: dark gray background with light gray text
+            ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+                -0.85f, 0f, 0f, 0f, 220f,
+                0f, -0.85f, 0f, 0f, 220f,
+                0f, 0f, -0.85f, 0f, 220f,
+                0f, 0f, 0f, 1f, 0f
+            )))
+        }
+        "amoled_black" -> {
+            // Full inversion: pure black background with white text
             ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
                 -1f, 0f, 0f, 0f, 255f,
                 0f, -1f, 0f, 0f, 255f,
@@ -501,6 +546,24 @@ private fun getPdfThemeFilter(theme: String): ColorFilter? {
                 0f, 0f, 0f, 1f, 0f
             )))
         }
+        "ocean" -> {
+            // Subtle ocean: softer text on deep blue
+            ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+                -0.35f, 0f, 0f, 0f, 120f, 
+                0f, -0.25f, 0f, 0f, 175f, 
+                0f, 0f, -0.15f, 0f, 200f, 
+                0f, 0f, 0f, 1f, 0f
+            )))
+        }
+        "forest" -> {
+            // Subtle forest: softer text on dark green
+            ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+                -0.2f, 0f, 0f, 0f, 80f, 
+                0f, -0.15f, 0f, 0f, 155f, 
+                0f, 0f, -0.2f, 0f, 80f, 
+                0f, 0f, 0f, 1f, 0f
+            )))
+        }
         "console" -> {
             // Invert + Green tint
             ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
@@ -510,7 +573,7 @@ private fun getPdfThemeFilter(theme: String): ColorFilter? {
                 0f, 0f, 0f, 1f, 0f
             )))
         }
-        "sepia", "vintage_parchment" -> {
+        "sepia" -> {
             // Apply warm sepia tint
             ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
                 0.393f, 0.769f, 0.189f, 0f, 0f,
@@ -525,6 +588,14 @@ private fun getPdfThemeFilter(theme: String): ColorFilter? {
                 1f, 0f, 0f, 0f, 0f,
                 0f, 0.95f, 0f, 0f, 0f,
                 0f, 0f, 0.85f, 0f, 0f,
+                0f, 0f, 0f, 1f, 0f
+            )))
+        }
+        "rose" -> {
+            ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+                1f, 0f, 0f, 0f, 20f,
+                0f, 0.9f, 0f, 0f, 0f,
+                0f, 0f, 0.9f, 0f, 0f,
                 0f, 0f, 0f, 1f, 0f
             )))
         }
@@ -632,13 +703,17 @@ private suspend fun getOrRenderPdfPage(
 @Composable
 private fun getThemeBackgroundColor(theme: String): Color {
     return when (theme) {
-        "night", "amoled_black" -> Color.Black
-        "twilight" -> Color(0xFF12122A)
-        "console" -> Color(0xFF0D0D0D)
-        "sepia" -> Color(0xFFF4ECD8)
-        "vintage_parchment" -> Color(0xFFE8DCC4)
-        "paper_classic" -> Color(0xFFFDFCF8)
-        "book_linen" -> Color(0xFFF2F0E6)
+        "night" -> Color(0xFF121212)
+        "amoled_black" -> Color.Black
+        "twilight" -> Color(0xFF1A1B26)
+        "ocean" -> Color(0xFF0D1B2A)
+        "forest" -> Color(0xFF0B1A0B)
+        "console" -> Color(0xFF0A0A0A)
+        "sepia" -> Color(0xFFF5E6C8)
+
+        "paper_classic" -> Color(0xFFF4ECD8)
+        "book_linen" -> Color(0xFFFAF9F6)
+        "rose" -> Color(0xFFFFF0F0)
         else -> Color.White
     }
 }

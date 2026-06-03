@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.viewmodel.LookupsViewModel
 import com.example.graymatter.domain.Opinion
@@ -37,7 +38,7 @@ fun LookupsScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = GrayMatterColors.BackgroundDark,
+        containerColor = GrayMatterTheme.colors.background,
         topBar = {
             TopAppBar(
                 title = { Text("Lookup Management", fontWeight = FontWeight.Bold) },
@@ -47,9 +48,9 @@ fun LookupsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = GrayMatterColors.BackgroundDark,
-                    titleContentColor = GrayMatterColors.TextPrimary,
-                    navigationIconContentColor = GrayMatterColors.TextPrimary
+                    containerColor = GrayMatterTheme.colors.background,
+                    titleContentColor = GrayMatterTheme.colors.textPrimary,
+                    navigationIconContentColor = GrayMatterTheme.colors.textPrimary
                 )
             )
         }
@@ -61,13 +62,13 @@ fun LookupsScreen(
         ) {
             TabRow(
                 selectedTabIndex = selectedTab,
-                containerColor = GrayMatterColors.BackgroundDark,
-                contentColor = GrayMatterColors.Primary,
+                containerColor = GrayMatterTheme.colors.background,
+                contentColor = GrayMatterTheme.colors.primary,
                 indicator = { tabPositions ->
                     if (selectedTab < tabPositions.size) {
                         TabRowDefaults.SecondaryIndicator(
                             Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                            color = GrayMatterColors.Primary
+                            color = GrayMatterTheme.colors.primary
                         )
                     }
                 }
@@ -91,7 +92,7 @@ fun LookupsScreen(
                     Text(
                         text = if (selectedTab == 0) "No lookups currently learning." else "No learnt lookups yet.",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = GrayMatterColors.Neutral500
+                        color = GrayMatterTheme.colors.neutral500
                     )
                 }
             } else {
@@ -106,7 +107,7 @@ fun LookupsScreen(
                             onToggleLearnt = { viewModel.toggleLearntStatus(opinion) },
                             onJumpToOrigin = { onNavigateToOrigin(opinion.itemId, opinion.id) }
                         )
-                        HorizontalDivider(color = GrayMatterColors.Neutral800, modifier = Modifier.padding(horizontal = 16.dp))
+                        HorizontalDivider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(horizontal = 16.dp))
                     }
                 }
             }
@@ -133,7 +134,7 @@ private fun LookupItem(
             Text(
                 text = cleanWord, 
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = if (isLearnt) FontWeight.Normal else FontWeight.Bold),
-                color = GrayMatterColors.TextPrimary.copy(alpha = alpha),
+                color = GrayMatterTheme.colors.textPrimary.copy(alpha = alpha),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             ) 
@@ -147,14 +148,14 @@ private fun LookupItem(
                     Icon(
                         imageVector = if (isLearnt) Icons.Default.Restore else Icons.Default.CheckCircleOutline,
                         contentDescription = if (isLearnt) "Restore to Learning" else "Mark as Learnt",
-                        tint = GrayMatterColors.TextPrimary.copy(alpha = alpha)
+                        tint = GrayMatterTheme.colors.textPrimary.copy(alpha = alpha)
                     )
                 }
                 IconButton(onClick = onJumpToOrigin) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                         contentDescription = "View Original Context",
-                        tint = GrayMatterColors.TextPrimary.copy(alpha = alpha)
+                        tint = GrayMatterTheme.colors.textPrimary.copy(alpha = alpha)
                     )
                 }
             }

@@ -71,6 +71,7 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButtonDefaults
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -150,12 +151,12 @@ fun ReferenceSelectorSheet(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 12.dp),
-                        placeholder = { Text("Search everything...", color = GrayMatterColors.Neutral500) },
+                        placeholder = { Text("Search everything...", color = GrayMatterTheme.colors.neutral500) },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = GrayMatterColors.TypeLink) },
                         trailingIcon = if (uiState.searchQuery.isNotEmpty()) {
                             {
                                 IconButton(onClick = { viewModel.search("") }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Clear", tint = GrayMatterColors.Neutral500)
+                                    Icon(Icons.Default.Close, contentDescription = "Clear", tint = GrayMatterTheme.colors.neutral500)
                                 }
                             }
                         } else null,
@@ -163,9 +164,9 @@ fun ReferenceSelectorSheet(
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = GrayMatterColors.TypeLink,
-                            unfocusedBorderColor = GrayMatterColors.Neutral700,
-                            focusedContainerColor = GrayMatterColors.SurfaceDark,
-                            unfocusedContainerColor = GrayMatterColors.SurfaceDark
+                            unfocusedBorderColor = GrayMatterTheme.colors.neutral700,
+                            focusedContainerColor = GrayMatterTheme.colors.surface,
+                            unfocusedContainerColor = GrayMatterTheme.colors.surface
                         )
                     )
 
@@ -219,7 +220,7 @@ fun ReferenceSelectorSheet(
                                 }
                                 
                                 val iconColor = when (item) {
-                                    is ReferenceSelectorItem.TopicItem -> GrayMatterColors.Primary
+                                    is ReferenceSelectorItem.TopicItem -> GrayMatterTheme.colors.primary
                                     is ReferenceSelectorItem.ResourceItem -> GrayMatterColors.Neutral300
                                     is ReferenceSelectorItem.DetailItem -> {
                                         when (item.typeLabel) {
@@ -253,20 +254,20 @@ fun ReferenceSelectorSheet(
                                         style = if (item is ReferenceSelectorItem.TopicItem) MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold) else MaterialTheme.typography.bodyMedium,
                                         maxLines = if (item is ReferenceSelectorItem.DetailItem) 3 else 1,
                                         overflow = TextOverflow.Ellipsis,
-                                        color = GrayMatterColors.TextPrimary
+                                        color = GrayMatterTheme.colors.textPrimary
                                     )
                                     
                                     if (isSearch && item.parentContext != null) {
                                         Text(
                                             text = "in ${item.parentContext}",
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = GrayMatterColors.Neutral500
+                                            color = GrayMatterTheme.colors.neutral500
                                         )
                                     } else if (item is ReferenceSelectorItem.ResourceItem) {
                                         Text(
                                             text = item.type.lowercase().capitalize(),
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = GrayMatterColors.Neutral600
+                                            color = GrayMatterTheme.colors.neutral600
                                         )
                                     } else if (item is ReferenceSelectorItem.DetailItem) {
                                         val label = item.typeLabel
@@ -292,7 +293,7 @@ fun ReferenceSelectorSheet(
                                         Icon(
                                             imageVector = if (item.isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                             contentDescription = "Expand/Collapse",
-                                            tint = GrayMatterColors.Neutral500
+                                            tint = GrayMatterTheme.colors.neutral500
                                         )
                                     }
                                 }

@@ -4,11 +4,14 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import com.example.graymatter.android.GrayMatterApplication
+import com.example.graymatter.android.preferences.AppPreferences
+import com.example.graymatter.android.preferences.AppTheme
 import com.example.graymatter.android.security.BiometricAuthManager
 import com.example.graymatter.android.ui.screens.BiometricLockScreen
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
@@ -24,6 +27,7 @@ class MainActivity : FragmentActivity() {
 
     private val biometricAuthManager = BiometricAuthManager()
     private lateinit var securityPreferences: com.example.graymatter.android.security.SecurityPreferences
+    private lateinit var appPreferences: AppPreferences
     
     override fun onCreate(savedInstanceState: Bundle?) {
         // Handle the splash screen transition
@@ -32,6 +36,7 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         
         securityPreferences = com.example.graymatter.android.security.SecurityPreferences(this)
+        appPreferences = AppPreferences.getInstance(this)
 
         // Prevent screenshots, screen recordings, and recent-apps preview if enabled.
         if (securityPreferences.isScreenSecurityEnabled) {
@@ -40,9 +45,6 @@ class MainActivity : FragmentActivity() {
             window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
         
-        // Keep the screen awake
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        
         // Check biometric availability (auto-unlocks if not available)
         biometricAuthManager.checkAvailability(this)
         
@@ -50,7 +52,23 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         
         setContent {
-            GrayMatterTheme(darkTheme = true) {
+            // Observe theme preference reactively
+            val themeChoice by appPreferences.themeState.collectAsState()
+            val darkTheme = when (themeChoice) {
+                AppTheme.DARK -> true
+                AppTheme.LIGHT -> false
+                AppTheme.SYSTEM -> isSystemInDarkTheme()
+            }
+            
+            // Observe keep-screen-awake preference reactively
+            val keepAwake by appPreferences.keepScreenAwakeState.collectAsState()
+            if (keepAwake) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+            
+            GrayMatterTheme(darkTheme = darkTheme) {
                 val isUnlocked by biometricAuthManager.isUnlocked.collectAsState()
                 val isAppLockEnabled = securityPreferences.isAppLockEnabled
 

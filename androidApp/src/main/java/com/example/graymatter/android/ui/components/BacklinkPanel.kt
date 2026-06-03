@@ -1,5 +1,6 @@
 package com.example.graymatter.android.ui.components
 
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -49,8 +50,8 @@ fun BacklinkPanel(
             .fillMaxWidth()
             .padding(vertical = 16.dp, horizontal = 24.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(GrayMatterColors.SurfaceDark)
-            .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(16.dp))
+            .background(GrayMatterTheme.colors.surface)
+            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(16.dp))
     ) {
         // Header
         Row(
@@ -71,13 +72,13 @@ fun BacklinkPanel(
                 Text(
                     text = "${backlinks.size} Linked Reference${if (backlinks.size > 1) "s" else ""}",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = GrayMatterColors.TextPrimary
+                    color = GrayMatterTheme.colors.textPrimary
                 )
             }
             Icon(
                 imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowRight,
                 contentDescription = "Expand",
-                tint = GrayMatterColors.Neutral500,
+                tint = GrayMatterTheme.colors.neutral500,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -99,7 +100,7 @@ fun BacklinkPanel(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(GrayMatterColors.BackgroundDark)
+                            .background(GrayMatterTheme.colors.background)
                             .clickable { onBacklinkClick(backlink) }
                             .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -108,13 +109,13 @@ fun BacklinkPanel(
                             Text(
                                 text = backlink.title,
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                color = GrayMatterColors.TextPrimary,
+                                color = GrayMatterTheme.colors.textPrimary,
                                 maxLines = 1
                             )
                             Text(
                                 text = backlink.subtitle,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = GrayMatterColors.Neutral500,
+                                color = GrayMatterTheme.colors.neutral500,
                                 maxLines = 2
                             )
                         }

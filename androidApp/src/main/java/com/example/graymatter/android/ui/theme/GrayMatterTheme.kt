@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 
 /**
  * Dark color scheme matching the Gray Matter design.
@@ -71,20 +72,30 @@ private val LightColorScheme = lightColorScheme(
     onError = GrayMatterColors.Primary
 )
 
+object GrayMatterTheme {
+    val colors: GrayMatterThemeColors
+        @Composable
+        get() = LocalGrayMatterThemeColors.current
+}
+
 /**
  * Gray Matter app theme.
- * Uses dark theme by default to match the design mockups.
  */
 @Composable
 fun GrayMatterTheme(
-    darkTheme: Boolean = true, // Default to dark theme
+    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val gmColors = if (darkTheme) darkGrayMatterColors() else lightGrayMatterColors()
     
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = GrayMatterTypography,
-        content = content
-    )
+    CompositionLocalProvider(
+        LocalGrayMatterThemeColors provides gmColors
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = GrayMatterTypography,
+            content = content
+        )
+    }
 }

@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.graymatter.android.ui.components.RecentItemCard
 import com.example.graymatter.android.ui.theme.GrayMatterColors
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.viewmodel.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,13 +43,13 @@ fun RecentResourcesScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = GrayMatterColors.BackgroundDark,
-                    titleContentColor = GrayMatterColors.TextPrimary,
-                    navigationIconContentColor = GrayMatterColors.TextPrimary
+                    containerColor = GrayMatterTheme.colors.background,
+                    titleContentColor = GrayMatterTheme.colors.textPrimary,
+                    navigationIconContentColor = GrayMatterTheme.colors.textPrimary
                 )
             )
         },
-        containerColor = GrayMatterColors.BackgroundDark
+        containerColor = GrayMatterTheme.colors.background
     ) { paddingValues ->
         if (recentItems.isEmpty()) {
             Box(
@@ -60,7 +61,7 @@ fun RecentResourcesScreen(
                 Text(
                     "No recent activity",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = GrayMatterColors.Neutral600
+                    color = GrayMatterTheme.colors.neutral600
                 )
             }
         } else {

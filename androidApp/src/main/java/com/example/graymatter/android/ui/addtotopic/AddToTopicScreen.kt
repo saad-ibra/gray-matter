@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.domain.Topic
 
 /**
@@ -70,7 +71,7 @@ fun AddToTopicScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(GrayMatterColors.BackgroundDark)
+            .background(GrayMatterTheme.colors.background)
     ) {
         // Header
         AddToTopicHeader(
@@ -94,7 +95,7 @@ fun AddToTopicScreen(
                         letterSpacing = 1.5.sp,
                         fontWeight = FontWeight.Bold
                     ),
-                    color = GrayMatterColors.TextSecondary
+                    color = GrayMatterTheme.colors.textSecondary
                 )
                 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -103,8 +104,8 @@ fun AddToTopicScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(GrayMatterColors.Neutral900)
-                        .border(2.dp, GrayMatterColors.SurfaceBorder, RoundedCornerShape(12.dp))
+                        .background(GrayMatterTheme.colors.neutral900)
+                        .border(2.dp, GrayMatterTheme.colors.surfaceBorder, RoundedCornerShape(12.dp))
                         .padding(16.dp)
                 ) {
                     Row(
@@ -119,10 +120,10 @@ fun AddToTopicScreen(
                                 if (it.isNotBlank()) selectedTopicId = null
                             },
                             textStyle = MaterialTheme.typography.titleMedium.copy(
-                                color = GrayMatterColors.TextPrimary,
+                                color = GrayMatterTheme.colors.textPrimary,
                                 fontWeight = FontWeight.Medium
                             ),
-                            cursorBrush = SolidColor(GrayMatterColors.TextPrimary),
+                            cursorBrush = SolidColor(GrayMatterTheme.colors.textPrimary),
                             modifier = Modifier.weight(1f),
                             decorationBox = { innerTextField ->
                                 Box {
@@ -130,7 +131,7 @@ fun AddToTopicScreen(
                                         Text(
                                             text = "New Topic Title",
                                             style = MaterialTheme.typography.titleMedium,
-                                            color = GrayMatterColors.Neutral600
+                                            color = GrayMatterTheme.colors.neutral600
                                         )
                                     }
                                     innerTextField()
@@ -141,7 +142,7 @@ fun AddToTopicScreen(
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = null,
-                            tint = GrayMatterColors.Neutral600,
+                            tint = GrayMatterTheme.colors.neutral600,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -161,7 +162,7 @@ fun AddToTopicScreen(
                         modifier = Modifier
                             .weight(1f)
                             .height(1.dp)
-                            .background(GrayMatterColors.SurfaceBorder)
+                            .background(GrayMatterTheme.colors.surfaceBorder)
                     )
                     Text(
                         text = "OR",
@@ -169,13 +170,13 @@ fun AddToTopicScreen(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
                         ),
-                        color = GrayMatterColors.Neutral700
+                        color = GrayMatterTheme.colors.neutral700
                     )
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .height(1.dp)
-                            .background(GrayMatterColors.SurfaceBorder)
+                            .background(GrayMatterTheme.colors.surfaceBorder)
                     )
                 }
             }
@@ -188,7 +189,7 @@ fun AddToTopicScreen(
                         letterSpacing = 1.5.sp,
                         fontWeight = FontWeight.Bold
                     ),
-                    color = GrayMatterColors.TextSecondary
+                    color = GrayMatterTheme.colors.textSecondary
                 )
                 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -198,8 +199,8 @@ fun AddToTopicScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(GrayMatterColors.Neutral900)
-                        .border(1.dp, GrayMatterColors.SurfaceBorder, RoundedCornerShape(12.dp))
+                        .background(GrayMatterTheme.colors.neutral900)
+                        .border(1.dp, GrayMatterTheme.colors.surfaceBorder, RoundedCornerShape(12.dp))
                         .padding(12.dp)
                 ) {
                     Row(
@@ -209,7 +210,7 @@ fun AddToTopicScreen(
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = null,
-                            tint = GrayMatterColors.Neutral600,
+                            tint = GrayMatterTheme.colors.neutral600,
                             modifier = Modifier.size(22.dp)
                         )
                         
@@ -217,9 +218,9 @@ fun AddToTopicScreen(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
                             textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                color = GrayMatterColors.TextPrimary
+                                color = GrayMatterTheme.colors.textPrimary
                             ),
-                            cursorBrush = SolidColor(GrayMatterColors.TextPrimary),
+                            cursorBrush = SolidColor(GrayMatterTheme.colors.textPrimary),
                             modifier = Modifier.weight(1f),
                             decorationBox = { innerTextField ->
                                 Box {
@@ -227,7 +228,7 @@ fun AddToTopicScreen(
                                         Text(
                                             text = "Search topics...",
                                             style = MaterialTheme.typography.bodyMedium,
-                                            color = GrayMatterColors.Neutral600
+                                            color = GrayMatterTheme.colors.neutral600
                                         )
                                     }
                                     innerTextField()
@@ -281,10 +282,10 @@ fun AddToTopicScreen(
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = GrayMatterColors.Primary,
-                contentColor = GrayMatterColors.OnPrimary,
-                disabledContainerColor = GrayMatterColors.Neutral700,
-                disabledContentColor = GrayMatterColors.Neutral500
+                containerColor = GrayMatterTheme.colors.primary,
+                contentColor = GrayMatterTheme.colors.onPrimary,
+                disabledContainerColor = GrayMatterTheme.colors.neutral700,
+                disabledContentColor = GrayMatterTheme.colors.neutral500
             )
         ) {
             Text(
@@ -304,13 +305,13 @@ private fun AddToTopicHeader(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(GrayMatterColors.BackgroundDark.copy(alpha = 0.8f))
+            .background(GrayMatterTheme.colors.background.copy(alpha = 0.8f))
             .padding(horizontal = 16.dp, vertical = 24.dp)
     ) {
         Text(
             text = "Organize Entry",
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-            color = GrayMatterColors.TextPrimary,
+            color = GrayMatterTheme.colors.textPrimary,
             modifier = Modifier.align(Alignment.Center)
         )
     }
@@ -328,10 +329,10 @@ private fun TopicListItem(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(GrayMatterColors.Neutral900)
+            .background(GrayMatterTheme.colors.neutral900)
             .border(
                 width = 1.dp,
-                color = if (isSelected) GrayMatterColors.Primary else GrayMatterColors.SurfaceBorder,
+                color = if (isSelected) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.surfaceBorder,
                 shape = RoundedCornerShape(12.dp)
             )
             .clickable(onClick = onClick)
@@ -349,7 +350,7 @@ private fun TopicListItem(
                     fontWeight = FontWeight.Bold,
                     fontFamily = null // monospace
                 ),
-                color = GrayMatterColors.Neutral600
+                color = GrayMatterTheme.colors.neutral600
             )
             
             Text(
@@ -357,7 +358,7 @@ private fun TopicListItem(
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Medium
                 ),
-                color = GrayMatterColors.TextPrimary
+                color = GrayMatterTheme.colors.textPrimary
             )
         }
         
@@ -367,7 +368,7 @@ private fun TopicListItem(
                 .size(20.dp)
                 .border(
                     width = if (isSelected) 6.dp else 1.dp,
-                    color = if (isSelected) GrayMatterColors.Primary else GrayMatterColors.Neutral700,
+                    color = if (isSelected) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral700,
                     shape = CircleShape
                 )
         )

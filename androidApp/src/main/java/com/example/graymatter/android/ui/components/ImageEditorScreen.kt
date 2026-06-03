@@ -1,5 +1,6 @@
 package com.example.graymatter.android.ui.components
 
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
@@ -64,7 +65,7 @@ fun ImageEditorScreen(
 
     if (originalBitmap == null) {
         Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = GrayMatterColors.Primary)
+            CircularProgressIndicator(color = GrayMatterTheme.colors.primary)
         }
     } else {
         // Crop state: normalized [0..1] coordinates relative to the displayed image
@@ -110,11 +111,11 @@ fun ImageEditorScreen(
                         OutlinedTextField(
                             value = text,
                             onValueChange = { text = it },
-                            placeholder = { Text("Add optional caption...", color = GrayMatterColors.Neutral500) },
+                            placeholder = { Text("Add optional caption...", color = GrayMatterTheme.colors.neutral500) },
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = GrayMatterColors.TypeVisual,
-                                unfocusedBorderColor = GrayMatterColors.Neutral700,
+                                unfocusedBorderColor = GrayMatterTheme.colors.neutral700,
                                 focusedTextColor = Color.White,
                                 unfocusedTextColor = Color.White
                             ),

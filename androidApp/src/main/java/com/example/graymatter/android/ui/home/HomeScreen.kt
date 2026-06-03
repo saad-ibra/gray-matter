@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
 import com.example.graymatter.domain.ResourceEntry
 import com.example.graymatter.domain.ResourceEntryWithDetails
@@ -43,6 +44,7 @@ fun HomeScreen(
     onCreateNewEntryClick: () -> Unit,
     onNavigateToLibrary: () -> Unit,
     onNavigateToRecentResources: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     onItemClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -57,13 +59,40 @@ fun HomeScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(GrayMatterColors.BackgroundDark)
+            .background(GrayMatterTheme.colors.background)
             .statusBarsPadding(),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
-        // Minimal top margin
+        // Header with App Title and Profile Icon
         item {
-            Spacer(modifier = Modifier.height(24.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Relatrix",
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                    color = GrayMatterTheme.colors.textPrimary
+                )
+                IconButton(
+                    onClick = onNavigateToProfile,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(GrayMatterTheme.colors.surfaceCard)
+                        .border(1.dp, GrayMatterTheme.colors.neutral800, CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Profile",
+                        tint = GrayMatterTheme.colors.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
         }
         
         // Main action - Centered "+" button (Moved up)
@@ -85,30 +114,30 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 8.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(GrayMatterColors.Error.copy(alpha = 0.1f))
-                        .border(1.dp, GrayMatterColors.Error.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                        .background(GrayMatterTheme.colors.error.copy(alpha = 0.1f))
+                        .border(1.dp, GrayMatterTheme.colors.error.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
                         .padding(16.dp)
                 ) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Warning, null, tint = GrayMatterColors.Error, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.Warning, null, tint = GrayMatterTheme.colors.error, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 "Rogue Resources Detected",
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = GrayMatterColors.TextPrimary
+                                color = GrayMatterTheme.colors.textPrimary
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             "Some resources are not assigned to a topic. Please organize them to ensure data integrity.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = GrayMatterColors.TextSecondary
+                            color = GrayMatterTheme.colors.textSecondary
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Button(
                             onClick = { selectedOrphan = orphanEntries.first() },
-                            colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Error),
+                            colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.error),
                             modifier = Modifier.height(36.dp),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                             shape = RoundedCornerShape(8.dp)
@@ -136,7 +165,7 @@ fun HomeScreen(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp
                         ),
-                        color = GrayMatterColors.TextPrimary
+                        color = GrayMatterTheme.colors.textPrimary
                     )
                     IconButton(
                         onClick = onNavigateToRecentResources,
@@ -145,7 +174,7 @@ fun HomeScreen(
                         Icon(
                             imageVector = Icons.Default.ChevronRight,
                             contentDescription = "View All",
-                            tint = GrayMatterColors.Neutral700
+                            tint = GrayMatterTheme.colors.neutral700
                         )
                     }
                 }
@@ -204,7 +233,7 @@ private fun AddNewEntryCard(
                 .background(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            GrayMatterColors.Primary.copy(alpha = 0.15f),
+                            GrayMatterTheme.colors.primary.copy(alpha = 0.15f),
                             Color.Transparent
                         )
                     )
@@ -216,22 +245,22 @@ private fun AddNewEntryCard(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(28.dp))
-                .background(GrayMatterColors.SurfaceDark)
-                .border(1.dp, GrayMatterColors.Neutral800, RoundedCornerShape(28.dp))
+                .background(GrayMatterTheme.colors.surface)
+                .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(28.dp))
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
             Box(
                 modifier = Modifier
                     .size(64.dp)
-                    .background(GrayMatterColors.Neutral900, CircleShape)
-                    .border(1.dp, GrayMatterColors.Neutral700, CircleShape),
+                    .background(GrayMatterTheme.colors.neutral900, CircleShape)
+                    .border(1.dp, GrayMatterTheme.colors.neutral700, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "New Resource",
-                    tint = GrayMatterColors.Primary,
+                    tint = GrayMatterTheme.colors.primary,
                     modifier = Modifier.size(36.dp)
                 )
             }
@@ -272,8 +301,8 @@ private fun ContinueReadingCard(
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(24.dp))
-            .background(GrayMatterColors.SurfaceDark)
-            .border(1.5.dp, GrayMatterColors.Primary.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
+            .background(GrayMatterTheme.colors.surface)
+            .border(1.5.dp, GrayMatterTheme.colors.primary.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
             .clickable(onClick = onClick)
             .padding(24.dp)
     ) {
@@ -287,23 +316,23 @@ private fun ContinueReadingCard(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(GrayMatterColors.Primary.copy(alpha = 0.15f)),
+                        .background(GrayMatterTheme.colors.primary.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = GrayMatterColors.Primary,
+                        tint = GrayMatterTheme.colors.primary,
                         modifier = Modifier.size(24.dp)
                     )
                 }
-                Icon(Icons.Default.OpenInNew, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.OpenInNew, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
             }
 
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = GrayMatterColors.TextPrimary,
+                color = GrayMatterTheme.colors.textPrimary,
                 maxLines = 2
             )
 
@@ -316,26 +345,26 @@ private fun ContinueReadingCard(
                         Text(
                             "${(progress.percentComplete * 100).toInt()}% Read",
                             style = MaterialTheme.typography.labelSmall,
-                            color = GrayMatterColors.Primary
+                            color = GrayMatterTheme.colors.primary
                         )
                         Text(
                             "Page ${progress.currentPage + 1} of ${progress.totalPages}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = GrayMatterColors.Neutral500
+                            color = GrayMatterTheme.colors.neutral500
                         )
                     }
                     LinearProgressIndicator(
                         progress = progress.percentComplete.toFloat(),
                         modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
-                        color = GrayMatterColors.Primary,
-                        trackColor = GrayMatterColors.Neutral800
+                        color = GrayMatterTheme.colors.primary,
+                        trackColor = GrayMatterTheme.colors.neutral800
                     )
                 }
             } else {
                 Text(
                     text = "Pick up where you left off",
                     style = MaterialTheme.typography.labelMedium,
-                    color = GrayMatterColors.Neutral500
+                    color = GrayMatterTheme.colors.neutral500
                 )
             }
         }

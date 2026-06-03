@@ -49,23 +49,24 @@ fun DisplaySettingsSheet(
             )
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ── Themes List ──
-            ThemeGroup("Light Modes", listOf(
+            ThemeGroup("Clean", listOf(
                 ThemeOption("Daylight", "daylight", Color.White, Color.Black),
-                ThemeOption("Paper Classic", "paper_classic", Color(0xFFF4ECD8), Color(0xFF333333)),
-                ThemeOption("Book Linen", "book_linen", Color(0xFFFAF9F6), Color(0xFF3E3E3E))
+                ThemeOption("Paper Classic", "paper_classic", Color(0xFFF4ECD8), Color(0xFF333333))
             ), settings.theme, onSettingsChanged, settings)
 
-            ThemeGroup("Dark Modes", listOf(
-                ThemeOption("Night", "night", Color(0xFF121212), Color(0xFFB0B0B0)),
-                ThemeOption("AMOLED Black", "amoled_black", Color.Black, Color.White),
+            ThemeGroup("Dark", listOf(
+                ThemeOption("Night", "night", Color(0xFF121212), Color(0xFFD0D0D0)),
+                ThemeOption("True Black", "amoled_black", Color.Black, Color.White),
                 ThemeOption("Twilight", "twilight", Color(0xFF1A1B26), Color(0xFFC0CAF5)),
-                ThemeOption("Console", "console", Color(0xFF0D0D0D), Color(0xFF4AF626))
+                ThemeOption("Ocean", "ocean", Color(0xFF0D1B2A), Color(0xFF7EB8C2)),
+                ThemeOption("Forest", "forest", Color(0xFF0B1A0B), Color(0xFF6DA06D))
             ), settings.theme, onSettingsChanged, settings)
 
-            ThemeGroup("Warm Modes", listOf(
-                ThemeOption("Sepia", "sepia", Color(0xFF704214), Color(0xFFEBD5B3)),
-                ThemeOption("Vintage Parchment", "vintage_parchment", Color(0xFFF1E5AC), Color(0xFF4E342E))
+
+
+            ThemeGroup("Specialty", listOf(
+                ThemeOption("Console", "console", Color(0xFF0A0A0A), Color(0xFF4AF626)),
+                ThemeOption("Rosé", "rose", Color(0xFFFFF0F0), Color(0xFF4A2C2C))
             ), settings.theme, onSettingsChanged, settings)
 
             Spacer(modifier = Modifier.height(24.dp))

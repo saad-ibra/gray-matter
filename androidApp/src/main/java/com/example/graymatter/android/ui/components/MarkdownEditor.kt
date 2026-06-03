@@ -1,5 +1,6 @@
 package com.example.graymatter.android.ui.components
 
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -108,7 +109,7 @@ fun MarkdownEditor(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(GrayMatterColors.BackgroundDark)
+            .background(GrayMatterTheme.colors.background)
             .statusBarsPadding()
     ) {
         // Immersive Header
@@ -126,7 +127,7 @@ fun MarkdownEditor(
                     onBackClick()
                 }
             }) {
-                Icon(Icons.Default.Close, "Close", tint = GrayMatterColors.TextPrimary)
+                Icon(Icons.Default.Close, "Close", tint = GrayMatterTheme.colors.textPrimary)
             }
             
             // Mode Indicator / Word Count
@@ -134,13 +135,13 @@ fun MarkdownEditor(
                 Text(
                     text = if (isPreviewMode) "PREVIEW" else "EDITOR",
                     style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 2.sp),
-                    color = GrayMatterColors.Neutral500
+                    color = GrayMatterTheme.colors.neutral500
                 )
                 if (!isPreviewMode && wordCount > 0) {
                     Text(
                         text = "$wordCount words",
                         style = MaterialTheme.typography.labelSmall,
-                        color = GrayMatterColors.Neutral600
+                        color = GrayMatterTheme.colors.neutral600
                     )
                 }
             }
@@ -154,7 +155,7 @@ fun MarkdownEditor(
             ) {
                 Text(
                     "Save", 
-                    color = if (editableTitle.isNotBlank() && hasUnsavedChanges) GrayMatterColors.Primary else GrayMatterColors.Neutral700,
+                    color = if (editableTitle.isNotBlank() && hasUnsavedChanges) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral700,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -168,7 +169,7 @@ fun MarkdownEditor(
                 .padding(horizontal = 24.dp, vertical = 12.dp)
                 .height(44.dp)
                 .clip(RoundedCornerShape(12.dp)),
-            color = GrayMatterColors.Neutral900.copy(alpha = 0.5f)
+            color = GrayMatterTheme.colors.neutral900.copy(alpha = 0.5f)
         ) {
             Row(
                 modifier = Modifier.fillMaxSize().padding(4.dp),
@@ -179,13 +180,13 @@ fun MarkdownEditor(
                     onClick = { isPreviewMode = false },
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     shape = RoundedCornerShape(8.dp),
-                    color = if (!isPreviewMode) GrayMatterColors.Neutral800 else Color.Transparent
+                    color = if (!isPreviewMode) GrayMatterTheme.colors.neutral800 else Color.Transparent
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
                             "Write",
                             style = MaterialTheme.typography.titleSmall,
-                            color = if (!isPreviewMode) Color.White else GrayMatterColors.Neutral500
+                            color = if (!isPreviewMode) Color.White else GrayMatterTheme.colors.neutral500
                         )
                     }
                 }
@@ -195,20 +196,20 @@ fun MarkdownEditor(
                     onClick = { isPreviewMode = true },
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     shape = RoundedCornerShape(8.dp),
-                    color = if (isPreviewMode) GrayMatterColors.Neutral800 else Color.Transparent
+                    color = if (isPreviewMode) GrayMatterTheme.colors.neutral800 else Color.Transparent
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
                             "Preview",
                             style = MaterialTheme.typography.titleSmall,
-                            color = if (isPreviewMode) Color.White else GrayMatterColors.Neutral500
+                            color = if (isPreviewMode) Color.White else GrayMatterTheme.colors.neutral500
                         )
                     }
                 }
             }
         }
 
-        HorizontalDivider(color = GrayMatterColors.Neutral800.copy(alpha = 0.3f))
+        HorizontalDivider(color = GrayMatterTheme.colors.neutral800.copy(alpha = 0.3f))
 
         // Single flow scrollable container
         Column(
@@ -225,7 +226,7 @@ fun MarkdownEditor(
                         Text(
                             text = title,
                             style = MaterialTheme.typography.displaySmall,
-                            color = GrayMatterColors.TextPrimary,
+                            color = GrayMatterTheme.colors.textPrimary,
                             modifier = Modifier.padding(bottom = 24.dp)
                         )
                         
@@ -327,10 +328,10 @@ fun MarkdownEditor(
                                     editableTitle = it
                                 },
                                 textStyle = MaterialTheme.typography.displaySmall.copy(
-                                    color = GrayMatterColors.TextPrimary,
+                                    color = GrayMatterTheme.colors.textPrimary,
                                     fontWeight = FontWeight.Bold
                                 ),
-                                cursorBrush = SolidColor(GrayMatterColors.Primary),
+                                cursorBrush = SolidColor(GrayMatterTheme.colors.primary),
                                 singleLine = true,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -340,7 +341,7 @@ fun MarkdownEditor(
                                         Text(
                                             "Untitled Note",
                                             style = MaterialTheme.typography.displaySmall.copy(
-                                                color = GrayMatterColors.Neutral800,
+                                                color = GrayMatterTheme.colors.neutral800,
                                                 fontWeight = FontWeight.Bold
                                             )
                                         )
@@ -352,7 +353,7 @@ fun MarkdownEditor(
                             Text(
                                 text = title,
                                 style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
-                                color = GrayMatterColors.TextPrimary,
+                                color = GrayMatterTheme.colors.textPrimary,
                                 modifier = Modifier.padding(top = 24.dp, bottom = 12.dp)
                             )
                         }
@@ -380,12 +381,12 @@ fun MarkdownEditor(
                                     color = Color.White.copy(alpha = 0.9f),
                                     lineHeight = 28.sp
                                 ),
-                                cursorBrush = SolidColor(GrayMatterColors.Primary),
+                                cursorBrush = SolidColor(GrayMatterTheme.colors.primary),
                                 visualTransformation = MarkdownVisualTransformation(),
                                 modifier = Modifier.fillMaxWidth(),
                                 decorationBox = { inner ->
                                     if (textFieldValue.text.isEmpty()) {
-                                        Text("Start writing your thoughts...", color = GrayMatterColors.Neutral700, style = MaterialTheme.typography.bodyLarge)
+                                        Text("Start writing your thoughts...", color = GrayMatterTheme.colors.neutral700, style = MaterialTheme.typography.bodyLarge)
                                     }
                                     inner()
                                 }
@@ -404,10 +405,10 @@ fun MarkdownEditor(
                             .clip(RoundedCornerShape(24.dp))
                             .border(
                                 1.dp, 
-                                GrayMatterColors.Neutral800.copy(alpha = 0.4f), 
+                                GrayMatterTheme.colors.neutral800.copy(alpha = 0.4f), 
                                 RoundedCornerShape(24.dp)
                             ),
-                        color = GrayMatterColors.SurfaceDark.copy(alpha = 0.85f),
+                        color = GrayMatterTheme.colors.surface.copy(alpha = 0.85f),
                         tonalElevation = 8.dp
                     ) {
                         Column {
@@ -432,7 +433,7 @@ fun MarkdownEditor(
                                         }
                                     }
                                 }
-                                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(GrayMatterColors.Neutral800.copy(alpha = 0.3f)))
+                                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(GrayMatterTheme.colors.neutral800.copy(alpha = 0.3f)))
                             }
 
                             // Actions
@@ -451,7 +452,7 @@ fun MarkdownEditor(
                                 MarkdownToolbarAction(Icons.Default.FormatQuote) { textFieldValue = toggleLineStart(textFieldValue, "> ") }
                                 MarkdownToolbarAction(Icons.Default.Code) { textFieldValue = wrapSelection(textFieldValue, "`") }
                                 
-                                VerticalDivider(modifier = Modifier.height(24.dp).padding(horizontal = 4.dp), color = GrayMatterColors.Neutral800)
+                                VerticalDivider(modifier = Modifier.height(24.dp).padding(horizontal = 4.dp), color = GrayMatterTheme.colors.neutral800)
                                 
                                 // Reference Trigger
                                 TextButton(
@@ -480,7 +481,7 @@ fun MarkdownEditor(
         AlertDialog(
             onDismissRequest = { showUnsavedDialog = false },
             title = { Text("Unsaved Changes", color = Color.White) },
-            text = { Text("You have unsaved changes. What would you like to do?", color = GrayMatterColors.TextSecondary) },
+            text = { Text("You have unsaved changes. What would you like to do?", color = GrayMatterTheme.colors.textSecondary) },
             containerColor = Color(0xFF1E1E22),
             confirmButton = {
                 TextButton(onClick = {
@@ -489,7 +490,7 @@ fun MarkdownEditor(
                     lastSavedText = textFieldValue.text
                     onBackClick()
                 }) {
-                    Text("Save & Close", color = GrayMatterColors.Primary, fontWeight = FontWeight.Bold)
+                    Text("Save & Close", color = GrayMatterTheme.colors.primary, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -573,7 +574,7 @@ private sealed class PreviewSegment {
 @Composable
 private fun MarkdownToolbarAction(icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
     IconButton(onClick = onClick) {
-        Icon(icon, null, tint = GrayMatterColors.Neutral500, modifier = Modifier.size(20.dp))
+        Icon(icon, null, tint = GrayMatterTheme.colors.neutral500, modifier = Modifier.size(20.dp))
     }
 }
 

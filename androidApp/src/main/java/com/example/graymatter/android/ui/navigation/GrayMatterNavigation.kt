@@ -141,12 +141,12 @@ fun GrayMatterNavigation(
                             currentRoute = when (pagerState.currentPage) {
                                 0 -> NavigationDestination.Home.route
                                 1 -> NavigationDestination.Library.route
-                                2 -> NavigationDestination.Profile.route
+                                2 -> NavigationDestination.KnowledgeGraph.route
                                 else -> NavigationDestination.Home.route
                             },
                             onNavigateToHome = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
                             onNavigateToLibrary = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
-                            onNavigateToProfile = { coroutineScope.launch { pagerState.animateScrollToPage(2) } }
+                            onNavigateToRelatrix = { coroutineScope.launch { pagerState.animateScrollToPage(2) } }
                         )
                     }
                 }
@@ -157,18 +157,19 @@ fun GrayMatterNavigation(
                             currentRoute = when (pagerState.currentPage) {
                                 0 -> NavigationDestination.Home.route
                                 1 -> NavigationDestination.Library.route
-                                2 -> NavigationDestination.Profile.route
+                                2 -> NavigationDestination.KnowledgeGraph.route
                                 else -> NavigationDestination.Home.route
                             },
                             onNavigateToHome = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
                             onNavigateToLibrary = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
-                            onNavigateToProfile = { coroutineScope.launch { pagerState.animateScrollToPage(2) } }
+                            onNavigateToRelatrix = { coroutineScope.launch { pagerState.animateScrollToPage(2) } }
                         )
                     }
                     
                     androidx.compose.foundation.pager.HorizontalPager(
                         state = pagerState,
-                        modifier = Modifier.weight(1f).fillMaxHeight()
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                        beyondBoundsPageCount = 0
                     ) { page ->
                     when (page) {
                         0 -> {
@@ -191,6 +192,9 @@ fun GrayMatterNavigation(
                                 },
                                 onNavigateToRecentResources = {
                                     navController.navigate(NavigationDestination.RecentResources.route)
+                                },
+                                onNavigateToProfile = {
+                                    navController.navigate(NavigationDestination.Profile.route)
                                 }
                             )
                         }
@@ -244,24 +248,36 @@ fun GrayMatterNavigation(
                             )
                         }
                         2 -> {
-                            ProfileScreen(
-                                onNavigateToGraph = {
-                                    navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute())
-                                },
-                                onNavigateToTemplates = {
-                                    navController.navigate(NavigationDestination.TemplateManagement.route)
-                                },
-                                onNavigateToRecentlyDeleted = {
-                                    navController.navigate(NavigationDestination.RecentlyDeleted.route)
-                                },
-                                onNavigateToLookups = {
-                                    navController.navigate(NavigationDestination.Lookups.route)
-                                },
-                                onNavigateToBackupSettings = {
-                                    navController.navigate(NavigationDestination.BackupSettings.route)
-                                },
-                                onNavigateToSecuritySettings = {
-                                    navController.navigate(NavigationDestination.SecuritySettings.route)
+                            val graphViewModel: com.example.graymatter.android.ui.graph.KnowledgeGraphViewModel = koinViewModel()
+
+                            // Force fresh data on every navigation — ViewModel is cached so init only runs once
+                            LaunchedEffect(Unit) {
+                                graphViewModel.loadGraphData()
+                            }
+
+                            com.example.graymatter.android.ui.graph.KnowledgeGraphScreen(
+                                viewModel = graphViewModel,
+                                initialSelectedNodeId = null,
+                                onBackClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
+                                onNavigateHome = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
+                                onNodeDoubleTap = { node ->
+                                    when (node.type) {
+                                        com.example.graymatter.android.ui.graph.NodeType.TOPIC -> {
+                                            navController.navigate(NavigationDestination.TopicDetail.buildRoute(node.id))
+                                        }
+                                        com.example.graymatter.android.ui.graph.NodeType.RESOURCE -> {
+                                            val item = viewModel.resourceEntriesStream.value.find { it.resourceId == node.id }
+                                            if (item != null) navController.navigate(NavigationDestination.ResourceDetail.buildRoute(item.id))
+                                        }
+                                        else -> {
+                                            coroutineScope.launch {
+                                                val opinion = opinionRepository.getOpinionById(node.id)
+                                                if (opinion != null) {
+                                                    navController.navigate(NavigationDestination.ResourceDetail.buildRoute(opinion.itemId, opinion.id))
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             )
                         }
@@ -269,6 +285,31 @@ fun GrayMatterNavigation(
                 }
             } // Close Row
         } // Close Scaffold
+        }
+
+        // Profile Screen standalone route
+        composable(route = NavigationDestination.Profile.route) {
+            ProfileScreen(
+                onNavigateToTemplates = {
+                    navController.navigate(NavigationDestination.TemplateManagement.route)
+                },
+                onNavigateToRecentlyDeleted = {
+                    navController.navigate(NavigationDestination.RecentlyDeleted.route)
+                },
+                onNavigateToLookups = {
+                    navController.navigate(NavigationDestination.Lookups.route)
+                },
+                onNavigateToBackupSettings = {
+                    navController.navigate(NavigationDestination.BackupSettings.route)
+                },
+                onNavigateToSecuritySettings = {
+                    navController.navigate(NavigationDestination.SecuritySettings.route)
+                },
+                onNavigateToAppearanceSettings = {
+                    navController.navigate(NavigationDestination.AppearanceSettings.route)
+                },
+                onBackClick = { navController.popBackStack() }
+            )
         }
 
         // Topic Detail Screen (Synthesis)
@@ -675,6 +716,7 @@ fun GrayMatterNavigation(
                 onCreateNewEntryClick = {},
                 onNavigateToLibrary = { navController.navigate(NavigationDestination.Home.route) },
                 onNavigateToRecentResources = {},
+                onNavigateToProfile = {},
                 onItemClick = {}
             )
         }
@@ -855,6 +897,15 @@ fun GrayMatterNavigation(
             val securityViewModel: com.example.graymatter.android.ui.viewmodel.SecurityViewModel = koinViewModel()
             com.example.graymatter.android.ui.profile.SecuritySettingsScreen(
                 viewModel = securityViewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // Appearance Settings Screen
+        composable(
+            route = NavigationDestination.AppearanceSettings.route
+        ) {
+            com.example.graymatter.android.ui.screens.AppearanceSettingsScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }

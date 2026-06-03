@@ -78,4 +78,6 @@ sealed class NavigationDestination(val route: String) {
     object BackupSettings : NavigationDestination("backup_settings")
 
     object SecuritySettings : NavigationDestination("security_settings")
+
+    object AppearanceSettings : NavigationDestination("appearance_settings")
 }

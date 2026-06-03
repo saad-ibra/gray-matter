@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
 import com.example.graymatter.android.ui.viewmodel.TrashViewModel
 import com.example.graymatter.android.ui.components.TopicPickerSheet
@@ -84,8 +85,8 @@ fun RecentlyDeletedScreen(
         AlertDialog(
             onDismissRequest = { showRestoreConfirm = false },
             title = { Text("Restore Items", color = Color.White) },
-            text = { Text("Are you sure you want to restore ${selectedIds.size} selected item(s)?", color = GrayMatterColors.TextSecondary) },
-            containerColor = Color(0xFF1A1A1E),
+            text = { Text("Are you sure you want to restore ${selectedIds.size} selected item(s)?", color = GrayMatterTheme.colors.textSecondary) },
+            containerColor = GrayMatterTheme.colors.neutral800,
             confirmButton = {
                 TextButton(onClick = {
                     val ids = selectedIds
@@ -105,7 +106,7 @@ fun RecentlyDeletedScreen(
                     selectedIds = emptySet()
                     showRestoreConfirm = false
                 }) {
-                    Text("Restore", color = GrayMatterColors.Primary)
+                    Text("Restore", color = GrayMatterTheme.colors.primary)
                 }
             },
             dismissButton = {
@@ -120,8 +121,8 @@ fun RecentlyDeletedScreen(
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text("Permanently Delete", color = Color.White) },
-            text = { Text("Are you sure you want to permanently delete ${selectedIds.size} selected item(s)? This action cannot be undone.", color = GrayMatterColors.TextSecondary) },
-            containerColor = Color(0xFF1A1A1E),
+            text = { Text("Are you sure you want to permanently delete ${selectedIds.size} selected item(s)? This action cannot be undone.", color = GrayMatterTheme.colors.textSecondary) },
+            containerColor = GrayMatterTheme.colors.neutral800,
             confirmButton = {
                 TextButton(onClick = {
                     val ids = selectedIds
@@ -141,7 +142,7 @@ fun RecentlyDeletedScreen(
                     selectedIds = emptySet()
                     showDeleteConfirm = false
                 }) {
-                    Text("Delete", color = GrayMatterColors.Error)
+                    Text("Delete", color = GrayMatterTheme.colors.error)
                 }
             },
             dismissButton = {
@@ -180,7 +181,7 @@ fun RecentlyDeletedScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(GrayMatterColors.BackgroundDark)
+            .background(GrayMatterTheme.colors.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
@@ -193,12 +194,12 @@ fun RecentlyDeletedScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = GrayMatterColors.TextPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = GrayMatterTheme.colors.textPrimary)
                     }
                     Text(
                         text = if (isSelectionMode) "${selectedIds.size} Selected" else "Recently Deleted",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = GrayMatterColors.TextPrimary,
+                        color = GrayMatterTheme.colors.textPrimary,
                         modifier = Modifier.padding(start = 8.dp)
                     )
                 }
@@ -213,15 +214,15 @@ fun RecentlyDeletedScreen(
                         ) {
                             Text(
                                 text = if (allSelected) "Deselect All" else "Select All",
-                                color = GrayMatterColors.Primary,
+                                color = GrayMatterTheme.colors.primary,
                                 style = MaterialTheme.typography.labelLarge
                             )
                         }
                         IconButton(onClick = { showRestoreConfirm = true }) {
-                            Icon(Icons.Default.Restore, contentDescription = "Restore", tint = GrayMatterColors.Primary)
+                            Icon(Icons.Default.Restore, contentDescription = "Restore", tint = GrayMatterTheme.colors.primary)
                         }
                         IconButton(onClick = { showDeleteConfirm = true }) {
-                            Icon(Icons.Default.DeleteForever, contentDescription = "Permanently Delete", tint = GrayMatterColors.Error)
+                            Icon(Icons.Default.DeleteForever, contentDescription = "Permanently Delete", tint = GrayMatterTheme.colors.error)
                         }
                     }
                 }
@@ -230,9 +231,9 @@ fun RecentlyDeletedScreen(
             if (combinedList.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.DeleteOutline, null, tint = GrayMatterColors.Neutral600, modifier = Modifier.size(64.dp))
+                        Icon(Icons.Default.DeleteOutline, null, tint = GrayMatterTheme.colors.neutral600, modifier = Modifier.size(64.dp))
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("No recently deleted items", color = GrayMatterColors.Neutral600)
+                        Text("No recently deleted items", color = GrayMatterTheme.colors.neutral600)
                     }
                 }
             } else {
@@ -283,8 +284,8 @@ fun RecentlyDeletedScreen(
                                 .fillMaxWidth()
                                 .padding(horizontal = 24.dp, vertical = 6.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSelected) GrayMatterColors.Primary.copy(alpha=0.1f) else GrayMatterColors.SurfaceDark)
-                                .border(1.dp, if (isSelected) GrayMatterColors.Primary else GrayMatterColors.Neutral800, RoundedCornerShape(12.dp))
+                                .background(if (isSelected) GrayMatterTheme.colors.primary.copy(alpha=0.1f) else GrayMatterTheme.colors.surface)
+                                .border(1.dp, if (isSelected) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral800, RoundedCornerShape(12.dp))
                                 .combinedClickable(
                                     onClick = {
                                         if (isSelectionMode) {
@@ -313,15 +314,15 @@ fun RecentlyDeletedScreen(
                                             selectedIds = if (it) selectedIds + item.id else selectedIds - item.id 
                                         },
                                         colors = CheckboxDefaults.colors(
-                                            checkedColor = GrayMatterColors.Primary,
-                                            uncheckedColor = GrayMatterColors.Neutral500,
+                                            checkedColor = GrayMatterTheme.colors.primary,
+                                            uncheckedColor = GrayMatterTheme.colors.neutral500,
                                             checkmarkColor = Color.Black
                                         ),
                                         modifier = Modifier.padding(end = 12.dp)
                                     )
                                 }
                                 
-                                Icon(icon, null, tint = GrayMatterColors.Primary, modifier = Modifier.size(24.dp))
+                                Icon(icon, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(24.dp))
                                 Spacer(modifier = Modifier.width(16.dp))
                                 
                                 Column(modifier = Modifier.weight(1f)) {
@@ -329,27 +330,27 @@ fun RecentlyDeletedScreen(
                                         Text(
                                             text = typeName,
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = GrayMatterColors.Primary,
+                                            color = GrayMatterTheme.colors.primary,
                                             modifier = Modifier.padding(end = 6.dp)
                                         )
                                         Text(
                                             text = "• $daysRemaining days left",
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = if (daysRemaining <= 3) GrayMatterColors.Error else GrayMatterColors.Neutral500
+                                            color = if (daysRemaining <= 3) GrayMatterTheme.colors.error else GrayMatterTheme.colors.neutral500
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
                                         text = item.title,
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                        color = GrayMatterColors.TextPrimary,
+                                        color = GrayMatterTheme.colors.textPrimary,
                                         maxLines = 1
                                     )
                                     if (snippet.isNotBlank()) {
                                         Text(
                                             text = snippet,
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = GrayMatterColors.TextSecondary,
+                                            color = GrayMatterTheme.colors.textSecondary,
                                             maxLines = 1
                                         )
                                     }
@@ -408,19 +409,19 @@ private fun DeletedItemPreviewDialog(
                 Text(
                     text = item.title,
                     style = MaterialTheme.typography.titleLarge,
-                    color = GrayMatterColors.TextPrimary
+                    color = GrayMatterTheme.colors.textPrimary
                 )
                 if (item is DeletedItemUiModel.OpinionItem) {
                     Text(
                         text = item.text,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = GrayMatterColors.TextSecondary
+                        color = GrayMatterTheme.colors.textSecondary
                     )
                 } else if (item is DeletedItemUiModel.ResourceItem) {
                     Text(
                         text = "Type: ${item.resourceType}",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = GrayMatterColors.TextSecondary
+                        color = GrayMatterTheme.colors.textSecondary
                     )
                 }
                 
@@ -433,15 +434,15 @@ private fun DeletedItemPreviewDialog(
                 Text(
                     text = "Deleted on $dateStr",
                     style = MaterialTheme.typography.labelSmall,
-                    color = GrayMatterColors.Neutral500
+                    color = GrayMatterTheme.colors.neutral500
                 )
             }
         },
-        containerColor = Color(0xFF1A1A1E),
+        containerColor = GrayMatterTheme.colors.neutral800,
         confirmButton = {
             Button(
                 onClick = onRestore,
-                colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary)
+                colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary)
             ) {
                 Text("Restore", color = Color.Black)
             }
