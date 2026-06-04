@@ -87,8 +87,8 @@ fun TemplateEditorDialog(
                         focusedContainerColor = GrayMatterTheme.colors.surfaceInput,
                         unfocusedIndicatorColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
-                        unfocusedTextColor = Color.White,
-                        focusedTextColor = Color.White,
+                        unfocusedTextColor = GrayMatterTheme.colors.textPrimary,
+                        focusedTextColor = GrayMatterTheme.colors.textPrimary,
                         cursorColor = GrayMatterColors.TypeTemplate,
                         focusedLabelColor = GrayMatterColors.TypeTemplate,
                         unfocusedLabelColor = GrayMatterTheme.colors.neutral500
@@ -127,8 +127,8 @@ fun TemplateEditorDialog(
                                 focusedContainerColor = GrayMatterTheme.colors.surfaceInput,
                                 unfocusedIndicatorColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
-                                unfocusedTextColor = Color.White,
-                                focusedTextColor = Color.White,
+                                unfocusedTextColor = GrayMatterTheme.colors.textPrimary,
+                                focusedTextColor = GrayMatterTheme.colors.textPrimary,
                                 cursorColor = GrayMatterColors.TypeTemplate
                             ),
                             shape = RoundedCornerShape(12.dp)

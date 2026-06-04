@@ -38,7 +38,7 @@ fun TemplateSelector(
             Icon(
                 Icons.Default.DashboardCustomize,
                 contentDescription = "Template",
-                tint = if (GrayMatterTheme.colors.isLight) Color.Black else Color.White,
+                tint = GrayMatterTheme.colors.textSecondary,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -58,7 +58,7 @@ fun TemplateSelector(
             
             templates.forEach { template ->
                 DropdownMenuItem(
-                    text = { Text(template.name, color = Color.White) },
+                    text = { Text(template.name, color = GrayMatterColors.TypeTemplate) },
                     onClick = {
                         onTemplateSelect(template)
                         showMenu = false
@@ -104,10 +104,10 @@ fun DynamicEntryForm(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(GrayMatterColors.Neutral950)
+                        .background(GrayMatterTheme.colors.surfaceInput)
                         .border(
                             width = 1.dp,
-                            color = GrayMatterTheme.colors.neutral800,
+                            color = GrayMatterTheme.colors.surfaceBorder,
                             shape = RoundedCornerShape(16.dp)
                         )
                         .padding(16.dp)
@@ -115,12 +115,12 @@ fun DynamicEntryForm(
                     BasicTextField(
                         value = fieldValues[heading] ?: "",
                         onValueChange = { onFieldValueChange(heading, it) },
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.White),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterTheme.colors.textPrimary),
                         modifier = Modifier.fillMaxWidth(),
                         cursorBrush = SolidColor(GrayMatterColors.TypeTemplate),
                         decorationBox = { inner ->
                             if ((fieldValues[heading] ?: "").isEmpty()) {
-                                Text("Enter $heading...", color = GrayMatterTheme.colors.neutral700)
+                                Text("Enter $heading...", color = GrayMatterTheme.colors.neutral600)
                             }
                             inner()
                         }

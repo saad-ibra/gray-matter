@@ -1015,7 +1015,7 @@ private fun CustomizedOpinionSection(
                     Icon(
                         Icons.Default.AddAPhoto, 
                         "Add Image", 
-                        tint = if (GrayMatterTheme.colors.isLight) Color.Black else Color.White, 
+                        tint = GrayMatterTheme.colors.textSecondary, 
                         modifier = Modifier.size(20.dp)
                     )
                 }
