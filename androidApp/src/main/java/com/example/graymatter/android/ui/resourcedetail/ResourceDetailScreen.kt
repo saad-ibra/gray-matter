@@ -1734,7 +1734,7 @@ private fun OpinionTimelineItem(
                                         Text(
                                             text = heading,
                                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = GrayMatterTheme.colors.neutral500
+                                            color = GrayMatterColors.TypeTemplate
                                         )
                                         Text(
                                             text = highlightText(response, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
@@ -2217,7 +2217,12 @@ private fun OpinionEditDialog(
                                 onClick = { showImagePicker = true },
                                 modifier = Modifier.size(36.dp)
                             ) {
-                                Icon(Icons.Default.AddAPhoto, "Add Image", tint = Color.White, modifier = Modifier.size(20.dp))
+                                Icon(
+                                    Icons.Default.AddAPhoto, 
+                                    "Add Image", 
+                                    tint = if (GrayMatterTheme.colors.isLight) Color.Black else Color.White, 
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
                             com.example.graymatter.android.ui.components.TemplateSelector(
                                 templates = templates,

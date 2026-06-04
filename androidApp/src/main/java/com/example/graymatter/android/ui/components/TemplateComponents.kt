@@ -38,7 +38,7 @@ fun TemplateSelector(
             Icon(
                 Icons.Default.DashboardCustomize,
                 contentDescription = "Template",
-                tint = Color.White,
+                tint = if (GrayMatterTheme.colors.isLight) Color.Black else Color.White,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -49,7 +49,7 @@ fun TemplateSelector(
             modifier = Modifier.background(GrayMatterTheme.colors.surface)
         ) {
             DropdownMenuItem(
-                text = { Text("None (Plain)", color = Color.White) },
+                text = { Text("None (Plain)", color = GrayMatterColors.TypeOpinion) },
                 onClick = {
                     onTemplateSelect(null)
                     showMenu = false
@@ -98,7 +98,7 @@ fun DynamicEntryForm(
                 Text(
                     text = heading.uppercase(),
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                    color = GrayMatterTheme.colors.neutral500
+                    color = GrayMatterColors.TypeTemplate
                 )
                 Box(
                     modifier = Modifier

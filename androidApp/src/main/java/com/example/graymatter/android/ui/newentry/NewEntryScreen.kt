@@ -1012,7 +1012,12 @@ private fun CustomizedOpinionSection(
                     onClick = onShowImageSourcePicker,
                     modifier = Modifier.size(36.dp)
                 ) {
-                    Icon(Icons.Default.AddAPhoto, "Add Image", tint = Color.White, modifier = Modifier.size(20.dp))
+                    Icon(
+                        Icons.Default.AddAPhoto, 
+                        "Add Image", 
+                        tint = if (GrayMatterTheme.colors.isLight) Color.Black else Color.White, 
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
                 if (!isVisualMode) {
                     TemplateSelector(

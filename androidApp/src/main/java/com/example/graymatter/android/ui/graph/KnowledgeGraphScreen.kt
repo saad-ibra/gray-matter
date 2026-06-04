@@ -17,6 +17,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -38,6 +39,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -170,10 +172,11 @@ fun KnowledgeGraphScreen(
     var lastVolumeChangeTime by remember { mutableLongStateOf(0L) }
 
     // ── Pre-cached Color instances (avoids Color.copy() allocations per frame) ──
-    val nodeColorMap = remember {
+    val themeTextPrimary = GrayMatterTheme.colors.textPrimary
+    val nodeColorMap = remember(themeTextPrimary) {
         mapOf(
-            NodeType.TOPIC to Color.White,
-            NodeType.RESOURCE to Color.White,
+            NodeType.TOPIC to themeTextPrimary,
+            NodeType.RESOURCE to themeTextPrimary,
             NodeType.ANNOTATION to GrayMatterColors.TypeAnnotation,
             NodeType.BOOKMARK to GrayMatterColors.TypeBookmark,
             NodeType.TEMPLATE to GrayMatterColors.TypeTemplate,
@@ -385,7 +388,7 @@ fun KnowledgeGraphScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(GrayMatterColors.BackgroundDark)
+            .background(GrayMatterTheme.colors.background)
             .focusRequester(focusRequester)
             .focusable()
             .onKeyEvent { keyEvent ->
@@ -467,6 +470,7 @@ fun KnowledgeGraphScreen(
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
+                    .clipToBounds()
                     .onSizeChanged { canvasSize = Size(it.width.toFloat(), it.height.toFloat()) }
                     .pointerInput(Unit) {
                         // Two-finger: zoom + rotate 3D. One-finger: camera pan.
@@ -804,12 +808,12 @@ fun KnowledgeGraphScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = GrayMatterTheme.colors.textPrimary)
             }
             Text(
                 text = "Relatrix",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = Color.White,
+                color = GrayMatterTheme.colors.textPrimary,
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
@@ -1011,7 +1015,8 @@ fun KnowledgeGraphScreen(
                 val filterOptions = listOf(
                     "Topics" to showTopics,
                     "Resources" to showResources,
-                    "Opinions" to (showOpinions || showAnnotations),
+                    "Opinions" to showOpinions,
+                    "Annotations" to showAnnotations,
                     "Bookmarks" to showBookmarks,
                     "Templates" to showTemplates,
                     "Lookup" to showLookup,
@@ -1029,11 +1034,8 @@ fun KnowledgeGraphScreen(
                                 when (name) {
                                     "Topics" -> showTopics = !showTopics
                                     "Resources" -> showResources = !showResources
-                                    "Opinions" -> {
-                                        val newState = !(showOpinions && showAnnotations)
-                                        showOpinions = newState
-                                        showAnnotations = newState
-                                    }
+                                    "Opinions" -> showOpinions = !showOpinions
+                                    "Annotations" -> showAnnotations = !showAnnotations
                                     "Bookmarks" -> showBookmarks = !showBookmarks
                                     "Templates" -> showTemplates = !showTemplates
                                     "Lookup" -> showLookup = !showLookup
@@ -1043,29 +1045,18 @@ fun KnowledgeGraphScreen(
                             label = { Text(name, color = Color.Unspecified) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = when(name) {
-                                    "Topics"    -> Color.White.copy(alpha = 0.22f)
-                                    "Resources" -> Color.White.copy(alpha = 0.22f)
-                                    "Opinions"  -> GrayMatterColors.TypeAnnotation.copy(alpha = 0.25f)
+                                    "Topics"    -> GrayMatterTheme.colors.textPrimary.copy(alpha = 0.22f)
+                                    "Resources" -> GrayMatterTheme.colors.textPrimary.copy(alpha = 0.22f)
+                                    "Opinions"  -> GrayMatterColors.TypeOpinion.copy(alpha = 0.25f)
+                                    "Annotations"  -> GrayMatterColors.TypeAnnotation.copy(alpha = 0.25f)
                                     "Bookmarks" -> GrayMatterColors.TypeBookmark.copy(alpha = 0.25f)
                                     "Templates" -> GrayMatterColors.TypeTemplate.copy(alpha = 0.25f)
                                     "Lookup"    -> GrayMatterColors.TypeLookupMain.copy(alpha = 0.25f)
                                     "Visuals"   -> GrayMatterColors.TypeVisual.copy(alpha = 0.25f)
                                     else        -> GrayMatterColors.TypeOpinion.copy(alpha = 0.25f)
                                 },
-                                selectedLabelColor = when(name) {
-                                    "Topics"    -> Color.White
-                                    "Resources" -> Color.White
-                                    "Opinions"  -> GrayMatterColors.TypeAnnotation
-                                    "Bookmarks" -> GrayMatterColors.TypeBookmark
-                                    "Templates" -> GrayMatterColors.TypeTemplate
-                                    "Lookup"    -> GrayMatterColors.TypeLookupMain
-                                    "Visuals"   -> GrayMatterColors.TypeVisual
-                                    else        -> GrayMatterColors.TypeOpinion
-                                },
-                                labelColor = when(name) {
-                                    "Lookup" -> GrayMatterColors.TypeLookupMain
-                                    else     -> GrayMatterColors.Neutral400
-                                }
+                                selectedLabelColor = Color.White,
+                                labelColor = Color.White
                             )
                         )
                     }

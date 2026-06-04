@@ -101,7 +101,7 @@ fun TemplateEditorDialog(
                 Text(
                     text = "HEADINGS",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                    color = GrayMatterTheme.colors.neutral500
+                    color = GrayMatterColors.TypeTemplate
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
