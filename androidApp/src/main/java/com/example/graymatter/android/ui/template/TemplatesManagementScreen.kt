@@ -111,7 +111,7 @@ fun TemplatesManagementScreen(
             val template = templates.find { it.id == templateToDeleteId }
             AlertDialog(
                 onDismissRequest = { templateToDeleteId = null },
-                title = { Text("Delete Template", color = Color.White) },
+                title = { Text("Delete Template", color = GrayMatterTheme.colors.textPrimary) },
                 text = { Text("Are you sure you want to delete '${template?.name ?: "this template"}'? This cannot be undone once the undo window closes.", color = GrayMatterTheme.colors.textSecondary) },
                 containerColor = GrayMatterTheme.colors.neutral800,
                 confirmButton = {
@@ -138,7 +138,7 @@ fun TemplatesManagementScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { templateToDeleteId = null }) {
-                        Text("Cancel", color = Color.White)
+                        Text("Cancel", color = GrayMatterTheme.colors.neutral500)
                     }
                 }
             )
@@ -259,8 +259,8 @@ private fun TemplateEditorDialog(
                     focusedContainerColor = GrayMatterTheme.colors.surfaceInput,
                     unfocusedIndicatorColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
-                    unfocusedTextColor = Color.White,
-                    focusedTextColor = Color.White
+                    unfocusedTextColor = GrayMatterTheme.colors.textPrimary,
+                    focusedTextColor = GrayMatterTheme.colors.textPrimary
                 ),
                 shape = RoundedCornerShape(16.dp)
             )
@@ -296,8 +296,8 @@ private fun TemplateEditorDialog(
                             focusedContainerColor = GrayMatterTheme.colors.surfaceInput,
                             unfocusedIndicatorColor = Color.Transparent,
                             focusedIndicatorColor = Color.Transparent,
-                            unfocusedTextColor = Color.White,
-                            focusedTextColor = Color.White
+                            unfocusedTextColor = GrayMatterTheme.colors.textPrimary,
+                            focusedTextColor = GrayMatterTheme.colors.textPrimary
                         ),
                         shape = RoundedCornerShape(16.dp)
                     )

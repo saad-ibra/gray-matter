@@ -443,7 +443,7 @@ fun ResourceDetailScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Filter Timeline", color = Color.White, fontWeight = FontWeight.Bold)
+                                    Text("Filter Timeline", color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.Bold)
                                     Row {
                                         TextButton(
                                             onClick = { selectedFilters = filterNames },
@@ -494,7 +494,7 @@ fun ResourceDetailScreen(
                                                 )
                                             )
                                             Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = if (isSelected) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral500)
-                                            Text(filter, color = Color.White)
+                                            Text(filter, color = GrayMatterTheme.colors.textPrimary)
                                         }
                                     }
                                 }
@@ -598,7 +598,7 @@ fun ResourceDetailScreen(
         if (showDeleteConfirm) {
             AlertDialog(
                 onDismissRequest = { showDeleteConfirm = false },
-                title = { Text("Delete Resource", color = Color.White) },
+                title = { Text("Delete Resource", color = GrayMatterTheme.colors.textPrimary) },
                 text = { Text("Are you sure you want to delete this resource and all its opinions? This action cannot be undone.", color = GrayMatterTheme.colors.textSecondary) },
                 containerColor = GrayMatterTheme.colors.neutral800,
                 confirmButton = {
@@ -614,7 +614,7 @@ fun ResourceDetailScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteConfirm = false }) {
-                        Text("Cancel", color = Color.White)
+                        Text("Cancel", color = GrayMatterTheme.colors.textPrimary)
                     }
                 }
             )
@@ -746,7 +746,7 @@ private fun RenameDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = GrayMatterTheme.colors.neutral800,
-        title = { Text("Rename Resource", color = Color.White) },
+        title = { Text("Rename Resource", color = GrayMatterTheme.colors.textPrimary) },
         text = {
             OutlinedTextField(
                 value = name,
@@ -755,8 +755,8 @@ private fun RenameDialog(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
+                    focusedTextColor = GrayMatterTheme.colors.textPrimary,
+                    unfocusedTextColor = GrayMatterTheme.colors.textPrimary
                 )
             )
         },
@@ -767,7 +767,7 @@ private fun RenameDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = Color.White.copy(alpha = 0.6f))
+                Text("Cancel", color = GrayMatterTheme.colors.neutral500)
             }
         }
     )
@@ -868,7 +868,7 @@ private fun ResourceDetailHeader(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                         Icon(Icons.Default.FilterList, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
-                                        Text("Filter Timeline", color = Color.White)
+                                        Text("Filter Timeline", color = GrayMatterTheme.colors.textPrimary)
                                     }
                                 },
                                 onClick = { menuExpanded = false; onFilterClick() }
@@ -879,7 +879,7 @@ private fun ResourceDetailHeader(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                         Icon(Icons.Default.Description, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
-                                        Text("Export as Markdown", color = Color.White)
+                                        Text("Export as Markdown", color = GrayMatterTheme.colors.textPrimary)
                                     }
                                 },
                                 onClick = { menuExpanded = false; onExportClick() }
@@ -890,7 +890,7 @@ private fun ResourceDetailHeader(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                         Icon(Icons.Default.PictureAsPdf, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
-                                        Text("Export as PDF", color = Color.White)
+                                        Text("Export as PDF", color = GrayMatterTheme.colors.textPrimary)
                                     }
                                 },
                                 onClick = { menuExpanded = false; onExportPdfClick() }
@@ -900,8 +900,8 @@ private fun ResourceDetailHeader(
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        Icon(Icons.Default.Hub, null, tint = Color.White, modifier = Modifier.size(20.dp))
-                                        Text("View in Relatrix", color = Color.White)
+                                        Icon(Icons.Default.Hub, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
+                                        Text("View in Relatrix", color = GrayMatterTheme.colors.textPrimary)
                                     }
                                 },
                                 onClick = { menuExpanded = false; onViewInRelatrixClick() }
@@ -912,7 +912,7 @@ private fun ResourceDetailHeader(
                             text = {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                     Icon(Icons.Default.Edit, null, tint = GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(20.dp))
-                                    Text("Edit Resource", color = Color.White)
+                                    Text("Edit Resource", color = GrayMatterTheme.colors.textPrimary)
                                 }
                             },
                             onClick = {
@@ -1371,7 +1371,7 @@ private fun OpinionTimelineItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                         Icon(Icons.Default.Hub, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(18.dp))
-                                        Text("View in Relatrix", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                        Text("View in Relatrix", color = GrayMatterTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
                                     }
                                 },
                                 onClick = { showItemMenu = false; onViewInGraph(opinion.id) }
@@ -1379,8 +1379,8 @@ private fun OpinionTimelineItem(
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        Icon(Icons.Default.Image, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                                        Text("Export as Image", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                        Icon(Icons.Default.Image, null, tint = GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(18.dp))
+                                        Text("Export as Image", color = GrayMatterTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
                                     }
                                 },
                                 onClick = { showItemMenu = false; onShareOpinion(opinion) }
@@ -1388,8 +1388,8 @@ private fun OpinionTimelineItem(
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        Icon(Icons.Default.Description, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                                        Text("Export as Markdown", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                        Icon(Icons.Default.Description, null, tint = GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(18.dp))
+                                        Text("Export as Markdown", color = GrayMatterTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
                                     }
                                 },
                                 onClick = { showItemMenu = false; onShareOpinionMarkdown(opinion) }
@@ -1405,7 +1405,7 @@ private fun OpinionTimelineItem(
                                                 tint = GrayMatterColors.TypeLookupMain, 
                                                 modifier = Modifier.size(18.dp)
                                             )
-                                            Text(if (isCurrentlyLearnt) "Mark as Learning" else "Mark as Learnt", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                            Text(if (isCurrentlyLearnt) "Mark as Learning" else "Mark as Learnt", color = GrayMatterTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
                                         }
                                     },
                                     onClick = { 
@@ -1424,7 +1424,7 @@ private fun OpinionTimelineItem(
                                     text = {
                                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                             Icon(Icons.Default.Edit, null, tint = GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(18.dp))
-                                            Text("Edit Entry", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                            Text("Edit Entry", color = GrayMatterTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
                                         }
                                     },
                                     onClick = { showItemMenu = false; onStartEditing() }
@@ -1445,7 +1445,7 @@ private fun OpinionTimelineItem(
                                     text = {
                                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                             Icon(Icons.Default.Launch, null, tint = GrayMatterColors.TypeBookmark, modifier = Modifier.size(18.dp))
-                                            Text("Jump to Page ${opinion.pageNumber!! + 1}", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                            Text("Jump to Page ${opinion.pageNumber!! + 1}", color = GrayMatterTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
                                         }
                                     },
                                     onClick = { showItemMenu = false; onJump() }

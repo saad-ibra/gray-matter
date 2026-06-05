@@ -180,7 +180,7 @@ fun TopicSynthesisScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete Topic", color = Color.White) },
+            title = { Text("Delete Topic", color = GrayMatterTheme.colors.textPrimary) },
             text = { Text("Are you sure you want to delete this topic? Resources within this topic will not be deleted, but they will be unassigned from this topic.", color = GrayMatterTheme.colors.textSecondary) },
             containerColor = GrayMatterTheme.colors.neutral800,
             confirmButton = {
@@ -193,7 +193,7 @@ fun TopicSynthesisScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel", color = Color.White)
+                    Text("Cancel", color = GrayMatterTheme.colors.textPrimary)
                 }
             }
         )
@@ -300,7 +300,7 @@ private fun TopicHeader(
                         showMenu = false
                         onViewInGraphClick()
                     },
-                    leadingIcon = { Icon(Icons.Default.Hub, null, tint = Color.White) }
+                    leadingIcon = { Icon(Icons.Default.Hub, null, tint = GrayMatterTheme.colors.primary) }
                 )
                 
                 Divider(color = GrayMatterTheme.colors.neutral800)

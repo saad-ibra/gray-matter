@@ -605,10 +605,10 @@ fun FileViewerScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("Add Opinion", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                    Text("Add Opinion", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterColors.TextPrimary)
                     
                     ListItem(
-                        headlineContent = { Text("General Opinion", color = Color.White) },
+                        headlineContent = { Text("General Opinion", color = GrayMatterColors.TextPrimary) },
                         leadingContent = { Icon(Icons.Default.EditNote, null, tint = GrayMatterColors.TypeOpinion) },
                         modifier = Modifier.clickable { 
                             viewModel.toggleAddEntrySheet()
@@ -618,7 +618,7 @@ fun FileViewerScreen(
                     )
                     
                     ListItem(
-                        headlineContent = { Text("Template Entry", color = Color.White) },
+                        headlineContent = { Text("Template Entry", color = GrayMatterColors.TextPrimary) },
                         leadingContent = { Icon(Icons.Default.DashboardCustomize, null, tint = GrayMatterColors.TypeTemplate) },
                         modifier = Modifier.clickable { 
                             viewModel.toggleAddEntrySheet()
@@ -628,7 +628,7 @@ fun FileViewerScreen(
                     )
                     
                     ListItem(
-                        headlineContent = { Text("Vision Entry", color = Color.White) },
+                        headlineContent = { Text("Vision Entry", color = GrayMatterColors.TextPrimary) },
                         leadingContent = { Icon(Icons.Default.Image, null, tint = GrayMatterColors.TypeVisual) },
                         modifier = Modifier.clickable { 
                             viewModel.toggleAddEntrySheet()
@@ -832,7 +832,7 @@ fun FileViewerScreen(
                                             trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
                                             colors = InputChipDefaults.inputChipColors(
                                                 containerColor = GrayMatterColors.SurfaceInput,
-                                                labelColor = Color.White,
+                                                labelColor = GrayMatterColors.TextPrimary,
                                                 trailingIconColor = GrayMatterColors.Neutral500
                                             ),
                                             border = null
@@ -900,7 +900,7 @@ fun FileViewerScreen(
             AlertDialog(
                 onDismissRequest = { viewModel.toggleTemplateSelectionDialog() },
                 containerColor = GrayMatterColors.SurfaceDark,
-                title = { Text("Select Template", color = Color.White) },
+                title = { Text("Select Template", color = GrayMatterColors.TextPrimary) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         if (templates.isEmpty()) {
@@ -918,7 +918,7 @@ fun FileViewerScreen(
                                         }
                                         .padding(16.dp)
                                 ) {
-                                    Text(template.name, color = Color.White, fontWeight = FontWeight.Bold)
+                                    Text(template.name, color = GrayMatterColors.TextPrimary, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -942,7 +942,7 @@ fun FileViewerScreen(
                 confirmButton = {},
                 dismissButton = {
                     TextButton(onClick = { viewModel.toggleTemplateSelectionDialog() }) {
-                        Text("Cancel", color = Color.White.copy(alpha = 0.6f))
+                        Text("Cancel", color = GrayMatterColors.Neutral500)
                     }
                 }
             )
@@ -1030,7 +1030,7 @@ fun FileViewerScreen(
                                                 trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
                                                 colors = InputChipDefaults.inputChipColors(
                                                     containerColor = GrayMatterColors.SurfaceInput,
-                                                    labelColor = Color.White,
+                                                    labelColor = GrayMatterColors.TextPrimary,
                                                     trailingIconColor = GrayMatterColors.Neutral500
                                                 ),
                                                 border = null

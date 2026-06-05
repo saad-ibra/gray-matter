@@ -661,7 +661,7 @@ private fun TopicCard(
                                     showMenu = false
                                     onViewInRelatrix()
                                 },
-                                leadingIcon = { Icon(Icons.Default.Hub, null, tint = Color.White) }
+                                leadingIcon = { Icon(Icons.Default.Hub, null, tint = GrayMatterTheme.colors.primary) }
                             )
 
                             Divider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))

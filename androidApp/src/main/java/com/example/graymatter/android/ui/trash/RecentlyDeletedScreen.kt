@@ -84,7 +84,7 @@ fun RecentlyDeletedScreen(
     if (showRestoreConfirm) {
         AlertDialog(
             onDismissRequest = { showRestoreConfirm = false },
-            title = { Text("Restore Items", color = Color.White) },
+            title = { Text("Restore Items", color = GrayMatterTheme.colors.textPrimary) },
             text = { Text("Are you sure you want to restore ${selectedIds.size} selected item(s)?", color = GrayMatterTheme.colors.textSecondary) },
             containerColor = GrayMatterTheme.colors.neutral800,
             confirmButton = {
@@ -111,7 +111,7 @@ fun RecentlyDeletedScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showRestoreConfirm = false }) {
-                    Text("Cancel", color = Color.White)
+                    Text("Cancel", color = GrayMatterTheme.colors.neutral500)
                 }
             }
         )
@@ -120,7 +120,7 @@ fun RecentlyDeletedScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Permanently Delete", color = Color.White) },
+            title = { Text("Permanently Delete", color = GrayMatterTheme.colors.textPrimary) },
             text = { Text("Are you sure you want to permanently delete ${selectedIds.size} selected item(s)? This action cannot be undone.", color = GrayMatterTheme.colors.textSecondary) },
             containerColor = GrayMatterTheme.colors.neutral800,
             confirmButton = {
@@ -147,7 +147,7 @@ fun RecentlyDeletedScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel", color = Color.White)
+                    Text("Cancel", color = GrayMatterTheme.colors.neutral500)
                 }
             }
         )
@@ -401,7 +401,7 @@ private fun DeletedItemPreviewDialog(
                     is DeletedItemUiModel.ResourceItem -> "Resource Details"
                     else -> "Opinion/Bookmark Details"
                 },
-                color = Color.White 
+                color = GrayMatterTheme.colors.textPrimary
             ) 
         },
         text = {
@@ -449,7 +449,7 @@ private fun DeletedItemPreviewDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close", color = Color.White)
+                Text("Close", color = GrayMatterTheme.colors.neutral500)
             }
         }
     )

@@ -77,8 +77,8 @@ fun TopicPickerSheet(
                         focusedContainerColor = GrayMatterTheme.colors.surfaceInput,
                         unfocusedBorderColor = GrayMatterTheme.colors.neutral800,
                         focusedBorderColor = GrayMatterTheme.colors.primary,
-                        unfocusedTextColor = Color.White,
-                        focusedTextColor = Color.White
+                        unfocusedTextColor = GrayMatterTheme.colors.textPrimary,
+                        focusedTextColor = GrayMatterTheme.colors.textPrimary
                     ),
                     shape = RoundedCornerShape(16.dp),
                     trailingIcon = {
@@ -122,7 +122,7 @@ fun TopicPickerSheet(
                         ) {
                             Icon(Icons.Default.Folder, null, tint = GrayMatterTheme.colors.primary)
                             Spacer(modifier = Modifier.width(16.dp))
-                            Text(topic.name, color = Color.White)
+                            Text(topic.name, color = GrayMatterTheme.colors.textPrimary)
                         }
                     }
                 }
@@ -135,7 +135,7 @@ fun TopicPickerSheet(
                     colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.neutral800),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("Cancel", color = Color.White)
+                    Text("Cancel", color = GrayMatterTheme.colors.textPrimary)
                 }
             }
         }

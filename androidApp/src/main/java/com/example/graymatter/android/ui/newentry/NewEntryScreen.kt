@@ -1121,8 +1121,8 @@ private fun ConfidenceLevelSection(
                 onValueChange = onConfidenceChange, 
                 valueRange = 0f..1f, 
                 colors = SliderDefaults.colors(
-                    thumbColor = Color.White, 
-                    activeTrackColor = Color.White, 
+                    thumbColor = accentColor, 
+                    activeTrackColor = accentColor, 
                     inactiveTrackColor = GrayMatterTheme.colors.neutral800
                 )
             )

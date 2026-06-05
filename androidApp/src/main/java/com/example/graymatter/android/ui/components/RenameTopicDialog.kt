@@ -18,7 +18,7 @@ fun RenameTopicDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename Topic", color = Color.White) },
+        title = { Text("Rename Topic", color = GrayMatterTheme.colors.textPrimary) },
         text = {
             OutlinedTextField(
                 value = newTopicName,
@@ -27,8 +27,8 @@ fun RenameTopicDialog(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
+                    focusedTextColor = GrayMatterTheme.colors.textPrimary,
+                    unfocusedTextColor = GrayMatterTheme.colors.textPrimary,
                     cursorColor = GrayMatterTheme.colors.primary,
                     focusedLabelColor = GrayMatterTheme.colors.primary,
                     unfocusedLabelColor = GrayMatterTheme.colors.neutral500
@@ -49,7 +49,7 @@ fun RenameTopicDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = Color.White)
+                Text("Cancel", color = GrayMatterTheme.colors.neutral500)
             }
         }
     )
