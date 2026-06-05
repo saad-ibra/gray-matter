@@ -20,6 +20,30 @@ import java.util.*
  */
 object PdfExportService {
 
+
+
+    private fun getCleanText(opinion: Opinion): String {
+        var text = opinion.text.replace(Regex("\\[COLOR:[^\\]]+\\]\\s*", RegexOption.IGNORE_CASE), "")
+        val isAnnotation = text.startsWith("> ") || text.startsWith("[INDEX:")
+        val isDictionary = text.startsWith("[DICT")
+        val isTemplate = text.startsWith("[TEMPLATE:")
+        
+        return when {
+            isAnnotation -> {
+                text.replace(Regex("\\[INDEX:\\d+\\]\\s*"), "")
+                    .replace(Regex("^>\\s*"), "")
+                    .trim()
+            }
+            isDictionary -> text.substringAfter("] ").trim()
+            isTemplate -> {
+                text.substringAfter("]\n")
+                    .replace(Regex("### "), "")
+                    .trim()
+            }
+            else -> text.trim()
+        }
+    }
+
     private const val PAGE_WIDTH = 595   // A4 in points (72dpi)
     private const val PAGE_HEIGHT = 842
     private const val MARGIN = 48f
@@ -312,18 +336,20 @@ object PdfExportService {
         val innerLeft = cardLeft + 16f
         val innerWidth = cardWidth - 32f
 
-        // Type badge + index
-        val isAnnotation = opinion.text.startsWith("> ") || opinion.text.startsWith("[INDEX:")
-        val isDictionary = opinion.text.startsWith("[DICT")
-        val isTemplate = opinion.text.startsWith("[TEMPLATE:")
+        val baseCleanText = opinion.text.replace(Regex("\\[COLOR:[^\\]]+\\]\\s*", RegexOption.IGNORE_CASE), "")
+        val isAnnotation = baseCleanText.startsWith("> ") || baseCleanText.startsWith("[INDEX:")
+        val isDictionary = baseCleanText.startsWith("[DICT")
+        val isTemplate = baseCleanText.startsWith("[TEMPLATE:")
         val isVisual = opinion.imagePath != null
+        val isPureBookmark = opinion.pageNumber != null && baseCleanText.isBlank() && opinion.imagePath == null
 
         val (typeName, accent) = when {
             isVisual -> "VISUAL" to accentVisual
             isDictionary -> "LOOKUP" to accentLookup
             isAnnotation -> "ANNOTATION" to accentAnnotation
             isTemplate -> "TEMPLATE" to accentTemplate
-            opinion.pageNumber != null -> "BOOKMARK" to accentBookmark
+            isPureBookmark -> "BOOKMARK" to accentBookmark
+            opinion.pageNumber != null -> "OPINION" to accentGreen // If it has text but isn't an annotation
             else -> "OPINION" to accentGreen
         }
 
@@ -348,21 +374,7 @@ object PdfExportService {
         y += 16f
 
         // Content text
-        val cleanText = when {
-            isAnnotation -> {
-                opinion.text
-                    .replace(Regex("\\[INDEX:\\d+\\]\\s*"), "")
-                    .replace(Regex("^>\\s*"), "")
-                    .trim()
-            }
-            isDictionary -> opinion.text.substringAfter("] ").trim()
-            isTemplate -> {
-                opinion.text.substringAfter("]\n")
-                    .replace(Regex("### "), "")
-                    .trim()
-            }
-            else -> opinion.text
-        }
+        val cleanText = getCleanText(opinion)
 
         y = drawWrappedText(canvas, cleanText, innerLeft, y, textPrimary, 11f, innerWidth)
         y += 8f
@@ -412,17 +424,7 @@ object PdfExportService {
     }
 
     private fun estimateOpinionHeight(opinion: Opinion, index: Int): Float {
-        val cleanText = when {
-            opinion.text.startsWith("> ") || opinion.text.startsWith("[INDEX:") ->
-                opinion.text
-                    .replace(Regex("\\[INDEX:\\d+\\]\\s*"), "")
-                    .replace(Regex("^>\\s*"), "")
-                    .trim()
-            opinion.text.startsWith("[DICT") -> opinion.text.substringAfter("] ").trim()
-            opinion.text.startsWith("[TEMPLATE:") ->
-                opinion.text.substringAfter("]\n").replace(Regex("### "), "").trim()
-            else -> opinion.text
-        }
+        val cleanText = getCleanText(opinion)
 
         val paint = Paint().apply {
             textSize = 11f
