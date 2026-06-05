@@ -24,12 +24,15 @@ import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
+import com.example.graymatter.android.ui.components.TutorialOverlay
+import com.example.graymatter.android.preferences.AppPreferences
 import com.example.graymatter.domain.ResourceEntry
 import com.example.graymatter.domain.ResourceEntryWithDetails
 import com.example.graymatter.domain.ResourceType
 import com.example.graymatter.android.ui.components.TopicPickerSheet
 import com.example.graymatter.android.ui.components.RecentItemCard
 import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalContext
 
 /**
  * Home Screen.
@@ -55,6 +58,11 @@ fun HomeScreen(
     
     var selectedOrphan by remember { mutableStateOf<ResourceEntry?>(null) }
     val scope = rememberCoroutineScope()
+
+    // Tutorial state
+    val context = LocalContext.current
+    val appPreferences = remember { AppPreferences.getInstance(context) }
+    var showTutorial by remember { mutableStateOf(!appPreferences.hasSeenTutorial) }
     
     LazyColumn(
         modifier = modifier
@@ -77,20 +85,36 @@ fun HomeScreen(
                     style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                     color = GrayMatterTheme.colors.textPrimary
                 )
-                IconButton(
-                    onClick = onNavigateToProfile,
+                // Sleek profile button with subtle accent ring
+                Box(
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(36.dp)
                         .clip(CircleShape)
-                        .background(GrayMatterTheme.colors.surfaceCard)
-                        .border(1.dp, GrayMatterTheme.colors.neutral800, CircleShape)
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    GrayMatterColors.CustomizedAccent.copy(alpha = 0.6f),
+                                    GrayMatterColors.AppleGreen.copy(alpha = 0.4f)
+                                )
+                            )
+                        )
+                        .clickable(onClick = onNavigateToProfile)
+                        .padding(1.5.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Profile",
-                        tint = GrayMatterTheme.colors.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(GrayMatterTheme.colors.surface),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Profile",
+                            tint = GrayMatterTheme.colors.textSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
         }
@@ -207,6 +231,16 @@ fun HomeScreen(
                     homeViewModel.assignTopicToResourceEntry(selectedOrphan!!.id, newId)
                     selectedOrphan = null
                 }
+            }
+        )
+    }
+
+    // Tutorial overlay
+    if (showTutorial) {
+        TutorialOverlay(
+            onDismiss = {
+                appPreferences.hasSeenTutorial = true
+                showTutorial = false
             }
         )
     }

@@ -52,6 +52,12 @@ class AppPreferences private constructor(context: Context) {
             prefs.edit().putString("default_pdf_theme", value).apply()
         }
 
+    var hasSeenTutorial: Boolean
+        get() = prefs.getBoolean("has_seen_tutorial", false)
+        set(value) {
+            prefs.edit().putBoolean("has_seen_tutorial", value).apply()
+        }
+
     companion object {
         @Volatile
         private var INSTANCE: AppPreferences? = null

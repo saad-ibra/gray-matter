@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.theme.GrayMatterColors
+import com.example.graymatter.android.ui.components.TutorialOverlay
 
 @Composable
 fun ProfileScreen(
@@ -33,6 +34,8 @@ fun ProfileScreen(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showTutorial by remember { mutableStateOf(false) }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -67,6 +70,13 @@ fun ProfileScreen(
                     title = "Lookup Management",
                     tint = GrayMatterTheme.colors.primary,
                     onClick = onNavigateToLookups
+                )
+                
+                SettingsButton(
+                    icon = Icons.Default.School,
+                    title = "Replay Tutorial",
+                    tint = GrayMatterTheme.colors.primary,
+                    onClick = { showTutorial = true }
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -104,6 +114,10 @@ fun ProfileScreen(
                 )
             }
         }
+    }
+
+    if (showTutorial) {
+        TutorialOverlay(onDismiss = { showTutorial = false })
     }
 }
 
