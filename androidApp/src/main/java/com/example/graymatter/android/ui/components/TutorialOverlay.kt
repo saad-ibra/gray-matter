@@ -56,7 +56,7 @@ fun TutorialOverlay(onDismiss: () -> Unit) {
         TutorialSlide(
             title = "Welcome to Relatrix",
             description = "Your personal knowledge management system.",
-            iconRes = R.mipmap.ic_launcher_foreground,
+            iconRes = R.drawable.app_logo_full,
             iconTint = Color.Unspecified
         ),
         TutorialSlide(

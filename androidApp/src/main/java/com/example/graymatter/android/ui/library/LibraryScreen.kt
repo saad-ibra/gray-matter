@@ -238,7 +238,7 @@ fun LibraryScreen(
                             onClick = onNavigateToHome,
                             colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary)
                         ) {
-                            Text("Go Home", color = Color.Black)
+                            Text("Go Home", color = GrayMatterTheme.colors.onPrimary)
                         }
                     }
                 } else {

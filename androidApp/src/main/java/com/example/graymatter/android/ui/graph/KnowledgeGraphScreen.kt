@@ -438,7 +438,7 @@ fun KnowledgeGraphScreen(
         if (graphState.isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
-                color = GrayMatterColors.Primary
+                color = GrayMatterTheme.colors.primary
             )
         } else if (graphState.nodes.isEmpty()) {
             Column(
@@ -449,21 +449,21 @@ fun KnowledgeGraphScreen(
                 Icon(
                     imageVector = Icons.Default.DatasetLinked,
                     contentDescription = null,
-                    tint = GrayMatterColors.Neutral600,
+                    tint = GrayMatterTheme.colors.neutral600,
                     modifier = Modifier.size(64.dp)
                 )
                 Text(
                     text = "No connections yet. Start by adding an opinion to a resource.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = GrayMatterColors.Neutral500,
+                    color = GrayMatterTheme.colors.neutral500,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 48.dp)
                 )
                 Button(
                     onClick = onNavigateHome,
-                    colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.Primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary)
                 ) {
-                    Text("Go Home", color = Color.Black)
+                    Text("Go Home", color = GrayMatterTheme.colors.onPrimary)
                 }
             }
         } else {
