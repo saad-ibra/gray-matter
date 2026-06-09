@@ -1281,8 +1281,8 @@ private fun OpinionTimelineItem(
                 .weight(1f)
                 .padding(bottom = if (isLast) 16.dp else 24.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(GrayMatterTheme.colors.surface)
-                .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(16.dp))
+                .background(Color.White)
+                .border(1.dp, Color(0xFFE5E5EA), RoundedCornerShape(16.dp))
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
@@ -1297,7 +1297,7 @@ private fun OpinionTimelineItem(
                             fontWeight = FontWeight.Bold,
                             fontFamily = com.example.graymatter.android.ui.theme.InterFontFamily
                         ),
-                        color = GrayMatterTheme.colors.neutral500,
+                        color = Color.Black.copy(alpha = 0.5f),
                         modifier = Modifier.padding(top = 2.dp)
                     )
                     
@@ -1343,12 +1343,12 @@ private fun OpinionTimelineItem(
                             Text(
                                 text = formatDate(opinion.createdAt).uppercase(), 
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp), 
-                                color = GrayMatterTheme.colors.neutral600
+                                color = Color.Black.copy(alpha = 0.6f)
                             )
                             Text(
                                 text = formatTime(opinion.createdAt).uppercase(), 
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp), 
-                                color = GrayMatterTheme.colors.neutral600.copy(alpha = 0.8f)
+                                color = Color.Black.copy(alpha = 0.5f)
                             )
                         }
                     }
@@ -1556,14 +1556,14 @@ private fun OpinionTimelineItem(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Color.White.copy(alpha = 0.05f))
+                                .background(Color.Black.copy(alpha = 0.05f))
                         ) {
                             Row(modifier = Modifier.fillMaxWidth()) {
                                 Box(modifier = Modifier.width(4.dp).height(IntrinsicSize.Min).background(GrayMatterColors.TypeAnnotation)) // Orange accent
                                 Text(
                                     text = "\"$quote\"",
                                     style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic, lineHeight = 24.sp),
-                                    color = GrayMatterTheme.colors.neutral400,
+                                    color = Color(0xFF666666),
                                     modifier = Modifier.padding(12.dp)
                                 )
                             }
@@ -1644,7 +1644,7 @@ private fun OpinionTimelineItem(
                             // Caption (if any)
                             if (cleanTextForContent.isNotBlank()) {
                                 Text(
-                                    text = highlightText(cleanTextForContent, initialSearchQuery, GrayMatterTheme.colors.textSecondary),
+                                    text = highlightText(cleanTextForContent, initialSearchQuery, Color(0xFF333333)),
                                     style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
                                     modifier = Modifier.padding(12.dp)
                                 )
@@ -1661,7 +1661,7 @@ private fun OpinionTimelineItem(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = highlightText(phrase, initialSearchQuery, Color.White),
+                            text = highlightText(phrase, initialSearchQuery, Color.Black),
                             style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp, fontWeight = FontWeight.Medium)
                         )
                     }
@@ -1684,12 +1684,12 @@ private fun OpinionTimelineItem(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Color.White.copy(alpha = 0.05f))
+                                .background(Color.Black.copy(alpha = 0.05f))
                         ) {
                             Row(modifier = Modifier.fillMaxWidth()) {
                                 Box(modifier = Modifier.width(4.dp).height(IntrinsicSize.Min).background(GrayMatterColors.TypeAnnotation)) // Orange accent
                                 Text(
-                                    text = highlightText("\"$quote\"", initialSearchQuery, GrayMatterTheme.colors.neutral400),
+                                    text = highlightText("\"$quote\"", initialSearchQuery, Color(0xFF666666)),
                                     style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic, lineHeight = 24.sp),
                                     modifier = Modifier.padding(12.dp)
                                 )
@@ -1698,7 +1698,7 @@ private fun OpinionTimelineItem(
                         // Reflection
                         if (reflection.isNotEmpty()) {
                             Text(
-                                text = highlightText(reflection, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
+                                text = highlightText(reflection, initialSearchQuery, Color.Black),
                                 style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
@@ -1737,7 +1737,7 @@ private fun OpinionTimelineItem(
                                             color = GrayMatterColors.TypeTemplate
                                         )
                                         Text(
-                                            text = highlightText(response, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
+                                            text = highlightText(response, initialSearchQuery, Color.Black),
                                             style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                                         )
                                     }
@@ -1756,7 +1756,7 @@ private fun OpinionTimelineItem(
                                 .padding(16.dp)
                         ) {
                             Text(
-                                text = highlightText(displayContent, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
+                                text = highlightText(displayContent, initialSearchQuery, Color.Black),
                                 style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
@@ -1774,7 +1774,7 @@ private fun OpinionTimelineItem(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = highlightText(displayText, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
+                            text = highlightText(displayText, initialSearchQuery, Color.Black),
                             style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                         )
                     }
@@ -1790,7 +1790,7 @@ private fun OpinionTimelineItem(
                                 .padding(16.dp)
                         ) {
                             Text(
-                                text = highlightText(cleanText, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
+                                text = highlightText(cleanText, initialSearchQuery, Color.Black),
                                 style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
@@ -1851,11 +1851,11 @@ private fun OpinionTimelineItem(
                                 label = { Text(linkText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
                                 leadingIcon = { Icon(icon, null, modifier = Modifier.size(16.dp)) },
                                 colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = GrayMatterTheme.colors.surface,
-                                    labelColor = GrayMatterTheme.colors.primary,
-                                    leadingIconContentColor = GrayMatterTheme.colors.primary
+                                    containerColor = Color.White,
+                                    labelColor = Color.Black,
+                                    leadingIconContentColor = Color.Black
                                 ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, GrayMatterTheme.colors.neutral700)
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E5EA))
                             )
                         }
                     }
@@ -2043,7 +2043,7 @@ private fun DateChip(timestamp: Long, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(GrayMatterTheme.colors.neutral900)
+            .background(Color(0xFFF4F4F6))
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
@@ -2051,14 +2051,14 @@ private fun DateChip(timestamp: Long, onClick: () -> Unit) {
             Column {
                 Text(
                     text = formatDate(timestamp).uppercase(), 
-                    style = MaterialTheme.typography.labelSmall.copy(color = GrayMatterTheme.colors.primary, fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.labelSmall.copy(color = Color.Black, fontWeight = FontWeight.Bold)
                 )
                 Text(
                     text = formatTime(timestamp).uppercase(), 
-                    style = MaterialTheme.typography.labelSmall.copy(color = GrayMatterTheme.colors.primary.copy(alpha = 0.7f), fontWeight = FontWeight.Medium, fontSize = 10.sp)
+                    style = MaterialTheme.typography.labelSmall.copy(color = Color.Black.copy(alpha = 0.7f), fontWeight = FontWeight.Medium, fontSize = 10.sp)
                 )
             }
-            Icon(Icons.Default.CalendarToday, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(14.dp))
+            Icon(Icons.Default.CalendarToday, null, tint = Color.Black, modifier = Modifier.size(14.dp))
         }
     }
 }
@@ -2068,18 +2068,18 @@ private fun ConfidenceBadge(score: Int) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(GrayMatterTheme.colors.surface)
-            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(50))
+            .background(Color.White)
+            .border(1.dp, Color(0xFFE5E5EA), RoundedCornerShape(50))
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Icon(
                 imageVector = if (score > 50) Icons.Default.TrendingUp else Icons.Default.ArrowForward,
                 contentDescription = null,
-                tint = GrayMatterTheme.colors.primary,
+                tint = Color.Black,
                 modifier = Modifier.size(12.dp)
             )
-            Text("${score/10}/10", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textPrimary, maxLines = 1, softWrap = false)
+            Text("${score/10}/10", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color.Black, maxLines = 1, softWrap = false)
         }
     }
 }
