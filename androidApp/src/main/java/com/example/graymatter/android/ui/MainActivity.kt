@@ -107,120 +107,138 @@ class MainActivity : FragmentActivity() {
                 
                 val now = Clock.System.now().toEpochMilliseconds()
                 
-                // 1. Topics
-                val aiTopicId = UUID.randomUUID().toString()
-                val aiTopic = Topic(id = aiTopicId, name = "Artificial Intelligence", notes = "Synthesis on scaling, LLMs, and cognitive systems.", resourceCount = 2, updatedAt = now)
-                topicRepository.saveTopic(aiTopic)
+                // Helper to create topic
+                suspend fun createTopic(name: String, notes: String): String {
+                    val id = UUID.randomUUID().toString()
+                    topicRepository.saveTopic(Topic(id = id, name = name, notes = notes, resourceCount = 0, updatedAt = now))
+                    return id
+                }
                 
-                val psychTopicId = UUID.randomUUID().toString()
-                val psychTopic = Topic(id = psychTopicId, name = "Cognitive Psychology", notes = "Deliberating on brain capacity, memory limits, and cognitive load.", resourceCount = 1, updatedAt = now)
-                topicRepository.saveTopic(psychTopic)
-
-                val pkmTopicId = UUID.randomUUID().toString()
-                val pkmTopic = Topic(id = pkmTopicId, name = "Knowledge Management", notes = "Opinion-first deliberation workflows and local-first software architecture.", resourceCount = 1, updatedAt = now)
-                topicRepository.saveTopic(pkmTopic)
+                // Helper to create resource entry with opinion
+                suspend fun createEntry(
+                    topicId: String,
+                    title: String,
+                    description: String,
+                    resourceType: String,
+                    url: String?,
+                    filePath: String?,
+                    extractedText: String?,
+                    opinionText: String,
+                    confidence: Int
+                ) {
+                    val entryId = UUID.randomUUID().toString()
+                    val resId = UUID.randomUUID().toString()
+                    val opId = UUID.randomUUID().toString()
+                    resourceEntryRepository.createResourceEntryWithDetails(
+                        resourceEntryId = entryId,
+                        resourceId = resId,
+                        resourceType = resourceType,
+                        url = url,
+                        filePath = filePath,
+                        extractedText = extractedText,
+                        title = title,
+                        description = description,
+                        opinionId = opId,
+                        opinionText = opinionText,
+                        confidence = confidence,
+                        now = now
+                    )
+                    resourceEntryRepository.updateResourceEntryTopic(entryId, topicId)
+                    topicRepository.incrementResourceCount(topicId)
+                    // Create opinion record
+                    opinionRepository.saveOpinion(
+                        Opinion(
+                            id = opId,
+                            itemId = entryId,
+                            text = opinionText,
+                            confidenceScore = confidence,
+                            imagePath = null,
+                            createdAt = now,
+                            updatedAt = now
+                        )
+                    )
+                    // Sync backlinks
+                    autoLinkService.syncLinks(opId, com.example.graymatter.domain.ReferenceType.OPINION, opinionText, emptyList())
+                }
                 
-                // 2. Resource Entries
-                // Entry 1: GPT-3 Paper
-                val entry1Id = UUID.randomUUID().toString()
-                val res1Id = UUID.randomUUID().toString()
-                val op1Id = UUID.randomUUID().toString()
-                resourceEntryRepository.createResourceEntryWithDetails(
-                    resourceEntryId = entry1Id,
-                    resourceId = res1Id,
+                // Topics
+                val aiTopicId = createTopic("Artificial Intelligence", "Exploring large models, scaling laws, and emergent capabilities.")
+                val psychTopicId = createTopic("Cognitive Psychology", "Memory limits, attention, and mental models.")
+                val pkmTopicId = createTopic("Knowledge Management", "Deliberate reflection, visual notes, and relational databases.")
+                val devTopicId = createTopic("Software Development", "Modern mobile, backend, and devops practices.")
+                
+                // Entries – expand to many diverse items
+                createEntry(
+                    topicId = aiTopicId,
+                    title = "Language Models are Few-Shot Learners",
+                    description = "Foundational GPT‑3 paper on scaling and few‑shot prompting.",
                     resourceType = ResourceType.WEB_LINK.name,
                     url = "https://arxiv.org/abs/2005.14165",
                     filePath = null,
                     extractedText = null,
-                    title = "Language Models are Few-Shot Learners",
-                    description = "The foundational GPT-3 paper exploring scaling laws and few-shot capabilities.",
-                    opinionId = op1Id,
-                    opinionText = "Amazing scaling effects, but is it actual understanding or sophisticated statistical correlation? I believe scale is necessary but not sufficient for AGI. [[Artificial Intelligence]] is more than next-token prediction.",
-                    confidence = 80,
-                    now = now
+                    opinionText = "Scale delivers performance, but true understanding likely needs symbolic reasoning. [[Artificial Intelligence]]",
+                    confidence = 80
                 )
-                resourceEntryRepository.updateResourceEntryTopic(entry1Id, aiTopicId)
-                
-                // Entry 2: Transformers Note
-                val entry2Id = UUID.randomUUID().toString()
-                val res2Id = UUID.randomUUID().toString()
-                val op2Id = UUID.randomUUID().toString()
-                resourceEntryRepository.createResourceEntryWithDetails(
-                    resourceEntryId = entry2Id,
-                    resourceId = res2Id,
-                    resourceType = ResourceType.MARKDOWN.name,
-                    url = null,
-                    filePath = "/dummy/transformers.md",
-                    extractedText = "A summary of CNNs, RNNs, and Transformers. Transformers use self-attention mechanism...",
-                    title = "Neural Network Architectures",
-                    description = "Comparing CNNs, RNNs, and Transformers for sequence processing.",
-                    opinionId = op2Id,
-                    opinionText = "Self-attention has completely replaced recurrent architectures for sequence modeling. It represents a paradigm shift in how we represent context.",
-                    confidence = 95,
-                    now = now
+                createEntry(
+                    topicId = aiTopicId,
+                    title = "Transformers: Attention Is All You Need",
+                    description = "The original transformer architecture that revolutionized NLP.",
+                    resourceType = ResourceType.WEB_LINK.name,
+                    url = "https://arxiv.org/abs/1706.03762",
+                    filePath = null,
+                    extractedText = null,
+                    opinionText = "Self‑attention replaced recurrence and opened doors to massive models. Critical for modern AI. [[Artificial Intelligence]]",
+                    confidence = 95
                 )
-                resourceEntryRepository.updateResourceEntryTopic(entry2Id, aiTopicId)
-
-                // Entry 3: Memory limits paper
-                val entry3Id = UUID.randomUUID().toString()
-                val res3Id = UUID.randomUUID().toString()
-                val op3Id = UUID.randomUUID().toString()
-                resourceEntryRepository.createResourceEntryWithDetails(
-                    resourceEntryId = entry3Id,
-                    resourceId = res3Id,
+                createEntry(
+                    topicId = psychTopicId,
+                    title = "Working Memory Limits",
+                    description = "Nature review on capacity of visual working memory.",
                     resourceType = ResourceType.WEB_LINK.name,
                     url = "https://www.nature.com/articles/nn.4352",
                     filePath = null,
                     extractedText = null,
-                    title = "Working Memory Limits",
-                    description = "Investigating the neural capacity of working memory and visual short-term memory.",
-                    opinionId = op3Id,
-                    opinionText = "The classic limit of 7 items is actually smaller (around 4) when dynamic binding is required. This has huge implications for designing software UI/UX. See [[Cognitive Psychology]] notes.",
-                    confidence = 85,
-                    now = now
+                    opinionText = "The classic 7±2 rule is overstated; real limits are ~4 items. UI should respect this. [[Cognitive Psychology]]",
+                    confidence = 85
                 )
-                resourceEntryRepository.updateResourceEntryTopic(entry3Id, psychTopicId)
-
-                // Entry 4: PKM Note
-                val entry4Id = UUID.randomUUID().toString()
-                val res4Id = UUID.randomUUID().toString()
-                val op4Id = UUID.randomUUID().toString()
-                resourceEntryRepository.createResourceEntryWithDetails(
-                    resourceEntryId = entry4Id,
-                    resourceId = res4Id,
+                createEntry(
+                    topicId = pkmTopicId,
+                    title = "Deliberate Knowledge Capture Workflow",
+                    description = "Steps: Read → Highlight → Vision → Opinion → Link.",
                     resourceType = ResourceType.MARKDOWN.name,
                     url = null,
-                    filePath = "/dummy/workflow.md",
-                    extractedText = "A personal reflection workflow: Read -> Extract -> Formulate Opinion -> Review Timeline -> Connect via Relatrix.",
-                    title = "My Deliberation Workflow",
-                    description = "Deliberating on the collector's fallacy and building an active knowledge synthesis habit.",
-                    opinionId = op4Id,
-                    opinionText = "Forcing reflection before saving prevents the collector's fallacy. Highly aligned with the principles of forced deliberation. [[Knowledge Management]] is about thinking, not collecting.",
-                    confidence = 100,
-                    now = now
+                    filePath = "/dummy/deliberate_workflow.md",
+                    extractedText = "A concise guide to forced reflection before saving.",
+                    opinionText = "Forcing a visual note (Vision) before entry prevents collector's fallacy. Essential for deep learning. [[Knowledge Management]]",
+                    confidence = 100
                 )
-                resourceEntryRepository.updateResourceEntryTopic(entry4Id, pkmTopicId)
-
-                // Let's add a second opinion to GPT-3 Paper to show a timeline narrative
-                val op5Id = UUID.randomUUID().toString()
-                val opinion = Opinion(
-                    id = op5Id,
-                    itemId = entry1Id,
-                    text = "Re-reading: Scaling laws might be slowing down. We might need architectural innovations (like neurosymbolic integration) to reach AGI. [[Artificial Intelligence]] requires planning and reasoning.",
-                    confidenceScore = 65,
-                    imagePath = null,
-                    createdAt = now + 100000,
-                    updatedAt = now + 100000
+                createEntry(
+                    topicId = devTopicId,
+                    title = "Jetpack Compose Basics",
+                    description = "Introductory guide to modern Android UI toolkit.",
+                    resourceType = ResourceType.WEB_LINK.name,
+                    url = "https://developer.android.com/jetpack/compose",
+                    filePath = null,
+                    extractedText = null,
+                    opinionText = "Compose simplifies UI creation and integrates well with MVVM. Good fit for Relatrix UI.",
+                    confidence = 90
                 )
-                opinionRepository.saveOpinion(opinion)
-                resourceEntryRepository.updateResourceEntryOpinionMetadata(entry1Id, now + 100000)
+                // Add a batch of synthetic entries to inflate data size (10 more)
+                repeat(10) { idx ->
+                    val topicId = listOf(aiTopicId, psychTopicId, pkmTopicId, devTopicId)[idx % 4]
+                    createEntry(
+                        topicId = topicId,
+                        title = "Synthetic Entry ${idx + 1}",
+                        description = "Automatically generated placeholder for demo purposes.",
+                        resourceType = ResourceType.WEB_LINK.name,
+                        url = "https://example.com/synthetic${idx + 1}",
+                        filePath = null,
+                        extractedText = null,
+                        opinionText = "Placeholder opinion #${idx + 1}. Demonstrates scaling of entries.",
+                        confidence = 70
+                    )
+                }
                 
-                // Sync all links to build a beautiful Relatrix Graph!
-                autoLinkService.syncLinks(op1Id, com.example.graymatter.domain.ReferenceType.OPINION, "Amazing scaling effects, but is it actual understanding or sophisticated statistical correlation? I believe scale is necessary but not sufficient for AGI. [[Artificial Intelligence]] is more than next-token prediction.", emptyList())
-                autoLinkService.syncLinks(op2Id, com.example.graymatter.domain.ReferenceType.OPINION, "Self-attention has completely replaced recurrent architectures for sequence modeling. It represents a paradigm shift in how we represent context.", emptyList())
-                autoLinkService.syncLinks(op3Id, com.example.graymatter.domain.ReferenceType.OPINION, "The classic limit of 7 items is actually smaller (around 4) when dynamic binding is required. This has huge implications for designing software UI/UX. See [[Cognitive Psychology]] notes.", emptyList())
-                autoLinkService.syncLinks(op4Id, com.example.graymatter.domain.ReferenceType.OPINION, "Forcing reflection before saving prevents the collector's fallacy. Highly aligned with the principles of forced deliberation. [[Knowledge Management]] is about thinking, not collecting.", emptyList())
-                autoLinkService.syncLinks(op5Id, com.example.graymatter.domain.ReferenceType.OPINION, "Re-reading: Scaling laws might be slowing down. We might need architectural innovations (like neurosymbolic integration) to reach AGI. [[Artificial Intelligence]] requires planning and reasoning.", emptyList())
             } catch (e: Exception) {
                 e.printStackTrace()
             }

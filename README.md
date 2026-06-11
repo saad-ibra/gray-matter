@@ -93,6 +93,12 @@ The note editor is a minimalist markdown canvas with a **visual‑note sidebar**
 
 <br/>
 
+<div align="center">
+  <video src="screenshots/92.mp4" width="100%" controls autoplay loop muted></video>
+</div>
+
+<br/>
+
 Relatrix is a live, physics‑simulated 3D graph that renders the connective tissue of your knowledge base. Every node is a resource or topic; every edge is a knowledge link you created. Filter by **Topics, Resources, Opinions, or Vision**. Pinch to zoom, drag to rotate, adjust the physics engine (repulsion, spring tension) in real time.
 
 Patterns that would take hours to discover in a flat list become visually obvious in seconds.
@@ -225,7 +231,7 @@ cd relatrix
 
 <div align="center">
 
-Built with ☕ and deliberate thinking.
+Built with sleepless nights, infinite caffeine, and deliberate thinking.
 
 *For researchers, deep readers, students, and anyone who actually wants to understand what they consume.*
 
