@@ -1503,8 +1503,14 @@ private fun OpinionTimelineItem(
                                         selectedReferences = selectedReferences.filter { it.id != ref.id }
                                         onUpdate(text, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, opinion.imagePath)
                                     },
-                                    label = { Text(refText, maxLines = 1) },
-                                    trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) }
+                                    label = { Text(refText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                    trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
+                                    colors = InputChipDefaults.inputChipColors(
+                                        containerColor = GrayMatterTheme.colors.surfaceInput,
+                                        labelColor = GrayMatterTheme.colors.textPrimary,
+                                        trailingIconColor = GrayMatterTheme.colors.neutral500
+                                    ),
+                                    border = null
                                 )
                             }
                         }
@@ -1647,7 +1653,7 @@ private fun OpinionTimelineItem(
                             // Caption (if any)
                             if (cleanTextForContent.isNotBlank()) {
                                 Text(
-                                    text = highlightText(cleanTextForContent, initialSearchQuery, Color(0xFF333333)),
+                                    text = highlightText(cleanTextForContent, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
                                     style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
                                     modifier = Modifier.padding(12.dp)
                                 )
@@ -1694,7 +1700,7 @@ private fun OpinionTimelineItem(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Color.Black.copy(alpha = 0.05f))
+                                .background(GrayMatterTheme.colors.textPrimary.copy(alpha = 0.05f))
                         ) {
                             Row(modifier = Modifier.fillMaxWidth()) {
                                 Box(modifier = Modifier.width(4.dp).height(IntrinsicSize.Min).background(GrayMatterColors.TypeAnnotation)) // Orange accent
@@ -1844,11 +1850,11 @@ private fun OpinionTimelineItem(
                                 label = { Text(linkText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
                                 leadingIcon = { Icon(icon, null, modifier = Modifier.size(16.dp)) },
                                 colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = Color.White,
-                                    labelColor = Color.Black,
-                                    leadingIconContentColor = Color.Black
+                                    containerColor = GrayMatterTheme.colors.surfaceCard,
+                                    labelColor = GrayMatterTheme.colors.textPrimary,
+                                    leadingIconContentColor = GrayMatterColors.TypeLink
                                 ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E5EA))
+                                border = androidx.compose.foundation.BorderStroke(1.dp, GrayMatterTheme.colors.surfaceBorder)
                             )
                         }
                     }
@@ -2036,7 +2042,7 @@ private fun DateChip(timestamp: Long, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFFF4F4F6))
+            .background(GrayMatterTheme.colors.surfaceInput)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
@@ -2044,14 +2050,14 @@ private fun DateChip(timestamp: Long, onClick: () -> Unit) {
             Column {
                 Text(
                     text = formatDate(timestamp).uppercase(), 
-                    style = MaterialTheme.typography.labelSmall.copy(color = Color.Black, fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.labelSmall.copy(color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.Bold)
                 )
                 Text(
                     text = formatTime(timestamp).uppercase(), 
-                    style = MaterialTheme.typography.labelSmall.copy(color = Color.Black.copy(alpha = 0.7f), fontWeight = FontWeight.Medium, fontSize = 10.sp)
+                    style = MaterialTheme.typography.labelSmall.copy(color = GrayMatterTheme.colors.textSecondary, fontWeight = FontWeight.Medium, fontSize = 10.sp)
                 )
             }
-            Icon(Icons.Default.CalendarToday, null, tint = Color.Black, modifier = Modifier.size(14.dp))
+            Icon(Icons.Default.CalendarToday, null, tint = GrayMatterTheme.colors.textSecondary, modifier = Modifier.size(14.dp))
         }
     }
 }
@@ -2319,7 +2325,7 @@ private fun OpinionEditDialog(
                                             trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
                                             colors = InputChipDefaults.inputChipColors(
                                                 containerColor = GrayMatterTheme.colors.surfaceInput,
-                                                labelColor = Color.White,
+                                                labelColor = GrayMatterTheme.colors.textPrimary,
                                                 trailingIconColor = GrayMatterTheme.colors.neutral500
                                             ),
                                             border = null

@@ -540,9 +540,15 @@ fun NewEntryScreen(
                                 InputChip(
                                     selected = true,
                                     onClick = { opinionSelectedReferences = opinionSelectedReferences.filter { it.id != ref.id } },
-                                    label = { Text(text, maxLines = 1) },
+                                    label = { Text(text, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
                                     trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
-                                    modifier = Modifier.padding(end = 8.dp)
+                                    modifier = Modifier.padding(end = 8.dp),
+                                    colors = InputChipDefaults.inputChipColors(
+                                        containerColor = GrayMatterTheme.colors.surfaceInput,
+                                        labelColor = GrayMatterTheme.colors.textPrimary,
+                                        trailingIconColor = GrayMatterTheme.colors.neutral500
+                                    ),
+                                    border = null
                                 )
                             }
                         }
