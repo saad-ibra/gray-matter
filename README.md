@@ -89,13 +89,10 @@ The note editor is a minimalist markdown canvas with a **visual‑note sidebar**
 
 <br/>
 
-![Relatrix Showcase](screenshots/infographics/relatrix_showcase.png)
-
-<br/>
-
-<div align="center">
-  <video src="screenshots/92.mp4" width="100%" controls autoplay loop muted></video>
-</div>
+<p align="center">
+  <img src="screenshots/infographics/relatrix_showcase.png" width="49%" />
+  <img src="screenshots/relatrix_demo.gif" width="49%" />
+</p>
 
 <br/>
 
