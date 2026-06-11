@@ -574,7 +574,8 @@ fun ResourceDetailScreen(
                 onNavigateToImageEditor = onNavigateToImageEditor,
                 onConfirm = { text, confidence, referenceLinks, imagePath ->
                     if (opinionToEdit != null) {
-                        onUpdateOpinion(opinionToEdit.id, text, confidence, kotlinx.datetime.Clock.System.now().toEpochMilliseconds(), referenceLinks, imagePath)
+                        // Preserve the original createdAt — do NOT update to now
+                        onUpdateOpinion(opinionToEdit.id, text, confidence, opinionToEdit.createdAt, referenceLinks, imagePath)
                     } else {
                         onAddOpinion(text, confidence, referenceLinks, imagePath)
                     }
@@ -1658,14 +1659,21 @@ private fun OpinionTimelineItem(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(GrayMatterColors.TypeLookupMain.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.TypeLookupMain.copy(alpha = 0.15f))
                             .border(1.dp, GrayMatterColors.TypeLookupMain.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                            .padding(16.dp)
                     ) {
-                        Text(
-                            text = highlightText(phrase, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
-                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp, fontWeight = FontWeight.Medium)
-                        )
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Box(modifier = Modifier.width(4.dp).height(IntrinsicSize.Min).background(GrayMatterColors.TypeLookupMain))
+                            Text(
+                                text = highlightText("\"$phrase\"", initialSearchQuery, GrayMatterTheme.colors.textSecondary),
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontStyle = FontStyle.Italic,
+                                    lineHeight = 24.sp
+                                ),
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
                     }
                 } else if (isAnnotation) {
                     // Split into quote and reflection
@@ -2053,18 +2061,18 @@ private fun ConfidenceBadge(score: Int) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(Color.White)
-            .border(1.dp, Color(0xFFE5E5EA), RoundedCornerShape(50))
+            .background(GrayMatterTheme.colors.surface)
+            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(50))
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Icon(
                 imageVector = if (score > 50) Icons.Default.TrendingUp else Icons.Default.ArrowForward,
                 contentDescription = null,
-                tint = Color.Black,
+                tint = GrayMatterTheme.colors.textPrimary,
                 modifier = Modifier.size(12.dp)
             )
-            Text("${score/10}/10", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color.Black, maxLines = 1, softWrap = false)
+            Text("${score/10}/10", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textPrimary, maxLines = 1, softWrap = false)
         }
     }
 }
