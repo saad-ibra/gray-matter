@@ -4,9 +4,9 @@
 
 # 𝗥𝗲𝗹𝗮𝘁𝗿𝗶𝘅
 
-**A personal knowledge‑management and visual‑notes platform for deep thinkers.**
+**An active knowledge‑management and multi‑modal note‑taking platform for deep thinkers.**
 
-*Stop collecting. Start visualising.*
+*Stop collecting. Start reflecting.*
 
 <br/>
 
@@ -27,13 +27,13 @@
 
 ## The Problem
 
-Most knowledge‑management tools are glorified bookmarks. You gather articles, highlight text, save links — and then forget everything.
+Most knowledge‑management tools are glorified bookmarks. You gather articles, highlight text, save links, and then forget everything.
 
 **Relatrix** changes that. Built on a single, uncompromising philosophy:
 
-> **You do not truly understand something until you visualise it as a note or a graph.**
+> **Information only becomes knowledge when you engage with it through active reflection.**
 
-Every resource you save must be accompanied by a **Vision** – a visual note (sketch, diagram, or annotated screenshot) – before it enters your library. Deliberate visualisation is mandatory, not optional.
+Every resource you save is a starting point, not a destination. Relatrix provides a multi‑modal toolkit to break down, question, and connect information across diverse formats.
 
 ---
 
@@ -46,43 +46,41 @@ Every resource you save must be accompanied by a **Vision** – a visual note (s
 <br/>
 
 ### 📚 Topic Library
-Organise your intellectual world into **Topics** – curated folders of resources. Each topic has an overview, holds web links, PDFs, and markdown notes, and surfaces all connected resources at a glance. Full‑text offline search across everything.
+Organise your intellectual world into **Topics**: curated folders of resources. Each topic has an overview, holds web links, PDFs, and markdown notes, and surfaces all connected resources at a glance. Full‑text offline search across everything.
 
-### 🗂 Resource Timeline
-Every resource lives in a rich **Timeline** view: a single chronological feed that unifies your Opinions, Annotations, Bookmarks, and now **Vision** images. Watch your thinking evolve from first impression to deep mastery.
+### 🗂 Multi‑Modal Resource Timeline
+Every resource lives in a rich **Timeline** view: a single chronological feed that unifies your reflections, annotations, and visual captures. Watch your thinking evolve from first impression to deep mastery through a diverse range of entry types.
 
-### ✍️ Vision‑First Entry
-**Vision** is a visual note attached to any resource. When you save a PDF, a web page, or a markdown note, you must capture or create a visual representation – a screenshot, sketch, diagram, or highlighted excerpt. This forces deliberate visual thinking.
+### ✍️ Reflection‑First Entry
+When you save a PDF, web page, or markdown note, Relatrix encourages you to capture an **Opinion**, **Annotation**, or **Visual Note** immediately. This deliberate friction prevents "hoarding" and ensures you actually process what you consume.
 
 ### 🔗 Knowledge Links
-While writing an opinion or a vision, reference any other resource, topic, or insight using `[[double‑bracket]]` wiki‑style links. These cross‑references form a bidirectional backlink graph — the raw data for Relatrix.
+While writing any entry, reference other resources, topics, or insights using `[[double‑bracket]]` wiki‑style links. These cross‑references form a bidirectional backlink graph — the raw data for Relatrix.
 
 ---
 
-## 📖 PDF Reader – Visual‑Note‑Ready
+## 📖 PDF Reader & Annotation 
 
-The built‑in PDF reader lets you **read, annotate, and capture visual notes** in one place. You can:
-- Flip pages with smooth gestures.
-- Highlight passages and instantly turn them into **Vision** snapshots.
-- Add confidence scores and tags to each annotated excerpt.
-- Export annotations as markdown or plain‑text.
-
-![PDF Reader & Note Editor](screenshots/infographics/pdf_reader_and_editor.png)
-
-The composite above shows the PDF reader on the left and the note editor on the right, both in dark mode, demonstrating how you can seamlessly transition from reading to visual note‑taking.
+The built‑in PDF reader is a workspace for active reading. You can:
+- **Flip pages** with smooth gestures and multiple navigation methods.
+- **Highlight passages** and instantly turn them into **Annotations** (contextual snapshots) with your own added thoughts.
+- **Create Bookmarks** that store not just a page number, but your confidence level and a summary of that section.
+- **Visual Captures (Vision)**: Attach photos of handwritten notes or diagrams directly to the document timeline.
+- **Dictionary Lookups**: Mark specific terms to build a global glossary across your entire library.
 
 ---
 
-## 🖊️ Note Editor – Visual‑Note‑Focused
+## 🖊️ Note Editor 
 
-The note editor is a minimalist markdown canvas with a **visual‑note sidebar** that displays attached images, sketches, or screenshots. Features include:
-- Real‑time markdown preview.
-- Drag‑and‑drop of Vision images.
-- Quick formatting toolbar (bold, italics, headings, lists, code).
-- Export to PDF, Markdown, or plain‑text.
+A minimalist markdown canvas designed for clarity. Features include:
+- **Real-time markdown preview** and a quick formatting toolbar.
+- **Multi-modal sidebar**: View attached images, sketches, or screenshots alongside your text notes.
+- **Custom Templates**: Use structured forms (Socratic questioning, Cornell notes, etc.) to guide your reflections.
+- **Export** to PDF, Markdown, or plain‑text.
+
 ---
 
-## 🕸 Relatrix — Your 3D Knowledge Graph
+## 🕸 Relatrix — 3D Knowledge Discovery
 
 <br/>
 
@@ -93,40 +91,26 @@ The note editor is a minimalist markdown canvas with a **visual‑note sidebar**
 
 <br/>
 
-Relatrix is a live, physics‑simulated 3D graph that renders the connective tissue of your knowledge base. Every node is a resource or topic; every edge is a knowledge link you created. Filter by **Topics, Resources, Opinions, or Vision**. Pinch to zoom, drag to rotate, adjust the physics engine (repulsion, spring tension) in real time.
-
-Patterns that would take hours to discover in a flat list become visually obvious in seconds.
-
----
-
-## 🌙 Light & Dark Mode
-
-<br/>
-
-![Dark Mode Showcase](screenshots/infographics/dark_mode_showcase.png)
-
-<br/>
-
-A first‑class dark mode built into the design system from the start — not retrofitted. Every screen, every component adapts cleanly.
+Relatrix is a live, physics‑simulated 3D graph that renders the connective tissue of your knowledge base. Every node is a resource or topic; every edge is a knowledge link you created. Filter by entry types and explore the relationships between your ideas. Pinch to zoom, drag to rotate, and adjust the physics engine (repulsion, spring tension) in real time.
 
 ---
 
 ## 🏗 Architecture
 
-Relatrix is built for long‑term stability. The codebase uses **Kotlin Multiplatform** so that the core business logic is shared across Android and (upcoming) iOS, with zero duplication.
+Relatrix is built for long‑term stability and privacy. The codebase uses **Kotlin Multiplatform** so that the core business logic is shared across Android and (upcoming) iOS.
 
 ```
 Relatrix/
 ├── shared/                     # Platform‑agnostic core
-│   ├── domain/                 # Entities: Topic, ResourceEntry, Vision, Opinion, Annotation
+│   ├── domain/                 # Models: Topic, Resource, Opinion, Annotation, Bookmark, Template
 │   ├── data/                   # SQLDelight repositories, encrypted with SQLCipher
-│   └── business/               # LocalSearchEngine, RelatrixGraph, ExportService
+│   └── business/               # SearchEngine, AutoLinkService, ExportService
 │
 └── androidApp/                 # Native Android client
     ├── ui/                     # Jetpack Compose screens & components
-    ├── viewmodel/              # MVVM — RelatrixViewModel, DraftingViewModel
+    ├── viewmodel/              # MVVM architecture using shared ViewModels
     ├── di/                     # Koin dependency injection modules
-    └── workers/                # WorkManager background cleanup tasks
+    └── workers/                # WorkManager background tasks (Cleanup, etc.)
 ```
 
 ### Tech Stack
@@ -140,7 +124,7 @@ Relatrix/
 | Concurrency | Kotlin Coroutines & Flow |
 | Dependency Injection | Koin |
 | Background Work | WorkManager |
-| PDF Rendering | Custom paged renderer with precise text selection |
+| PDF Rendering | Custom paged renderer via PDFBox-Android |
 
 ---
 
@@ -170,41 +154,30 @@ cd relatrix
 
 ---
 
-## 📋 Core Concepts
+## 📋 Core Concepts: Entry Types
 
-### Topic and Resource
+Relatrix is built around diverse ways of capturing thoughts.
 
-| Concept | Description |
+| Entry Type | Description |
 |:---|:---|
-| **Topic** | A named folder grouping related resources. Has its own overview note. |
-| **Resource Entry** | Any piece of content. Includes simple URLs, PDFs (with a built-in reader for highlighting and visual capture), and Markdown notes. |
-
-### Timeline of Resource
-
-| Concept | Description |
-|:---|:---|
-| **Vision** | A visual note (screenshot, sketch, diagram) attached to a resource. Mandatory for entry. |
-| **Opinion** | A timestamped personal reflection on a resource, with a confidence score. |
-| **Annotation** | A highlight or inline note anchored to a specific passage. |
-| **Bookmark** | A milestone in your reading journey, with attached thoughts. |
-| **Template** | Structured forms with headings to fill or something similar that guides a new opinion. |
-
-### Knowledge Links
-
-| Concept | Description |
-|:---|:---|
-| **Knowledge Link** | A `[[wiki-link]]` that creates a bidirectional edge in Relatrix. Supported everywhere: inside every item of the timeline (opinions, visions, annotations, bookmarks, templates), topic overview, resource description, and markdown notes. |
+| **Opinion** | A timestamped personal reflection with a confidence score. |
+| **Annotation** | A highlight or inline note anchored to a specific text passage. |
+| **Visual Note (Vision)** | A visual capture (photo, sketch, screenshot) with an attached caption. |
+| **Bookmark** | A milestone in your reading journey, often containing a summary. |
+| **Dictionary Entry** | A definition or lookup for a specific phrase, synced across the app. |
+| **Template** | Structured reflections using guided forms (e.g., Summary, Key Takeaway). |
+| **Knowledge Link** | A `[[wiki-link]]` that creates a bidirectional edge between any of the above. |
 
 ---
 
 ## 🗺 Roadmap
 
-- [x] Vision‑First resource entry with confidence scoring
-- [x] Unified Timeline (Opinions + Annotations + Bookmarks + Vision)
+- [x] Multi‑modal resource entry with confidence scoring
+- [x] Unified Timeline (Opinions + Annotations + Bookmarks + Visuals)
 - [x] Relatrix 3D knowledge graph with physics simulation
 - [x] SQLCipher‑encrypted offline database
-- [x] Full‑text offline search
-- [x] PDF reader with visual‑note capture
+- [x] Full‑text offline search across resources and entries
+- [x] PDF reader with text selection and annotation
 - [x] Dark mode
 - [ ] iOS app (SwiftUI) — *in development*
 - [ ] iCloud / local sync between devices
@@ -213,31 +186,9 @@ cd relatrix
 
 ---
 
-## 📸 All Screens
-
-<details>
-<summary>Expand to view all screenshots</summary>
-
-<br/>
-
-| Screen | Light | Dark |
-|:---|:---:|:---:|
-| Home | ![](screenshots/01_home.png) | ![](screenshots/dark/01_home_dark.png) |
-| Library | ![](screenshots/02_library.png) | ![](screenshots/dark/02_library_dark.png) |
-| Relatrix | ![](screenshots/03_relatrix.png) | ![](screenshots/dark/03_relatrix_dark.png) |
-| Resource Detail | ![](screenshots/04_resource_detail.png) | ![](screenshots/dark/04_resource_detail_dark.png) |
-| New Entry | ![](screenshots/05_new_entry.png) | — |
-| Topic Detail | ![](screenshots/06_topic_detail.png) | ![](screenshots/dark/06_topic_detail_dark.png) |
-| Profile & Settings | ![](screenshots/07_profile.png) | ![](screenshots/dark/07_profile_dark.png) |
-| PDF Reader | ![](screenshots/08_pdf_reader.png) | ![](screenshots/dark/08_pdf_reader.png) |
-| Note Editor | ![](screenshots/09_note_editor.png) | — |
-</details>
-
----
-
 <div align="center">
 
-Built with sleepless nights, infinite caffeine, and deliberate thinking.
+Built by a sleep-deprived human who read way too many PDFs just to make sure the progress bar felt right
 
 *For researchers, deep readers, students, and anyone who actually wants to understand what they consume.*
 
