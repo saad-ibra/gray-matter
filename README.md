@@ -1,73 +1,207 @@
-# Gray Matter
+<div align="center">
 
-Gray Matter is a personal knowledge management and deliberation platform designed for researchers, students, deep thinkers, and book readers. It provides a structured environment for deep reading, in-context annotation, and high-level topic synthesis.
+<br/>
 
-Built with Kotlin Multiplatform (KMP), Gray Matter provides a seamless experience across Android and (coming soon) iOS, ensuring your intellectual assets are always accessible and **100% offline-first**.
+# 𝗚𝗿𝗮𝘆 𝗠𝗮𝘁𝘁𝗲𝗿
 
----
+**A personal knowledge management and deliberation platform for people who think deeply.**
 
-## Core Philosophy: Forced Deliberation
+*Stop collecting. Start understanding.*
 
-I believe that passive collection is the enemy of actual knowledge. Gray Matter is built around an **Opinion-First** methodology:
-*   **No mindless data collection:** When you add any resource (a PDF, a Markdown note, or a Web Link), you are **required** to write an initial reflection (an "Opinion") and assign a confidence score before saving.
-*   **Logging Further Thoughts:** Further opinions are added to a beautiful, unified timeline. Deliberation is prioritized as users are prompted for reflections whenever they create bookmarks or annotations.
-*   **Active Synthesis:** Your library is not a file dump; it's a curated collection of **Resource Entries[files/urls/notes]**, categorized into topics[folders]. Every insight is tracked chronologically on a timeline.
-*   **Relatrix[Knowledge Connections]:** Create a rich web of interconnected ideas. Seamlessly reference other resources, topics, or specific insights within your opinions to build a network of bi-directional knowledge. See the 3D visual representaion of these connected ideas in the Relatrix view. 
----
+<br/>
 
-## Feature Highlights
+[![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
+[![Language](https://img.shields.io/badge/Language-Kotlin_Multiplatform-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/docs/multiplatform.html)
+[![UI](https://img.shields.io/badge/UI-Jetpack_Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose)
+[![Database](https://img.shields.io/badge/Database-SQLDelight_%2B_SQLCipher-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://github.com/cashapp/sqldelight)
+[![Offline](https://img.shields.io/badge/Data-100%25_Offline_First-2ECC71?style=for-the-badge)](/)
+[![iOS](https://img.shields.io/badge/iOS-Coming_Soon-999999?style=for-the-badge&logo=apple&logoColor=white)](/)
 
-*   **Relatrix Knowledge Graph:** See the "connective tissue" of your thoughts. Relatrix is a dynamic 3D visual map that shows how your resources and insights are linked together, helping you discover non-obvious connections across your library.
-*   **Core Knowledge Artifacts:** Move beyond passive highlighting. Gray Matter captures knowledge in four distinct forms:
-    *   **Opinions:** Your personal reflections and deliberation on any resource.
-    *   **Annotations:** Context-specific highlights and notes precisely anchored to text in your documents.
-    *   **Bookmarks:** Significant milestones in your reading journey with attached thoughts.
-    *   **Templates:** Customizable structured frameworks (like "Scientific Review" or "Decision Ledger") to guide your analytical process.
-*   **Multi-Format Resource Support:** Track insights across **Web Articles**, **PDF Documents**, and native **Markdown Notes**—all unified in a single intellectual system.
-*   **Unified Timeline:** A modern, animated interface in the Resource Detail screen that brings together your opinions, bookmarks, and annotations into a single chronological narrative.
-*   **Offline Global Search:** Instant, full-text search across all resources, opinions, and topics—completely offline.
-*   **Smart Background Cleanup:** Integrated workers that automatically manage storage integrity and ensure your library stays lean and consistent.
+<br/>
+
+![Hero Banner](screenshots/infographics/hero_banner.png)
+
+<br/>
+
+</div>
 
 ---
 
-## Technical Architecture
+## The Problem
 
-Gray Matter is architected for stability, local performance, and cross-platform consistency.
+Most "knowledge management" tools are glorified bookmarks. You collect articles, highlight text, save links — and then forget all of it.
 
-### Module Breakdown
-*   `shared`: The core engine of the application.
-    *   `domain`: Pure business logic and entities (`Topic`, `Resource`, `ResourceEntry`, `Opinion`).
-    *   `data`: Implementation of offline-first repositories and local persistence using SQLDelight.
-    *   `business`: High-level services including `LocalSearchEngine`, `RelatrixGraph` logic, and `ExportService`.
-*   `androidApp`: The native Android client.
-    *   Built entirely with Jetpack Compose.
-    *   Features custom PDF rendering, paged navigation, and precise text selection.
-    *   Uses WorkManager for background data maintenance.
-*   `iosApp`: (In Development) The native iOS client built with SwiftUI.
+Gray Matter is different. It is built on a single, uncompromising philosophy:
 
-### Technology Stack
-*   **Language:** Kotlin (Multiplatform)
-*   **UI Framework:** Jetpack Compose (Android), SwiftUI (iOS)
-*   **Database:** SQLDelight (Multi-platform SQLite)
-*   **Concurrency:** Kotlin Coroutines & Flow
+> **You do not truly understand something until you can articulate it in your own words.**
+
+Every single resource you save requires an initial **Opinion** — a written reflection, with a confidence score — before it enters your library. Deliberation is mandatory, not optional.
 
 ---
 
-## Getting Started
+## ✨ Feature Overview
+
+<br/>
+
+![Feature Strip](screenshots/infographics/feature_strip.png)
+
+<br/>
+
+### 📚 Topic Library
+Organize your intellectual world into **Topics** — curated folders of resources. Each topic has its own overview, holds web links, PDFs, and markdown notes, and surfaces all connected resources at a glance. Full-text offline search across everything.
+
+### 🗂 Resource Timeline
+Every resource has a rich **Timeline** view: a single chronological feed that unifies your Opinions, Annotations, and Bookmarks. Watch your thinking evolve from first impression to deep mastery. Each Opinion carries a **confidence score (0–10)** so you can literally see yourself get smarter.
+
+### ✍️ Opinion-First Entry
+Gray Matter **requires** you to write a reflection and a confidence score when saving anything. No mindless data collection. Templates (like "Scientific Review" or "Decision Ledger") can be applied to guide structured thinking.
+
+### 🔗 Knowledge Links
+While writing an opinion, reference any other resource, topic, or insight using `[[double-bracket]]` wiki-style links. These cross-references form a bidirectional backlink graph — the raw data for Relatrix.
+
+---
+
+## 🕸 Relatrix — Your 3D Knowledge Graph
+
+<br/>
+
+![Relatrix Showcase](screenshots/infographics/relatrix_showcase.png)
+
+<br/>
+
+Relatrix is a live, physics-simulated 3D graph that renders the connective tissue of your knowledge base. Every node is a resource or topic; every edge is a knowledge link you created. Filter by **Topics, Resources, Opinions, or Annotations**. Pinch to zoom, drag to rotate, adjust the physics engine (repulsion, spring tension) in real time.
+
+Patterns that would take hours to discover in a flat list become visually obvious in seconds.
+
+---
+
+## 🌙 Light & Dark Mode
+
+<br/>
+
+![Dark Mode Showcase](screenshots/infographics/dark_mode_showcase.png)
+
+<br/>
+
+A first-class dark mode built into the design system from the start — not retrofitted. Every screen, every component, adapts cleanly.
+
+---
+
+## 🏗 Architecture
+
+Gray Matter is built for long-term stability. The codebase uses **Kotlin Multiplatform** so that the core business logic is shared across Android and (upcoming) iOS, with zero duplication.
+
+```
+GrayMatter/
+├── shared/                     # Platform-agnostic core
+│   ├── domain/                 # Entities: Topic, ResourceEntry, Opinion, Annotation
+│   ├── data/                   # SQLDelight repositories, encrypted with SQLCipher
+│   └── business/               # LocalSearchEngine, RelatrixGraph, ExportService
+│
+└── androidApp/                 # Native Android client
+    ├── ui/                     # Jetpack Compose screens & components
+    ├── viewmodel/              # MVVM — GrayMatterViewModel, DraftingViewModel
+    ├── di/                     # Koin dependency injection modules
+    └── workers/                # WorkManager background cleanup tasks
+```
+
+### Tech Stack
+
+| Layer | Technology |
+|:---|:---|
+| Language | Kotlin Multiplatform |
+| Android UI | Jetpack Compose |
+| iOS UI | SwiftUI *(in development)* |
+| Database | SQLDelight + SQLCipher (encrypted) |
+| Concurrency | Kotlin Coroutines & Flow |
+| Dependency Injection | Koin |
+| Background Work | WorkManager |
+| PDF Rendering | Custom paged renderer with precise text selection |
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
-*   Android Studio Ladybug or later.
-*   JDK 17+.
+
+- **Android Studio** Ladybug or later
+- **JDK 17+**
+- Android SDK (API 26+)
 
 ### Installation
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/your-repo/gray-matter.git
-    ```
-2.  Open the project in Android Studio.
-3.  Sync Gradle and run the `androidApp` configuration.
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/saad-ibra/gray-matter.git
+cd gray-matter
+
+# 2. Open in Android Studio
+# File → Open → select the cloned folder
+
+# 3. Sync Gradle & run
+# Select the 'androidApp' configuration and press Run
+```
+
+> The database is encrypted with SQLCipher and fully offline — no backend, no account, no tracking.
 
 ---
 
-## Future Roadmap: iOS Integration
-A primary development goal is achieving 100% feature parity on the iOS platform using Swift and SwiftUI.
+## 📋 Core Concepts
+
+| Concept | Description |
+|:---|:---|
+| **Topic** | A named folder grouping related resources. Has its own overview note. |
+| **Resource Entry** | Any piece of content: a Web Link, PDF file, or Markdown note. |
+| **Opinion** | A timestamped personal reflection on a resource, with a confidence score. |
+| **Annotation** | A highlight or inline note anchored to a specific passage. |
+| **Bookmark** | A milestone in your reading journey, with attached thoughts. |
+| **Template** | A structured framework (e.g. "Scientific Review") that guides a new opinion. |
+| **Knowledge Link** | A `[[wiki-link]]` inside an opinion that creates a bidirectional edge in Relatrix. |
+
+---
+
+## 🗺 Roadmap
+
+- [x] Opinion-First resource entry with confidence scoring
+- [x] Unified Timeline (Opinions + Annotations + Bookmarks)
+- [x] Relatrix 3D knowledge graph with physics simulation
+- [x] SQLCipher-encrypted offline database
+- [x] Full-text offline search
+- [x] PDF reader with custom text selection
+- [x] Export to PDF & Markdown
+- [x] Dark mode
+- [ ] iOS app (SwiftUI) — *in development*
+- [ ] iCloud / local sync between devices
+- [ ] AI-assisted reflection prompts *(planned)*
+- [ ] Web clipper browser extension *(planned)*
+
+---
+
+## 📸 All Screens
+
+<details>
+<summary>Expand to view all screenshots</summary>
+
+<br/>
+
+| Screen | Light | Dark |
+|:---|:---:|:---:|
+| Home | ![](screenshots/01_home.png) | ![](screenshots/dark/01_home_dark.png) |
+| Library | ![](screenshots/02_library.png) | ![](screenshots/dark/02_library_dark.png) |
+| Relatrix | ![](screenshots/03_relatrix.png) | ![](screenshots/dark/03_relatrix_dark.png) |
+| Resource Detail | ![](screenshots/04_resource_detail.png) | ![](screenshots/04_resource_detail_dark.png) |
+| New Entry | ![](screenshots/05_new_entry.png) | — |
+| Topic Detail | ![](screenshots/06_topic_detail.png) | ![](screenshots/dark/06_topic_detail_dark.png) |
+| Profile & Settings | ![](screenshots/07_profile.png) | ![](screenshots/07_profile_dark.png) |
+
+</details>
+
+---
+
+<div align="center">
+
+Built with ☕ and deliberate thinking.
+
+*For researchers, deep readers, students, and anyone who actually wants to understand what they consume.*
+
+</div>
