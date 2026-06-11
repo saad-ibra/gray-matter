@@ -69,7 +69,7 @@ fun RecentItemCard(
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = if (type == ResourceType.MARKDOWN) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral500,
+                        tint = GrayMatterTheme.colors.neutral500,
                         modifier = Modifier.size(22.dp)
                     )
                 }

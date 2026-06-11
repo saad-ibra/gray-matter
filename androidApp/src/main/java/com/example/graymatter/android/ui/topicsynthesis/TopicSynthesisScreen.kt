@@ -381,7 +381,7 @@ private fun ResourceItem(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = if (resource.type == ResourceType.MARKDOWN) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral500,
+                    tint = GrayMatterTheme.colors.neutral500,
                     modifier = Modifier.size(20.dp)
                 )
             }
