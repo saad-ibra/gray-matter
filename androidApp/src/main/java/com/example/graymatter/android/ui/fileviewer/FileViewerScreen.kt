@@ -491,9 +491,7 @@ fun FileViewerScreen(
                         performThrottledHaptic()
                     },
                     onBookmarkToggle = {
-                        if (!isCurrentPageBookmarked) {
-                            viewModel.openBookmarkDialog()
-                        }
+                        viewModel.openBookmarkDialog()
                     },
                     isLeftHanded = settings.isLeftHanded
                 )

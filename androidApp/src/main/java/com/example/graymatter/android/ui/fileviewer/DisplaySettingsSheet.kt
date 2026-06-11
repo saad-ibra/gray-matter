@@ -58,8 +58,7 @@ fun DisplaySettingsSheet(
                 ThemeOption("Night", "night", Color(0xFF121212), Color(0xFFD0D0D0)),
                 ThemeOption("True Black", "amoled_black", Color.Black, Color.White),
                 ThemeOption("Twilight", "twilight", Color(0xFF1A1B26), Color(0xFFC0CAF5)),
-                ThemeOption("Ocean", "ocean", Color(0xFF0D1B2A), Color(0xFF7EB8C2)),
-                ThemeOption("Forest", "forest", Color(0xFF0B1A0B), Color(0xFF6DA06D))
+                ThemeOption("Ocean", "ocean", Color(0xFF0D1B2A), Color(0xFF7EB8C2))
             ), settings.theme, onSettingsChanged, settings)
 
 

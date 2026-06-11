@@ -555,15 +555,6 @@ private fun getPdfThemeFilter(theme: String): ColorFilter? {
                 0f, 0f, 0f, 1f, 0f
             )))
         }
-        "forest" -> {
-            // Subtle forest: softer text on dark green
-            ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
-                -0.2f, 0f, 0f, 0f, 80f, 
-                0f, -0.15f, 0f, 0f, 155f, 
-                0f, 0f, -0.2f, 0f, 80f, 
-                0f, 0f, 0f, 1f, 0f
-            )))
-        }
         "console" -> {
             // Invert + Green tint
             ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
@@ -707,7 +698,6 @@ private fun getThemeBackgroundColor(theme: String): Color {
         "amoled_black" -> Color.Black
         "twilight" -> Color(0xFF1A1B26)
         "ocean" -> Color(0xFF0D1B2A)
-        "forest" -> Color(0xFF0B1A0B)
         "console" -> Color(0xFF0A0A0A)
         "sepia" -> Color(0xFFF5E6C8)
 

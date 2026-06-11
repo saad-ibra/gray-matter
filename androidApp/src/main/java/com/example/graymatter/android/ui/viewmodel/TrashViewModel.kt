@@ -116,13 +116,35 @@ class TrashViewModel(
 
     fun deleteOpinion(opinionId: String) {
         viewModelScope.launch {
+            val opinion = opinionRepository.getOpinionById(opinionId)
             opinionRepository.softDeleteOpinion(opinionId)
+            if (opinion != null && opinion.pageNumber != null) {
+                val item = resourceEntryRepository.getResourceEntryById(opinion.itemId)
+                if (item != null) {
+                    val bookmarks = resourceRepository.getBookmarks(item.resourceId)
+                    val matchingBookmark = bookmarks.find { it.createdAt == opinion.createdAt }
+                    if (matchingBookmark != null) {
+                        resourceRepository.softDeleteBookmark(matchingBookmark.id)
+                    }
+                }
+            }
         }
     }
 
     fun undoDeleteOpinion(opinionId: String) {
         viewModelScope.launch {
+            val opinion = opinionRepository.getOpinionById(opinionId)
             opinionRepository.undoDeleteOpinion(opinionId)
+            if (opinion != null && opinion.pageNumber != null) {
+                val item = resourceEntryRepository.getResourceEntryById(opinion.itemId)
+                if (item != null) {
+                    val bookmarks = resourceRepository.getDeletedBookmarks()
+                    val matchingBookmark = bookmarks.find { it.createdAt == opinion.createdAt && it.resourceId == item.resourceId }
+                    if (matchingBookmark != null) {
+                        resourceRepository.undoDeleteBookmark(matchingBookmark.id)
+                    }
+                }
+            }
         }
     }
 

@@ -1663,7 +1663,7 @@ private fun OpinionTimelineItem(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = highlightText(phrase, initialSearchQuery, Color.Black),
+                            text = highlightText(phrase, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
                             style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp, fontWeight = FontWeight.Medium)
                         )
                     }
@@ -1691,7 +1691,7 @@ private fun OpinionTimelineItem(
                             Row(modifier = Modifier.fillMaxWidth()) {
                                 Box(modifier = Modifier.width(4.dp).height(IntrinsicSize.Min).background(GrayMatterColors.TypeAnnotation)) // Orange accent
                                 Text(
-                                    text = highlightText("\"$quote\"", initialSearchQuery, Color(0xFF666666)),
+                                    text = highlightText("\"$quote\"", initialSearchQuery, GrayMatterTheme.colors.textSecondary),
                                     style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic, lineHeight = 24.sp),
                                     modifier = Modifier.padding(12.dp)
                                 )
@@ -1700,7 +1700,7 @@ private fun OpinionTimelineItem(
                         // Reflection
                         if (reflection.isNotEmpty()) {
                             Text(
-                                text = highlightText(reflection, initialSearchQuery, Color.Black),
+                                text = highlightText(reflection, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
                                 style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
@@ -1739,7 +1739,7 @@ private fun OpinionTimelineItem(
                                             color = GrayMatterColors.TypeTemplate
                                         )
                                         Text(
-                                            text = highlightText(response, initialSearchQuery, Color.Black),
+                                            text = highlightText(response, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
                                             style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                                         )
                                     }
@@ -1758,27 +1758,10 @@ private fun OpinionTimelineItem(
                                 .padding(16.dp)
                         ) {
                             Text(
-                                text = highlightText(displayContent, initialSearchQuery, Color.Black),
+                                text = highlightText(displayContent, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
                                 style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
-                    }
-                } else if (isPureBookmark) {
-                    // Bookmark or old style page opinion
-                    val cleanText = if (cleanTextForContent.startsWith("[Page ")) cleanTextForContent.replace(Regex("^\\[Page \\d+\\]\\s*"), "") else cleanTextForContent
-                    val displayText = if (cleanText.isNotBlank()) cleanText else "Bookmark Page ${opinion.pageNumber!! + 1}"
-                    
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(GrayMatterColors.TypeBookmark.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .border(1.dp, GrayMatterColors.TypeBookmark.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = highlightText(displayText, initialSearchQuery, Color.Black),
-                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
-                        )
                     }
                 } else {
                     // General Opinion (including page-numbered opinions)
@@ -1792,7 +1775,7 @@ private fun OpinionTimelineItem(
                                 .padding(16.dp)
                         ) {
                             Text(
-                                text = highlightText(cleanText, initialSearchQuery, Color.Black),
+                                text = highlightText(cleanText, initialSearchQuery, GrayMatterTheme.colors.textPrimary),
                                 style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                             )
                         }
