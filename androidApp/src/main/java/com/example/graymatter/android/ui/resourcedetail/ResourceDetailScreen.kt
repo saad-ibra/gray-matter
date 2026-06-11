@@ -1281,8 +1281,8 @@ private fun OpinionTimelineItem(
                 .weight(1f)
                 .padding(bottom = if (isLast) 16.dp else 24.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color.White)
-                .border(1.dp, Color(0xFFE5E5EA), RoundedCornerShape(16.dp))
+                .background(GrayMatterTheme.colors.surface)
+                .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(16.dp))
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
@@ -1297,7 +1297,7 @@ private fun OpinionTimelineItem(
                             fontWeight = FontWeight.Bold,
                             fontFamily = com.example.graymatter.android.ui.theme.InterFontFamily
                         ),
-                        color = Color.Black.copy(alpha = 0.5f),
+                        color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.5f),
                         modifier = Modifier.padding(top = 2.dp)
                     )
                     
@@ -1310,6 +1310,7 @@ private fun OpinionTimelineItem(
                         val isTemplate = cleanText.startsWith("[TEMPLATE:")
                         val isCustomTitle = cleanText.startsWith("[CUSTOM: ")
                         val hasPageNumber = opinion.pageNumber != null
+                        val isPureBookmark = hasPageNumber && cleanText.isBlank() && opinion.imagePath == null
                         
                         val dynamicTitle = when {
                             isTemplate -> cleanText.substringAfter("[TEMPLATE:").substringBefore("]")
@@ -1322,6 +1323,7 @@ private fun OpinionTimelineItem(
                         val (title, icon, color) = when {
                             isVisual -> Triple("VISUAL", Icons.Default.Image, GrayMatterColors.TypeVisual)
                             isDictionary -> Triple("LOOKUP", Icons.Default.MenuBook, GrayMatterColors.TypeLookupMain)
+                            isPureBookmark -> Triple("BOOKMARK", Icons.Default.Bookmark, GrayMatterColors.TypeBookmark)
                             isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.TypeAnnotation)
                             isTemplate -> Triple("TEMPLATE", Icons.Default.DashboardCustomize, GrayMatterColors.TypeTemplate)
                             isCustomTitle -> Triple(dynamicTitle.uppercase(), Icons.Default.EditNote, GrayMatterColors.TypeOpinion)
@@ -1343,12 +1345,12 @@ private fun OpinionTimelineItem(
                             Text(
                                 text = formatDate(opinion.createdAt).uppercase(), 
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp), 
-                                color = Color.Black.copy(alpha = 0.6f)
+                                color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.6f)
                             )
                             Text(
                                 text = formatTime(opinion.createdAt).uppercase(), 
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp), 
-                                color = Color.Black.copy(alpha = 0.5f)
+                                color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.5f)
                             )
                         }
                     }
@@ -1556,14 +1558,14 @@ private fun OpinionTimelineItem(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Color.Black.copy(alpha = 0.05f))
+                                .background(GrayMatterTheme.colors.textPrimary.copy(alpha = 0.05f))
                         ) {
                             Row(modifier = Modifier.fillMaxWidth()) {
                                 Box(modifier = Modifier.width(4.dp).height(IntrinsicSize.Min).background(GrayMatterColors.TypeAnnotation)) // Orange accent
                                 Text(
                                     text = "\"$quote\"",
                                     style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic, lineHeight = 24.sp),
-                                    color = Color(0xFF666666),
+                                    color = GrayMatterTheme.colors.textSecondary,
                                     modifier = Modifier.padding(12.dp)
                                 )
                             }

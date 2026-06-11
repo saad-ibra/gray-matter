@@ -80,9 +80,6 @@ The note editor is a minimalist markdown canvas with a **visual‑note sidebar**
 - Drag‑and‑drop of Vision images.
 - Quick formatting toolbar (bold, italics, headings, lists, code).
 - Export to PDF, Markdown, or plain‑text.
-
-![Note Editor Screenshot](screenshots/09_note_editor.png)
-
 ---
 
 ## 🕸 Relatrix — Your 3D Knowledge Graph
@@ -175,16 +172,28 @@ cd relatrix
 
 ## 📋 Core Concepts
 
+### Topic and Resource
+
 | Concept | Description |
 |:---|:---|
 | **Topic** | A named folder grouping related resources. Has its own overview note. |
-| **Resource Entry** | Any piece of content: a Web Link, PDF file, or Markdown note. |
+| **Resource Entry** | Any piece of content. Includes simple URLs, PDFs (with a built-in reader for highlighting and visual capture), and Markdown notes. |
+
+### Timeline of Resource
+
+| Concept | Description |
+|:---|:---|
 | **Vision** | A visual note (screenshot, sketch, diagram) attached to a resource. Mandatory for entry. |
 | **Opinion** | A timestamped personal reflection on a resource, with a confidence score. |
 | **Annotation** | A highlight or inline note anchored to a specific passage. |
 | **Bookmark** | A milestone in your reading journey, with attached thoughts. |
-| **Template** | A structured framework (e.g. "Scientific Review") that guides a new opinion. |
-| **Knowledge Link** | A `[[wiki-link]]` inside an opinion or vision that creates a bidirectional edge in Relatrix. |
+| **Template** | Structured forms with headings to fill or something similar that guides a new opinion. |
+
+### Knowledge Links
+
+| Concept | Description |
+|:---|:---|
+| **Knowledge Link** | A `[[wiki-link]]` that creates a bidirectional edge in Relatrix. Supported everywhere: inside every item of the timeline (opinions, visions, annotations, bookmarks, templates), topic overview, resource description, and markdown notes. |
 
 ---
 
