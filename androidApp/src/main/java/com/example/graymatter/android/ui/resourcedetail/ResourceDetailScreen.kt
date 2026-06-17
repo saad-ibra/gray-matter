@@ -2219,7 +2219,7 @@ private fun OpinionEditDialog(
                                 Icon(
                                     Icons.Default.AddAPhoto, 
                                     "Add Image", 
-                                    tint = if (GrayMatterTheme.colors.isLight) Color.Black else Color.White, 
+                                    tint = GrayMatterColors.TypeVisual, 
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
