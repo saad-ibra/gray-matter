@@ -10,6 +10,12 @@
 
 <br/>
 
+<a href="https://f-droid.org/packages/com.saadibra.graymatter">
+  <img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="70">
+</a>
+
+<br/>
+
 [![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
 [![Language](https://img.shields.io/badge/Language-Kotlin%20Multiplatform-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/docs/multiplatform.html)
 [![UI](https://img.shields.io/badge/UI-Jetpack_Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose)
@@ -154,9 +160,20 @@ cd relatrix
 
 ---
 
-## 📋 Core Concepts: Entry Types
+## 📋 Core Concepts
 
-Relatrix is built around diverse ways of capturing thoughts.
+Relatrix is built around diverse ways of organizing and capturing thoughts.
+
+### 1. Topics & Resources
+
+| Concept | Description |
+|:---|:---|
+| **Topic** | Curated folders containing overviews and related resources. |
+| **Resource** | Source material added to a topic. Supported types include simple URLs, the built-in PDF Reader, and Markdown notes. |
+
+### 2. Timeline of Resources
+
+Every resource features a unified timeline to track your reflections.
 
 | Entry Type | Description |
 |:---|:---|
@@ -165,8 +182,13 @@ Relatrix is built around diverse ways of capturing thoughts.
 | **Visual Note (Vision)** | A visual capture (photo, sketch, screenshot) with an attached caption. |
 | **Bookmark** | A milestone in your reading journey, often containing a summary. |
 | **Dictionary Entry** | A definition or lookup for a specific phrase, synced across the app. |
-| **Template** | Structured reflections using guided forms (e.g., Summary, Key Takeaway). |
-| **Knowledge Link** | A `[[wiki-link]]` that creates a bidirectional edge between any of the above. |
+| **Template** | Structured forms with headings to fill (e.g., Summary, Key Takeaway). |
+
+### 3. Knowledge Links
+
+| Feature | Description |
+|:---|:---|
+| **Knowledge Link** | A `[[wiki-link]]` that creates a bidirectional edge between any concepts. Supported almost everywhere: Topic Overviews, Resource Descriptions, Markdown Notes, and all Timeline Items (Opinions, Annotations, Templates, etc.). |
 
 ---
 

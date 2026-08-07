@@ -1,0 +1,25 @@
+Categories:
+  - Productivity
+  - Reading
+License: Apache-2.0 # Or whatever license the repo uses
+SourceCode: https://github.com/saad-ibra/gray-matter
+IssueTracker: https://github.com/saad-ibra/gray-matter/issues
+Changelog: https://github.com/saad-ibra/gray-matter/releases
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+UpdateCheckData: v?(.*)
+
+Builds:
+  - versionName: '1.0'
+    versionCode: 1
+    commit: v1.0 # Or the latest tag
+    subdir: androidApp
+    sudo:
+      - apt-get update || true
+      - apt-get install -y default-jdk
+    gradle:
+      - yes
+    output: build/outputs/apk/release/androidApp-release-unsigned.apk
+    buildjni:
+      - yes

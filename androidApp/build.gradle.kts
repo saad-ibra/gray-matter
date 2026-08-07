@@ -7,7 +7,7 @@ android {
     namespace = "com.example.graymatter.android"
     compileSdk = 34
     defaultConfig {
-        applicationId = "com.example.graymatter.android"
+        applicationId = "com.saadibra.graymatter"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
