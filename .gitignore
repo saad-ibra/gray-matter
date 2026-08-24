@@ -32,3 +32,8 @@ jdk17.zip
 .DS_Store
 *.swp
 *.log
+
+# Keystore files
+*.keystore
+keystore.properties
+*.jks

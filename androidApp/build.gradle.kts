@@ -10,8 +10,8 @@ android {
         applicationId = "com.saadibra.graymatter"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.4"
     }
     buildFeatures {
         compose = true
@@ -26,10 +26,10 @@ android {
     }
     signingConfigs {
         create("release") {
-            storeFile = file("release.keystore")
-            storePassword = "password123"
-            keyAlias = "release"
-            keyPassword = "password123"
+            storeFile = file(System.getenv("KEYSTORE_FILE") ?: "release.keystore")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+            keyAlias = System.getenv("KEY_ALIAS") ?: ""
+            keyPassword = System.getenv("KEY_PASSWORD") ?: ""
         }
     }
     buildTypes {
