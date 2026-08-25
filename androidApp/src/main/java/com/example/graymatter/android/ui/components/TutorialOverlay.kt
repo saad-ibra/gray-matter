@@ -819,9 +819,6 @@ private fun SlideGraph(
 
         // Graph canvas
         BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(260.dp)) {
-            val containerW = maxWidth
-            val containerH = maxHeight
-
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
@@ -896,8 +893,8 @@ private fun SlideGraph(
                         modifier = Modifier
                             .align(Alignment.TopStart)
                             .offset(
-                                x = (containerW * node.fx) + 24.dp, // positioned to the right of the shape
-                                y = (containerH * node.fy) - 8.dp
+                                x = (maxWidth * node.fx) + 24.dp, // positioned to the right of the shape
+                                y = (maxHeight * node.fy) - 8.dp
                             )
                             .width(120.dp)
                     )
