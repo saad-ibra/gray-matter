@@ -2,10 +2,14 @@ package com.example.graymatter.android.security
 
 import android.content.Context
 import android.content.SharedPreferences
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 
-class SecurityPreferences(context: Context) {
+class SecurityPreferences private constructor(context: Context) {
 
     private val prefs: SharedPreferences by lazy {
         val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
@@ -20,11 +24,23 @@ class SecurityPreferences(context: Context) {
 
     var isAppLockEnabled: Boolean
         get() = prefs.getBoolean(KEY_APP_LOCK, false)
-        set(value) = prefs.edit().putBoolean(KEY_APP_LOCK, value).apply()
+        set(value) {
+            prefs.edit().putBoolean(KEY_APP_LOCK, value).apply()
+            _appLockState.value = value
+        }
+
+    private val _appLockState = MutableStateFlow(isAppLockEnabled)
+    val appLockState: StateFlow<Boolean> = _appLockState.asStateFlow()
 
     var isScreenSecurityEnabled: Boolean
         get() = prefs.getBoolean(KEY_SCREEN_SECURITY, false)
-        set(value) = prefs.edit().putBoolean(KEY_SCREEN_SECURITY, value).apply()
+        set(value) {
+            prefs.edit().putBoolean(KEY_SCREEN_SECURITY, value).apply()
+            _screenSecurityState.value = value
+        }
+
+    private val _screenSecurityState = MutableStateFlow(isScreenSecurityEnabled)
+    val screenSecurityState: StateFlow<Boolean> = _screenSecurityState.asStateFlow()
 
     var lockTimeoutSeconds: Long
         get() = prefs.getLong(KEY_LOCK_TIMEOUT, 0L)
@@ -39,5 +55,14 @@ class SecurityPreferences(context: Context) {
         private const val KEY_SCREEN_SECURITY = "screen_security_enabled"
         private const val KEY_LOCK_TIMEOUT = "lock_timeout_seconds"
         private const val KEY_LAST_ACTIVE = "last_active_timestamp"
+        
+        @Volatile
+        private var INSTANCE: SecurityPreferences? = null
+
+        fun getInstance(context: Context): SecurityPreferences {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: SecurityPreferences(context.applicationContext).also { INSTANCE = it }
+            }
+        }
     }
 }

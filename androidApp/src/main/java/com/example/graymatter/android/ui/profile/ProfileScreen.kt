@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import com.example.graymatter.android.preferences.AppPreferences
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.components.TutorialOverlay
@@ -35,6 +37,10 @@ fun ProfileScreen(
     modifier: Modifier = Modifier
 ) {
     var showTutorial by remember { mutableStateOf(false) }
+    var showSearchEngineDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val appPreferences = remember { AppPreferences.getInstance(context) }
+    var currentUrl by remember { mutableStateOf(appPreferences.lookupUrl) }
 
     Box(
         modifier = modifier
@@ -70,6 +76,13 @@ fun ProfileScreen(
                     title = "Lookup Management",
                     tint = GrayMatterTheme.colors.primary,
                     onClick = onNavigateToLookups
+                )
+                
+                SettingsButton(
+                    icon = Icons.Default.Public,
+                    title = "Lookup Search Engine",
+                    tint = GrayMatterTheme.colors.primary,
+                    onClick = { showSearchEngineDialog = true }
                 )
                 
                 SettingsButton(
@@ -118,6 +131,40 @@ fun ProfileScreen(
 
     if (showTutorial) {
         TutorialOverlay(onDismiss = { showTutorial = false })
+    }
+
+    if (showSearchEngineDialog) {
+        AlertDialog(
+            onDismissRequest = { showSearchEngineDialog = false },
+            title = { Text("Search Engine URL") },
+            text = {
+                Column {
+                    Text("Enter the search URL prefix. The selected text will be appended to it.", style = MaterialTheme.typography.bodySmall)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = currentUrl,
+                        onValueChange = { currentUrl = it },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    appPreferences.lookupUrl = currentUrl
+                    showSearchEngineDialog = false
+                }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    currentUrl = appPreferences.lookupUrl
+                    showSearchEngineDialog = false
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

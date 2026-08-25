@@ -2,6 +2,7 @@ package com.example.graymatter.android.ui.fileviewer
 
 import android.content.Intent
 import android.net.Uri
+import com.example.graymatter.android.preferences.AppPreferences
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -80,6 +81,7 @@ fun FileViewerScreen(
     val opinions by viewModel.opinions.collectAsState()
     val globalLookupWords by viewModel.globalLookupWords.collectAsState()
     val context = LocalContext.current
+    val appPreferences = remember { AppPreferences.getInstance(context) }
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     var lastHapticTime by remember { mutableLongStateOf(0L) }
     var lastPageChangeTime by remember { mutableLongStateOf(0L) }
@@ -282,7 +284,8 @@ fun FileViewerScreen(
                                         }
                                         action == "dictionary" -> {
                                             viewModel.saveDictionaryEntry(text, id, startIndex)
-                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=${Uri.encode(text)}"))
+                                            val url = "${appPreferences.lookupUrl}${Uri.encode(text)}"
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                                             context.startActivity(intent)
                                         }
                                         action == "edit" -> {

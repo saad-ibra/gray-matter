@@ -22,7 +22,7 @@ class BiometricAuthManager {
         private const val TAG = "BiometricAuth"
     }
 
-    private val _isUnlocked = MutableStateFlow(false)
+    private val _isUnlocked = MutableStateFlow(true) // Default unlocked; MainActivity locks on cold start
     val isUnlocked: StateFlow<Boolean> = _isUnlocked.asStateFlow()
 
     private val _biometricAvailable = MutableStateFlow(false)
@@ -30,6 +30,7 @@ class BiometricAuthManager {
 
     /**
      * Checks if biometric authentication is available on the device.
+     * Does NOT change unlock state — caller must explicitly lock() if needed.
      */
     fun checkAvailability(activity: FragmentActivity) {
         val biometricManager = BiometricManager.from(activity)
@@ -38,11 +39,7 @@ class BiometricAuthManager {
             BiometricManager.Authenticators.DEVICE_CREDENTIAL
         )
         _biometricAvailable.value = (canAuthenticate == BiometricManager.BIOMETRIC_SUCCESS)
-
-        if (!_biometricAvailable.value) {
-            Log.w(TAG, "Biometric auth not available (code=$canAuthenticate), auto-unlocking")
-            _isUnlocked.value = true
-        }
+        Log.i(TAG, "Biometric availability: ${_biometricAvailable.value} (code=$canAuthenticate)")
     }
 
     /**
@@ -54,7 +51,7 @@ class BiometricAuthManager {
             val biometricPrompt = BiometricPrompt(activity, executor, authCallback)
 
             val promptInfo = BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Unlock Gray Matter")
+                .setTitle("Unlock Relatrix")
                 .setSubtitle("Verify your identity to access your data")
                 .setAllowedAuthenticators(
                     BiometricManager.Authenticators.BIOMETRIC_STRONG or

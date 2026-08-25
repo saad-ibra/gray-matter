@@ -52,6 +52,12 @@ class AppPreferences private constructor(context: Context) {
             prefs.edit().putString("default_pdf_theme", value).apply()
         }
 
+    var lookupUrl: String
+        get() = prefs.getString("lookup_url", "https://www.google.com/search?q=") ?: "https://www.google.com/search?q="
+        set(value) {
+            prefs.edit().putString("lookup_url", value).apply()
+        }
+
     var hasSeenTutorial: Boolean
         get() = prefs.getBoolean("has_seen_tutorial", false)
         set(value) {

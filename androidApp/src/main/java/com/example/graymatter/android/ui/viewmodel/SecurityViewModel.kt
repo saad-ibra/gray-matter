@@ -17,7 +17,7 @@ data class SecurityUiState(
 
 class SecurityViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val securityPrefs = SecurityPreferences(application)
+    private val securityPrefs = SecurityPreferences.getInstance(application)
     private val backupPrefs = BackupPreferences(application)
 
     private val _uiState = MutableStateFlow(SecurityUiState())
