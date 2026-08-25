@@ -134,18 +134,70 @@ fun ProfileScreen(
     }
 
     if (showSearchEngineDialog) {
+        var selectedEngine by remember { 
+            mutableStateOf(
+                when (currentUrl) {
+                    "https://duckduckgo.com/?q=" -> "DuckDuckGo"
+                    "https://www.google.com/search?q=" -> "Google"
+                    "https://www.bing.com/search?q=" -> "Bing"
+                    "https://search.yahoo.com/search?p=" -> "Yahoo"
+                    else -> "Custom"
+                }
+            )
+        }
+        
         AlertDialog(
             onDismissRequest = { showSearchEngineDialog = false },
             title = { Text("Search Engine URL") },
             text = {
                 Column {
-                    Text("Enter the search URL prefix. The selected text will be appended to it.", style = MaterialTheme.typography.bodySmall)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = currentUrl,
-                        onValueChange = { currentUrl = it },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Text("Select your preferred search engine for lookups.", style = MaterialTheme.typography.bodySmall)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    val engines = listOf("DuckDuckGo", "Google", "Bing", "Yahoo", "Custom")
+                    engines.forEach { engine ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { 
+                                    selectedEngine = engine
+                                    when (engine) {
+                                        "DuckDuckGo" -> currentUrl = "https://duckduckgo.com/?q="
+                                        "Google" -> currentUrl = "https://www.google.com/search?q="
+                                        "Bing" -> currentUrl = "https://www.bing.com/search?q="
+                                        "Yahoo" -> currentUrl = "https://search.yahoo.com/search?p="
+                                    }
+                                }
+                                .padding(vertical = 8.dp)
+                        ) {
+                            RadioButton(
+                                selected = selectedEngine == engine,
+                                onClick = { 
+                                    selectedEngine = engine
+                                    when (engine) {
+                                        "DuckDuckGo" -> currentUrl = "https://duckduckgo.com/?q="
+                                        "Google" -> currentUrl = "https://www.google.com/search?q="
+                                        "Bing" -> currentUrl = "https://www.bing.com/search?q="
+                                        "Yahoo" -> currentUrl = "https://search.yahoo.com/search?p="
+                                    }
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(engine)
+                        }
+                    }
+                    
+                    if (selectedEngine == "Custom") {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Enter custom URL prefix (selected text will be appended):", style = MaterialTheme.typography.bodySmall)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = currentUrl,
+                            onValueChange = { currentUrl = it },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             },
             confirmButton = {

@@ -53,7 +53,7 @@ class AppPreferences private constructor(context: Context) {
         }
 
     var lookupUrl: String
-        get() = prefs.getString("lookup_url", "https://www.google.com/search?q=") ?: "https://www.google.com/search?q="
+        get() = prefs.getString("lookup_url", "https://duckduckgo.com/?q=") ?: "https://duckduckgo.com/?q="
         set(value) {
             prefs.edit().putString("lookup_url", value).apply()
         }
