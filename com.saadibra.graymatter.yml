@@ -1,25 +1,38 @@
 Categories:
-  - Productivity
   - Reading
-License: Apache-2.0 # Or whatever license the repo uses
+  - Writing
+License: Apache-2.0
+AuthorName: Saad Ibra
+AuthorEmail: khansaadibrahim@gmail.com
+AuthorWebSite: https://saadibra.mooo.com
 SourceCode: https://github.com/saad-ibra/gray-matter
 IssueTracker: https://github.com/saad-ibra/gray-matter/issues
 Changelog: https://github.com/saad-ibra/gray-matter/releases
 
-AutoUpdateMode: Version
-UpdateCheckMode: Tags
-UpdateCheckData: v?(.*)
+AutoName: Relatrix
+
+RepoType: git
+Repo: https://github.com/saad-ibra/gray-matter.git
+Binaries: 
+  https://github.com/saad-ibra/gray-matter/releases/download/v%v/androidApp-release.apk
 
 Builds:
-  - versionName: '1.0'
-    versionCode: 1
-    commit: v1.0 # Or the latest tag
+  - versionName: '1.6'
+    versionCode: 4
+    commit: b121896e1e02d5952ef616291b9f3244541619a7
     subdir: androidApp
-    sudo:
-      - apt-get update || true
-      - apt-get install -y default-jdk
     gradle:
       - yes
-    output: build/outputs/apk/release/androidApp-release-unsigned.apk
-    buildjni:
+  - versionName: '1.7'
+    versionCode: 5
+    commit: 51f2c83c8762201029a67608462d051eb27b00c0
+    subdir: androidApp
+    gradle:
       - yes
+
+AllowedAPKSigningKeys: c82349da79ea20bee332a5f162ce7ea2da537879975cc6d5f44e7dd101ebc9e0
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '1.7'
+CurrentVersionCode: 5
