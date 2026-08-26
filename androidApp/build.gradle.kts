@@ -10,8 +10,8 @@ android {
         applicationId = "com.saadibra.graymatter"
         minSdk = 24
         targetSdk = 34
-        versionCode = 4
-        versionName = "1.6"
+        versionCode = 5
+        versionName = "1.7"
     }
     buildFeatures {
         compose = true

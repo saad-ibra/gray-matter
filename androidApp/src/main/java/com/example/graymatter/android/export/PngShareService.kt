@@ -21,18 +21,18 @@ object PngShareService {
     private const val PADDING = 64f
     private const val CORNER_RADIUS = 32f
 
-    private val bgColor = Color.rgb(0, 0, 0)
-    private val cardBg = Color.rgb(12, 12, 12)
-    private val textPrimary = Color.rgb(255, 255, 255)
-    private val textSecondary = Color.rgb(161, 161, 170)
-    private val accentGreen = Color.rgb(142, 162, 88)
-    private val accentBookmark = Color.rgb(196, 168, 78)
-    private val accentAnnotation = Color.rgb(196, 122, 90)
-    private val accentTemplate = Color.rgb(126, 106, 140)
-    private val accentVisual = Color.rgb(90, 158, 140)
-    private val accentLookup = Color.rgb(191, 90, 106)
-    private val borderColor = Color.rgb(30, 30, 34)
-    private val neutralColor = Color.rgb(98, 98, 106)
+    private val bgColor = Color.rgb(255, 255, 255)
+    private val cardBg = Color.rgb(248, 248, 250)
+    private val textPrimary = Color.rgb(28, 28, 30)
+    private val textSecondary = Color.rgb(99, 99, 102)
+    private val accentGreen = Color.rgb(100, 120, 60)
+    private val accentBookmark = Color.rgb(160, 135, 50)
+    private val accentAnnotation = Color.rgb(165, 95, 65)
+    private val accentTemplate = Color.rgb(100, 80, 115)
+    private val accentVisual = Color.rgb(60, 130, 110)
+    private val accentLookup = Color.rgb(158, 60, 78)
+    private val borderColor = Color.rgb(220, 220, 225)
+    private val neutralColor = Color.rgb(142, 142, 147)
 
     fun generateOpinionImage(
         context: Context,
@@ -124,13 +124,6 @@ object PngShareService {
 
         var y = PADDING
 
-        // Accent stripe at top
-        val stripePaint = Paint().apply {
-            color = accentColor
-            style = Paint.Style.FILL
-        }
-        canvas.drawRect(0f, 0f, IMAGE_WIDTH.toFloat(), 6f, stripePaint)
-
         // Card background
         val cardLeft = PADDING - 16f
         val cardRight = IMAGE_WIDTH - PADDING + 16f
@@ -167,7 +160,7 @@ object PngShareService {
         }
         val confWidth = confPaint.measureText(confText)
         val pillPaint = Paint().apply {
-            color = Color.rgb(26, 26, 30)
+            color = Color.rgb(235, 235, 240)
             style = Paint.Style.FILL
         }
         val pillLeft = cardRight - 32f - confWidth - 24f
@@ -200,7 +193,7 @@ object PngShareService {
             strokeWidth = 1f
         }
         canvas.drawLine(PADDING + 16f, y, cardRight - 32f, y, sepPaint)
-        y += 24f
+        y += 40f
 
         // Content text
         textLines.forEach { line ->
@@ -236,21 +229,21 @@ object PngShareService {
         canvas.drawLine(PADDING, footerSepY, IMAGE_WIDTH - PADDING, footerSepY, sepPaint)
 
         val brandPaint = Paint().apply {
-            color = accentColor
-            textSize = 24f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            isAntiAlias = true
-        }
-        canvas.drawText("Made by Relatrix", PADDING, footerY, brandPaint)
-
-        val appPaint = Paint().apply {
             color = neutralColor
-            textSize = 20f
+            textSize = 18f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
             isAntiAlias = true
         }
-        val appText = "GrayMatter"
-        val appWidth = appPaint.measureText(appText)
-        canvas.drawText(appText, IMAGE_WIDTH - PADDING - appWidth, footerY, appPaint)
+        canvas.drawText("Relatrix", PADDING, footerY, brandPaint)
+
+        val datePaint2 = Paint().apply {
+            color = neutralColor
+            textSize = 18f
+            isAntiAlias = true
+        }
+        val dateStr2 = SimpleDateFormat("MMM dd, yyyy", Locale.US).format(Date())
+        val dateWidth = datePaint2.measureText(dateStr2)
+        canvas.drawText(dateStr2, IMAGE_WIDTH - PADDING - dateWidth, footerY, datePaint2)
 
         // Save to cache
         val outputFile = File(context.cacheDir, "share_opinion_${System.currentTimeMillis()}.png")

@@ -829,10 +829,10 @@ fun KnowledgeGraphScreen(
         ) {
             // Main console card
             Surface(
-                color = Color(0xFF0D1117).copy(alpha = 0.92f),
+                color = GrayMatterTheme.colors.surface.copy(alpha = 0.92f),
                 shape = RoundedCornerShape(16.dp),
                 border = androidx.compose.foundation.BorderStroke(
-                    0.7.dp, Color.White.copy(alpha = 0.08f)
+                    0.7.dp, GrayMatterTheme.colors.textPrimary.copy(alpha = 0.08f)
                 ),
                 tonalElevation = 0.dp,
                 shadowElevation = 8.dp
@@ -849,12 +849,12 @@ fun KnowledgeGraphScreen(
                     ) {
                         // Zoom out
                         Surface(
-                            color = Color.White.copy(alpha = 0.06f),
+                            color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.06f),
                             shape = RoundedCornerShape(6.dp),
                             modifier = Modifier.size(28.dp).repeatingClickable { scale = (scale / 1.1f).coerceIn(0.1f, 5f) }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text("−", color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp, fontWeight = FontWeight.Light)
+                                Text("−", color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.8f), fontSize = 16.sp, fontWeight = FontWeight.Light)
                             }
                         }
                         // Scale readout
@@ -867,18 +867,18 @@ fun KnowledgeGraphScreen(
                         )
                         // Zoom in
                         Surface(
-                            color = Color.White.copy(alpha = 0.06f),
+                            color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.06f),
                             shape = RoundedCornerShape(6.dp),
                             modifier = Modifier.size(28.dp).repeatingClickable { scale = (scale * 1.1f).coerceIn(0.1f, 5f) }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Add, "Zoom In", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(14.dp))
+                                Icon(Icons.Default.Add, "Zoom In", tint = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.8f), modifier = Modifier.size(14.dp))
                             }
                         }
                     }
 
                     // ── Divider ──
-                    Box(modifier = Modifier.width(96.dp).height(0.5.dp).background(Color.White.copy(alpha = 0.07f)))
+                    Box(modifier = Modifier.width(96.dp).height(0.5.dp).background(GrayMatterTheme.colors.textPrimary.copy(alpha = 0.07f)))
 
                     // ── D-pad rotation ──
                     Column(
@@ -887,49 +887,49 @@ fun KnowledgeGraphScreen(
                     ) {
                         // Up
                         Surface(
-                            color = Color.White.copy(alpha = 0.06f),
+                            color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.06f),
                             shape = RoundedCornerShape(6.dp),
                             modifier = Modifier.size(28.dp).repeatingClickable { globalRotX -= 0.05f; simulator.wake() }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.KeyboardArrowUp, "Up", tint = Color.White.copy(alpha = 0.75f), modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.KeyboardArrowUp, "Up", tint = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.75f), modifier = Modifier.size(16.dp))
                             }
                         }
                         // Middle row (Left & Right only)
                         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                             Surface(
-                                color = Color.White.copy(alpha = 0.06f),
+                                color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.06f),
                                 shape = RoundedCornerShape(6.dp),
                                 modifier = Modifier.size(28.dp).repeatingClickable { globalRotY -= 0.05f; simulator.wake() }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Left", tint = Color.White.copy(alpha = 0.75f), modifier = Modifier.size(16.dp))
+                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Left", tint = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.75f), modifier = Modifier.size(16.dp))
                                 }
                             }
                             Surface(
-                                color = Color.White.copy(alpha = 0.06f),
+                                color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.06f),
                                 shape = RoundedCornerShape(6.dp),
                                 modifier = Modifier.size(28.dp).repeatingClickable { globalRotY += 0.05f; simulator.wake() }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Right", tint = Color.White.copy(alpha = 0.75f), modifier = Modifier.size(16.dp))
+                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Right", tint = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.75f), modifier = Modifier.size(16.dp))
                                 }
                             }
                         }
                         // Down
                         Surface(
-                            color = Color.White.copy(alpha = 0.06f),
+                            color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.06f),
                             shape = RoundedCornerShape(6.dp),
                             modifier = Modifier.size(28.dp).repeatingClickable { globalRotX += 0.05f; simulator.wake() }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.KeyboardArrowDown, "Down", tint = Color.White.copy(alpha = 0.75f), modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.KeyboardArrowDown, "Down", tint = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.75f), modifier = Modifier.size(16.dp))
                             }
                         }
                     }
 
                     // ── Divider ──
-                    Box(modifier = Modifier.width(96.dp).height(0.5.dp).background(Color.White.copy(alpha = 0.07f)))
+                    Box(modifier = Modifier.width(96.dp).height(0.5.dp).background(GrayMatterTheme.colors.textPrimary.copy(alpha = 0.07f)))
 
                     // ── Physics toggle ──
                     Row(
@@ -954,9 +954,9 @@ fun KnowledgeGraphScreen(
             // Physics sliders panel (below console)
             AnimatedVisibility(visible = showPhysicsPanel, enter = fadeIn(), exit = fadeOut()) {
                 Surface(
-                    color = Color(0xFF0D1117).copy(alpha = 0.92f),
+                    color = GrayMatterTheme.colors.surface.copy(alpha = 0.92f),
                     shape = RoundedCornerShape(14.dp),
-                    border = androidx.compose.foundation.BorderStroke(0.7.dp, Color.White.copy(alpha = 0.08f)),
+                    border = androidx.compose.foundation.BorderStroke(0.7.dp, GrayMatterTheme.colors.textPrimary.copy(alpha = 0.08f)),
                     shadowElevation = 8.dp
                 ) {
                     Column(
@@ -1008,7 +1008,7 @@ fun KnowledgeGraphScreen(
             horizontalArrangement = Arrangement.Center
         ) {
             Surface(
-                color = GrayMatterColors.SurfaceDark.copy(alpha = 0.85f),
+                color = GrayMatterTheme.colors.surface.copy(alpha = 0.85f),
                 shape = RoundedCornerShape(24.dp),
                 modifier = Modifier.padding(horizontal = 16.dp)
             ) {
@@ -1019,8 +1019,8 @@ fun KnowledgeGraphScreen(
                     "Annotations" to showAnnotations,
                     "Bookmarks" to showBookmarks,
                     "Templates" to showTemplates,
-                    "Lookup" to showLookup,
-                    "Visuals" to showVisuals
+                    "Lookups" to showLookup,
+                    "Visions" to showVisuals
                 )
                 
                 LazyRow(
@@ -1038,8 +1038,8 @@ fun KnowledgeGraphScreen(
                                     "Annotations" -> showAnnotations = !showAnnotations
                                     "Bookmarks" -> showBookmarks = !showBookmarks
                                     "Templates" -> showTemplates = !showTemplates
-                                    "Lookup" -> showLookup = !showLookup
-                                    "Visuals" -> showVisuals = !showVisuals
+                                    "Lookups" -> showLookup = !showLookup
+                                    "Visions" -> showVisuals = !showVisuals
                                 }
                             },
                             label = { Text(name, color = Color.Unspecified) },
@@ -1051,12 +1051,12 @@ fun KnowledgeGraphScreen(
                                     "Annotations"  -> GrayMatterColors.TypeAnnotation.copy(alpha = 0.25f)
                                     "Bookmarks" -> GrayMatterColors.TypeBookmark.copy(alpha = 0.25f)
                                     "Templates" -> GrayMatterColors.TypeTemplate.copy(alpha = 0.25f)
-                                    "Lookup"    -> GrayMatterColors.TypeLookupMain.copy(alpha = 0.25f)
-                                    "Visuals"   -> GrayMatterColors.TypeVisual.copy(alpha = 0.25f)
+                                    "Lookups"    -> GrayMatterColors.TypeLookupMain.copy(alpha = 0.25f)
+                                    "Visions"   -> GrayMatterColors.TypeVisual.copy(alpha = 0.25f)
                                     else        -> GrayMatterColors.TypeOpinion.copy(alpha = 0.25f)
                                 },
-                                selectedLabelColor = Color.White,
-                                labelColor = Color.White
+                                selectedLabelColor = GrayMatterTheme.colors.textPrimary,
+                                labelColor = GrayMatterTheme.colors.textPrimary
                             )
                         )
                     }

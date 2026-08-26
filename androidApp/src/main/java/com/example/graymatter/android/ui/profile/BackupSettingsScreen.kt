@@ -80,6 +80,94 @@ fun BackupSettingsScreen(
         }
     }
 
+    var showHelpDialog by remember { mutableStateOf(false) }
+    
+    if (showHelpDialog) {
+        AlertDialog(
+            onDismissRequest = { showHelpDialog = false },
+            containerColor = GrayMatterTheme.colors.surface,
+            title = { Text("Using Backups", color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.Bold) },
+            text = {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(vertical = 4.dp)
+                ) {
+                    item {
+                        Text(
+                            "Relatrix keeps all your data strictly on your device. To ensure you never lose your knowledge base, you can easily back it up and restore it at any time.",
+                            color = GrayMatterTheme.colors.textSecondary,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    item {
+                        Text("1. Set a Master Password", color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.SemiBold)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "Before creating a backup, you must set a Master Password. Every backup is heavily encrypted with this password, ensuring no one can read your data - even if they get their hands on the backup file.",
+                            color = GrayMatterTheme.colors.textSecondary,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    item {
+                        Text("2. Creating a Backup", color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.SemiBold)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "• Automatic: Turn on scheduled backups (e.g., Daily or Weekly) to let Relatrix quietly manage backups in the background.\n" +
+                            "• Manual: Tap \"Backup Now\" to create an instant snapshot of your entire library.",
+                            color = GrayMatterTheme.colors.textSecondary,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    item {
+                        Text("3. Export Your Backups", color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.SemiBold)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "By default, backups are saved inside the app. If you uninstall Relatrix or lose your phone, those backups are lost too. To keep your data truly safe, hit Export to save your .gm.bak file somewhere safe (like your phone's downloads, Google Drive, etc).",
+                            color = GrayMatterTheme.colors.textSecondary,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    item {
+                        Text("4. Restoring Your Data", color = GrayMatterTheme.colors.textPrimary, fontWeight = FontWeight.SemiBold)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "Simply tap \"Restore\", select your saved .gm.bak file, and enter the exact Master Password you used to create it. Your entire library will instantly be brought back exactly as you left it.",
+                            color = GrayMatterTheme.colors.textSecondary,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
+                                .padding(12.dp)
+                        ) {
+                            Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp).padding(top = 2.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "If you forget your Master Password, there is no way to recover your encrypted backup.",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showHelpDialog = false }) {
+                    Text("Got it", color = GrayMatterTheme.colors.primary)
+                }
+            }
+        )
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = GrayMatterTheme.colors.background,
@@ -94,6 +182,11 @@ fun BackupSettingsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = GrayMatterTheme.colors.textPrimary)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showHelpDialog = true }) {
+                        Icon(Icons.Outlined.Info, "Help", tint = GrayMatterTheme.colors.textPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = GrayMatterTheme.colors.background)

@@ -1,5 +1,6 @@
 package com.example.graymatter.android.ui.components
 
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -235,7 +236,11 @@ private fun SlideWelcome() {
         Image(
             painter = painterResource(id = R.drawable.app_logo_full),
             contentDescription = null,
-            modifier = Modifier.size(64.dp).padding(bottom = 16.dp)
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .padding(bottom = 16.dp)
+                .size(64.dp)
+                .clip(RoundedCornerShape(16.dp))
         )
         Text(
             text = "Welcome to Relatrix",
@@ -322,10 +327,11 @@ private data class ResourceOption(val name: String, val icon: ImageVector, val c
 @Composable
 private fun SlidePickResource(onPick: (String) -> Unit) {
     var selected by remember { mutableStateOf<String?>(null) }
-    val resources = remember { listOf(
-        ResourceOption("File", Icons.Default.InsertDriveFile, GrayMatterColors.TypeLookupMain),
-        ResourceOption("Link", Icons.Default.Language, GrayMatterColors.TypeLink),
-        ResourceOption("Note", Icons.Default.Edit, GrayMatterColors.TypeOpinion)
+    val iconColor = GrayMatterTheme.colors.textPrimary
+    val resources = remember(iconColor) { listOf(
+        ResourceOption("File", Icons.Default.InsertDriveFile, iconColor),
+        ResourceOption("Link", Icons.Default.Language, iconColor),
+        ResourceOption("Note", Icons.Default.Edit, iconColor)
     ) }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {

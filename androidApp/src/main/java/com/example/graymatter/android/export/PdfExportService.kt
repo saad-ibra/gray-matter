@@ -37,7 +37,7 @@ object PdfExportService {
             isDictionary -> text.substringAfter("] ").trim()
             isTemplate -> {
                 text.substringAfter("]\n")
-                    .replace(Regex("### "), "")
+                    .replace(Regex("### "), "▸ ")
                     .trim()
             }
             else -> text.trim()
@@ -50,18 +50,18 @@ object PdfExportService {
     private const val LINE_HEIGHT = 18f
     private const val HEADER_HEIGHT = 80f
 
-    private val bgColor = Color.rgb(0, 0, 0)
-    private val cardBg = Color.rgb(12, 12, 12)
-    private val textPrimary = Color.rgb(255, 255, 255)
-    private val textSecondary = Color.rgb(161, 161, 170)
-    private val accentGreen = Color.rgb(142, 162, 88)
-    private val accentBookmark = Color.rgb(196, 168, 78)
-    private val accentAnnotation = Color.rgb(196, 122, 90)
-    private val accentTemplate = Color.rgb(126, 106, 140)
-    private val accentVisual = Color.rgb(90, 158, 140)
-    private val accentLookup = Color.rgb(191, 90, 106)
-    private val borderColor = Color.rgb(30, 30, 34)
-    private val neutralColor = Color.rgb(98, 98, 106)
+    private val bgColor = Color.rgb(255, 255, 255)
+    private val cardBg = Color.rgb(248, 248, 250)
+    private val textPrimary = Color.rgb(28, 28, 30)
+    private val textSecondary = Color.rgb(99, 99, 102)
+    private val accentGreen = Color.rgb(100, 120, 60)
+    private val accentBookmark = Color.rgb(160, 135, 50)
+    private val accentAnnotation = Color.rgb(165, 95, 65)
+    private val accentTemplate = Color.rgb(100, 80, 115)
+    private val accentVisual = Color.rgb(60, 130, 110)
+    private val accentLookup = Color.rgb(158, 60, 78)
+    private val borderColor = Color.rgb(220, 220, 225)
+    private val neutralColor = Color.rgb(142, 142, 147)
 
     fun generateResourceHistoryPdf(
         context: Context,
@@ -258,43 +258,36 @@ object PdfExportService {
     private fun drawHeader(canvas: Canvas, title: String, startY: Float, subtitlePrefix: String = "Opinion History"): Float {
         var y = startY + MARGIN
 
-        // Brand bar
-        val brandPaint = Paint().apply {
-            color = accentGreen
-            style = Paint.Style.FILL
+        // Subtitle label (e.g. "Opinion History", "Topic Analysis")
+        val labelPaint = Paint().apply {
+            color = neutralColor
+            textSize = 10f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            isAntiAlias = true
+            letterSpacing = 0.08f
         }
-        canvas.drawRect(0f, y - 4f, PAGE_WIDTH.toFloat(), y + 2f, brandPaint)
-        y += 32f // Added line gap after green line
+        canvas.drawText(subtitlePrefix.uppercase(), MARGIN, y, labelPaint)
+        y += 20f
 
-        // Title
+        // Title (actual resource/topic name)
         val titlePaint = Paint().apply {
             color = textPrimary
-            textSize = 22f
+            textSize = 18f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText(subtitlePrefix, MARGIN, y, titlePaint)
-        y += 28f
-
-        // Resource title
-        val subtitlePaint = Paint().apply {
-            color = textSecondary
-            textSize = 14f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-            isAntiAlias = true
-        }
         val displayTitle = if (title.length > 60) title.take(57) + "..." else title
-        canvas.drawText(displayTitle, MARGIN, y, subtitlePaint)
-        y += 12f
+        canvas.drawText(displayTitle, MARGIN, y, titlePaint)
+        y += 20f
 
         // Date
         val datePaint = Paint().apply {
             color = neutralColor
-            textSize = 10f
+            textSize = 9f
             isAntiAlias = true
         }
         val dateStr = SimpleDateFormat("MMM dd, yyyy", Locale.US).format(Date())
-        canvas.drawText("Generated on $dateStr", MARGIN, y, datePaint)
+        canvas.drawText("Created on $dateStr", MARGIN, y, datePaint)
         y += 8f
 
         return y
@@ -523,14 +516,14 @@ object PdfExportService {
         }
         canvas.drawLine(MARGIN, y - 16f, PAGE_WIDTH - MARGIN, y - 16f, sepPaint)
 
-        // "Made by Relatrix" branding
+        // Subtle branding
         val brandPaint = Paint().apply {
-            color = accentGreen
-            textSize = 9f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            color = neutralColor
+            textSize = 7f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
             isAntiAlias = true
         }
-        canvas.drawText("Made by Relatrix", MARGIN, y, brandPaint)
+        canvas.drawText("Relatrix", MARGIN, y, brandPaint)
 
         // Page number
         val pagePaint = Paint().apply {
