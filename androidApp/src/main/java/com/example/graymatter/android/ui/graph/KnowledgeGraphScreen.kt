@@ -964,7 +964,7 @@ fun KnowledgeGraphScreen(
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(GrayMatterColors.Primary))
+                            Box(modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(GrayMatterTheme.colors.textPrimary))
                             Spacer(Modifier.width(5.dp))
                             Text("Repulsion", style = MaterialTheme.typography.labelSmall, color = GrayMatterColors.Neutral400)
                         }
@@ -973,13 +973,13 @@ fun KnowledgeGraphScreen(
                             onValueChange = { repulsionSlider = it; simulator.wake() },
                             modifier = Modifier.height(26.dp),
                             colors = SliderDefaults.colors(
-                                thumbColor = GrayMatterColors.Primary,
-                                activeTrackColor = GrayMatterColors.Primary.copy(alpha = 0.6f),
+                                thumbColor = GrayMatterTheme.colors.textPrimary,
+                                activeTrackColor = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.6f),
                                 inactiveTrackColor = GrayMatterColors.Neutral600
                             )
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(GrayMatterColors.TypeLink))
+                            Box(modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(GrayMatterTheme.colors.textPrimary))
                             Spacer(Modifier.width(5.dp))
                             Text("Spring", style = MaterialTheme.typography.labelSmall, color = GrayMatterColors.Neutral400)
                         }
@@ -988,8 +988,8 @@ fun KnowledgeGraphScreen(
                             onValueChange = { springSlider = it; simulator.wake() },
                             modifier = Modifier.height(26.dp),
                             colors = SliderDefaults.colors(
-                                thumbColor = GrayMatterColors.TypeLink,
-                                activeTrackColor = GrayMatterColors.TypeLink.copy(alpha = 0.6f),
+                                thumbColor = GrayMatterTheme.colors.textPrimary,
+                                activeTrackColor = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.6f),
                                 inactiveTrackColor = GrayMatterColors.Neutral600
                             )
                         )

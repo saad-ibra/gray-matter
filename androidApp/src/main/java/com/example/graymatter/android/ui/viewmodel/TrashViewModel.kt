@@ -150,6 +150,12 @@ class TrashViewModel(
 
     fun permanentlyDeleteOpinion(opinionId: String) {
         viewModelScope.launch {
+            // Clean up the image file if this is a Vision Entry
+            val opinion = opinionRepository.getOpinionById(opinionId)
+            if (opinion?.imagePath != null && opinion.imagePath!!.contains("/files/")) {
+                val file = java.io.File(opinion.imagePath!!)
+                if (file.exists()) file.delete()
+            }
             // Clean reference links before deleting
             referenceLinkRepository.deleteReferenceLinksBySource(opinionId)
             referenceLinkRepository.deleteReferenceLinksByTarget(opinionId)
@@ -271,7 +277,14 @@ class TrashViewModel(
         val topicEntries = resourceEntryRepository.getAllResourceEntriesByTopicId(topicId)
 
         for (entry in topicEntries) {
-            // 2. Hard delete all opinions for this entry
+            // 2. Clean up opinion image files and hard delete all opinions for this entry
+            val opinions = opinionRepository.getAllOpinionsByItemId(entry.id)
+            for (opinion in opinions) {
+                if (opinion.imagePath != null && opinion.imagePath!!.contains("/files/")) {
+                    val imageFile = java.io.File(opinion.imagePath!!)
+                    if (imageFile.exists()) imageFile.delete()
+                }
+            }
             opinionRepository.deleteOpinionsByItemId(entry.id)
 
             // 3. Hard delete all bookmarks and reading data for the associated resource

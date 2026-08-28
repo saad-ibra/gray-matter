@@ -28,6 +28,7 @@ class CleanupWorker(
     private val resourceRepository: com.example.graymatter.data.ResourceRepository by inject()
     private val referenceLinkRepository: com.example.graymatter.data.ReferenceLinkRepository by inject()
     private val resourceEntryRepository: com.example.graymatter.data.ResourceEntryRepository by inject()
+    private val opinionRepository: com.example.graymatter.data.OpinionRepository by inject()
 
     override suspend fun doWork(): Result = try {
         // 1. Database Orphan Cleanup
@@ -57,6 +58,20 @@ class CleanupWorker(
                 }
                 
                 // Remove files from storage that are no longer in the database
+                // Also protect opinion images (Vision Entries) — both active and soft-deleted (in trash)
+                val activeOpinions = opinionRepository.getAllOpinions().first()
+                for (opinion in activeOpinions) {
+                    opinion.imagePath?.let { path ->
+                        validPaths.add(File(path).absolutePath)
+                    }
+                }
+                val deletedOpinions = opinionRepository.getDeletedOpinions()
+                for (opinion in deletedOpinions) {
+                    opinion.imagePath?.let { path ->
+                        validPaths.add(File(path).absolutePath)
+                    }
+                }
+
                 for (file in files) {
                     if (!validPaths.contains(file.absolutePath)) {
                         file.delete()
