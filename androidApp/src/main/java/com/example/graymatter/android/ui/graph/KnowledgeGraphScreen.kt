@@ -34,6 +34,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -134,19 +136,20 @@ fun KnowledgeGraphScreen(
     var globalRotY by remember { mutableFloatStateOf(0f) }
     var ambientRotEnabled by remember { mutableStateOf(true) }
     var showPhysicsPanel by remember { mutableStateOf(false) }
+    var showBottomFilters by remember { mutableStateOf(false) }
     var repulsionSlider by remember { mutableFloatStateOf(0.5f) }  // 0..1 mapped to 1000..4000
     var springSlider by remember { mutableFloatStateOf(0.4f) }    // 0..1 mapped to 60..200
     
     // Filters
-    var showTopics by remember { mutableStateOf(true) }
-    var showResources by remember { mutableStateOf(true) }
-    var showOpinions by remember { mutableStateOf(true) }
-    var showAnnotations by remember { mutableStateOf(true) }
-    var showBookmarks by remember { mutableStateOf(true) }
-    var showTemplates by remember { mutableStateOf(true) }
-    var showCustom by remember { mutableStateOf(true) }
-    var showLookup by remember { mutableStateOf(true) }
-    var showVisuals by remember { mutableStateOf(true) }
+    var showTopics by remember { mutableStateOf(false) }
+    var showResources by remember { mutableStateOf(false) }
+    var showOpinions by remember { mutableStateOf(false) }
+    var showAnnotations by remember { mutableStateOf(false) }
+    var showBookmarks by remember { mutableStateOf(false) }
+    var showTemplates by remember { mutableStateOf(false) }
+    var showCustom by remember { mutableStateOf(false) }
+    var showLookup by remember { mutableStateOf(false) }
+    var showVisuals by remember { mutableStateOf(false) }
     
     // Simulation
     val simulator = remember { ForceSimulator() }
@@ -334,8 +337,10 @@ fun KnowledgeGraphScreen(
     // Depth-First Search for deterministic navigation
     val dfsOrderedNodes by remember {
         derivedStateOf {
+            val anyFilterActive = showTopics || showResources || showAnnotations || showBookmarks || showTemplates || showCustom || showLookup || showOpinions || showVisuals
+            
             val visibleNodes = simulator.nodes.filter { node ->
-                when (node.type) {
+                if (!anyFilterActive) true else when (node.type) {
                     NodeType.TOPIC -> showTopics
                     NodeType.RESOURCE -> showResources
                     NodeType.ANNOTATION -> showAnnotations
@@ -564,16 +569,17 @@ fun KnowledgeGraphScreen(
                 }
 
                 // ── Pre-compute visibility bitmask (replaces 4 when-blocks) ──
+                val anyFilterActiveCanvas = showTopics || showResources || showAnnotations || showBookmarks || showTemplates || showCustom || showLookup || showOpinions || showVisuals
                 val visibilityByType = BooleanArray(NodeType.entries.size)
-                visibilityByType[NodeType.TOPIC.ordinal] = showTopics
-                visibilityByType[NodeType.RESOURCE.ordinal] = showResources
-                visibilityByType[NodeType.ANNOTATION.ordinal] = showAnnotations
-                visibilityByType[NodeType.BOOKMARK.ordinal] = showBookmarks
-                visibilityByType[NodeType.TEMPLATE.ordinal] = showTemplates
-                visibilityByType[NodeType.CUSTOM.ordinal] = showCustom
-                visibilityByType[NodeType.LOOKUP.ordinal] = showLookup
-                visibilityByType[NodeType.OPINION.ordinal] = showOpinions
-                visibilityByType[NodeType.VISUAL.ordinal] = showVisuals
+                visibilityByType[NodeType.TOPIC.ordinal] = if (!anyFilterActiveCanvas) true else showTopics
+                visibilityByType[NodeType.RESOURCE.ordinal] = if (!anyFilterActiveCanvas) true else showResources
+                visibilityByType[NodeType.ANNOTATION.ordinal] = if (!anyFilterActiveCanvas) true else showAnnotations
+                visibilityByType[NodeType.BOOKMARK.ordinal] = if (!anyFilterActiveCanvas) true else showBookmarks
+                visibilityByType[NodeType.TEMPLATE.ordinal] = if (!anyFilterActiveCanvas) true else showTemplates
+                visibilityByType[NodeType.CUSTOM.ordinal] = if (!anyFilterActiveCanvas) true else showCustom
+                visibilityByType[NodeType.LOOKUP.ordinal] = if (!anyFilterActiveCanvas) true else showLookup
+                visibilityByType[NodeType.OPINION.ordinal] = if (!anyFilterActiveCanvas) true else showOpinions
+                visibilityByType[NodeType.VISUAL.ordinal] = if (!anyFilterActiveCanvas) true else showVisuals
 
                 // ── Pre-compute rotation matrix once per frame ──
                 val cosX = kotlin.math.cos(globalRotX)
@@ -942,10 +948,42 @@ fun KnowledgeGraphScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
+                        Icon(
+                            imageVector = Icons.Default.Science,
+                            contentDescription = null,
+                            tint = if (showPhysicsPanel) GrayMatterColors.Primary else GrayMatterColors.Neutral400,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
                         Text(
-                            text = if (showPhysicsPanel) "⬥ Physics" else "⬦ Physics",
+                            text = "Physics",
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.SemiBold),
                             color = if (showPhysicsPanel) GrayMatterColors.Primary else GrayMatterColors.Neutral400
+                        )
+                    }
+
+                    // ── Filter toggle ──
+                    Row(
+                        modifier = Modifier
+                            .width(96.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(if (showBottomFilters) GrayMatterColors.Primary.copy(alpha = 0.12f) else Color.Transparent)
+                            .clickable { showBottomFilters = !showBottomFilters }
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FilterList,
+                            contentDescription = null,
+                            tint = if (showBottomFilters) GrayMatterColors.Primary else GrayMatterColors.Neutral400,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "Filters",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.SemiBold),
+                            color = if (showBottomFilters) GrayMatterColors.Primary else GrayMatterColors.Neutral400
                         )
                     }
                 }
@@ -999,14 +1037,19 @@ fun KnowledgeGraphScreen(
         }
 
         // Bottom Filters
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(bottom = 24.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showBottomFilters,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.BottomCenter)
         ) {
+            Row(
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .padding(bottom = 24.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
             Surface(
                 color = GrayMatterTheme.colors.surface.copy(alpha = 0.85f),
                 shape = RoundedCornerShape(24.dp),
@@ -1062,6 +1105,7 @@ fun KnowledgeGraphScreen(
                     }
                 }
             }
+        }
         }
 
         // Selected Node Card
