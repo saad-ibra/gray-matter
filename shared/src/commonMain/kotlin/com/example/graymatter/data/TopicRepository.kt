@@ -37,6 +37,7 @@ interface TopicRepository {
      * Update topic notes.
      */
     suspend fun updateTopicNotes(topicId: String, notes: String?)
+    suspend fun updateTopicColor(topicId: String, color: String?)
     
     /**
      * Increment topic resource count.

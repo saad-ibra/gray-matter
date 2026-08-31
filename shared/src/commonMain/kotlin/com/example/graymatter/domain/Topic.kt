@@ -11,5 +11,6 @@ data class Topic(
     val sortOrder: Int = 0,
     val updatedAt: Long,
     val isDeleted: Boolean = false,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
+    val color: String? = null
 )

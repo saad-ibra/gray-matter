@@ -673,8 +673,8 @@ fun KnowledgeGraphScreen(
                     val tgtAlpha = ((projectedZ[tgtIdx] + 400f).coerceIn(80f, 800f) / 800f)
                         .let { if (isHighlighted) 1f else (it * 0.75f).coerceIn(0.15f, 0.9f) }
 
-                    val srcNodeColor = nodeColorMap[edge.source.type] ?: Color.White
-                    val tgtNodeColor = nodeColorMap[edge.target.type] ?: Color.White
+                    val srcNodeColor = edge.source.color?.let { try { Color(android.graphics.Color.parseColor(it)) } catch(e: Exception){null} } ?: nodeColorMap[edge.source.type] ?: Color.White
+                    val tgtNodeColor = edge.target.color?.let { try { Color(android.graphics.Color.parseColor(it)) } catch(e: Exception){null} } ?: nodeColorMap[edge.target.type] ?: Color.White
 
                     val srcEdgeColor = if (isHighlighted) GrayMatterColors.Primary else srcNodeColor.copy(alpha = srcAlpha)
                     val tgtEdgeColor = if (isHighlighted) GrayMatterColors.Primary else tgtNodeColor.copy(alpha = tgtAlpha)
@@ -726,7 +726,13 @@ fun KnowledgeGraphScreen(
                     if (sx < -frustumMargin || sx > canvasW + frustumMargin ||
                         sy < -frustumMargin || sy > canvasH + frustumMargin) continue
 
-                    val nodeColor = nodeColorMap[node.type] ?: Color.White
+                    val baseMappedColor = nodeColorMap[node.type] ?: Color.White
+                    val isCustomColor = !node.color.isNullOrEmpty()
+                    val topicSphereColor = if (isCustomColor) {
+                        try { Color(android.graphics.Color.parseColor(node.color)) } catch(e: Exception) { baseMappedColor }
+                    } else baseMappedColor
+                    val wireframeColor = baseMappedColor
+                    val nodeColor = baseMappedColor
                     val zScale = (projectedZ[i] + 400f).coerceIn(100f, 800f) / 400f
                     // Enhanced depth fog: nodes far behind fade more aggressively
                     val depthAlpha = ((projectedZ[i] + 400f).coerceIn(60f, 800f) / 800f)
@@ -740,11 +746,11 @@ fun KnowledgeGraphScreen(
                         val pulsePhase = (kotlin.math.sin(currentTicks * 0.05f).toFloat() * 0.5f + 0.5f)
                         val pulseRadius = scaledRadius + 15f * scale * zScale + (pulsePhase * 25f * scale * zScale)
                         drawCircle(
-                            color = nodeColor.copy(alpha = (0.4f - pulsePhase * 0.2f) * depthAlpha),
+                            color = topicSphereColor.copy(alpha = (0.4f - pulsePhase * 0.2f) * depthAlpha),
                             radius = pulseRadius, center = screenCenter
                         )
                         drawCircle(
-                            color = nodeColor.copy(alpha = 0.6f * depthAlpha),
+                            color = topicSphereColor.copy(alpha = 0.6f * depthAlpha),
                             radius = scaledRadius + 15f * scale * zScale, center = screenCenter
                         )
                     }
@@ -768,13 +774,14 @@ fun KnowledgeGraphScreen(
                             reusablePath.close()
                             // Translucent fill on front-facing faces
                             if (avgFaceZ > projectedZ[i]) {
-                                drawPath(path = reusablePath, color = nodeColor.copy(alpha = 0.06f * depthAlpha))
+                                drawPath(path = reusablePath, color = wireframeColor.copy(alpha = 0.06f * depthAlpha))
                             }
                             // Wireframe with depth-aware alpha
-                            drawPath(path = reusablePath, color = nodeColor.copy(alpha = (if (isSelected) 1f else 0.85f) * depthAlpha), style = Stroke(width = (if (isSelected) 2.2f else 1.5f) * scale))
+                            drawPath(path = reusablePath, color = wireframeColor.copy(alpha = (if (isSelected) 1f else 0.85f) * depthAlpha), style = Stroke(width = (if (isSelected) 2.2f else 1.5f) * scale))
                         }
-                        // Inner glow sphere
-                        drawCircle(color = nodeColor.copy(alpha = 0.12f * depthAlpha), radius = scaledRadius * 0.55f, center = screenCenter)
+                        // Solid central core for topics
+                        val coreAlpha = if (isCustomColor) 0.8f else 0.12f
+                        drawCircle(color = topicSphereColor.copy(alpha = coreAlpha * depthAlpha), radius = scaledRadius * 0.6f, center = screenCenter)
 
                     } else if (node.type == NodeType.RESOURCE) {
                         val r = node.radius * 1.5f
@@ -1233,7 +1240,13 @@ fun KnowledgeGraphScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            val nodeColor = nodeColorMap[node.type] ?: Color.White
+                            val baseMappedColor = nodeColorMap[node.type] ?: Color.White
+                    val isCustomColor = !node.color.isNullOrEmpty()
+                    val topicSphereColor = if (isCustomColor) {
+                        try { Color(android.graphics.Color.parseColor(node.color)) } catch(e: Exception) { baseMappedColor }
+                    } else baseMappedColor
+                    val wireframeColor = baseMappedColor
+                    val nodeColor = baseMappedColor
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))

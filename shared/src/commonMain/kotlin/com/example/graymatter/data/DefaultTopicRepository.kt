@@ -47,7 +47,8 @@ class DefaultTopicRepository(
             sortOrder = topic.sortOrder.toLong(),
             updatedAt = topic.updatedAt,
             isDeleted = if (topic.isDeleted) 1L else 0L,
-            deletedAt = topic.deletedAt
+            deletedAt = topic.deletedAt,
+            color = topic.color
         )
     }
     
@@ -79,6 +80,11 @@ class DefaultTopicRepository(
     override suspend fun updateTopicNotes(topicId: String, notes: String?) = withContext(dispatcher) {
         queries.updateTopicNotes(notes, Clock.System.now().toEpochMilliseconds(), topicId)
     }
+
+    override suspend fun updateTopicColor(topicId: String, color: String?) = withContext(dispatcher) {
+        queries.updateTopicColor(color, Clock.System.now().toEpochMilliseconds(), topicId)
+    }
+
     
     override suspend fun incrementResourceCount(topicId: String) = withContext(dispatcher) {
         queries.incrementTopicResourceCount(Clock.System.now().toEpochMilliseconds(), topicId)
@@ -129,5 +135,6 @@ private fun TopicEntity.toTopic(): Topic = Topic(
     sortOrder = sortOrder.toInt(),
     updatedAt = updatedAt,
     isDeleted = isDeleted == 1L,
-    deletedAt = deletedAt
+    deletedAt = deletedAt,
+    color = color
 )

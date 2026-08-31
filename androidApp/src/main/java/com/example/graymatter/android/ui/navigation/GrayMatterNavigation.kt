@@ -248,6 +248,7 @@ fun GrayMatterNavigation(
                                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute(topicId))
                                 },
                                 onUpdateOrder = { ids -> viewModel.updateTopicOrder(ids) },
+                                onUpdateTopicColor = { id, color -> viewModel.updateTopicColor(id, color) },
                                 librarySearchViewModel = librarySearchViewModel,
                                 onNavigateToResourceDetail = { id, focusId ->
                                     navController.navigate(NavigationDestination.ResourceDetail.buildRoute(id, focusOpinionId = focusId, searchQuery = librarySearchViewModel.searchQuery))

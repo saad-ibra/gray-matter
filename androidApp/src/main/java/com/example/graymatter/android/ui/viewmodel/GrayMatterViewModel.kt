@@ -277,6 +277,13 @@ class GrayMatterViewModel(
     /**
      * Updates topic notes (synthesis text).
      */
+
+    fun updateTopicColor(topicId: String, color: String?) {
+        viewModelScope.launch {
+            topicRepository.updateTopicColor(topicId, color)
+        }
+    }
+
     fun updateTopicNotes(topicId: String, notes: String, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
         viewModelScope.launch {
             topicRepository.updateTopicNotes(topicId, notes)

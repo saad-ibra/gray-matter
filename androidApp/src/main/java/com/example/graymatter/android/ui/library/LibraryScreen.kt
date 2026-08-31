@@ -15,6 +15,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.example.graymatter.android.preferences.AppPreferences
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
+import com.example.graymatter.android.ui.library.TopicColorPickerSheet
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -66,6 +70,7 @@ fun LibraryScreen(
     onExportTopicPdf: (Topic) -> Unit,
     onViewTopicInRelatrix: (String) -> Unit,
     onUpdateOrder: (List<String>) -> Unit,
+    onUpdateTopicColor: (String, String?) -> Unit = { _, _ -> },
     librarySearchViewModel: LibrarySearchViewModel? = null,
     onNavigateToResourceDetail: (String, String?) -> Unit = { _, _ -> },
     onNavigateToFileViewer: (String, String?) -> Unit = { _, _ -> },
@@ -114,6 +119,11 @@ fun LibraryScreen(
     var groupOption by remember { mutableStateOf(com.example.graymatter.android.ui.components.GroupOption.NONE) }
     var showTopicMenu by remember { mutableStateOf(false) }
     var showCreateDialog by remember { mutableStateOf(false) }
+    var selectedTopicForColor by remember { mutableStateOf<com.example.graymatter.domain.Topic?>(null) }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val appPreferences = remember { AppPreferences.getInstance(context) }
+    val recentColors by appPreferences.recentTopicColors.collectAsState(initial = emptyList())
     var newTopicName by remember { mutableStateOf("") }
 
     // Sync with parent data when not actively dragging (preserves animation state)
@@ -470,6 +480,7 @@ fun LibraryScreen(
                                     onRename = { renamingTopic = topic },
                                     onExportMarkdown = { onExportTopicMarkdown(topic) },
                                     onExportPdf = { onExportTopicPdf(topic) },
+onColorSelect = { selectedTopicForColor = topic },
                                     onViewInRelatrix = { onViewTopicInRelatrix(topic.id) }
                                 )
                             }
@@ -511,6 +522,7 @@ fun LibraryScreen(
                                     onRename = { renamingTopic = topic },
                                     onExportMarkdown = { onExportTopicMarkdown(topic) },
                                     onExportPdf = { onExportTopicPdf(topic) },
+onColorSelect = { selectedTopicForColor = topic },
                                     onViewInRelatrix = { onViewTopicInRelatrix(topic.id) }
                                 )
                             }
@@ -603,6 +615,7 @@ fun LibraryScreen(
                         onRename = {},
                         onExportMarkdown = {},
                         onExportPdf = {},
+onColorSelect = { selectedTopicForColor = topic },
                         onViewInRelatrix = {},
                         enabled = false // Disable hits on replica to prevent pointer interference
                     )
@@ -690,6 +703,22 @@ fun LibraryScreen(
             )
         }
 
+
+    selectedTopicForColor?.let { topic ->
+        TopicColorPickerSheet(
+            initialColor = topic.color,
+            recentColors = recentColors,
+            onColorSelected = { hexColor ->
+                onUpdateTopicColor(topic.id, hexColor)
+                if (hexColor != null) {
+                    appPreferences.addRecentTopicColor(hexColor)
+                }
+                selectedTopicForColor = null
+            },
+            onDismiss = { selectedTopicForColor = null }
+        )
+    }
+
         // Global Search Overlay
         if (showGlobalSearch && librarySearchViewModel != null) {
             LibrarySearchOverlay(
@@ -731,6 +760,7 @@ private fun TopicCard(
     onRename: () -> Unit,
     onExportMarkdown: () -> Unit,
     onExportPdf: () -> Unit,
+    onColorSelect: () -> Unit,
     onViewInRelatrix: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true
@@ -762,7 +792,17 @@ private fun TopicCard(
                         .wrapContentWidth()
                         .height(36.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(GrayMatterTheme.colors.background.copy(alpha = 0.4f))
+                        .background(
+                            run {
+                                val fallback = GrayMatterTheme.colors.background.copy(alpha = 0.4f)
+                                if (topic.color.isNullOrEmpty()) return@run fallback
+                                try {
+                                    Color(android.graphics.Color.parseColor(topic.color))
+                                } catch(e: Exception) {
+                                    fallback
+                                }
+                            }
+                        )
                         .border(1.dp, GrayMatterTheme.colors.neutral700.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
                         .padding(horizontal = 12.dp),
                     contentAlignment = Alignment.Center
@@ -788,6 +828,15 @@ private fun TopicCard(
                             onDismissRequest = { showMenu = false },
                             modifier = Modifier.background(GrayMatterTheme.colors.surface)
                         ) {
+
+                            DropdownMenuItem(
+                                text = { Text("Topic Color", color = GrayMatterTheme.colors.textPrimary) },
+                                onClick = {
+                                    showMenu = false
+                                    onColorSelect()
+                                },
+                                leadingIcon = { Icon(Icons.Default.Palette, null, tint = GrayMatterTheme.colors.primary) }
+                            )
                             DropdownMenuItem(
                                 text = { Text("Rename Topic", color = GrayMatterTheme.colors.textPrimary) },
                                 onClick = {

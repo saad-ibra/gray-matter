@@ -20,7 +20,8 @@ CREATE TABLE topicEntity (
     sortOrder INTEGER NOT NULL DEFAULT 0,
     updatedAt INTEGER NOT NULL,
     isDeleted INTEGER NOT NULL DEFAULT 0,
-    deletedAt INTEGER
+    deletedAt INTEGER,
+    color TEXT
 );
 
 -- 3. Item table (Depends on resourceEntity and topicEntity)
@@ -217,8 +218,8 @@ UPDATE itemEntity SET isDeleted = 0, deletedAt = NULL WHERE topicId = ? AND dele
 
 -- Topic queries
 insertTopic:
-INSERT OR REPLACE INTO topicEntity(id, name, notes, resourceCount, sortOrder, updatedAt, isDeleted, deletedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO topicEntity(id, name, notes, resourceCount, sortOrder, updatedAt, isDeleted, deletedAt, color)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 getTopicById:
 SELECT * FROM topicEntity WHERE id = ?;
@@ -228,6 +229,10 @@ SELECT * FROM topicEntity WHERE isDeleted = 0 ORDER BY sortOrder ASC, updatedAt 
 
 updateTopicNotes:
 UPDATE topicEntity SET notes = ?, updatedAt = ? WHERE id = ?;
+
+updateTopicColor:
+UPDATE topicEntity SET color = ?, updatedAt = ? WHERE id = ?;
+
 
 updateTopicResourceCount:
 UPDATE topicEntity SET resourceCount = ?, updatedAt = ? WHERE id = ?;

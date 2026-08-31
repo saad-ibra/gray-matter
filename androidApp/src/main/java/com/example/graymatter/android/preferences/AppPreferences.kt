@@ -13,6 +13,30 @@ enum class AppTheme {
 class AppPreferences private constructor(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("graymatter_app_prefs", Context.MODE_PRIVATE)
 
+
+    var recentTopicColorsList: List<String>
+        get() {
+            val str = prefs.getString("recent_topic_colors", "") ?: ""
+            return if (str.isEmpty()) emptyList() else str.split(",")
+        }
+        set(value) {
+            prefs.edit().putString("recent_topic_colors", value.joinToString(",")).apply()
+            _recentTopicColorsState.value = value
+        }
+        
+    private val _recentTopicColorsState = MutableStateFlow(recentTopicColorsList)
+    val recentTopicColors: StateFlow<List<String>> = _recentTopicColorsState.asStateFlow()
+    
+    fun addRecentTopicColor(hexColor: String) {
+        val current = recentTopicColorsList.toMutableList()
+        current.remove(hexColor)
+        current.add(0, hexColor)
+        while(current.size > 8) {
+            current.removeLast()
+        }
+        recentTopicColorsList = current
+    }
+
     var appTheme: AppTheme
         get() {
             val themeString = prefs.getString("app_theme", AppTheme.SYSTEM.name) ?: AppTheme.SYSTEM.name

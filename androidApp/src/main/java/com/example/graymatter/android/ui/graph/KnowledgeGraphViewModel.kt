@@ -32,7 +32,16 @@ class KnowledgeGraphViewModel(
     val graphState: StateFlow<GraphDataState> = _graphState.asStateFlow()
 
     init {
-        loadGraphData()
+        viewModelScope.launch {
+            topicRepository.topicsStream.collect {
+                loadGraphData()
+            }
+        }
+        viewModelScope.launch {
+            resourceEntryRepository.resourceEntriesStream.collect {
+                loadGraphData()
+            }
+        }
     }
 
     fun loadGraphData() {
@@ -51,7 +60,8 @@ class KnowledgeGraphViewModel(
                     id = topic.id,
                     type = NodeType.TOPIC,
                     label = topic.name,
-                    radius = 30f + (topic.resourceCount * 5f).coerceAtMost(30f) // Scale by connections
+                    radius = 30f + (topic.resourceCount * 5f).coerceAtMost(30f), // Scale by connections
+                    color = topic.color
                 )
                 oldNodesMap[node.id]?.let { old ->
                     node.x = old.x; node.y = old.y; node.z = old.z

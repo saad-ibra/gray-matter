@@ -19,7 +19,8 @@ data class GraphNode(
     var vy: Float = 0f,
     var vz: Float = 0f,
     var radius: Float = 20f,
-    var isPinned: Boolean = false // e.g. when being dragged
+    var isPinned: Boolean = false, // e.g. when being dragged
+    var color: String? = null
 ) {
     // Helper to calculate distance to another point
     fun distanceTo(otherX: Float, otherY: Float): Float {
