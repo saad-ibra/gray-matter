@@ -136,6 +136,7 @@ fun KnowledgeGraphScreen(
     var globalRotY by remember { mutableFloatStateOf(0f) }
     var ambientRotEnabled by remember { mutableStateOf(true) }
     var showPhysicsPanel by remember { mutableStateOf(false) }
+    var consoleOnLeft by remember { mutableStateOf(false) }
     var showBottomFilters by remember { mutableStateOf(false) }
     var repulsionSlider by remember { mutableFloatStateOf(0.5f) }  // 0..1 mapped to 1000..4000
     var springSlider by remember { mutableFloatStateOf(0.4f) }    // 0..1 mapped to 60..200
@@ -824,15 +825,88 @@ fun KnowledgeGraphScreen(
             )
         }
         
-        // ─── Controls Console (Compact Bottom-Right) ──────────────────────────
-        Column(
+        // ─── Controls Console (Compact Bottom) ──────────────────────────
+        Row(
             modifier = Modifier
-                .align(Alignment.BottomEnd)
+                .align(if (consoleOnLeft) Alignment.BottomStart else Alignment.BottomEnd)
                 .navigationBarsPadding()
-                .padding(bottom = 90.dp, end = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            horizontalAlignment = Alignment.End
+                .padding(
+                    bottom = 90.dp,
+                    start = if (consoleOnLeft) 14.dp else 0.dp,
+                    end = if (!consoleOnLeft) 14.dp else 0.dp
+                ),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.Bottom
         ) {
+            val physicsPanel = @Composable {
+                AnimatedVisibility(visible = showPhysicsPanel, enter = fadeIn(), exit = fadeOut()) {
+                    Surface(
+                        color = GrayMatterTheme.colors.surface.copy(alpha = 0.92f),
+                        shape = RoundedCornerShape(14.dp),
+                        border = androidx.compose.foundation.BorderStroke(0.7.dp, GrayMatterTheme.colors.textPrimary.copy(alpha = 0.08f)),
+                        shadowElevation = 8.dp
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp).width(146.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(GrayMatterTheme.colors.textPrimary))
+                                Spacer(Modifier.width(5.dp))
+                                Text("Repulsion", style = MaterialTheme.typography.labelSmall, color = GrayMatterColors.Neutral400)
+                            }
+                            Slider(
+                                value = repulsionSlider,
+                                onValueChange = { repulsionSlider = it; simulator.wake() },
+                                modifier = Modifier.height(26.dp),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = GrayMatterTheme.colors.textPrimary,
+                                    activeTrackColor = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.6f),
+                                    inactiveTrackColor = GrayMatterColors.Neutral600
+                                )
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(GrayMatterTheme.colors.textPrimary))
+                                Spacer(Modifier.width(5.dp))
+                                Text("Spring", style = MaterialTheme.typography.labelSmall, color = GrayMatterColors.Neutral400)
+                            }
+                            Slider(
+                                value = springSlider,
+                                onValueChange = { springSlider = it; simulator.wake() },
+                                modifier = Modifier.height(26.dp),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = GrayMatterTheme.colors.textPrimary,
+                                    activeTrackColor = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.6f),
+                                    inactiveTrackColor = GrayMatterColors.Neutral600
+                                )
+                            )
+                            // Reset to default
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .clickable {
+                                        repulsionSlider = 0.5f
+                                        springSlider = 0.4f
+                                        simulator.wake()
+                                    }
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Refresh, "Reset", tint = GrayMatterColors.Neutral400, modifier = Modifier.size(12.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Reset to default", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = GrayMatterColors.Neutral400)
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!consoleOnLeft) {
+                physicsPanel()
+            }
+
             // Main console card
             Surface(
                 color = GrayMatterTheme.colors.surface.copy(alpha = 0.92f),
@@ -848,6 +922,22 @@ fun KnowledgeGraphScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    // ── Dock toggle ──
+                    Row(
+                        modifier = Modifier.width(96.dp).padding(bottom = 2.dp),
+                        horizontalArrangement = if (consoleOnLeft) Arrangement.Start else Arrangement.End
+                    ) {
+                        Icon(
+                            imageVector = if (consoleOnLeft) Icons.AutoMirrored.Filled.KeyboardArrowRight else Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                            contentDescription = "Toggle Dock",
+                            tint = GrayMatterColors.Neutral400,
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .clickable { consoleOnLeft = !consoleOnLeft }
+                        )
+                    }
+
                     // ── Zoom row ──
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -989,50 +1079,8 @@ fun KnowledgeGraphScreen(
                 }
             }
 
-            // Physics sliders panel (below console)
-            AnimatedVisibility(visible = showPhysicsPanel, enter = fadeIn(), exit = fadeOut()) {
-                Surface(
-                    color = GrayMatterTheme.colors.surface.copy(alpha = 0.92f),
-                    shape = RoundedCornerShape(14.dp),
-                    border = androidx.compose.foundation.BorderStroke(0.7.dp, GrayMatterTheme.colors.textPrimary.copy(alpha = 0.08f)),
-                    shadowElevation = 8.dp
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp).width(146.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(GrayMatterTheme.colors.textPrimary))
-                            Spacer(Modifier.width(5.dp))
-                            Text("Repulsion", style = MaterialTheme.typography.labelSmall, color = GrayMatterColors.Neutral400)
-                        }
-                        Slider(
-                            value = repulsionSlider,
-                            onValueChange = { repulsionSlider = it; simulator.wake() },
-                            modifier = Modifier.height(26.dp),
-                            colors = SliderDefaults.colors(
-                                thumbColor = GrayMatterTheme.colors.textPrimary,
-                                activeTrackColor = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.6f),
-                                inactiveTrackColor = GrayMatterColors.Neutral600
-                            )
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(GrayMatterTheme.colors.textPrimary))
-                            Spacer(Modifier.width(5.dp))
-                            Text("Spring", style = MaterialTheme.typography.labelSmall, color = GrayMatterColors.Neutral400)
-                        }
-                        Slider(
-                            value = springSlider,
-                            onValueChange = { springSlider = it; simulator.wake() },
-                            modifier = Modifier.height(26.dp),
-                            colors = SliderDefaults.colors(
-                                thumbColor = GrayMatterTheme.colors.textPrimary,
-                                activeTrackColor = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.6f),
-                                inactiveTrackColor = GrayMatterColors.Neutral600
-                            )
-                        )
-                    }
-                }
+            if (consoleOnLeft) {
+                physicsPanel()
             }
         }
 
