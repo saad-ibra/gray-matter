@@ -4,6 +4,10 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -33,6 +37,7 @@ import com.example.graymatter.android.ui.components.MarkdownEditor
  * Topic Synthesis Screen.
  * Lists resources and allows adding a topic overview with a robust markdown editor.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopicSynthesisScreen(
     topic: Topic?,
@@ -48,6 +53,10 @@ fun TopicSynthesisScreen(
     onViewInGraph: (String) -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
+    topics: List<Topic> = emptyList(),
+    onDeleteResources: (List<String>) -> List<String> = { emptyList() },
+    onUndoDeleteResources: (List<String>) -> Unit = {},
+    onMoveResources: (List<String>, String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     if (topic == null) return
@@ -85,6 +94,15 @@ fun TopicSynthesisScreen(
     }
     
     var showRenameDialog by remember { mutableStateOf(false) }
+    var selectionMode by remember { mutableStateOf(false) }
+    val selectedResources = remember { androidx.compose.runtime.mutableStateListOf<String>() }
+    var showMoveSheet by remember { mutableStateOf(false) }
+    var deletedResourcesInfo by remember { mutableStateOf<List<String>?>(null) }
+    
+    androidx.activity.compose.BackHandler(enabled = selectionMode) {
+        selectionMode = false
+        selectedResources.clear()
+    }
     val context = androidx.compose.ui.platform.LocalContext.current
     val appPreferences = remember { com.example.graymatter.android.preferences.AppPreferences.getInstance(context) }
     
@@ -118,6 +136,7 @@ fun TopicSynthesisScreen(
         }
     }
 
+    androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
     if (showEditor) {
         MarkdownEditor(
             title = topic.name,
@@ -158,7 +177,7 @@ fun TopicSynthesisScreen(
         }
     } else {
         Scaffold(
-            modifier = modifier
+            modifier = androidx.compose.ui.Modifier
                 .fillMaxSize()
                 .background(GrayMatterTheme.colors.background),
             containerColor = GrayMatterTheme.colors.background
@@ -168,16 +187,59 @@ fun TopicSynthesisScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                TopicHeader(
-                    topicName = topic.name,
-                    onBackClick = onBackClick,
-                    onRenameClick = { showRenameDialog = true },
-                    onDeleteClick = { showDeleteConfirm = true },
-                    onExportClick = onExport,
-                    onExportPdfClick = onExportPdf,
-                    onViewInGraphClick = { onViewInGraph(topic.id) },
-                    onSortClick = { showSortDialog = true }
-                )
+                if (selectionMode) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(GrayMatterTheme.colors.surface)
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { selectionMode = false; selectedResources.clear() }) {
+                            Icon(Icons.Default.Close, "Cancel Selection", tint = GrayMatterTheme.colors.textPrimary)
+                        }
+                        Text(
+                            text = "${selectedResources.size} Selected",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = GrayMatterTheme.colors.textPrimary,
+                            modifier = Modifier.weight(1f).padding(horizontal = 16.dp)
+                        )
+                        IconButton(onClick = { 
+                            if (selectedResources.size == resources.size) {
+                                selectedResources.clear()
+                            } else {
+                                selectedResources.clear()
+                                selectedResources.addAll(resources.map { it.id })
+                            }
+                        }) {
+                            Icon(Icons.Default.SelectAll, "Select All", tint = GrayMatterTheme.colors.primary)
+                        }
+                        IconButton(onClick = { showMoveSheet = true }) {
+                            Icon(Icons.Default.DriveFileMove, "Move to Topic", tint = GrayMatterTheme.colors.primary)
+                        }
+                        IconButton(onClick = { 
+                            val ids = selectedResources.toList()
+                            val entryIds = onDeleteResources(ids)
+                            deletedResourcesInfo = entryIds
+                            selectionMode = false
+                            selectedResources.clear()
+                        }) {
+                            Icon(Icons.Default.Delete, "Delete", tint = GrayMatterTheme.colors.error)
+                        }
+                    }
+                } else {
+                    TopicHeader(
+                        topicName = topic.name,
+                        onBackClick = onBackClick,
+                        onRenameClick = { showRenameDialog = true },
+                        onDeleteClick = { showDeleteConfirm = true },
+                        onExportClick = onExport,
+                        onExportPdfClick = onExportPdf,
+                        onViewInGraphClick = { onViewInGraph(topic.id) },
+                        onSortClick = { showSortDialog = true },
+                        onSelectResourcesClick = { selectionMode = true }
+                    )
+                }
                 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -206,17 +268,61 @@ fun TopicSynthesisScreen(
                         
                         sortedGroups.forEach { (groupName, resourcesInGroup) ->
                             item {
-                                androidx.compose.material3.Text(
-                                    text = groupName.uppercase(),
-                                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, letterSpacing = 1.sp),
-                                    color = com.example.graymatter.android.ui.theme.GrayMatterTheme.colors.neutral500,
-                                    modifier = androidx.compose.ui.Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            if (!selectionMode) selectionMode = true
+                                            val groupIds = resourcesInGroup.map { it.id }
+                                            if (selectedResources.containsAll(groupIds)) {
+                                                selectedResources.removeAll(groupIds)
+                                            } else {
+                                                selectedResources.addAll(groupIds.filter { !selectedResources.contains(it) })
+                                            }
+                                        }
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    androidx.compose.material3.Text(
+                                        text = groupName.uppercase(),
+                                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, letterSpacing = 1.sp),
+                                        color = GrayMatterTheme.colors.neutral500
+                                    )
+                                    if (selectionMode) {
+                                        val allSelected = resourcesInGroup.all { selectedResources.contains(it.id) }
+                                        Icon(
+                                            imageVector = if (allSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                            contentDescription = "Select Group",
+                                            tint = if (allSelected) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral600,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
                             }
                             items(resourcesInGroup, key = { it.id }) { resource ->
                                 ResourceItem(
                                     resource = resource,
-                                    onClick = { onResourceClick(resource) }
+                                    selected = selectedResources.contains(resource.id),
+                                    selectionMode = selectionMode,
+                                    onLongClick = {
+                                        if (!selectionMode) {
+                                            selectionMode = true
+                                            selectedResources.add(resource.id)
+                                        }
+                                    },
+                                    onClick = {
+                                        if (selectionMode) {
+                                            if (selectedResources.contains(resource.id)) {
+                                                selectedResources.remove(resource.id)
+                                                if (selectedResources.isEmpty()) selectionMode = false
+                                            } else {
+                                                selectedResources.add(resource.id)
+                                            }
+                                        } else {
+                                            onResourceClick(resource)
+                                        }
+                                    }
                                 )
                             }
                         }
@@ -224,7 +330,26 @@ fun TopicSynthesisScreen(
                         items(sortedResources, key = { it.id }) { resource ->
                             ResourceItem(
                                 resource = resource,
-                                onClick = { onResourceClick(resource) }
+                                selected = selectedResources.contains(resource.id),
+                                selectionMode = selectionMode,
+                                onLongClick = {
+                                    if (!selectionMode) {
+                                        selectionMode = true
+                                        selectedResources.add(resource.id)
+                                    }
+                                },
+                                onClick = {
+                                    if (selectionMode) {
+                                        if (selectedResources.contains(resource.id)) {
+                                            selectedResources.remove(resource.id)
+                                            if (selectedResources.isEmpty()) selectionMode = false
+                                        } else {
+                                            selectedResources.add(resource.id)
+                                        }
+                                    } else {
+                                        onResourceClick(resource)
+                                    }
+                                }
                             )
                         }
                     }
@@ -265,15 +390,68 @@ fun TopicSynthesisScreen(
         )
     }
 
-    if (showRenameDialog) {
-        com.example.graymatter.android.ui.components.RenameTopicDialog(
-            initialName = topic.name,
-            onDismiss = { showRenameDialog = false },
-            onConfirm = { newName ->
-                onRenameTopic(newName)
-                showRenameDialog = false
+    if (showMoveSheet) {
+        androidx.compose.material3.ModalBottomSheet(
+            onDismissRequest = { showMoveSheet = false },
+            containerColor = GrayMatterTheme.colors.surface,
+            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                Text("Move ${selectedResources.size} resources to...", style = MaterialTheme.typography.titleMedium, color = GrayMatterTheme.colors.textPrimary, modifier = Modifier.padding(bottom = 16.dp))
+                LazyColumn {
+                    items(topics) { t ->
+                        if (t.id != topic.id) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onMoveResources(selectedResources.toList(), t.id)
+                                        showMoveSheet = false
+                                        selectionMode = false
+                                        selectedResources.clear()
+                                    }
+                                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Folder, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(24.dp))
+                                Spacer(Modifier.width(12.dp))
+                                Text(t.name, style = MaterialTheme.typography.bodyLarge, color = GrayMatterTheme.colors.textPrimary)
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(32.dp))
             }
-        )
+        }
+    }
+
+        if (deletedResourcesInfo != null) {
+            com.example.graymatter.android.ui.components.UndoSnackbar(
+                message = "${deletedResourcesInfo!!.size} resource(s) deleted",
+                onUndo = {
+                    onUndoDeleteResources(deletedResourcesInfo!!)
+                    deletedResourcesInfo = null
+                },
+                onDismissRequest = {
+                    deletedResourcesInfo = null
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 100.dp)
+                    .imePadding()
+            )
+        }
+
+        if (showRenameDialog) {
+            com.example.graymatter.android.ui.components.RenameTopicDialog(
+                initialName = topic.name,
+                onDismiss = { showRenameDialog = false },
+                onConfirm = { newName ->
+                    onRenameTopic(newName)
+                    showRenameDialog = false
+                }
+            )
+        }
     }
 }
 
@@ -287,7 +465,8 @@ private fun TopicHeader(
     onExportClick: () -> Unit,
     onExportPdfClick: () -> Unit,
     onViewInGraphClick: () -> Unit,
-    onSortClick: () -> Unit = {}
+    onSortClick: () -> Unit = {},
+    onSelectResourcesClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -335,12 +514,21 @@ private fun TopicHeader(
                 modifier = Modifier.background(GrayMatterTheme.colors.surface)
             ) {
                 DropdownMenuItem(
-                    text = { Text("Sort by", color = GrayMatterTheme.colors.textPrimary) },
+                    text = { Text("Sort and Group", color = GrayMatterTheme.colors.textPrimary) },
                     onClick = {
                         showMenu = false
                         onSortClick()
                     },
                     leadingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Sort, null, tint = GrayMatterTheme.colors.primary) }
+                )
+                
+                DropdownMenuItem(
+                    text = { Text("Select resources", color = GrayMatterTheme.colors.textPrimary) },
+                    onClick = {
+                        showMenu = false
+                        onSelectResourcesClick()
+                    },
+                    leadingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Checklist, null, tint = GrayMatterTheme.colors.primary) }
                 )
                 
                 DropdownMenuItem(
@@ -413,9 +601,15 @@ private fun ResourcesHeader(
     }
 }
 
+
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun ResourceItem(
     resource: Resource,
+    selected: Boolean = false,
+    selectionMode: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
     val icon = when (resource.type) {
@@ -436,9 +630,9 @@ private fun ResourceItem(
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(GrayMatterTheme.colors.surface)
-            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
+            .background(if (selected) GrayMatterTheme.colors.primary.copy(alpha = 0.1f) else GrayMatterTheme.colors.surface)
+            .border(1.dp, if (selected) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral800, RoundedCornerShape(16.dp))
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(16.dp)
     ) {
         Row(

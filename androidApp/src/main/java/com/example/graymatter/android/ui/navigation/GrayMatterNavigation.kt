@@ -342,12 +342,33 @@ fun GrayMatterNavigation(
                 topic = topic,
                 resources = resources,
                 referenceSelectorViewModel = referenceSelectorViewModel,
+                topics = topics,
+                onDeleteResources = { resourceIds ->
+                    val entryIds = resourceIds.mapNotNull { resId -> 
+                        topicItems.find { entry -> entry.resource.id == resId }?.resourceEntry?.id 
+                    }
+                    entryIds.forEach { viewModel.deleteResourceEntry(it) }
+                    entryIds
+                },
+                onUndoDeleteResources = { entryIds ->
+                    if (entryIds.isNotEmpty()) {
+                        viewModel.undoDeleteResourceEntries(entryIds)
+                    }
+                },
+                onMoveResources = { resourceIds, targetTopicId ->
+                    val entryIds = resourceIds.mapNotNull { resId -> 
+                        topicItems.find { entry -> entry.resource.id == resId }?.resourceEntry?.id 
+                    }
+                    entryIds.forEach { entryId ->
+                        homeViewModel.assignTopicToResourceEntry(entryId, targetTopicId)
+                    }
+                },
                 onBackClick = { navController.popBackStack() },
                 onAddResource = {
                     navController.navigate(NavigationDestination.NewEntry.route + "?topicId=$topicId")
                 },
                 onResourceClick = { resource ->
-                    val item = topicItems.find { it.resource.id == resource.id }?.resourceEntry
+                    val item = topicItems.find { entry -> entry.resource.id == resource.id }?.resourceEntry
                     item?.let {
                         navController.navigate(NavigationDestination.ResourceDetail.buildRoute(it.id))
                     }
@@ -702,9 +723,12 @@ fun GrayMatterNavigation(
             )
         ) { backStackEntry ->
             val resourceEntryId = backStackEntry.arguments?.getString(NavigationDestination.AddToTopic.ARG_RESOURCE_ENTRY_ID)
+            val resourceEntryDetails by viewModel.getResourceEntryDetails(resourceEntryId ?: "").collectAsState(initial = null)
+            val currentTopicName = resourceEntryDetails?.topic?.name
 
             AddToTopicScreen(
                 topics = topics,
+                currentTopicName = currentTopicName,
                 onSelectTopic = { topic ->
                     resourceEntryId?.let { homeViewModel.assignTopicToResourceEntry(it, topic.id) }
                     navController.navigate(NavigationDestination.Home.route) {

@@ -19,6 +19,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FormatQuote
@@ -40,6 +41,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
@@ -1044,7 +1046,7 @@ fun KnowledgeGraphScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Science,
+                            imageVector = Icons.Default.Settings,
                             contentDescription = null,
                             tint = if (showPhysicsPanel) GrayMatterColors.Primary else GrayMatterColors.Neutral400,
                             modifier = Modifier.size(12.dp)
@@ -1120,11 +1122,62 @@ fun KnowledgeGraphScreen(
                     "Visions" to showVisuals
                 )
                 
-                LazyRow(
+                val hasFilters = filterOptions.any { it.second }
+                
+                Row(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(filterOptions) { (name, isSelected) ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                            FilterChip(
+                                selected = false,
+                                onClick = {
+                                    if (hasFilters) {
+                                        showTopics = false
+                                        showResources = false
+                                        showOpinions = false
+                                        showAnnotations = false
+                                        showBookmarks = false
+                                        showTemplates = false
+                                        showLookup = false
+                                        showVisuals = false
+                                    } else {
+                                        showBottomFilters = false
+                                    }
+                                },
+                                label = { 
+                                    Text(
+                                        if (hasFilters) "Clear" else "Filters", 
+                                        color = if (hasFilters) GrayMatterTheme.colors.textPrimary else GrayMatterTheme.colors.neutral400
+                                    ) 
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        if (hasFilters) androidx.compose.material.icons.Icons.Default.Close else androidx.compose.material.icons.Icons.Default.FilterList,
+                                        contentDescription = if (hasFilters) "Clear Filters" else "Filters",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (hasFilters) GrayMatterTheme.colors.textPrimary else GrayMatterTheme.colors.neutral400
+                                    )
+                                },
+                                // using default colors, Text/Icon explicitly tinted above
+                            )
+                            
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp)
+                                    .height(24.dp)
+                                    .width(1.dp)
+                                    .background(GrayMatterTheme.colors.neutral800)
+                            )
+                        }
+                    
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        items(filterOptions) { (name, isSelected) ->
                         FilterChip(
                             selected = isSelected,
                             onClick = {
@@ -1157,6 +1210,7 @@ fun KnowledgeGraphScreen(
                             )
                         )
                     }
+                }
                 }
             }
         }

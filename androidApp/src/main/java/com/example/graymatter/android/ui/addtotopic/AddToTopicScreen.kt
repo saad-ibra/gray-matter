@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Search
@@ -57,6 +58,7 @@ fun AddToTopicScreen(
     topics: List<Topic>,
     onSelectTopic: (Topic) -> Unit,
     onCreateNewTopic: (String) -> Unit,
+    currentTopicName: String? = null,
     modifier: Modifier = Modifier
 ) {
     // Block back-navigation to enforce Topic > Resource hierarchy
@@ -75,6 +77,7 @@ fun AddToTopicScreen(
     ) {
         // Header
         AddToTopicHeader(
+            currentTopicName = currentTopicName,
             modifier = Modifier.statusBarsPadding()
         )
         
@@ -300,6 +303,7 @@ fun AddToTopicScreen(
 
 @Composable
 private fun AddToTopicHeader(
+    currentTopicName: String? = null,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -308,12 +312,37 @@ private fun AddToTopicHeader(
             .background(GrayMatterTheme.colors.background.copy(alpha = 0.8f))
             .padding(horizontal = 16.dp, vertical = 24.dp)
     ) {
-        Text(
-            text = "Organize Entry",
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-            color = GrayMatterTheme.colors.textPrimary,
-            modifier = Modifier.align(Alignment.Center)
-        )
+        if (currentTopicName != null) {
+            Row(
+                modifier = Modifier.align(Alignment.Center),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = currentTopicName,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = GrayMatterTheme.colors.neutral400
+                )
+                Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.ArrowForward,
+                    contentDescription = null,
+                    tint = GrayMatterTheme.colors.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = "Move to...",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = GrayMatterTheme.colors.textPrimary
+                )
+            }
+        } else {
+            Text(
+                text = "Organize Entry",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = GrayMatterTheme.colors.textPrimary,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
     }
 }
 

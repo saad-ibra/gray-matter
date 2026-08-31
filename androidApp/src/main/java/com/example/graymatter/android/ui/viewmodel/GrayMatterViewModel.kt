@@ -172,6 +172,12 @@ class GrayMatterViewModel(
         }
     }
     
+    fun undoDeleteResourceEntries(resourceEntryIds: List<String>) {
+        viewModelScope.launch {
+            resourceEntryIds.forEach { resourceEntryRepository.undoDeleteResourceEntry(it) }
+        }
+    }
+    
     /**
      * Creates a new topic.
      */
