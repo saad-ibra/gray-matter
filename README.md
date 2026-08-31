@@ -1,4 +1,8 @@
-# <img src="androidApp/src/main/res/drawable/app_logo.png" width="40" height="40" valign="middle" alt="Relatrix Logo" /> 𝗥𝗲𝗹𝗮𝘁𝗿𝗶𝘅
+<div align="center">
+
+<img src="androidApp/src/main/res/drawable/app_logo.png" width="140" height="140" alt="Relatrix Logo" style="border-radius: 20%; margin-bottom: 20px;" />
+
+# 𝗥𝗲𝗹𝗮𝘁𝗿𝗶𝘅
 
 **An active knowledge‑management and multi‑modal note‑taking platform for deep thinkers.**
 
@@ -7,9 +11,10 @@
 <br/>
 
 <a href="https://f-droid.org/packages/com.saadibra.graymatter">
-  <img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="70">
+  <img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="60">
 </a>
 
+<br/>
 <br/>
 
 [![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
@@ -18,6 +23,8 @@
 [![Database](https://img.shields.io/badge/Database-SQLDelight%20%2B%20SQLCipher-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://github.com/cashapp/sqldelight)
 [![Offline](https://img.shields.io/badge/Data-100%25_Offline_First-2ECC71?style=for-the-badge)](/)
 [![iOS](https://img.shields.io/badge/iOS-Coming_Soon-999999?style=for-the-badge&logo=apple&logoColor=white)](/)
+
+</div>
 
 <br/>
 
