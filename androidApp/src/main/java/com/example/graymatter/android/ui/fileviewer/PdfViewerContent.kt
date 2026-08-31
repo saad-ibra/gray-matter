@@ -121,6 +121,14 @@ fun PdfViewerContent(
         var extractedCharacters by remember { mutableStateOf<List<PdfCharacter>>(emptyList()) }
         var currentRenderScale by remember { mutableFloatStateOf(1f) }
 
+        var previousAutoCrop by remember { mutableStateOf(autoCrop) }
+        if (previousAutoCrop != autoCrop) {
+            pageCache.evictAll()
+            lowResPageCache.evictAll()
+            bitmap = null
+            previousAutoCrop = autoCrop
+        }
+
         LaunchedEffect(filePath) {
             withContext(Dispatchers.IO) {
                 try {

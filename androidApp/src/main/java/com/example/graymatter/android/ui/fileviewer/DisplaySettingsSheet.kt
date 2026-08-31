@@ -49,6 +49,30 @@ fun DisplaySettingsSheet(
             )
             Spacer(modifier = Modifier.height(20.dp))
 
+            ToggleRow(
+                label = "Auto-Crop PDF Margins",
+                checked = settings.autoCrop,
+                onCheckedChange = { onSettingsChanged(settings.copy(autoCrop = it)) }
+            )
+            
+            ToggleRow(
+                label = "Left-handed Optimization",
+                checked = settings.isLeftHanded,
+                onCheckedChange = { onSettingsChanged(settings.copy(isLeftHanded = it)) }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                "Themes",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
             ThemeGroup("Clean", listOf(
                 ThemeOption("Daylight", "daylight", Color.White, Color.Black),
                 ThemeOption("Paper Classic", "paper_classic", Color(0xFFF4ECD8), Color(0xFF333333))
@@ -61,22 +85,10 @@ fun DisplaySettingsSheet(
                 ThemeOption("Ocean", "ocean", Color(0xFF0D1B2A), Color(0xFF7EB8C2))
             ), settings.theme, onSettingsChanged, settings)
 
-
-
             ThemeGroup("Specialty", listOf(
                 ThemeOption("Console", "console", Color(0xFF0A0A0A), Color(0xFF4AF626)),
                 ThemeOption("Rosé", "rose", Color(0xFFFFF0F0), Color(0xFF4A2C2C))
             ), settings.theme, onSettingsChanged, settings)
-
-            Spacer(modifier = Modifier.height(24.dp))
-            Divider(color = Color.White.copy(alpha = 0.1f))
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ToggleRow(
-                label = "Left-handed Optimization",
-                checked = settings.isLeftHanded,
-                onCheckedChange = { onSettingsChanged(settings.copy(isLeftHanded = it)) }
-            )
 
             Spacer(modifier = Modifier.height(40.dp))
         }
