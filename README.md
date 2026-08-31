@@ -1,8 +1,4 @@
-# <div align="center">
-
-<br/>
-
-# 𝗥𝗲𝗹𝗮𝘁𝗿𝗶𝘅
+# <img src="androidApp/src/main/res/drawable/app_logo.png" width="40" height="40" valign="middle" alt="Relatrix Logo" /> 𝗥𝗲𝗹𝗮𝘁𝗿𝗶𝘅
 
 **An active knowledge‑management and multi‑modal note‑taking platform for deep thinkers.**
 
