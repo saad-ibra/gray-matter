@@ -15,6 +15,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -146,19 +149,32 @@ fun MarkdownEditor(
                 }
             }
 
-            TextButton(
-                onClick = {
-                    onSave(textFieldValue.text)
-                    lastSavedText = textFieldValue.text
-                },
-                enabled = editableTitle.isNotBlank() && hasUnsavedChanges
-            ) {
-                Text(
-                    "Save", 
-                    color = if (editableTitle.isNotBlank() && hasUnsavedChanges) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral700,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val context = LocalContext.current
+                IconButton(onClick = {
+                    val shareIntent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, textFieldValue.text)
+                    }
+                    context.startActivity(Intent.createChooser(shareIntent, "Share Markdown via"))
+                }) {
+                    Icon(Icons.Default.Share, "Share", tint = GrayMatterTheme.colors.primary)
+                }
+                TextButton(
+                    onClick = {
+                        onSave(textFieldValue.text)
+                        lastSavedText = textFieldValue.text
+                    },
+                    enabled = editableTitle.isNotBlank() && hasUnsavedChanges
+                ) {
+                    Text(
+                        "Save", 
+                        color = if (editableTitle.isNotBlank() && hasUnsavedChanges) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral700,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
 

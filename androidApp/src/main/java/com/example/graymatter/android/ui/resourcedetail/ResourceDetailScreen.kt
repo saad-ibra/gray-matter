@@ -281,7 +281,7 @@ fun ResourceDetailScreen(
 
                     // Description Section — hidden for notes (MARKDOWN), enhanced for files & URLs
                     if (resourceEntryDetails.resource.type != com.example.graymatter.domain.ResourceType.MARKDOWN) {
-                        SectionHeader(text = "DESCRIPTION")
+                        SectionHeader(text = "RESOURCE OVERVIEW")
                         Spacer(modifier = Modifier.height(12.dp))
 
                         // Clickable card to open the Markdown description editor
@@ -309,7 +309,7 @@ fun ResourceDetailScreen(
                                     tint = GrayMatterColors.TypeOpinion
                                 )
                                 Text(
-                                    text = if (description.isNotEmpty()) "Edit Resource Description" else "Add Resource Description",
+                                    text = if (description.isNotEmpty()) "Edit Resource Overview" else "Add Resource Overview",
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                     color = GrayMatterColors.TypeOpinion
                                 )
@@ -638,7 +638,7 @@ fun ResourceDetailScreen(
         // Description Markdown Editor Overlay
         if (showDescriptionEditor && resourceEntryDetails != null) {
             com.example.graymatter.android.ui.components.MarkdownEditor(
-                title = resourceEntryDetails.resource.title ?: "Description",
+                title = resourceEntryDetails.resource.title ?: "Resource Overview",
                 initialText = description,
                 onBackClick = { showDescriptionEditor = false },
                 onSave = { content ->
@@ -806,7 +806,7 @@ private fun DescriptionEditor(value: String, onValueChange: (String) -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             cursorBrush = SolidColor(GrayMatterTheme.colors.primary),
             decorationBox = { inner ->
-                if (value.isEmpty()) Text("Add a description...", color = GrayMatterTheme.colors.neutral700)
+                if (value.isEmpty()) Text("Add a resource overview...", color = GrayMatterTheme.colors.neutral700)
                 inner()
             }
         )
