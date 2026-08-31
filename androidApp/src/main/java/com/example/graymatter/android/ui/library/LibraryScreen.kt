@@ -28,6 +28,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -787,22 +788,23 @@ private fun TopicCard(
                 verticalAlignment = Alignment.Top
             ) {
                 // Roman Numeral Container - Variable size curved rectangle
+                val fallbackBg = GrayMatterTheme.colors.background.copy(alpha = 0.4f)
+                val isCustomColor = !topic.color.isNullOrEmpty()
+                val bgColor = remember(topic.color, fallbackBg) {
+                    if (isCustomColor) {
+                        try { Color(android.graphics.Color.parseColor(topic.color)) } catch(e: Exception) { fallbackBg }
+                    } else fallbackBg
+                }
+                val textColor = if (isCustomColor) {
+                    if (bgColor.luminance() > 0.5f) Color.Black else Color.White
+                } else GrayMatterTheme.colors.textPrimary
+
                 Box(
                     modifier = Modifier
                         .wrapContentWidth()
                         .height(36.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(
-                            run {
-                                val fallback = GrayMatterTheme.colors.background.copy(alpha = 0.4f)
-                                if (topic.color.isNullOrEmpty()) return@run fallback
-                                try {
-                                    Color(android.graphics.Color.parseColor(topic.color))
-                                } catch(e: Exception) {
-                                    fallback
-                                }
-                            }
-                        )
+                        .background(bgColor)
                         .border(1.dp, GrayMatterTheme.colors.neutral700.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
                         .padding(horizontal = 12.dp),
                     contentAlignment = Alignment.Center
@@ -814,7 +816,7 @@ private fun TopicCard(
                             fontWeight = FontWeight.Normal,
                             letterSpacing = 1.sp
                         ),
-                        color = GrayMatterTheme.colors.textPrimary
+                        color = textColor
                     )
                 }
                 

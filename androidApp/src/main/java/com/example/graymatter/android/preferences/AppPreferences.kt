@@ -31,7 +31,7 @@ class AppPreferences private constructor(context: Context) {
         val current = recentTopicColorsList.toMutableList()
         current.remove(hexColor)
         current.add(0, hexColor)
-        while(current.size > 8) {
+        while(current.size > 18) {
             current.removeLast()
         }
         recentTopicColorsList = current
