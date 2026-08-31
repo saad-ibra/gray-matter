@@ -414,13 +414,7 @@ private fun ExpandedHudPanel(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Prev / Next buttons
-                HudRepeatingButton(onClick = onPreviousPage, icon = Icons.Default.ChevronLeft)
-                HudRepeatingButton(onClick = onNextPage, icon = Icons.Default.ChevronRight)
-
-                Spacer(modifier = Modifier.width(4.dp))
-
-                // Bookmark
+                // Bookmark (inside)
                 IconButton(
                     onClick = onBookmarkToggle,
                     modifier = Modifier.size(32.dp)
@@ -432,6 +426,12 @@ private fun ExpandedHudPanel(
                         modifier = Modifier.size(18.dp)
                     )
                 }
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                // Prev / Next buttons (towards edge)
+                HudRepeatingButton(onClick = onPreviousPage, icon = Icons.Default.ChevronLeft)
+                HudRepeatingButton(onClick = onNextPage, icon = Icons.Default.ChevronRight)
             }
         }
     }

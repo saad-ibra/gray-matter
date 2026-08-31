@@ -56,7 +56,7 @@ fun DisplaySettingsSheet(
             )
             
             ToggleRow(
-                label = "Left-handed Optimization",
+                label = "Move Navigation to Left Edge",
                 checked = settings.isLeftHanded,
                 onCheckedChange = { onSettingsChanged(settings.copy(isLeftHanded = it)) }
             )
