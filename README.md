@@ -48,13 +48,13 @@ Every resource you save is a starting point, not a destination. Relatrix provide
 <br/>
 
 ### 📚 Topic Library
-Organise your intellectual world into **Topics**: curated folders of resources. Each topic has an overview, holds web links, PDFs, and markdown notes, and surfaces all connected resources at a glance. Full‑text offline search across everything.
+Organise your intellectual world into **Topics**: curated folders of resources. Each topic has an overview, holds web links, PDFs, markdown notes (and absolutely any kind of file you want to add as a resource), and surfaces all connected resources at a glance. Full‑text offline search across everything.
 
 ### 🗂 Multi‑Modal Resource Timeline
 Every resource lives in a rich **Timeline** view: a single chronological feed that unifies your reflections, annotations, and visual captures. Watch your thinking evolve from first impression to deep mastery through a diverse range of entry types.
 
 ### ✍️ Reflection‑First Entry
-When you save a PDF, web page, or markdown note, Relatrix encourages you to capture an **Opinion**, **Annotation**, or **Visual Note** immediately. This deliberate friction prevents "hoarding" and ensures you actually process what you consume.
+When you save a PDF, web page, markdown note, or any other kind of file, Relatrix encourages you to capture an **Opinion** immediately. This deliberate friction prevents "hoarding" and ensures you actually process what you consume.
 
 ### 🔗 Knowledge Links
 While writing any entry, reference other resources, topics, or insights using `[[double‑bracket]]` wiki‑style links. These cross‑references form a bidirectional backlink graph — the raw data for Relatrix.

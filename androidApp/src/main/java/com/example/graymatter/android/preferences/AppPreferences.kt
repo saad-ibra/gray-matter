@@ -64,6 +64,30 @@ class AppPreferences private constructor(context: Context) {
             prefs.edit().putBoolean("has_seen_tutorial", value).apply()
         }
 
+    var librarySortOption: String
+        get() = prefs.getString("library_sort_option", "CUSTOM") ?: "CUSTOM"
+        set(value) = prefs.edit().putString("library_sort_option", value).apply()
+
+    var libraryGroupOption: String
+        get() = prefs.getString("library_group_option", "NONE") ?: "NONE"
+        set(value) = prefs.edit().putString("library_group_option", value).apply()
+
+    fun getTopicSortOption(topicId: String): String {
+        return prefs.getString("topic_sort_$topicId", "DATE_MODIFIED") ?: "DATE_MODIFIED"
+    }
+
+    fun setTopicSortOption(topicId: String, value: String) {
+        prefs.edit().putString("topic_sort_$topicId", value).apply()
+    }
+
+    fun getTopicGroupOption(topicId: String): String {
+        return prefs.getString("topic_group_$topicId", "NONE") ?: "NONE"
+    }
+
+    fun setTopicGroupOption(topicId: String, value: String) {
+        prefs.edit().putString("topic_group_$topicId", value).apply()
+    }
+
     companion object {
         @Volatile
         private var INSTANCE: AppPreferences? = null

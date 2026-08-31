@@ -32,7 +32,8 @@ import com.example.graymatter.android.ui.theme.GrayMatterTheme
 
 @Composable
 fun GrayMatterApp(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    initialSharedUri: android.net.Uri? = null
 ) {
     // Wrap in a Surface to ensure the background color draws behind the system bars
     Surface(
@@ -41,6 +42,7 @@ fun GrayMatterApp(
     ) {
         GrayMatterNavigation(
             navController = navController,
+            initialSharedUri = initialSharedUri,
             // safeDrawingPadding ensures the UI never draws under the camera notch in 
             // landscape mode or under the system navigation bars.
             modifier = Modifier.fillMaxSize().safeDrawingPadding()

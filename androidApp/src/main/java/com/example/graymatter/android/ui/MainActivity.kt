@@ -67,6 +67,15 @@ class MainActivity : FragmentActivity() {
         // Enable edge-to-edge display
         enableEdgeToEdge()
         
+        // ── Handle incoming intents ──────────────────────────────
+        var initialSharedUri: android.net.Uri? = null
+        if (intent.action == android.content.Intent.ACTION_SEND) {
+            initialSharedUri = intent.getParcelableExtra<android.net.Uri>(android.content.Intent.EXTRA_STREAM)
+                ?: intent.clipData?.getItemAt(0)?.uri
+        } else if (intent.action == android.content.Intent.ACTION_VIEW) {
+            initialSharedUri = intent.data
+        }
+
         setContent {
             // ── Theme ──────────────────────────────────────────────────
             val themeChoice by appPreferences.themeState.collectAsState()
@@ -90,14 +99,14 @@ class MainActivity : FragmentActivity() {
                 if (isAppLockEnabled) {
                     val isUnlocked by biometricAuthManager.isUnlocked.collectAsState()
                     if (isUnlocked) {
-                        GrayMatterApp()
+                        GrayMatterApp(initialSharedUri = initialSharedUri)
                     } else {
                         BiometricLockScreen(
                             onAuthenticate = { biometricAuthManager.authenticate(this@MainActivity) }
                         )
                     }
                 } else {
-                    GrayMatterApp()
+                    GrayMatterApp(initialSharedUri = initialSharedUri)
                 }
             }
         }

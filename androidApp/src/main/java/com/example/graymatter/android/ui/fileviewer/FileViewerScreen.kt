@@ -116,7 +116,7 @@ fun FileViewerScreen(
         contract = androidx.activity.result.contract.ActivityResultContracts.TakePicture()
     ) { success ->
         if (success && tempCameraUri != null) {
-            val path = com.example.graymatter.android.util.FileUtils.copyUriToInternalStorage(context, tempCameraUri!!, "visual_entry_${java.util.UUID.randomUUID()}.jpg")
+            val path = com.example.graymatter.android.util.FileUtils.copyImageAndFixRotation(context, tempCameraUri!!, "visual_entry_${java.util.UUID.randomUUID()}.jpg")
             currentImagePath = path
             showVisionEntryDialog = true
         }

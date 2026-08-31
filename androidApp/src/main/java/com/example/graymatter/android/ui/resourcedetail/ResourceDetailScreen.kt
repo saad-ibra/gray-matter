@@ -81,6 +81,8 @@ fun ResourceDetailScreen(
     onUndoDeleteOpinion: (String) -> Unit = {},
     onRenameResource: (String) -> Unit,
     onDeleteResourceEntry: () -> Unit,
+    onMoveToTopic: () -> Unit = {},
+    onGoToTopic: (String) -> Unit = {},
     onUndoDeleteResourceEntry: () -> Unit = {},
     onEditNote: () -> Unit,
     onExport: (List<Opinion>) -> Unit,
@@ -196,7 +198,8 @@ fun ResourceDetailScreen(
                     onBackClick = onBackClick,
                     isEditing = false,
                     onToggleEdit = {},
-                    onDeleteClick = {}
+                    onDeleteClick = {},
+                    onMoveToTopic = onMoveToTopic
                 )
             }
 
@@ -249,7 +252,8 @@ fun ResourceDetailScreen(
                     onFilterClick = { showFilterMenu = true },
                     onExportClick = { onExport(sortedOpinions) },
                     onExportPdfClick = { onExportPdf(sortedOpinions) },
-                    onViewInRelatrixClick = { onViewInGraphClick(resourceEntryDetails.resource.id) }
+                    onViewInRelatrixClick = { onViewInGraphClick(resourceEntryDetails.resource.id) },
+                    onMoveToTopic = onMoveToTopic
                 )
 
                 val scrollState = rememberScrollState()
@@ -818,7 +822,9 @@ private fun ResourceDetailHeader(
     onFilterClick: (() -> Unit)? = null,
     onExportClick: (() -> Unit)? = null,
     onExportPdfClick: (() -> Unit)? = null,
-    onViewInRelatrixClick: (() -> Unit)? = null
+    onViewInRelatrixClick: (() -> Unit)? = null,
+    onMoveToTopic: () -> Unit = {},
+    onGoToTopic: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
@@ -906,6 +912,26 @@ private fun ResourceDetailHeader(
                                     }
                                 },
                                 onClick = { menuExpanded = false; onViewInRelatrixClick() }
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Icon(Icons.Default.DriveFileMove, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
+                                    Text("Change Topic", color = GrayMatterTheme.colors.textPrimary)
+                                }
+                            },
+                            onClick = { menuExpanded = false; onMoveToTopic() }
+                        )
+                        if (onGoToTopic != null) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.List, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
+                                        Text("Go to Topic", color = GrayMatterTheme.colors.textPrimary)
+                                    }
+                                },
+                                onClick = { menuExpanded = false; onGoToTopic() }
                             )
                         }
                         Divider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))

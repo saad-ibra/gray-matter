@@ -55,6 +55,7 @@ fun NewEntryScreen(
     draftingViewModel: com.example.graymatter.android.ui.viewmodel.DraftingViewModel,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel,
     preSelectedTopicId: String? = null,
+    sharedUri: Uri? = null,
     onNavigateBack: () -> Unit,
     onNavigateToHome: () -> Unit,
     onNavigateToAddToTopic: (String) -> Unit
@@ -77,8 +78,31 @@ fun NewEntryScreen(
     var showImageSourcePicker by remember { mutableStateOf(false) }
     var tempCameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
 
+    var fileUri by remember { mutableStateOf<Uri?>(sharedUri) }
     var originalFileName by remember { mutableStateOf<String?>(null) }
-    var fileUri by remember { mutableStateOf<Uri?>(null) }
+    
+    // Auto-setup if a shared file was provided
+    LaunchedEffect(sharedUri) {
+        if (sharedUri != null) {
+            draftingViewModel.updateEntryType(DraftingViewModel.EntryType.FILE)
+            val fileName = com.example.graymatter.android.util.FileUtils.getFileNameFromUri(context, sharedUri)
+            originalFileName = fileName
+            
+            val extractedTitle = fileName.substringBeforeLast('.')
+                .replace(Regex("[_\\-]"), " ")
+                .replace(Regex("\\s+"), " ")
+                .trim()
+                .split(" ")
+                .filter { it.isNotBlank() }
+                .joinToString(" ") { word -> 
+                    word.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+                }
+            if (extractedTitle.isNotBlank()) {
+                draftingViewModel.updateTitle(extractedTitle)
+            }
+        }
+    }
+    
     var showDescription by remember { mutableStateOf(false) }
     var isNoteEditorOpen by remember { mutableStateOf(false) }
     
@@ -152,7 +176,7 @@ fun NewEntryScreen(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
         if (success && tempCameraUri != null) {
-            val path = com.example.graymatter.android.util.FileUtils.copyUriToInternalStorage(context, tempCameraUri!!, "visual_entry_${java.util.UUID.randomUUID()}.jpg")
+            val path = com.example.graymatter.android.util.FileUtils.copyImageAndFixRotation(context, tempCameraUri!!, "visual_entry_${java.util.UUID.randomUUID()}.jpg")
             draftingViewModel.updateImagePath(path)
             selectedTemplate = null
         }

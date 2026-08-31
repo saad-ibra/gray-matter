@@ -56,6 +56,7 @@ import kotlinx.coroutines.flow.first
 @androidx.compose.runtime.Composable
 fun GrayMatterNavigation(
     navController: NavHostController = rememberNavController(),
+    initialSharedUri: Uri? = null,
     modifier: Modifier = Modifier
 ) {
     val viewModel: GrayMatterViewModel = koinViewModel()
@@ -74,6 +75,12 @@ fun GrayMatterNavigation(
     val context = LocalContext.current
 
     val referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel = koinInject()
+
+    LaunchedEffect(initialSharedUri) {
+        if (initialSharedUri != null) {
+            navController.navigate(NavigationDestination.NewEntry.route)
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -212,6 +219,9 @@ fun GrayMatterNavigation(
                                 },
                                 onNavigateToGraph = {
                                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute())
+                                },
+                                onCreateNewTopic = { topicName ->
+                                    coroutineScope.launch { viewModel.createTopic(topicName) }
                                 },
                                 onDeleteTopics = { ids -> viewModel.deleteTopics(ids) },
                                 onUndoDeleteTopics = { ids -> viewModel.undoDeleteTopics(ids) },
@@ -394,6 +404,7 @@ fun GrayMatterNavigation(
                 draftingViewModel = draftingViewModel,
                 referenceSelectorViewModel = referenceSelectorViewModel,
                 preSelectedTopicId = topicId,
+                sharedUri = initialSharedUri,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToHome = {
                     navController.navigate(NavigationDestination.Home.route) {
@@ -526,6 +537,12 @@ fun GrayMatterNavigation(
                 onLoadResourceLinks = { resourceId -> viewModel.getLinksForResource(resourceId) },
                 onViewInGraphClick = { resourceId -> 
                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute(resourceId)) 
+                },
+                onMoveToTopic = { 
+                    navController.navigate(NavigationDestination.AddToTopic.buildRoute(resourceEntryId))
+                },
+                onGoToTopic = { topicId ->
+                    navController.navigate(NavigationDestination.TopicDetail.buildRoute(topicId))
                 },
                 onNavigateToKnowledgeLink = { link ->
                     when (link) {

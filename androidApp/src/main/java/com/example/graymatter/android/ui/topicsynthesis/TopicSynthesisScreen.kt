@@ -85,6 +85,38 @@ fun TopicSynthesisScreen(
     }
     
     var showRenameDialog by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val appPreferences = remember { com.example.graymatter.android.preferences.AppPreferences.getInstance(context) }
+    
+    var topicSortOption by remember(topic.id) { 
+        mutableStateOf(
+            try { com.example.graymatter.android.ui.components.SortOption.valueOf(appPreferences.getTopicSortOption(topic.id)) }
+            catch (e: Exception) { com.example.graymatter.android.ui.components.SortOption.DATE_MODIFIED }
+        ) 
+    }
+    var groupOption by remember(topic.id) { 
+        mutableStateOf(
+            try { com.example.graymatter.android.ui.components.GroupOption.valueOf(appPreferences.getTopicGroupOption(topic.id)) }
+            catch (e: Exception) { com.example.graymatter.android.ui.components.GroupOption.NONE }
+        ) 
+    }
+    
+    LaunchedEffect(topicSortOption, topic.id) {
+        appPreferences.setTopicSortOption(topic.id, topicSortOption.name)
+    }
+    LaunchedEffect(groupOption, topic.id) {
+        appPreferences.setTopicGroupOption(topic.id, groupOption.name)
+    }
+    var showSortDialog by remember { mutableStateOf(false) }
+    
+    val sortedResources = remember(resources, topicSortOption) {
+        when (topicSortOption) {
+            com.example.graymatter.android.ui.components.SortOption.DATE_MODIFIED -> resources.sortedByDescending { it.createdAt }
+            com.example.graymatter.android.ui.components.SortOption.ALPHABETICAL_ASC -> resources.sortedBy { it.title?.lowercase() ?: "" }
+            com.example.graymatter.android.ui.components.SortOption.ALPHABETICAL_DESC -> resources.sortedByDescending { it.title?.lowercase() ?: "" }
+            else -> resources
+        }
+    }
 
     if (showEditor) {
         MarkdownEditor(
@@ -143,7 +175,8 @@ fun TopicSynthesisScreen(
                     onDeleteClick = { showDeleteConfirm = true },
                     onExportClick = onExport,
                     onExportPdfClick = onExportPdf,
-                    onViewInGraphClick = { onViewInGraph(topic.id) }
+                    onViewInGraphClick = { onViewInGraph(topic.id) },
+                    onSortClick = { showSortDialog = true }
                 )
                 
                 LazyColumn(
@@ -166,15 +199,48 @@ fun TopicSynthesisScreen(
                         )
                     }
                     
-                    items(resources) { resource ->
-                        ResourceItem(
-                            resource = resource,
-                            onClick = { onResourceClick(resource) }
-                        )
+                    if (groupOption != com.example.graymatter.android.ui.components.GroupOption.NONE) {
+                        val grouped = sortedResources.groupBy { com.example.graymatter.android.util.DateGroupUtils.getGroupForTimestamp(it.createdAt) }
+                        val order = listOf("Today", "Yesterday", "Previous 7 Days", "Previous 30 Days", "Older")
+                        val sortedGroups = grouped.entries.sortedBy { order.indexOf(it.key).takeIf { idx -> idx != -1 } ?: 99 }
+                        
+                        sortedGroups.forEach { (groupName, resourcesInGroup) ->
+                            item {
+                                androidx.compose.material3.Text(
+                                    text = groupName.uppercase(),
+                                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, letterSpacing = 1.sp),
+                                    color = com.example.graymatter.android.ui.theme.GrayMatterTheme.colors.neutral500,
+                                    modifier = androidx.compose.ui.Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+                            items(resourcesInGroup, key = { it.id }) { resource ->
+                                ResourceItem(
+                                    resource = resource,
+                                    onClick = { onResourceClick(resource) }
+                                )
+                            }
+                        }
+                    } else {
+                        items(sortedResources, key = { it.id }) { resource ->
+                            ResourceItem(
+                                resource = resource,
+                                onClick = { onResourceClick(resource) }
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+
+    if (showSortDialog) {
+        com.example.graymatter.android.ui.components.SortAndGroupDialog(
+            onDismissRequest = { showSortDialog = false },
+            currentSortOption = topicSortOption,
+            onSortOptionSelected = { topicSortOption = it },
+            currentGroupOption = groupOption,
+            onGroupOptionSelected = { groupOption = it }
+        )
     }
 
     if (showDeleteConfirm) {
@@ -220,7 +286,8 @@ private fun TopicHeader(
     onDeleteClick: () -> Unit,
     onExportClick: () -> Unit,
     onExportPdfClick: () -> Unit,
-    onViewInGraphClick: () -> Unit
+    onViewInGraphClick: () -> Unit,
+    onSortClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -267,6 +334,15 @@ private fun TopicHeader(
                 onDismissRequest = { showMenu = false },
                 modifier = Modifier.background(GrayMatterTheme.colors.surface)
             ) {
+                DropdownMenuItem(
+                    text = { Text("Sort by", color = GrayMatterTheme.colors.textPrimary) },
+                    onClick = {
+                        showMenu = false
+                        onSortClick()
+                    },
+                    leadingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Sort, null, tint = GrayMatterTheme.colors.primary) }
+                )
+                
                 DropdownMenuItem(
                     text = { Text("Rename Topic", color = GrayMatterTheme.colors.textPrimary) },
                     onClick = {

@@ -58,6 +58,7 @@ fun LibraryScreen(
     @Suppress("UNUSED_PARAMETER") onNavigateToHome: () -> Unit,
     @Suppress("UNUSED_PARAMETER") onCreateClick: () -> Unit,
     @Suppress("UNUSED_PARAMETER") onNavigateToGraph: () -> Unit,
+    onCreateNewTopic: (String) -> Unit = {},
     onDeleteTopics: (List<String>) -> Unit,
     onUndoDeleteTopics: (List<String>) -> Unit,
     onRenameTopic: (String, String) -> Unit,
@@ -108,10 +109,22 @@ fun LibraryScreen(
         filteredTopics.withIndex().associate { (index, topic) -> topic.id to index }
     }
 
+    var topicSortOption by remember { mutableStateOf(com.example.graymatter.android.ui.components.SortOption.CUSTOM) }
+    var showSortDialog by remember { mutableStateOf(false) }
+    var groupOption by remember { mutableStateOf(com.example.graymatter.android.ui.components.GroupOption.NONE) }
+    var showTopicMenu by remember { mutableStateOf(false) }
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var newTopicName by remember { mutableStateOf("") }
+
     // Sync with parent data when not actively dragging (preserves animation state)
-    LaunchedEffect(baseTopics) {
+    LaunchedEffect(baseTopics, topicSortOption) {
         if (draggedTopicId.value == null) {
-            filteredTopicsState.value = baseTopics
+            filteredTopicsState.value = when(topicSortOption) {
+                com.example.graymatter.android.ui.components.SortOption.DATE_MODIFIED -> baseTopics.sortedByDescending { it.updatedAt }
+                com.example.graymatter.android.ui.components.SortOption.ALPHABETICAL_ASC -> baseTopics.sortedBy { it.name.lowercase() }
+                com.example.graymatter.android.ui.components.SortOption.ALPHABETICAL_DESC -> baseTopics.sortedByDescending { it.name.lowercase() }
+                com.example.graymatter.android.ui.components.SortOption.CUSTOM -> baseTopics
+            }
         }
     }
 
@@ -179,32 +192,71 @@ fun LibraryScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Search bar — tap to open global search overlay
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(GrayMatterTheme.colors.surface)
-                    .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(12.dp))
-                    .clickable { showGlobalSearch = true }
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
+            // Search bar and Topic Menu
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(GrayMatterTheme.colors.surface)
+                        .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(12.dp))
+                        .clickable { showGlobalSearch = true }
+                        .padding(horizontal = 16.dp, vertical = 14.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null,
-                        tint = GrayMatterTheme.colors.neutral500,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Text(
-                        text = "Search",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = GrayMatterTheme.colors.neutral600
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            tint = GrayMatterTheme.colors.neutral500,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Text(
+                            text = "Search",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = GrayMatterTheme.colors.neutral600
+                        )
+                    }
+                }
+                
+                Box {
+                    IconButton(
+                        onClick = { showTopicMenu = true },
+                        modifier = Modifier
+                            .background(GrayMatterTheme.colors.surface, CircleShape)
+                            .border(1.dp, GrayMatterTheme.colors.neutral800, CircleShape)
+                    ) {
+                        Icon(Icons.Default.MoreVert, "Topic Menu", tint = GrayMatterTheme.colors.textPrimary)
+                    }
+                    DropdownMenu(
+                        expanded = showTopicMenu,
+                        onDismissRequest = { showTopicMenu = false },
+                        modifier = Modifier.background(GrayMatterTheme.colors.surface)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Create New Topic", color = GrayMatterTheme.colors.textPrimary) },
+                            onClick = { 
+                                showTopicMenu = false
+                                showCreateDialog = true
+                            },
+                            leadingIcon = { Icon(Icons.Default.Add, null, tint = GrayMatterTheme.colors.primary) }
+                        )
+                        HorizontalDivider(color = GrayMatterTheme.colors.neutral800)
+                        DropdownMenuItem(
+                            text = { Text("Sort and Group", color = GrayMatterTheme.colors.textPrimary) },
+                            onClick = {
+                                showTopicMenu = false
+                                showSortDialog = true
+                            },
+                            leadingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Sort, null, tint = GrayMatterTheme.colors.primary) }
+                        )
+                    }
                 }
             }
 
@@ -256,8 +308,8 @@ fun LibraryScreen(
                                 gridPositionInRoot.value = coords.positionInRoot()
                                 gridViewportHeight.value = coords.size.height.toFloat()
                             }
-                            .pointerInput(selectionMode) {
-                                if (selectionMode) return@pointerInput
+                            .pointerInput(selectionMode, topicSortOption, groupOption) {
+                                if (selectionMode || topicSortOption != com.example.graymatter.android.ui.components.SortOption.CUSTOM || groupOption != com.example.graymatter.android.ui.components.GroupOption.NONE) return@pointerInput
                                 
                                 // Loop to keep detector alive across multiple gestures
                                 while (true) {
@@ -368,6 +420,62 @@ fun LibraryScreen(
                                 }
                             }
                     ) {
+                        if (groupOption != com.example.graymatter.android.ui.components.GroupOption.NONE) {
+                            // Topics only have updatedAt, so we use it for both for now, or adapt if models change.
+                            val grouped = filteredTopics.groupBy { com.example.graymatter.android.util.DateGroupUtils.getGroupForTimestamp(it.updatedAt) }
+                            val order = listOf("Today", "Yesterday", "Previous 7 Days", "Previous 30 Days", "Older")
+                            val sortedGroups = grouped.entries.sortedBy { order.indexOf(it.key).takeIf { idx -> idx != -1 } ?: 99 }
+                            
+                            sortedGroups.forEach { (groupName, topicsInGroup) ->
+                                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                    Text(
+                                        text = groupName.uppercase(),
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, letterSpacing = 1.sp),
+                                        color = GrayMatterTheme.colors.neutral500,
+                                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                                    )
+                                }
+                        items(
+                            items = topicsInGroup,
+                            key = { it.id }
+                        ) { topic ->
+                            Box(
+                                modifier = Modifier
+                                    .animateItemPlacement(dragAnimationSpec)
+                                    .graphicsLayer {
+                                        // Hide the source item while its replica is being dragged
+                                        alpha = if (draggedTopicId.value == topic.id) 0f else 1f
+                                    }
+                            ) {
+                                TopicCard(
+                                    topic = topic,
+                                    romanNumeral = toRomanNumeral((topicIndexMap[topic.id] ?: 0) + 1),
+                                    isSelected = selectedTopics.contains(topic.id),
+                                    onClick = {
+                                        if (selectionMode) {
+                                            selectedTopics = if (selectedTopics.contains(topic.id)) {
+                                                selectedTopics - topic.id
+                                            } else {
+                                                selectedTopics + topic.id
+                                            }
+                                        } else if (draggedTopicId.value == null) {
+                                            onTopicClick(topic)
+                                        }
+                                    },
+                                    onDelete = {
+                                        val ids = listOf(topic.id)
+                                        currentOnDeleteTopics(ids)
+                                        deletedTopicsInfo = ids
+                                    },
+                                    onRename = { renamingTopic = topic },
+                                    onExportMarkdown = { onExportTopicMarkdown(topic) },
+                                    onExportPdf = { onExportTopicPdf(topic) },
+                                    onViewInRelatrix = { onViewTopicInRelatrix(topic.id) }
+                                )
+                            }
+                        }
+                            }
+                        } else {
                         items(
                             items = filteredTopics,
                             key = { it.id }
@@ -406,6 +514,7 @@ fun LibraryScreen(
                                     onViewInRelatrix = { onViewTopicInRelatrix(topic.id) }
                                 )
                             }
+                        }
                         }
                     }
                 }
@@ -527,6 +636,57 @@ fun LibraryScreen(
                     onRenameTopic(renamingTopic!!.id, newName)
                     renamingTopic = null
                 }
+            )
+        }
+
+        if (showSortDialog) {
+            com.example.graymatter.android.ui.components.SortAndGroupDialog(
+                onDismissRequest = { showSortDialog = false },
+                currentSortOption = topicSortOption,
+                onSortOptionSelected = { topicSortOption = it },
+                currentGroupOption = groupOption,
+                onGroupOptionSelected = { groupOption = it }
+            )
+        }
+
+        if (showCreateDialog) {
+            AlertDialog(
+                onDismissRequest = { showCreateDialog = false },
+                title = { Text("Create New Topic") },
+                text = {
+                    OutlinedTextField(
+                        value = newTopicName,
+                        onValueChange = { newTopicName = it },
+                        label = { Text("Topic Name") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = GrayMatterTheme.colors.textPrimary,
+                            unfocusedTextColor = GrayMatterTheme.colors.textPrimary,
+                            cursorColor = GrayMatterTheme.colors.primary,
+                            focusedBorderColor = GrayMatterTheme.colors.primary,
+                            unfocusedBorderColor = GrayMatterTheme.colors.neutral800
+                        )
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            if (newTopicName.isNotBlank()) {
+                                onCreateNewTopic(newTopicName.trim())
+                            }
+                            showCreateDialog = false
+                            newTopicName = ""
+                        }
+                    ) {
+                        Text("Create")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCreateDialog = false }) { Text("Cancel") }
+                },
+                containerColor = GrayMatterTheme.colors.surface,
+                titleContentColor = GrayMatterTheme.colors.textPrimary,
+                textContentColor = GrayMatterTheme.colors.textPrimary
             )
         }
 

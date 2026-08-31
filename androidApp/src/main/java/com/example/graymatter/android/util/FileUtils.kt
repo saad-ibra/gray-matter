@@ -55,12 +55,76 @@ object FileUtils {
     }
 
     /**
+     * Copies an image and automatically corrects any EXIF rotation issues so it displays upright.
+     */
+    fun copyImageAndFixRotation(context: Context, uri: Uri, fileName: String): String? {
+        return try {
+            val path = copyUriToInternalStorage(context, uri, fileName) ?: return null
+            
+            val exif = android.media.ExifInterface(path)
+            val orientation = exif.getAttributeInt(android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_NORMAL)
+            
+            var degrees = 0f
+            when (orientation) {
+                android.media.ExifInterface.ORIENTATION_ROTATE_90 -> degrees = 90f
+                android.media.ExifInterface.ORIENTATION_ROTATE_180 -> degrees = 180f
+                android.media.ExifInterface.ORIENTATION_ROTATE_270 -> degrees = 270f
+            }
+            
+            if (degrees != 0f) {
+                val bitmap = android.graphics.BitmapFactory.decodeFile(path)
+                val matrix = android.graphics.Matrix().apply { postRotate(degrees) }
+                val rotatedBitmap = android.graphics.Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                
+                FileOutputStream(path).use { out ->
+                    rotatedBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 95, out)
+                }
+                
+                val newExif = android.media.ExifInterface(path)
+                newExif.setAttribute(android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_NORMAL.toString())
+                newExif.saveAttributes()
+            }
+            
+            path
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fixing image rotation", e)
+            // If rotation fails, at least return the original copied path
+            copyUriToInternalStorage(context, uri, fileName)
+        }
+    }
+
+    /**
      * Checks if a file exists at the given path.
      */
     fun verifyFileExists(path: String?): Boolean {
         if (path.isNullOrBlank()) return false
         val file = File(path)
         return file.exists() && file.isFile
+    }
+
+    /**
+     * Extracts original filename from a content URI
+     */
+    fun getFileNameFromUri(context: Context, uri: Uri): String {
+        var result: String? = null
+        if (uri.scheme == "content") {
+            try {
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (nameIndex >= 0) {
+                            result = cursor.getString(nameIndex)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error querying file name", e)
+            }
+        }
+        if (result == null) {
+            result = uri.path?.substringAfterLast('/')
+        }
+        return result ?: "shared_file"
     }
 
     /**

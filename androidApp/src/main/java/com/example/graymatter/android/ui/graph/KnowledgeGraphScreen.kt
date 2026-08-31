@@ -826,9 +826,14 @@ fun KnowledgeGraphScreen(
         }
         
         // ─── Controls Console (Compact Bottom) ──────────────────────────
-        Row(
-            modifier = Modifier
-                .align(if (consoleOnLeft) Alignment.BottomStart else Alignment.BottomEnd)
+        androidx.compose.animation.AnimatedVisibility(
+            visible = selectedNode == null,
+            modifier = Modifier.align(if (consoleOnLeft) Alignment.BottomStart else Alignment.BottomEnd),
+            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically(initialOffsetY = { it / 2 }),
+            exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically(targetOffsetY = { it / 2 })
+        ) {
+            Row(
+                modifier = Modifier
                 .navigationBarsPadding()
                 .padding(
                     bottom = 90.dp,
@@ -1083,10 +1088,11 @@ fun KnowledgeGraphScreen(
                 physicsPanel()
             }
         }
+        }
 
         // Bottom Filters
         androidx.compose.animation.AnimatedVisibility(
-            visible = showBottomFilters,
+            visible = selectedNode == null && showBottomFilters,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.align(Alignment.BottomCenter)
