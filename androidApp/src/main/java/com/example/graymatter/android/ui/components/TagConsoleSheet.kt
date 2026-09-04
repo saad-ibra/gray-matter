@@ -44,7 +44,7 @@ fun TagConsoleSheet(
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().imePadding().navigationBarsPadding(),
             contentAlignment = Alignment.BottomCenter
         ) {
             // Invisible touch scrim for dismissal
@@ -53,7 +53,11 @@ fun TagConsoleSheet(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(enabled = false, onClick = {}),
+                    .clickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null,
+                        onClick = {}
+                    ),
                 shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
                 color = MaterialTheme.colorScheme.surface
             ) {

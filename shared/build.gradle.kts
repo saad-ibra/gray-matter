@@ -9,22 +9,11 @@ plugins {
 @OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
     targetHierarchy.default()
-
     android {
         compilations.all {
             kotlinOptions {
                 jvmTarget = "1.8"
             }
-        }
-    }
-
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach {
-        it.binaries.framework {
-            baseName = "shared"
         }
     }
 
@@ -51,13 +40,6 @@ kotlin {
                 implementation("androidx.sqlite:sqlite:2.4.0")
             }
         }
-
-        val iosMain by getting {
-            dependencies {
-                // sql-delight driver - ios
-                implementation("app.cash.sqldelight:native-driver:2.0.0")
-            }
-        }
     }
 }
 
@@ -66,6 +48,10 @@ android {
     compileSdk = 33
     defaultConfig {
         minSdk = 24
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
 
