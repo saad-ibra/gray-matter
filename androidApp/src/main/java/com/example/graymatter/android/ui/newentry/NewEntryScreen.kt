@@ -21,6 +21,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -54,6 +56,7 @@ fun NewEntryScreen(
     templateViewModel: com.example.graymatter.android.ui.viewmodel.TemplateViewModel,
     draftingViewModel: com.example.graymatter.android.ui.viewmodel.DraftingViewModel,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel,
+    tagViewModel: com.example.graymatter.android.ui.viewmodel.TagViewModel,
     preSelectedTopicId: String? = null,
     sharedUri: Uri? = null,
     onNavigateBack: () -> Unit,
@@ -114,6 +117,7 @@ fun NewEntryScreen(
     var showReferenceSelector by remember { mutableStateOf(false) }
     var noteSelectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
     var opinionSelectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
+    var opinionSelectedTags by remember { mutableStateOf<List<com.example.graymatter.domain.Tag>>(emptyList()) }
     var referenceToInsert by remember { mutableStateOf<String?>(null) }
     var showTemplateEditor by remember { mutableStateOf(false) }
 
@@ -537,56 +541,146 @@ fun NewEntryScreen(
                     }
                 )
 
-                // Knowledge Connections Section
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("KNOWLEDGE LINKS", style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textSecondary)
-                        TextButton(
-                            onClick = { 
-                                referenceSelectorViewModel.clearSelection()
-                                showReferenceSelector = true 
-                            }, 
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Icon(Icons.Default.AddLink, null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Add connection")
-                        }
-                    }
-                    if (opinionSelectedReferences.isNotEmpty()) {
-                        Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
-                            opinionSelectedReferences.forEach { ref ->
-                                val text = when (ref) {
-                                    is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
-                                    is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
-                                    is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
-                                }
-                                InputChip(
-                                    selected = true,
-                                    onClick = { opinionSelectedReferences = opinionSelectedReferences.filter { it.id != ref.id } },
-                                    label = { Text(text, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
-                                    trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
-                                    modifier = Modifier.padding(end = 8.dp),
-                                    colors = InputChipDefaults.inputChipColors(
-                                        containerColor = GrayMatterTheme.colors.surfaceInput,
-                                        labelColor = GrayMatterTheme.colors.textPrimary,
-                                        trailingIconColor = GrayMatterTheme.colors.neutral500
-                                    ),
-                                    border = null
-                                )
-                            }
-                        }
-                    } else {
-                        Text("No specific links added.", color = GrayMatterTheme.colors.neutral600, style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-
                 // Confidence Level Section
                 ConfidenceLevelSection(
                     confidence = confidenceScore,
                     onConfidenceChange = { draftingViewModel.updateConfidence(it) },
                     accentColor = entryAccentColor
                 )
+
+                // Unified Connections Dropdown
+                var isConnectionsExpanded by remember { mutableStateOf(false) }
+                var showTagConsole by remember { mutableStateOf(false) }
+
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { isConnectionsExpanded = !isConnectionsExpanded }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "CONNECTIONS",
+                            style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold),
+                            color = GrayMatterTheme.colors.textSecondary
+                        )
+                        Icon(
+                            if (isConnectionsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            null,
+                            tint = GrayMatterTheme.colors.neutral500
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = isConnectionsExpanded,
+                        enter = expandVertically(),
+                        exit = shrinkVertically()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(GrayMatterTheme.colors.surfaceInput)
+                                .border(1.dp, GrayMatterTheme.colors.surfaceBorder, RoundedCornerShape(12.dp))
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            if (opinionSelectedTags.isEmpty() && opinionSelectedReferences.isEmpty()) {
+                                Text("No connections added.", color = GrayMatterTheme.colors.neutral600, style = MaterialTheme.typography.bodyMedium)
+                            } else {
+                                @OptIn(ExperimentalLayoutApi::class)
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    opinionSelectedTags.forEach { tag ->
+                                        InputChip(
+                                            selected = true,
+                                            onClick = { opinionSelectedTags = opinionSelectedTags.filter { it.id != tag.id } },
+                                            label = { Text(tag.name, style = MaterialTheme.typography.labelSmall) },
+                                            leadingIcon = { Icon(Icons.Default.Sell, null, modifier = Modifier.size(14.dp)) },
+                                            trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
+                                            colors = InputChipDefaults.inputChipColors(
+                                                containerColor = GrayMatterTheme.colors.surface,
+                                                labelColor = GrayMatterTheme.colors.textPrimary,
+                                                leadingIconColor = GrayMatterTheme.colors.neutral500,
+                                                trailingIconColor = GrayMatterTheme.colors.neutral500
+                                            ),
+                                            border = InputChipDefaults.inputChipBorder(
+                                                enabled = true,
+                                                selected = true,
+                                                borderColor = GrayMatterTheme.colors.surfaceBorder
+                                            )
+                                        )
+                                    }
+                                    opinionSelectedReferences.forEach { ref ->
+                                        val text = when (ref) {
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                                        }
+                                        InputChip(
+                                            selected = true,
+                                            onClick = { opinionSelectedReferences = opinionSelectedReferences.filter { it.id != ref.id } },
+                                            label = { Text(text, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                            leadingIcon = { Icon(Icons.Default.Link, null, modifier = Modifier.size(14.dp)) },
+                                            trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
+                                            colors = InputChipDefaults.inputChipColors(
+                                                containerColor = GrayMatterColors.TypeLink.copy(alpha = 0.1f),
+                                                labelColor = GrayMatterColors.TypeLink,
+                                                leadingIconColor = GrayMatterColors.TypeLink,
+                                                trailingIconColor = GrayMatterColors.TypeLink
+                                            ),
+                                            border = InputChipDefaults.inputChipBorder(
+                                                enabled = true,
+                                                selected = true,
+                                                borderColor = GrayMatterColors.TypeLink.copy(alpha = 0.3f)
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Button(
+                                    onClick = { showTagConsole = true },
+                                    colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary.copy(alpha = 0.1f), contentColor = GrayMatterTheme.colors.primary)
+                                ) {
+                                    Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Add Tag")
+                                }
+                                Button(
+                                    onClick = { 
+                                        referenceSelectorViewModel.clearSelection()
+                                        showReferenceSelector = true 
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.TypeLink.copy(alpha = 0.1f), contentColor = GrayMatterColors.TypeLink)
+                                ) {
+                                    Icon(Icons.Default.Link, null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Add Link")
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (showTagConsole) {
+                    com.example.graymatter.android.ui.components.TagConsoleSheet(
+                        viewModel = tagViewModel,
+                        onDismissRequest = { showTagConsole = false },
+                        onTagSelected = { tag ->
+                            showTagConsole = false
+                            if (!opinionSelectedTags.any { it.id == tag.id }) {
+                                opinionSelectedTags = opinionSelectedTags + tag
+                            }
+                        }
+                    )
+                }
         
         // Save Button logic
         val isLinkValid = entryType == DraftingViewModel.EntryType.LINK && urlValue.isNotBlank()

@@ -144,7 +144,7 @@ fun TagManagementScreen(
                                 )
                                 if (result == SnackbarResult.ActionPerformed) {
                                     lastDeletedTag?.let { deleted ->
-                                        tagViewModel.createTag(deleted.name)
+                                        scope.launch { tagViewModel.createTag(deleted.name) }
                                     }
                                 }
                             }
@@ -159,7 +159,7 @@ fun TagManagementScreen(
             CreateTagDialog(
                 onDismiss = { showCreateDialog = false },
                 onCreate = { name ->
-                    tagViewModel.createTag(name)
+                    scope.launch { tagViewModel.createTag(name) }
                     showCreateDialog = false
                 }
             )

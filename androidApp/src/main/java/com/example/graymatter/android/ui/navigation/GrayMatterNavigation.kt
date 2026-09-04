@@ -437,6 +437,7 @@ fun GrayMatterNavigation(
                 templateViewModel = templateViewModel,
                 draftingViewModel = draftingViewModel,
                 referenceSelectorViewModel = referenceSelectorViewModel,
+                tagViewModel = tagViewModel,
                 preSelectedTopicId = topicId,
                 sharedUri = initialSharedUri,
                 onNavigateBack = { navController.popBackStack() },

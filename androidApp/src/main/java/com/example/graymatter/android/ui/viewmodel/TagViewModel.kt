@@ -18,19 +18,18 @@ class TagViewModel(
     val allTags: StateFlow<List<Tag>> = tagRepository.allTagsStream()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
 
-    fun createTag(name: String) {
+    suspend fun createTag(name: String): Tag? {
         val trimmed: String = name.trim()
-        if (trimmed.isBlank()) return
-        viewModelScope.launch {
-            val existing: Tag? = tagRepository.getTagByName(trimmed)
-            if (existing != null) return@launch
-            val tag = Tag(
-                id = UUID.randomUUID().toString(),
-                name = trimmed,
-                createdAt = System.currentTimeMillis()
-            )
-            tagRepository.insertTag(tag)
-        }
+        if (trimmed.isBlank()) return null
+        val existing: Tag? = tagRepository.getTagByName(trimmed)
+        if (existing != null) return existing
+        val tag = Tag(
+            id = UUID.randomUUID().toString(),
+            name = trimmed,
+            createdAt = System.currentTimeMillis()
+        )
+        tagRepository.insertTag(tag)
+        return tag
     }
 
     fun renameTag(id: String, newName: String) {
