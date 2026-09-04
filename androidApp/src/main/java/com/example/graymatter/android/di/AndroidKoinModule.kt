@@ -40,6 +40,8 @@ val androidViewModelModule = module {
     
     viewModel { LookupsViewModel(get()) }
     
+    viewModel { com.example.graymatter.android.ui.viewmodel.TagViewModel(get()) }
+    
     viewModel { com.example.graymatter.android.ui.library.LibrarySearchViewModel(androidContext() as android.app.Application, get(), get(), get(), get()) }
     
     viewModel { com.example.graymatter.android.ui.viewmodel.BackupViewModel(androidContext() as android.app.Application) }

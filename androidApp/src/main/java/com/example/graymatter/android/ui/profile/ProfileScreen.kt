@@ -33,6 +33,7 @@ fun ProfileScreen(
     onNavigateToBackupSettings: () -> Unit = {},
     onNavigateToSecuritySettings: () -> Unit = {},
     onNavigateToAppearanceSettings: () -> Unit = {},
+    onNavigateToTags: () -> Unit = {},
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -76,6 +77,13 @@ fun ProfileScreen(
                     title = "Lookup Management",
                     tint = GrayMatterTheme.colors.primary,
                     onClick = onNavigateToLookups
+                )
+                
+                SettingsButton(
+                    icon = Icons.Default.Style,
+                    title = "Tag Management",
+                    tint = GrayMatterTheme.colors.primary,
+                    onClick = onNavigateToTags
                 )
                 
                 SettingsButton(

@@ -443,3 +443,78 @@ WHERE resourceId NOT IN (SELECT id FROM resourceEntity);
 deleteOrphanReadingSettings:
 DELETE FROM readingSettingsEntity
 WHERE resourceId NOT IN (SELECT id FROM resourceEntity);
+
+-- 11. Tag Table
+CREATE TABLE tagEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    createdAt INTEGER NOT NULL
+);
+
+-- 12. Entry-Tag Junction Table
+CREATE TABLE entryTagEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    entryId TEXT NOT NULL,
+    entryType TEXT NOT NULL,
+    tagId TEXT NOT NULL,
+    createdAt INTEGER NOT NULL,
+    FOREIGN KEY (tagId) REFERENCES tagEntity(id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_entry_tag_unique ON entryTagEntity(entryId, tagId);
+
+insertTag:
+INSERT OR REPLACE INTO tagEntity(id, name, createdAt)
+VALUES (?, ?, ?);
+
+getAllTags:
+SELECT * FROM tagEntity ORDER BY name ASC;
+
+getTagById:
+SELECT * FROM tagEntity WHERE id = ?;
+
+getTagByName:
+SELECT * FROM tagEntity WHERE name = ? COLLATE NOCASE LIMIT 1;
+
+updateTagName:
+UPDATE tagEntity SET name = ? WHERE id = ?;
+
+deleteTag:
+DELETE FROM tagEntity WHERE id = ?;
+
+searchTags:
+SELECT * FROM tagEntity WHERE name LIKE '%' || ? || '%' ORDER BY name ASC;
+
+insertEntryTag:
+INSERT OR REPLACE INTO entryTagEntity(id, entryId, entryType, tagId, createdAt)
+VALUES (?, ?, ?, ?, ?);
+
+getTagsByEntryId:
+SELECT tagEntity.* FROM tagEntity
+INNER JOIN entryTagEntity ON tagEntity.id = entryTagEntity.tagId
+WHERE entryTagEntity.entryId = ?
+ORDER BY tagEntity.name ASC;
+
+getEntriesByTagId:
+SELECT entryTagEntity.entryId, entryTagEntity.entryType FROM entryTagEntity
+WHERE entryTagEntity.tagId = ?
+ORDER BY entryTagEntity.createdAt DESC;
+
+getEntryCountByTagId:
+SELECT COUNT(*) FROM entryTagEntity WHERE tagId = ?;
+
+deleteEntryTag:
+DELETE FROM entryTagEntity WHERE entryId = ? AND tagId = ?;
+
+deleteEntryTagsByEntryId:
+DELETE FROM entryTagEntity WHERE entryId = ?;
+
+deleteEntryTagsByTagId:
+DELETE FROM entryTagEntity WHERE tagId = ?;
+
+deleteOrphanEntryTags:
+DELETE FROM entryTagEntity
+WHERE entryId NOT IN (
+    SELECT id FROM opinionEntity
+    UNION SELECT id FROM bookmarkEntity
+);

@@ -41,6 +41,7 @@ import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
 import com.example.graymatter.android.ui.profile.ProfileScreen
 import com.example.graymatter.android.ui.template.TemplatesManagementScreen
+import com.example.graymatter.android.ui.tags.TagManagementScreen
 import com.example.graymatter.android.ui.trash.RecentlyDeletedScreen
 import com.example.graymatter.android.util.FileUtils
 import kotlinx.coroutines.launch
@@ -62,6 +63,7 @@ fun GrayMatterNavigation(
     val viewModel: GrayMatterViewModel = koinViewModel()
     val trashViewModel: com.example.graymatter.android.ui.viewmodel.TrashViewModel = koinViewModel()
     val templateViewModel: com.example.graymatter.android.ui.viewmodel.TemplateViewModel = koinViewModel()
+    val tagViewModel: com.example.graymatter.android.ui.viewmodel.TagViewModel = koinViewModel()
     val homeViewModel: com.example.graymatter.android.ui.viewmodel.HomeViewModel = koinViewModel()
     val librarySearchViewModel: com.example.graymatter.android.ui.library.LibrarySearchViewModel = koinViewModel()
     val draftingViewModel: com.example.graymatter.android.ui.viewmodel.DraftingViewModel = koinViewModel()
@@ -319,6 +321,16 @@ fun GrayMatterNavigation(
                 onNavigateToAppearanceSettings = {
                     navController.navigate(NavigationDestination.AppearanceSettings.route)
                 },
+                onNavigateToTags = {
+                    navController.navigate(NavigationDestination.TagManagement.route)
+                },
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = NavigationDestination.TagManagement.route) {
+            TagManagementScreen(
+                tagViewModel = tagViewModel,
                 onBackClick = { navController.popBackStack() }
             )
         }

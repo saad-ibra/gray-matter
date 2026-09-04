@@ -16,6 +16,7 @@ val sharedModule = module {
     single<OpinionRepository> { DefaultOpinionRepository(get(), get()) }
     single<TopicRepository> { DefaultTopicRepository(get(), get()) }
     single<ReferenceLinkRepository> { DefaultReferenceLinkRepository(get(), get()) }
+    single<TagRepository> { DefaultTagRepository(get(), get()) }
     
     single<ResourceEntryRepository> { 
         DefaultResourceEntryRepository(get(), get(), get(), get(), get()) 

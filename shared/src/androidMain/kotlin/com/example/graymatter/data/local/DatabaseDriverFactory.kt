@@ -22,7 +22,7 @@ actual class DatabaseDriverFactory(
         val driver = AndroidSqliteDriver(
             schema = GrayMatterDatabase.Schema,
             context = context,
-            name = "graymatter_v14_enc.db",
+            name = "graymatter_v15_enc.db",
             factory = factory,
             callback = object : AndroidSqliteDriver.Callback(GrayMatterDatabase.Schema) {
                 override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
