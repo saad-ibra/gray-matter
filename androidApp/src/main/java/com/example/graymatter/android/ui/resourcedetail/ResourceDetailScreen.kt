@@ -1994,7 +1994,7 @@ private fun OpinionTimelineItem(
                                 colors = AssistChipDefaults.assistChipColors(
                                     containerColor = GrayMatterTheme.colors.surfaceCard,
                                     labelColor = GrayMatterTheme.colors.textPrimary,
-                                    leadingIconContentColor = GrayMatterColors.TypeLink
+                                    leadingIconContentColor = GrayMatterTheme.colors.textPrimary
                                 ),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, GrayMatterTheme.colors.surfaceBorder)
                             )
@@ -2018,7 +2018,7 @@ private fun OpinionTimelineItem(
                                 colors = AssistChipDefaults.assistChipColors(
                                     containerColor = GrayMatterTheme.colors.surfaceCard,
                                     labelColor = GrayMatterTheme.colors.textPrimary,
-                                    leadingIconContentColor = GrayMatterColors.CustomizedAccent
+                                    leadingIconContentColor = GrayMatterTheme.colors.textPrimary
                                 ),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, GrayMatterTheme.colors.surfaceBorder)
                             )
@@ -2387,7 +2387,7 @@ private fun OpinionEditDialog(
                                 Icon(
                                     Icons.Default.AddAPhoto, 
                                     "Add Image", 
-                                    tint = GrayMatterColors.TypeVisual, 
+                                    tint = com.example.graymatter.android.ui.theme.GrayMatterTheme.colors.textPrimary, 
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -2430,7 +2430,7 @@ private fun OpinionEditDialog(
                                 .size(32.dp)
                                 .background(Color.Black.copy(alpha = 0.6f), CircleShape)
                         ) {
-                            Icon(Icons.Default.Close, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Close, null, tint = com.example.graymatter.android.ui.theme.GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(16.dp))
                         }
                     }
 

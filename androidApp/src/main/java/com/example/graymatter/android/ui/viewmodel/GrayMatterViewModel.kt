@@ -75,7 +75,7 @@ class GrayMatterViewModel(
     /**
      * Adds a new opinion to an existing resource entry.
      */
-    fun addOpinion(resourceEntryId: String, opinionText: String, confidence: Int, createdAt: Long? = null, imagePath: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
+    fun addOpinion(resourceEntryId: String, opinionText: String, confidence: Int, createdAt: Long? = null, imagePath: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(), tags: List<com.example.graymatter.domain.Tag> = emptyList()) {
         viewModelScope.launch {
             val now = Clock.System.now().toEpochMilliseconds()
             val finalCreatedAt = createdAt ?: now
@@ -91,6 +91,10 @@ class GrayMatterViewModel(
             )
             opinionRepository.saveOpinion(opinion)
             
+            tags.forEach { tag ->
+                tagRepository.addTagToEntry(generateUuid(), opinion.id, "OPINION", tag.id, now)
+            }
+            
             autoLinkService.syncLinks(opinion.id, com.example.graymatter.domain.ReferenceType.OPINION, opinionText, referenceLinks)
             
             // Update resource entry metadata
@@ -101,7 +105,7 @@ class GrayMatterViewModel(
     /**
      * Updates an existing opinion.
      */
-    fun updateOpinion(opinionId: String, text: String, confidence: Int, createdAt: Long, imagePath: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()) {
+    fun updateOpinion(opinionId: String, text: String, confidence: Int, createdAt: Long, imagePath: String? = null, referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(), tags: List<com.example.graymatter.domain.Tag> = emptyList()) {
         viewModelScope.launch {
             val now = Clock.System.now().toEpochMilliseconds()
             val existing = opinionRepository.getOpinionById(opinionId) ?: return@launch
@@ -113,6 +117,13 @@ class GrayMatterViewModel(
                 updatedAt = now
             )
             opinionRepository.updateOpinion(updated)
+            
+            // Remove old tags and add new ones
+            tagRepository.removeAllTagsFromEntry(opinionId)
+            tags.forEach { tag ->
+                tagRepository.addTagToEntry(generateUuid(), opinionId, "OPINION", tag.id, now)
+            }
+            
             autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, text, referenceLinks)
         }
     }

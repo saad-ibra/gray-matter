@@ -532,11 +532,11 @@ fun GrayMatterNavigation(
                 onUpdateDescription = { desc, refs ->
                     viewModel.updateResourceEntryDescription(resourceEntryId, desc, refs)
                 },
-                onAddOpinion = { text, confidence, selectedLinks, imagePath ->
-                    viewModel.addOpinion(resourceEntryId, text, confidence, imagePath = imagePath, referenceLinks = selectedLinks)
+                onAddOpinion = { text, confidence, selectedLinks, tags, imagePath ->
+                    viewModel.addOpinion(resourceEntryId, text, confidence, imagePath = imagePath, referenceLinks = selectedLinks, tags = tags)
                 },
-                onUpdateOpinion = { opinionId, text, confidence, date, selectedLinks, imagePath ->
-                    viewModel.updateOpinion(opinionId, text, confidence, date, imagePath = imagePath, referenceLinks = selectedLinks)
+                onUpdateOpinion = { opinionId, text, confidence, date, selectedLinks, tags, imagePath ->
+                    viewModel.updateOpinion(opinionId, text, confidence, date, imagePath = imagePath, referenceLinks = selectedLinks, tags = tags)
                 },
                 onDeleteOpinion = { opinionId ->
                     viewModel.deleteOpinion(opinionId)

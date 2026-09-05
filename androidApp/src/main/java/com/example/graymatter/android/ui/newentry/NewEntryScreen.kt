@@ -1142,7 +1142,7 @@ private fun CustomizedOpinionSection(
                     Icon(
                         Icons.Default.AddAPhoto, 
                         "Add Image", 
-                        tint = GrayMatterColors.TypeVisual, 
+                        tint = com.example.graymatter.android.ui.theme.GrayMatterTheme.colors.textPrimary, 
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -1180,7 +1180,7 @@ private fun CustomizedOpinionSection(
                         .size(32.dp)
                         .background(Color.Black.copy(alpha = 0.6f), CircleShape)
                 ) {
-                    Icon(Icons.Default.Close, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Close, null, tint = com.example.graymatter.android.ui.theme.GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(16.dp))
                 }
             }
 

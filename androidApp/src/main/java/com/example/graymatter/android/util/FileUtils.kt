@@ -148,7 +148,15 @@ object FileUtils {
                 setDataAndType(uri, getMimeType(filePath))
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(intent, "Open with"))
+            val chooser = Intent.createChooser(intent, "Open with")
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                val ownActivity = android.content.ComponentName(
+                    context,
+                    com.example.graymatter.android.ui.MainActivity::class.java
+                )
+                chooser.putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ownActivity))
+            }
+            context.startActivity(chooser)
         } catch (e: Exception) {
             Log.e(TAG, "Cannot open file", e)
             Toast.makeText(context, "Cannot open file: ${e.message}", Toast.LENGTH_SHORT).show()

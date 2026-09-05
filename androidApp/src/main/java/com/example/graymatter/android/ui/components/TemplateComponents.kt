@@ -38,7 +38,7 @@ fun TemplateSelector(
             Icon(
                 Icons.Default.DashboardCustomize,
                 contentDescription = "Template",
-                tint = GrayMatterColors.TypeTemplate,
+                tint = GrayMatterTheme.colors.textPrimary,
                 modifier = Modifier.size(20.dp)
             )
         }

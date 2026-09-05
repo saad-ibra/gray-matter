@@ -1078,7 +1078,7 @@ fun KnowledgeGraphScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.FilterList,
+                            imageVector = Icons.Default.Close,
                             contentDescription = null,
                             tint = if (showBottomFilters) GrayMatterColors.Primary else GrayMatterColors.Neutral400,
                             modifier = Modifier.size(12.dp)
