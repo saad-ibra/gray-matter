@@ -46,48 +46,58 @@ Every resource you save is a starting point, not a destination. Relatrix provide
 
 ---
 
-## Feature Overview
+## Core Concepts
 
+Relatrix is built around a few simple concepts that work together.
+
+### 1. Topics & Resources
+
+| Concept | Description |
+|:---|:---|
+| **Topic** | A collection of related resources and a Topic Overview. |
+| **Resource** | Source material added to a Topic. Supports links, files of any type, and Markdown. |
+
+> **PDFs:** When a PDF is added as a resource, it can be opened directly in the built-in PDF Reader.
+
+### 2. Notes, Tags & Links
+
+| Feature | Description |
+|:---|:---|
+| **Topic Overview** | A dedicated note for each Topic. |
+| **Resource Overview** | A dedicated note for each Resource. |
+| **Notes Editor** | Markdown editor for Topic Overviews, Resource Overviews, and Markdown resources. |
+| **Tags** | Tags attached to individual entries for organizing related ideas. |
+| **Knowledge Links** | `[[wiki-links]]` connecting Topics, Resources, Notes, and timeline entries. |
+
+### 3. Timeline of Resources
+
+Every resource has a unified timeline to track your reflections and interactions with it.
+
+#### General Entries
+
+| Entry Type | Description |
+|:---|:---|
+| **Opinion** | A timestamped personal reflection with a confidence score. |
+| **Template** | Structured forms for guided reflection. |
+| **Visual Note (Vision)** | A visual capture such as a photo, sketch, or screenshot with an optional caption. |
+
+#### PDF Entries
+
+These entries are specific to PDF resources.
+
+| Entry Type | Description |
+|:---|:---|
+| **Annotation** | A highlight or inline note anchored to a specific text passage. |
+| **Bookmark** | A saved point in the document, with additional reading context. |
+| **Dictionary Entry** | A definition or lookup for a specific phrase or term. |
+
+---
 <br/>
 
 ![Feature Strip](screenshots/infographics/feature_strip.png)
 
 <br/>
 
-### Topic Library
-Organise your intellectual world into **Topics**: curated folders of resources. You can visually organize your topics using a fully customizable color picker (with suggested colors, a custom HSV wheel, HEX input, and recently used colors). Each topic has an overview, holds web links, PDFs, markdown notes (and absolutely any kind of file you want to add as a resource), and surfaces all connected resources at a glance. Full‑text offline search across everything.
-
-### Multi‑Modal Resource Timeline
-Every resource lives in a rich **Timeline** view: a single chronological feed that unifies your reflections, annotations, and visual captures. Watch your thinking evolve from first impression to deep mastery through a diverse range of entry types.
-
-### Reflection‑First Entry
-When you save a PDF, web page, markdown note, or any other kind of file, Relatrix encourages you to capture an **Opinion** immediately. This deliberate friction prevents "hoarding" and ensures you actually process what you consume.
-
-### Knowledge Links
-While writing any entry, reference other resources, topics, or insights using `[[double‑bracket]]` wiki‑style links. You can seamlessly attach these knowledge links and custom tags to your Timeline entries using a unified connections dropdown. These cross‑references form a bidirectional backlink graph — the raw data for Relatrix.
-
----
-
-## PDF Reader & Annotation 
-
-The built‑in PDF reader is a workspace for active reading. You can:
-- **Flip pages** with smooth gestures and multiple navigation methods.
-- **Highlight passages** and instantly turn them into **Annotations** (contextual snapshots) with your own added thoughts.
-- **Create Bookmarks** that store not just a page number, but your confidence level and a summary of that section.
-- **Visual Captures (Vision)**: Attach photos of handwritten notes or diagrams directly to the document timeline.
-- **Dictionary Lookups**: Mark specific terms to build a global glossary across your entire library.
-
----
-
-## Note Editor 
-
-A minimalist markdown canvas designed for clarity. Features include:
-- **Real-time markdown preview** and a quick formatting toolbar.
-- **Multi-modal sidebar**: View attached images, sketches, or screenshots alongside your text notes.
-- **Custom Templates**: Use structured forms (Socratic questioning, Cornell notes, etc.) to guide your reflections.
-- **Export** to PDF, Markdown, or plain‑text.
-
----
 
 ## Relatrix — 3D Knowledge Discovery
 
@@ -163,39 +173,6 @@ cd relatrix
 
 ---
 
-## Core Concepts
-
-Relatrix is built around diverse ways of organizing and capturing thoughts.
-
-### 1. Topics & Resources
-
-| Concept | Description |
-|:---|:---|
-| **Topic** | Curated folders containing overviews and related resources. |
-| **Resource** | Source material added to a topic. Supported types include simple URLs, the built-in PDF Reader, and Markdown notes. |
-
-### 2. Timeline of Resources
-
-Every resource features a unified timeline to track your reflections.
-
-| Entry Type | Description |
-|:---|:---|
-| **Opinion** | A timestamped personal reflection with a confidence score. |
-| **Annotation** | A highlight or inline note anchored to a specific text passage. |
-| **Visual Note (Vision)** | A visual capture (photo, sketch, screenshot) with an attached caption. |
-| **Bookmark** | A milestone in your reading journey, often containing a summary. |
-| **Dictionary Entry** | A definition or lookup for a specific phrase, synced across the app. |
-| **Template** | Structured forms with headings to fill (e.g., Summary, Key Takeaway). |
-
-### 3. Knowledge Links & Tags
-
-| Feature | Description |
-|:---|:---|
-| **Knowledge Link** | A `[[wiki-link]]` that creates a bidirectional edge between any concepts. Supported almost everywhere: Topic Overviews, Resource Descriptions, Markdown Notes, and all Timeline Items (Opinions, Annotations, Templates, etc.). |
-| **Tags** | Custom labels attached to your resources and timeline entries. Manage, explore, and filter your resources across all topics using the dedicated Tag Management Hub. |
-
----
-
 ## Roadmap
 
 - [x] Multi‑modal resource entry with confidence scoring
@@ -206,9 +183,6 @@ Every resource features a unified timeline to track your reflections.
 - [x] PDF reader with text selection and annotation
 - [x] Dark mode
 - [ ] iOS app (SwiftUI) — *in development*
-- [ ] iCloud / local sync between devices
-- [ ] AI‑assisted reflection prompts *(planned)*
-- [ ] Web clipper browser extension *(planned)*
 
 ---
 

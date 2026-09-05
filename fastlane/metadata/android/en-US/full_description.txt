@@ -1,10 +1,11 @@
 Most knowledge-management tools are glorified bookmarks. You gather articles, highlight text, save links, and then forget everything. Relatrix changes that. Built on a single, uncompromising philosophy: Information only becomes knowledge when you engage with it through active reflection. Every resource you save is a starting point, not a destination. Relatrix provides a multi-modal toolkit to break down, question, and connect information across diverse formats.
 
 Feature Overview:
-- Topic Library: Organise your intellectual world into curated folders of resources. You can add web links, PDFs, markdown notes, and absolutely any kind of file as a resource.
+- Topic Library: Organise your intellectual world into curated folders of resources. Visually organize topics with a fully customizable color picker. You can add web links, PDFs, markdown notes, and absolutely any kind of file as a resource.
 - Multi-Modal Resource Timeline: A single chronological feed that unifies your reflections, annotations, and visual captures.
+- Tag Management Hub: Manage, explore, and filter your resources across all topics using custom tags.
 - Reflection-First Entry: When you save a PDF, web page, markdown note, or any other kind of file, Relatrix encourages you to capture an Opinion immediately.
-- Knowledge Links: Cross-reference other resources, topics, or insights using [[double-bracket]] wiki-style links.
+- Knowledge Links & Tags: Cross-reference other resources, topics, or insights using [[double-bracket]] wiki-style links and organize entries with custom tags using a unified dropdown.
 - PDF Reader & Annotation: Flip pages, highlight passages, create bookmarks, and perform web lookups.
 - Note Editor: A minimalist markdown canvas designed for clarity.
 - Relatrix 3D Knowledge Discovery: A live, physics-simulated 3D graph that renders the connective tissue of your knowledge base.
