@@ -500,6 +500,12 @@ SELECT entryTagEntity.entryId, entryTagEntity.entryType FROM entryTagEntity
 WHERE entryTagEntity.tagId = ?
 ORDER BY entryTagEntity.createdAt DESC;
 
+getOpinionsByTagId:
+SELECT opinionEntity.* FROM opinionEntity
+INNER JOIN entryTagEntity ON opinionEntity.id = entryTagEntity.entryId
+WHERE entryTagEntity.tagId = ? AND entryTagEntity.entryType = 'OPINION' AND opinionEntity.isDeleted = 0
+ORDER BY entryTagEntity.createdAt DESC;
+
 getEntryCountByTagId:
 SELECT COUNT(*) FROM entryTagEntity WHERE tagId = ?;
 

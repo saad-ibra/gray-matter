@@ -24,7 +24,7 @@ val androidAppModule = module {
 }
 
 val androidViewModelModule = module {
-    viewModel { GrayMatterViewModel(get(), get(), get(), get(), get(), get()) }
+    viewModel { GrayMatterViewModel(get(), get(), get(), get(), get(), get(), get()) }
     
     viewModel { TrashViewModel(get(), get(), get(), get(), get()) }
     
@@ -32,7 +32,7 @@ val androidViewModelModule = module {
     
     viewModel { com.example.graymatter.android.ui.viewmodel.HomeViewModel(get(), get()) }
     
-    viewModel { com.example.graymatter.android.ui.viewmodel.DraftingViewModel(get(), get()) }
+    viewModel { com.example.graymatter.android.ui.viewmodel.DraftingViewModel(get(), get(), get()) }
     
     viewModel { FileViewerViewModel(get(), get(), get(), get(), get()) }
     
@@ -40,7 +40,7 @@ val androidViewModelModule = module {
     
     viewModel { LookupsViewModel(get()) }
     
-    viewModel { com.example.graymatter.android.ui.viewmodel.TagViewModel(get()) }
+    viewModel { com.example.graymatter.android.ui.viewmodel.TagViewModel(get(), get()) }
     
     viewModel { com.example.graymatter.android.ui.library.LibrarySearchViewModel(androidContext() as android.app.Application, get(), get(), get(), get()) }
     

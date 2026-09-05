@@ -14,6 +14,11 @@ interface OpinionRepository {
     fun getOpinionsByItemId(itemId: String): Flow<List<Opinion>>
     
     /**
+     * Get opinions for a specific tag.
+     */
+    fun getOpinionsByTagId(tagId: String): Flow<List<Opinion>>
+    
+    /**
      * Get an opinion by its ID.
      */
     suspend fun getOpinionById(id: String): Opinion?

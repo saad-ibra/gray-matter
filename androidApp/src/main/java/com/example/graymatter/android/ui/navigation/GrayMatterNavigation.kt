@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.graymatter.android.ui.profile.ProfileScreen
 import com.example.graymatter.android.ui.template.TemplatesManagementScreen
 import com.example.graymatter.android.ui.tags.TagManagementScreen
+import com.example.graymatter.android.ui.tags.TagEntriesScreen
 import com.example.graymatter.android.ui.trash.RecentlyDeletedScreen
 import com.example.graymatter.android.util.FileUtils
 import kotlinx.coroutines.launch
@@ -331,7 +332,30 @@ fun GrayMatterNavigation(
         composable(route = NavigationDestination.TagManagement.route) {
             TagManagementScreen(
                 tagViewModel = tagViewModel,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onTagClick = { tagId ->
+                    navController.navigate(NavigationDestination.TagEntries.buildRoute(tagId))
+                }
+            )
+        }
+        
+        composable(
+            route = NavigationDestination.TagEntries.route,
+            arguments = listOf(
+                navArgument(NavigationDestination.TagEntries.ARG_TAG_ID) {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val tagId = backStackEntry.arguments?.getString(NavigationDestination.TagEntries.ARG_TAG_ID) ?: return@composable
+            TagEntriesScreen(
+                tagId = tagId,
+                tagViewModel = tagViewModel,
+                homeViewModel = homeViewModel,
+                onBackClick = { navController.popBackStack() },
+                onItemClick = { resourceEntryId ->
+                    navController.navigate(NavigationDestination.ResourceDetail.buildRoute(resourceEntryId))
+                }
             )
         }
 
@@ -569,7 +593,11 @@ fun GrayMatterNavigation(
                     shareText(context, markdown, "Knowledge Reflection")
                 },
                 onLoadLinks = { opinionId -> viewModel.getLinksForOpinion(opinionId) },
+                onLoadTags = { opinionId -> viewModel.getTagsForOpinion(opinionId) },
                 onLoadResourceLinks = { resourceId -> viewModel.getLinksForResource(resourceId) },
+                onNavigateToTag = { tagId ->
+                    navController.navigate(NavigationDestination.TagEntries.buildRoute(tagId))
+                },
                 onViewInGraphClick = { resourceId -> 
                     navController.navigate(NavigationDestination.KnowledgeGraph.buildRoute(resourceId)) 
                 },

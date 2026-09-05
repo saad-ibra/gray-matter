@@ -24,6 +24,12 @@ class DefaultOpinionRepository(
         .mapToList(dispatcher)
         .map { entities: List<OpinionEntity> -> entities.map { it.toOpinion() } }
     
+    override fun getOpinionsByTagId(tagId: String): Flow<List<Opinion>> = queries
+        .getOpinionsByTagId(tagId)
+        .asFlow()
+        .mapToList(dispatcher)
+        .map { entities: List<OpinionEntity> -> entities.map { it.toOpinion() } }
+    
     override suspend fun getOpinionById(id: String): Opinion? = withContext(dispatcher) {
         queries.getOpinionById(id).executeAsOneOrNull()?.toOpinion()
     }

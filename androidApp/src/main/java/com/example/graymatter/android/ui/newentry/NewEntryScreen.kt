@@ -719,7 +719,8 @@ fun NewEntryScreen(
                             description = finalDesc,
                             topicId = preSelectedTopicId,
                             referenceLinks = opinionSelectedReferences,
-                            imagePath = currentImagePath
+                            imagePath = currentImagePath,
+                            tags = opinionSelectedTags
                         )
                         DraftingViewModel.EntryType.FILE -> {
                             val finalTitle = if (title.isNotBlank() && originalFileName != null && !title.contains(".")) {
@@ -737,7 +738,8 @@ fun NewEntryScreen(
                                 description = finalDesc,
                                 topicId = preSelectedTopicId,
                                 referenceLinks = opinionSelectedReferences,
-                                imagePath = currentImagePath
+                                imagePath = currentImagePath,
+                                tags = opinionSelectedTags
                             )
                         }
                         DraftingViewModel.EntryType.NOTE -> {
@@ -752,7 +754,8 @@ fun NewEntryScreen(
                                 topicId = preSelectedTopicId,
                                 referenceLinks = noteSelectedReferences,
                                 opinionReferenceLinks = opinionSelectedReferences,
-                                imagePath = currentImagePath
+                                imagePath = currentImagePath,
+                                tags = opinionSelectedTags
                             )
                         }
                     }

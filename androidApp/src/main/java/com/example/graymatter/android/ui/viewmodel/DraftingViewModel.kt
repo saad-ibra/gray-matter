@@ -20,7 +20,8 @@ import java.util.UUID
  */
 class DraftingViewModel(
     private val resourceEntryRepository: ResourceEntryRepository,
-    private val autoLinkService: AutoLinkService
+    private val autoLinkService: AutoLinkService,
+    private val tagRepository: com.example.graymatter.data.TagRepository
 ) : ViewModel() {
 
     enum class EntryType { LINK, FILE, NOTE }
@@ -84,7 +85,8 @@ class DraftingViewModel(
         description: String? = null, 
         topicId: String? = null, 
         referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
-        imagePath: String? = null
+        imagePath: String? = null,
+        tags: List<com.example.graymatter.domain.Tag> = emptyList()
     ): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
@@ -113,6 +115,16 @@ class DraftingViewModel(
         
         autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, opinionText, referenceLinks)
         
+        tags.forEach { tag ->
+            tagRepository.addTagToEntry(
+                id = generateUuid(),
+                entryId = opinionId,
+                entryType = "OPINION",
+                tagId = tag.id,
+                createdAt = now
+            )
+        }
+        
         return resourceEntryId
     }
 
@@ -129,7 +141,8 @@ class DraftingViewModel(
         topicId: String? = null, 
         referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
         opinionReferenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
-        imagePath: String? = null
+        imagePath: String? = null,
+        tags: List<com.example.graymatter.domain.Tag> = emptyList()
     ): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
@@ -166,6 +179,16 @@ class DraftingViewModel(
         // Save opinion-level links as OPINION type (extracted from first opinion)
         autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, opinionText, opinionReferenceLinks)
         
+        tags.forEach { tag ->
+            tagRepository.addTagToEntry(
+                id = generateUuid(),
+                entryId = opinionId,
+                entryType = "OPINION",
+                tagId = tag.id,
+                createdAt = now
+            )
+        }
+        
         return resourceEntryId
     }
     
@@ -183,7 +206,8 @@ class DraftingViewModel(
         description: String? = null,
         topicId: String? = null, 
         referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
-        imagePath: String? = null
+        imagePath: String? = null,
+        tags: List<com.example.graymatter.domain.Tag> = emptyList()
     ): String? {
         _isImporting.value = true
         return try {
@@ -223,6 +247,16 @@ class DraftingViewModel(
             }
             
             autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, opinionText, referenceLinks)
+
+            tags.forEach { tag ->
+                tagRepository.addTagToEntry(
+                    id = generateUuid(),
+                    entryId = opinionId,
+                    entryType = "OPINION",
+                    tagId = tag.id,
+                    createdAt = now
+                )
+            }
 
             _isImporting.value = false
             resourceEntryId

@@ -26,7 +26,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun TagManagementScreen(
     tagViewModel: TagViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onTagClick: (String) -> Unit = {}
 ) {
     val tags: List<Tag> by tagViewModel.allTags.collectAsState()
     var showCreateDialog: Boolean by remember { mutableStateOf(false) }
@@ -132,6 +133,7 @@ fun TagManagementScreen(
                     TagItem(
                         tag = tag,
                         tagViewModel = tagViewModel,
+                        onClick = { onTagClick(tag.id) },
                         onEdit = { editingTag = tag },
                         onDelete = {
                             lastDeletedTag = tag
@@ -190,6 +192,7 @@ fun TagManagementScreen(
 private fun TagItem(
     tag: Tag,
     tagViewModel: TagViewModel,
+    onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -204,7 +207,7 @@ private fun TagItem(
             .clip(RoundedCornerShape(16.dp))
             .background(GrayMatterTheme.colors.surface)
             .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(16.dp))
-            .clickable(onClick = onEdit)
+            .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         Row(

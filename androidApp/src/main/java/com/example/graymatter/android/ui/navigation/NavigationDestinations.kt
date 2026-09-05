@@ -43,6 +43,11 @@ sealed class NavigationDestination(val route: String) {
     }
     
     object Search : NavigationDestination("search")
+    
+    object TagEntries : NavigationDestination("tag_entries/{tagId}") {
+        const val ARG_TAG_ID = "tagId"
+        fun buildRoute(tagId: String) = "tag_entries/$tagId"
+    }
 
     object FileViewer : NavigationDestination("file_viewer/{resourceId}?page={page}&searchQuery={searchQuery}") {
         const val ARG_RESOURCE_ID = "resourceId"

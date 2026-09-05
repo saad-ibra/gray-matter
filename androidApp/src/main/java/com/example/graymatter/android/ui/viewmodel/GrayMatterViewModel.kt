@@ -37,7 +37,8 @@ class GrayMatterViewModel(
     private val opinionRepository: OpinionRepository,
     private val topicRepository: TopicRepository,
     private val referenceLinkRepository: ReferenceLinkRepository,
-    private val autoLinkService: com.example.graymatter.domain.business.AutoLinkService
+    private val autoLinkService: com.example.graymatter.domain.business.AutoLinkService,
+    private val tagRepository: com.example.graymatter.data.TagRepository
 ) : ViewModel() {
     
     val topicsStream: StateFlow<List<Topic>> = topicRepository.topicsStream
@@ -441,6 +442,10 @@ class GrayMatterViewModel(
      */
     fun getLinksForOpinion(opinionId: String): Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>> {
         return resolveLinksForSource(opinionId)
+    }
+
+    fun getTagsForOpinion(opinionId: String): Flow<List<com.example.graymatter.domain.Tag>> {
+        return tagRepository.getTagsByEntryId(opinionId)
     }
 
     /**

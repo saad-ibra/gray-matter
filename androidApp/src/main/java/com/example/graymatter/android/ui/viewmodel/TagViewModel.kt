@@ -11,8 +11,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
 
+import com.example.graymatter.data.OpinionRepository
+
 class TagViewModel(
-    private val tagRepository: TagRepository
+    private val tagRepository: TagRepository,
+    private val opinionRepository: OpinionRepository
 ) : ViewModel() {
 
     val allTags: StateFlow<List<Tag>> = tagRepository.allTagsStream()
@@ -54,5 +57,9 @@ class TagViewModel(
         return kotlinx.coroutines.flow.flow {
             emit(tagRepository.getEntryCountByTagId(tagId))
         }
+    }
+
+    fun getOpinionsByTagId(tagId: String): Flow<List<com.example.graymatter.domain.Opinion>> {
+        return opinionRepository.getOpinionsByTagId(tagId)
     }
 }

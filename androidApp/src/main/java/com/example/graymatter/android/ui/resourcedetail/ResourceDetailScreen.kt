@@ -90,9 +90,11 @@ fun ResourceDetailScreen(
     onShareOpinion: (Opinion) -> Unit = {},
     onShareOpinionMarkdown: (Opinion) -> Unit = {},
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
+    onLoadTags: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.Tag>>,
     onLoadResourceLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     onViewInGraphClick: (String) -> Unit,
     onNavigateToKnowledgeLink: (com.example.graymatter.domain.ReferenceSelectorItem) -> Unit = {},
+    onNavigateToTag: (String) -> Unit = {},
     onSaveTemplate: (CustomTemplate) -> Unit = {},
     onNavigateToImageEditor: (android.net.Uri, String, Int) -> Unit = { _, _, _ -> },
     imageResultPath: String? = null,
@@ -536,7 +538,9 @@ fun ResourceDetailScreen(
                             onOpenBookmark(Bookmark(id="", resourceId=resourceId, page=page, createdAt=0L))
                         },
                         onLoadLinks = onLoadLinks,
+                        onLoadTags = onLoadTags,
                         onViewInGraph = onViewInGraphClick,
+                        onNavigateToTag = onNavigateToTag,
                         onNavigateToKnowledgeLink = { link ->
                             if (link is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem && link.resourceId == resourceEntryDetails.resource.id) {
                                 localFocusOpinionId = link.id 
@@ -1074,8 +1078,10 @@ private fun OpinionTimeline(
     onDeleteOpinion: (String) -> Unit,
     onJumpToPage: (String, Int) -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
+    onLoadTags: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.Tag>>,
     onViewInGraph: (String) -> Unit,
     onNavigateToKnowledgeLink: (com.example.graymatter.domain.ReferenceSelectorItem) -> Unit,
+    onNavigateToTag: (String) -> Unit,
     onImageClick: (String) -> Unit,
     onShareOpinion: (Opinion) -> Unit = {},
     onShareOpinionMarkdown: (Opinion) -> Unit = {},
@@ -1103,8 +1109,10 @@ private fun OpinionTimeline(
                     }
                 },
                 onLoadLinks = onLoadLinks,
+                onLoadTags = onLoadTags,
                 onViewInGraph = onViewInGraph,
                 onNavigateToKnowledgeLink = onNavigateToKnowledgeLink,
+                onNavigateToTag = onNavigateToTag,
                 onImageClick = onImageClick,
                 onShareOpinion = onShareOpinion,
                 onShareOpinionMarkdown = onShareOpinionMarkdown,
@@ -1132,8 +1140,10 @@ private fun OpinionTimelineItem(
     onDelete: () -> Unit,
     onJump: () -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
+    onLoadTags: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.Tag>>,
     onViewInGraph: (String) -> Unit,
     onNavigateToKnowledgeLink: (com.example.graymatter.domain.ReferenceSelectorItem) -> Unit,
+    onNavigateToTag: (String) -> Unit,
     onImageClick: (String) -> Unit,
     onShareOpinion: (Opinion) -> Unit = {},
     onShareOpinionMarkdown: (Opinion) -> Unit = {},
@@ -1879,6 +1889,30 @@ private fun OpinionTimelineItem(
                                     containerColor = GrayMatterTheme.colors.surfaceCard,
                                     labelColor = GrayMatterTheme.colors.textPrimary,
                                     leadingIconContentColor = GrayMatterColors.TypeLink
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, GrayMatterTheme.colors.surfaceBorder)
+                            )
+                        }
+                    }
+                }
+                
+                // Tags Chips
+                val tags by onLoadTags(opinion.id).collectAsState(initial = emptyList())
+                if (tags.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        tags.forEach { tag ->
+                            AssistChip(
+                                onClick = { onNavigateToTag(tag.id) },
+                                label = { Text(tag.name, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                leadingIcon = { Icon(Icons.Default.Style, null, modifier = Modifier.size(16.dp)) },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = GrayMatterTheme.colors.surfaceCard,
+                                    labelColor = GrayMatterTheme.colors.textPrimary,
+                                    leadingIconContentColor = GrayMatterColors.CustomizedAccent
                                 ),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, GrayMatterTheme.colors.surfaceBorder)
                             )
