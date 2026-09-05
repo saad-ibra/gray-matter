@@ -69,6 +69,7 @@ Relatrix is built around a few simple concepts that work together.
 
 ### Tags & Links
 
+| Feature | Description |
 | **Tags** | Tags attached to individual entries for organizing related ideas. |
 | **Links** | `[[wiki-links]]` connecting Topics, Resources, Notes, and timeline entries. |
 
