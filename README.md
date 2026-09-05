@@ -186,6 +186,7 @@ cd relatrix
 - [x] SQLCipher‑encrypted offline database
 - [x] Full‑text offline search across topics, resources and entries
 - [x] PDF reader
+- [x] Knowledge links across topics, resources and entries
 - [x] Light and Dark mode
 - [x] Topic custom colour assignment
 - [x] Tags management
