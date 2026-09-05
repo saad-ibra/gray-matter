@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="androidApp/src/main/res/drawable/app_logo.png" width="140" height="140" alt="Relatrix Logo" style="border-radius: 20%; margin-bottom: 20px;" />
+<img src="core/designsystem/src/main/res/drawable/app_logo.png" width="140" height="140" alt="Relatrix Logo" style="border-radius: 20%; margin-bottom: 20px;" />
 
 # 𝗥𝗲𝗹𝗮𝘁𝗿𝗶𝘅
 
