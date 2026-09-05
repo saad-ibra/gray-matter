@@ -59,17 +59,20 @@ Relatrix is built around a few simple concepts that work together.
 
 > **PDFs:** When a PDF is added as a resource, it can be opened directly in the built-in PDF Reader.
 
-### 2. Notes, Tags & Links
+### Notes
 
 | Feature | Description |
 |:---|:---|
 | **Topic Overview** | A dedicated note for each Topic. |
 | **Resource Overview** | A dedicated note for each Resource. |
 | **Notes Editor** | Markdown editor for Topic Overviews, Resource Overviews, and Markdown resources. |
-| **Tags** | Tags attached to individual entries for organizing related ideas. |
-| **Knowledge Links** | `[[wiki-links]]` connecting Topics, Resources, Notes, and timeline entries. |
 
-### 3. Timeline of Resources
+### Tags & Links
+
+| **Tags** | Tags attached to individual entries for organizing related ideas. |
+| **Links** | `[[wiki-links]]` connecting Topics, Resources, Notes, and timeline entries. |
+
+### 2. Timeline of Resources
 
 Every resource has a unified timeline to track your reflections and interactions with it.
 
@@ -79,7 +82,7 @@ Every resource has a unified timeline to track your reflections and interactions
 |:---|:---|
 | **Opinion** | A timestamped personal reflection with a confidence score. |
 | **Template** | Structured forms for guided reflection. |
-| **Visual Note (Vision)** | A visual capture such as a photo, sketch, or screenshot with an optional caption. |
+| **Vision** | A visual note such as a photo, sketch, or screenshot with an optional caption. |
 
 #### PDF Entries
 
@@ -89,7 +92,7 @@ These entries are specific to PDF resources.
 |:---|:---|
 | **Annotation** | A highlight or inline note anchored to a specific text passage. |
 | **Bookmark** | A saved point in the document, with additional reading context. |
-| **Dictionary Entry** | A definition or lookup for a specific phrase or term. |
+| **Lookup** | A definition for a specific phrase or term. |
 
 ---
 <br/>
@@ -176,12 +179,14 @@ cd relatrix
 ## Roadmap
 
 - [x] Multi‑modal resource entry with confidence scoring
-- [x] Unified Timeline (Opinions + Annotations + Bookmarks + Visuals)
+- [x] Unified Timeline (Opinions + Annotations + Bookmarks + Visuals + Templates)
 - [x] Relatrix 3D knowledge graph with physics simulation
 - [x] SQLCipher‑encrypted offline database
-- [x] Full‑text offline search across resources and entries
-- [x] PDF reader with text selection and annotation
-- [x] Dark mode
+- [x] Full‑text offline search across topics, resources and entries
+- [x] PDF reader
+- [x] Light and Dark mode
+- [x] Topic custom colour assignment
+- [x] Tags management
 - [ ] iOS app (SwiftUI) — *in development*
 
 ---
