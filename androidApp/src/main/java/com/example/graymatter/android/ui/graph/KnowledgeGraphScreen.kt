@@ -1337,110 +1337,73 @@ fun KnowledgeGraphScreen(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // ── Hierarchy breadcrumb ──
-                        val hasParentTopic = node.parentTopicId != null && node.parentTopicLabel != null
-                        val hasParentResource = node.parentResourceId != null && node.parentResourceLabel != null
+                        // ── Title / Breadcrumb ──
+                        val isTopic = node.type == NodeType.TOPIC
+                        val isResource = node.type == NodeType.RESOURCE
+                        val isEntry = !isTopic && !isResource
+                        
+                        val topicName = node.parentTopicLabel ?: if (isTopic) node.label else null
+                        val resourceName = node.parentResourceLabel ?: if (isResource) node.label else null
+                        val entryType = if (isEntry) node.type.name.lowercase().replaceFirstChar { it.uppercase() } else null
 
-                        if (hasParentTopic || hasParentResource) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(Color(0xFF1C1C1E))
-                                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                            ) {
-                                if (hasParentTopic) {
-                                    // Topic crumb
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .clickable { onNavigateToTopic(node.parentTopicId!!) }
-                                            .padding(4.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Folder,
-                                            contentDescription = null,
-                                            tint = Color(0xFFAAAAAA),
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = node.parentTopicLabel!!,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = Color(0xFFCCCCCC),
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.widthIn(max = 100.dp)
-                                        )
-                                    }
-                                }
-                                if (hasParentTopic && (hasParentResource || node.type != NodeType.TOPIC)) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                        contentDescription = null,
-                                        tint = Color(0xFF555555),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                                if (hasParentResource) {
-                                    // Resource crumb
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .clickable { onNavigateToResource(node.parentResourceId!!) }
-                                            .padding(4.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Description,
-                                            contentDescription = null,
-                                            tint = Color(0xFFAAAAAA),
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = node.parentResourceLabel!!,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = Color(0xFFCCCCCC),
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.widthIn(max = 100.dp)
-                                        )
-                                    }
-                                }
-                                if (hasParentResource && node.type != NodeType.RESOURCE) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                        contentDescription = null,
-                                        tint = Color(0xFF555555),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    // Current entry crumb (non-clickable, it's the selected item)
-                                    val entryColor = nodeColorMap[node.type] ?: Color.White
-                                    Text(
-                                        text = node.type.name.lowercase()
-                                            .replaceFirstChar { it.uppercase() },
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = FontWeight.SemiBold
-                                        ),
-                                        color = entryColor,
-                                        maxLines = 1
-                                    )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (topicName != null) {
+                                Text(
+                                    text = stripMarkdown(topicName),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = if (isTopic) Color.White else Color(0xFFAAAAAA),
+                                    modifier = (if (node.parentTopicId != null) Modifier.clickable { onNavigateToTopic(node.parentTopicId!!) } else Modifier).weight(1f, fill = false),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color(0xFF555555), modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                            
+                            if (resourceName != null) {
+                                Text(
+                                    text = stripMarkdown(resourceName),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = if (isResource) Color.White else Color(0xFFAAAAAA),
+                                    modifier = (if (node.parentResourceId != null) Modifier.clickable { onNavigateToResource(node.parentResourceId!!) } else Modifier).weight(1f, fill = false),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                if (entryType != null) {
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color(0xFF555555), modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
                                 }
                             }
-                            Spacer(modifier = Modifier.height(10.dp))
+
+                            if (entryType != null) {
+                                val nodeColor = nodeColorMap[node.type] ?: Color.White
+                                Text(
+                                    text = entryType,
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = nodeColor,
+                                    modifier = Modifier.weight(1f, fill = false),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
 
-                        // ── Node title ──
-                        Text(
-                            text = stripMarkdown(node.label),
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                            color = Color.White,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        // ── Entry Content (Only for entries) ──
+                        if (isEntry) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = stripMarkdown(node.label),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color(0xFFDDDDDD),
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(14.dp))
 
