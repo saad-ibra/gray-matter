@@ -133,6 +133,35 @@ fun ProfileScreen(
                     tint = GrayMatterTheme.colors.primary,
                     onClick = onNavigateToAppearanceSettings
                 )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = "Support",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = GrayMatterTheme.colors.textSecondary,
+                    modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 8.dp)
+                )
+
+                SettingsButton(
+                    icon = Icons.Default.Mail,
+                    title = "Get in Touch",
+                    tint = GrayMatterTheme.colors.primary,
+                    onClick = {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://saadibra.mooo.com/contact/"))
+                        context.startActivity(intent)
+                    }
+                )
+                SettingsButton(
+                    icon = Icons.Default.BugReport,
+                    title = "Report Issue / Request Feature",
+                    tint = GrayMatterTheme.colors.primary,
+                    onClick = {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/saad-ibra/gray-matter/issues"))
+                        context.startActivity(intent)
+                    }
+                )
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }

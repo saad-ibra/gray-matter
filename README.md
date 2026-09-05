@@ -46,7 +46,7 @@ Every resource you save is a starting point, not a destination. Relatrix provide
 
 ---
 
-## ✨ Feature Overview
+## Feature Overview
 
 <br/>
 
@@ -54,21 +54,21 @@ Every resource you save is a starting point, not a destination. Relatrix provide
 
 <br/>
 
-### 📚 Topic Library
-Organise your intellectual world into **Topics**: curated folders of resources. Each topic has an overview, holds web links, PDFs, markdown notes (and absolutely any kind of file you want to add as a resource), and surfaces all connected resources at a glance. Full‑text offline search across everything.
+### Topic Library
+Organise your intellectual world into **Topics**: curated folders of resources. You can visually organize your topics using a fully customizable color picker (with suggested colors, a custom HSV wheel, HEX input, and recently used colors). Each topic has an overview, holds web links, PDFs, markdown notes (and absolutely any kind of file you want to add as a resource), and surfaces all connected resources at a glance. Full‑text offline search across everything.
 
-### 🗂 Multi‑Modal Resource Timeline
+### Multi‑Modal Resource Timeline
 Every resource lives in a rich **Timeline** view: a single chronological feed that unifies your reflections, annotations, and visual captures. Watch your thinking evolve from first impression to deep mastery through a diverse range of entry types.
 
-### ✍️ Reflection‑First Entry
+### Reflection‑First Entry
 When you save a PDF, web page, markdown note, or any other kind of file, Relatrix encourages you to capture an **Opinion** immediately. This deliberate friction prevents "hoarding" and ensures you actually process what you consume.
 
-### 🔗 Knowledge Links
-While writing any entry, reference other resources, topics, or insights using `[[double‑bracket]]` wiki‑style links. These cross‑references form a bidirectional backlink graph — the raw data for Relatrix.
+### Knowledge Links
+While writing any entry, reference other resources, topics, or insights using `[[double‑bracket]]` wiki‑style links. You can seamlessly attach these knowledge links and custom tags to your Timeline entries using a unified connections dropdown. These cross‑references form a bidirectional backlink graph — the raw data for Relatrix.
 
 ---
 
-## 📖 PDF Reader & Annotation 
+## PDF Reader & Annotation 
 
 The built‑in PDF reader is a workspace for active reading. You can:
 - **Flip pages** with smooth gestures and multiple navigation methods.
@@ -79,7 +79,7 @@ The built‑in PDF reader is a workspace for active reading. You can:
 
 ---
 
-## 🖊️ Note Editor 
+## Note Editor 
 
 A minimalist markdown canvas designed for clarity. Features include:
 - **Real-time markdown preview** and a quick formatting toolbar.
@@ -89,7 +89,7 @@ A minimalist markdown canvas designed for clarity. Features include:
 
 ---
 
-## 🕸 Relatrix — 3D Knowledge Discovery
+## Relatrix — 3D Knowledge Discovery
 
 <br/>
 
@@ -104,7 +104,7 @@ Relatrix is a live, physics‑simulated 3D graph that renders the connective tis
 
 ---
 
-## 🏗 Architecture
+## Architecture
 
 Relatrix is built for long‑term stability and privacy. The codebase uses **Kotlin Multiplatform** so that the core business logic is shared across Android and (upcoming) iOS.
 
@@ -137,7 +137,7 @@ Relatrix/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -163,7 +163,7 @@ cd relatrix
 
 ---
 
-## 📋 Core Concepts
+## Core Concepts
 
 Relatrix is built around diverse ways of organizing and capturing thoughts.
 
@@ -187,15 +187,16 @@ Every resource features a unified timeline to track your reflections.
 | **Dictionary Entry** | A definition or lookup for a specific phrase, synced across the app. |
 | **Template** | Structured forms with headings to fill (e.g., Summary, Key Takeaway). |
 
-### 3. Knowledge Links
+### 3. Knowledge Links & Tags
 
 | Feature | Description |
 |:---|:---|
 | **Knowledge Link** | A `[[wiki-link]]` that creates a bidirectional edge between any concepts. Supported almost everywhere: Topic Overviews, Resource Descriptions, Markdown Notes, and all Timeline Items (Opinions, Annotations, Templates, etc.). |
+| **Tags** | Custom labels attached to your resources and timeline entries. Manage, explore, and filter your resources across all topics using the dedicated Tag Management Hub. |
 
 ---
 
-## 🗺 Roadmap
+## Roadmap
 
 - [x] Multi‑modal resource entry with confidence scoring
 - [x] Unified Timeline (Opinions + Annotations + Bookmarks + Visuals)

@@ -1078,7 +1078,7 @@ fun KnowledgeGraphScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Close,
+                            imageVector = Icons.Default.FilterList,
                             contentDescription = null,
                             tint = if (showBottomFilters) GrayMatterColors.Primary else GrayMatterColors.Neutral400,
                             modifier = Modifier.size(12.dp)
@@ -1162,8 +1162,8 @@ fun KnowledgeGraphScreen(
                                 },
                                 leadingIcon = {
                                     Icon(
-                                        if (hasFilters) androidx.compose.material.icons.Icons.Default.Close else androidx.compose.material.icons.Icons.Default.FilterList,
-                                        contentDescription = if (hasFilters) "Clear Filters" else "Filters",
+                                        androidx.compose.material.icons.Icons.Default.Close,
+                                        contentDescription = "Close Filters",
                                         modifier = Modifier.size(16.dp),
                                         tint = if (hasFilters) GrayMatterTheme.colors.textPrimary else GrayMatterTheme.colors.neutral400
                                     )
