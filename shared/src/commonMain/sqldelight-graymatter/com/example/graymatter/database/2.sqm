@@ -1,0 +1,55 @@
+-- Create FTS5 virtual table for opinions
+CREATE VIRTUAL TABLE opinion_fts USING fts5(
+    text,
+    content='opinionEntity',
+    content_rowid='rowid'
+);
+
+-- Populate existing opinions into FTS5
+INSERT INTO opinion_fts(rowid, text)
+SELECT rowid, text FROM opinionEntity;
+
+-- Triggers for opinionEntity to keep FTS in sync
+CREATE TRIGGER opinion_ai AFTER INSERT ON opinionEntity BEGIN
+  INSERT INTO opinion_fts(rowid, text) VALUES (new.rowid, new.text);
+END;
+
+CREATE TRIGGER opinion_ad AFTER DELETE ON opinionEntity BEGIN
+  INSERT INTO opinion_fts(opinion_fts, rowid, text) VALUES('delete', old.rowid, old.text);
+END;
+
+CREATE TRIGGER opinion_au AFTER UPDATE ON opinionEntity BEGIN
+  INSERT INTO opinion_fts(opinion_fts, rowid, text) VALUES('delete', old.rowid, old.text);
+  INSERT INTO opinion_fts(rowid, text) VALUES (new.rowid, new.text);
+END;
+
+-- Create FTS5 virtual table for resources
+CREATE VIRTUAL TABLE resource_fts USING fts5(
+    title,
+    url,
+    extractedText,
+    content='resourceEntity',
+    content_rowid='rowid'
+);
+
+-- Populate existing resources into FTS5
+INSERT INTO resource_fts(rowid, title, url, extractedText)
+SELECT rowid, title, url, extractedText FROM resourceEntity;
+
+-- Triggers for resourceEntity to keep FTS in sync
+CREATE TRIGGER resource_ai AFTER INSERT ON resourceEntity BEGIN
+  INSERT INTO resource_fts(rowid, title, url, extractedText) 
+  VALUES (new.rowid, new.title, new.url, new.extractedText);
+END;
+
+CREATE TRIGGER resource_ad AFTER DELETE ON resourceEntity BEGIN
+  INSERT INTO resource_fts(resource_fts, rowid, title, url, extractedText) 
+  VALUES('delete', old.rowid, old.title, old.url, old.extractedText);
+END;
+
+CREATE TRIGGER resource_au AFTER UPDATE ON resourceEntity BEGIN
+  INSERT INTO resource_fts(resource_fts, rowid, title, url, extractedText) 
+  VALUES('delete', old.rowid, old.title, old.url, old.extractedText);
+  INSERT INTO resource_fts(rowid, title, url, extractedText) 
+  VALUES (new.rowid, new.title, new.url, new.extractedText);
+END;

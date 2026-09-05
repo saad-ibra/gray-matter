@@ -54,9 +54,8 @@ class DefaultResourceRepository(
     }
 
     override suspend fun searchResources(query: String): List<Resource> = withContext(dispatcher) {
-        // Using % wildcards if not already handled in the SQL file
-        val searchQuery = "%$query%"
-        queries.searchResources(searchQuery, searchQuery, searchQuery).executeAsList().map { it.toResource() }
+        val ftsQuery = "\"$query\"*"
+        queries.searchResources(ftsQuery).executeAsList().map { it.toResource() }
     }
 
     override suspend fun findResourceByTitle(title: String): Resource? = withContext(dispatcher) {

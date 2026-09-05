@@ -90,7 +90,8 @@ class DefaultOpinionRepository(
     }
     
     override suspend fun searchOpinions(query: String): List<Opinion> = withContext(dispatcher) {
-        queries.searchOpinions(query).executeAsList().map { it.toOpinion() }
+        val ftsQuery = "\"$query\"*"
+        queries.searchOpinions(ftsQuery).executeAsList().map { it.toOpinion() }
     }
 
     override suspend fun findOpinionByTextContaining(text: String): Opinion? = withContext(dispatcher) {

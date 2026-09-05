@@ -281,14 +281,16 @@ SELECT * FROM opinionEntity WHERE isDeleted = 0 ORDER BY createdAt ASC;
 
 -- Search queries
 searchOpinions:
-SELECT * FROM opinionEntity WHERE text LIKE '%' || ? || '%' ORDER BY createdAt DESC;
+SELECT opinionEntity.* FROM opinionEntity 
+JOIN opinion_fts ON opinionEntity.rowid = opinion_fts.rowid
+WHERE opinion_fts MATCH ? 
+ORDER BY opinionEntity.createdAt DESC;
 
 searchResources:
-SELECT * FROM resourceEntity WHERE
-    (title LIKE '%' || ? || '%') OR
-    (url LIKE '%' || ? || '%') OR
-    (extractedText LIKE '%' || ? || '%')
-ORDER BY createdAt DESC;
+SELECT resourceEntity.* FROM resourceEntity 
+JOIN resource_fts ON resourceEntity.rowid = resource_fts.rowid
+WHERE resource_fts MATCH ? 
+ORDER BY resourceEntity.createdAt DESC;
 
 searchTopics:
 SELECT * FROM topicEntity WHERE
@@ -524,3 +526,48 @@ WHERE entryId NOT IN (
     SELECT id FROM opinionEntity
     UNION SELECT id FROM bookmarkEntity
 );
+
+-- 13. FTS5 Search Tables
+CREATE VIRTUAL TABLE opinion_fts USING fts5(
+    text,
+    content='opinionEntity',
+    content_rowid='rowid'
+);
+
+CREATE TRIGGER opinion_ai AFTER INSERT ON opinionEntity BEGIN
+  INSERT INTO opinion_fts(rowid, text) VALUES (new.rowid, new.text);
+END;
+
+CREATE TRIGGER opinion_ad AFTER DELETE ON opinionEntity BEGIN
+  INSERT INTO opinion_fts(opinion_fts, rowid, text) VALUES('delete', old.rowid, old.text);
+END;
+
+CREATE TRIGGER opinion_au AFTER UPDATE ON opinionEntity BEGIN
+  INSERT INTO opinion_fts(opinion_fts, rowid, text) VALUES('delete', old.rowid, old.text);
+  INSERT INTO opinion_fts(rowid, text) VALUES (new.rowid, new.text);
+END;
+
+CREATE VIRTUAL TABLE resource_fts USING fts5(
+    title,
+    url,
+    extractedText,
+    content='resourceEntity',
+    content_rowid='rowid'
+);
+
+CREATE TRIGGER resource_ai AFTER INSERT ON resourceEntity BEGIN
+  INSERT INTO resource_fts(rowid, title, url, extractedText) 
+  VALUES (new.rowid, new.title, new.url, new.extractedText);
+END;
+
+CREATE TRIGGER resource_ad AFTER DELETE ON resourceEntity BEGIN
+  INSERT INTO resource_fts(resource_fts, rowid, title, url, extractedText) 
+  VALUES('delete', old.rowid, old.title, old.url, old.extractedText);
+END;
+
+CREATE TRIGGER resource_au AFTER UPDATE ON resourceEntity BEGIN
+  INSERT INTO resource_fts(resource_fts, rowid, title, url, extractedText) 
+  VALUES('delete', old.rowid, old.title, old.url, old.extractedText);
+  INSERT INTO resource_fts(rowid, title, url, extractedText) 
+  VALUES (new.rowid, new.title, new.url, new.extractedText);
+END;
