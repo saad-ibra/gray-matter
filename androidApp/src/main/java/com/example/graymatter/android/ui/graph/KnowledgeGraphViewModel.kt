@@ -78,14 +78,20 @@ class KnowledgeGraphViewModel(
             val resourceMap = resourceRepository.resourcesStream.first().associateBy { it.id }
             val itemMap = allItems.associateBy { it.id }
 
+            // Build topic lookup for hierarchy
+            val topicMap = topics.associateBy { it.id }
+
             allItems.forEach { item ->
                 val resource = resourceMap[item.resourceId]
                 if (resource != null) {
+                    val parentTopic = if (item.topicId != null) topicMap[item.topicId] else null
                     val resourceNode = GraphNode(
                         id = resource.id,
                         type = NodeType.RESOURCE,
                         label = resource.title ?: "Untitled",
-                        radius = 20f
+                        radius = 20f,
+                        parentTopicId = parentTopic?.id,
+                        parentTopicLabel = parentTopic?.name
                     )
                     oldNodesMap[resourceNode.id]?.let { old ->
                         resourceNode.x = old.x; resourceNode.y = old.y; resourceNode.z = old.z
@@ -133,13 +139,22 @@ class KnowledgeGraphViewModel(
                     else -> cleanText.take(20) + "..."
                 }
 
+                // Resolve parent resource and topic for hierarchy
+                val item = itemMap[opinion.itemId]
+                val parentResource = if (item != null) resourceMap[item.resourceId] else null
+                val parentTopic = if (item?.topicId != null) topicMap[item.topicId] else null
+
                 val opinionNode = GraphNode(
                     id = opinion.id,
                     type = nodeType,
                     label = displayLabel,
                     radius = when (nodeType) {
                         else -> 18f
-                    }
+                    },
+                    parentTopicId = parentTopic?.id,
+                    parentTopicLabel = parentTopic?.name,
+                    parentResourceId = parentResource?.id,
+                    parentResourceLabel = parentResource?.title ?: "Untitled"
                 )
                 oldNodesMap[opinionNode.id]?.let { old ->
                     opinionNode.x = old.x; opinionNode.y = old.y; opinionNode.z = old.z
@@ -148,7 +163,6 @@ class KnowledgeGraphViewModel(
                 nodes.add(opinionNode)
 
                 // Edge: Resource -> Opinion (Containment edge)
-                val item = itemMap[opinion.itemId]
                 if (item != null) {
                     val resourceNode = nodes.find { it.id == item.resourceId }
                     if (resourceNode != null && existingEdgePairs.add(resourceNode.id to opinionNode.id)) {

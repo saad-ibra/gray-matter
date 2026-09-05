@@ -80,6 +80,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.CenterFocusStrong
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.foundation.layout.PaddingValues
 
 // ─── Pre-computed static geometry (allocated once, never recreated) ────────────
 
@@ -127,7 +135,9 @@ fun KnowledgeGraphScreen(
     initialSelectedNodeId: String? = null,
     onBackClick: () -> Unit,
     onNavigateHome: () -> Unit,
-    onNodeDoubleTap: (GraphNode) -> Unit
+    onNodeDoubleTap: (GraphNode) -> Unit,
+    onNavigateToTopic: (String) -> Unit = {},
+    onNavigateToResource: (String) -> Unit = {}
 ) {
     val graphState by viewModel.graphState.collectAsState()
     
@@ -162,6 +172,7 @@ fun KnowledgeGraphScreen(
     var selectedNode by remember { mutableStateOf<GraphNode?>(null) }
     var showDeleteDialog by remember { mutableStateOf<GraphNode?>(null) }
     var deletedNodeInfo by remember { mutableStateOf<GraphNode?>(null) }
+    var centerRequestTick by remember { mutableIntStateOf(0) }
 
     // Canvas size tracking for proper centering
     var canvasSize by remember { mutableStateOf(Size.Zero) }
@@ -335,6 +346,63 @@ fun KnowledgeGraphScreen(
     // Request focus for volume button capture
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    // Center-on-node: rotate graph to face camera and position node above dialog
+    LaunchedEffect(centerRequestTick) {
+        if (centerRequestTick == 0) return@LaunchedEffect
+        val node = selectedNode ?: return@LaunchedEffect
+        if (canvasSize.width <= 0f) return@LaunchedEffect
+
+        val targetScale = 2.5f
+
+        // 1. Find relative 3D position of node to center of graph
+        val rx = node.x - simulator.width / 2f
+        val ry = node.y - simulator.height / 2f
+        val rz = node.z
+
+        // 2. Calculate angles needed to bring this node to the front (x=0, y=0)
+        // Based on the projection logic: x1 = rx*cosY - rz*sinY -> 0
+        val rawTargetRotY = kotlin.math.atan2(rx, rz)
+        val z1 = rz * kotlin.math.cos(rawTargetRotY) + rx * kotlin.math.sin(rawTargetRotY)
+        // y2 = ry*cosX - z1*sinX -> 0
+        val rawTargetRotX = kotlin.math.atan2(ry, z1)
+
+        // 3. Normalize targets to the nearest equivalent angle of current rotation
+        // so the animation takes the shortest path
+        fun normalize(current: Float, target: Float): Float {
+            val twoPi = 2 * Math.PI.toFloat()
+            var diff = (target - current) % twoPi
+            if (diff > Math.PI) diff -= twoPi
+            if (diff < -Math.PI) diff += twoPi
+            return current + diff
+        }
+
+        val targetRotX = normalize(globalRotX, rawTargetRotX)
+        val targetRotY = normalize(globalRotY, rawTargetRotY)
+
+        // 4. Since the node is now at x=0, y=0 in rotated space, 
+        // we just need to pan the camera so the center is at 35% height
+        val targetOffsetX = canvasSize.width / 2f - simulator.width / 2f * targetScale
+        val targetOffsetY = canvasSize.height * 0.35f - simulator.height / 2f * targetScale
+
+        val startScale = scale
+        val startOffsetX = offset.x
+        val startOffsetY = offset.y
+        val startRotX = globalRotX
+        val startRotY = globalRotY
+
+        val anim = Animatable(0f)
+        anim.animateTo(1f, animationSpec = tween(600, easing = FastOutSlowInEasing)) {
+            val t = this.value
+            scale = startScale + (targetScale - startScale) * t
+            globalRotX = startRotX + (targetRotX - startRotX) * t
+            globalRotY = startRotY + (targetRotY - startRotY) * t
+            offset = Offset(
+                startOffsetX + (targetOffsetX - startOffsetX) * t,
+                startOffsetY + (targetOffsetY - startOffsetY) * t
+            )
+        }
     }
 
     // Depth-First Search for deterministic navigation
@@ -1230,72 +1298,204 @@ fun KnowledgeGraphScreen(
             exit = fadeOut(),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 100.dp, start = 24.dp, end = 24.dp)
+                .padding(bottom = 100.dp, start = 16.dp, end = 16.dp)
         ) {
             selectedNode?.let { node ->
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = GrayMatterColors.SurfaceDark),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF141414)),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
+                        // ── Top row: type badge + close ──
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            val baseMappedColor = nodeColorMap[node.type] ?: Color.White
-                    val isCustomColor = !node.color.isNullOrEmpty()
-                    val topicSphereColor = if (isCustomColor) {
-                        try { Color(android.graphics.Color.parseColor(node.color)) } catch(e: Exception) { baseMappedColor }
-                    } else baseMappedColor
-                    val wireframeColor = baseMappedColor
-                    val nodeColor = baseMappedColor
+                            val nodeColor = nodeColorMap[node.type] ?: Color.White
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(nodeColor.copy(alpha = 0.15f))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(nodeColor.copy(alpha = 0.12f))
+                                    .padding(horizontal = 8.dp, vertical = 3.dp)
                             ) {
                                 Text(
                                     text = node.type.name,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp
+                                    ),
                                     color = nodeColor
                                 )
                             }
                             Spacer(modifier = Modifier.weight(1f))
                             IconButton(
                                 onClick = { selectedNode = null },
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(28.dp)
                             ) {
-                                Icon(Icons.Default.Close, "Dismiss", tint = GrayMatterColors.Neutral500, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Close, "Dismiss", tint = Color(0xFF888888), modifier = Modifier.size(18.dp))
                             }
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // ── Hierarchy breadcrumb ──
+                        val hasParentTopic = node.parentTopicId != null && node.parentTopicLabel != null
+                        val hasParentResource = node.parentResourceId != null && node.parentResourceLabel != null
+
+                        if (hasParentTopic || hasParentResource) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFF1C1C1E))
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            ) {
+                                if (hasParentTopic) {
+                                    // Topic crumb
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .clickable { onNavigateToTopic(node.parentTopicId!!) }
+                                            .padding(4.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Folder,
+                                            contentDescription = null,
+                                            tint = Color(0xFFAAAAAA),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = node.parentTopicLabel!!,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = Color(0xFFCCCCCC),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.widthIn(max = 100.dp)
+                                        )
+                                    }
+                                }
+                                if (hasParentTopic && (hasParentResource || node.type != NodeType.TOPIC)) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = null,
+                                        tint = Color(0xFF555555),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                                if (hasParentResource) {
+                                    // Resource crumb
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .clickable { onNavigateToResource(node.parentResourceId!!) }
+                                            .padding(4.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Description,
+                                            contentDescription = null,
+                                            tint = Color(0xFFAAAAAA),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = node.parentResourceLabel!!,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = Color(0xFFCCCCCC),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.widthIn(max = 100.dp)
+                                        )
+                                    }
+                                }
+                                if (hasParentResource && node.type != NodeType.RESOURCE) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = null,
+                                        tint = Color(0xFF555555),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    // Current entry crumb (non-clickable, it's the selected item)
+                                    val entryColor = nodeColorMap[node.type] ?: Color.White
+                                    Text(
+                                        text = node.type.name.lowercase()
+                                            .replaceFirstChar { it.uppercase() },
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.SemiBold
+                                        ),
+                                        color = entryColor,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
+
+                        // ── Node title ──
                         Text(
                             text = stripMarkdown(node.label),
                             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                            color = Color.White
+                            color = Color.White,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // ── Action buttons ──
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Center button
+                            Button(
+                                onClick = { centerRequestTick++ },
+                                modifier = Modifier.size(44.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF2A2A2E),
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.CenterFocusStrong,
+                                    contentDescription = "Center node",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            // Go to Details
                             Button(
                                 onClick = { onNodeDoubleTap(node) },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = GrayMatterColors.TypeLink.copy(alpha = 0.15f),
-                                    contentColor = GrayMatterColors.TypeLink
+                                    containerColor = Color(0xFF2A2A2E),
+                                    contentColor = Color.White
                                 ),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text("Go to Details")
+                                Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Open")
                             }
+                            // Delete
                             Button(
                                 onClick = { showDeleteDialog = node },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.size(44.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = GrayMatterColors.Error.copy(alpha = 0.15f),
+                                    containerColor = GrayMatterColors.Error.copy(alpha = 0.12f),
                                     contentColor = GrayMatterColors.Error
                                 ),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(0.dp)
                             ) {
-                                Text("Delete", color = GrayMatterColors.Error)
+                                Icon(
+                                    Icons.Default.DeleteOutline,
+                                    contentDescription = "Delete",
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
                         }
                     }

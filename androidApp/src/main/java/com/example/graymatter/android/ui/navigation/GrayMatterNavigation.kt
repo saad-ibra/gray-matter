@@ -292,6 +292,13 @@ fun GrayMatterNavigation(
                                             }
                                         }
                                     }
+                                },
+                                onNavigateToTopic = { topicId ->
+                                    navController.navigate(NavigationDestination.TopicDetail.buildRoute(topicId))
+                                },
+                                onNavigateToResource = { resourceId ->
+                                    val item = viewModel.resourceEntriesStream.value.find { it.resourceId == resourceId }
+                                    if (item != null) navController.navigate(NavigationDestination.ResourceDetail.buildRoute(item.id))
                                 }
                             )
                         }
@@ -887,6 +894,13 @@ fun GrayMatterNavigation(
                             }
                         }
                     }
+                },
+                onNavigateToTopic = { topicId ->
+                    navController.navigate(NavigationDestination.TopicDetail.buildRoute(topicId))
+                },
+                onNavigateToResource = { resourceId ->
+                    val item = viewModel.resourceEntriesStream.value.find { it.resourceId == resourceId }
+                    if (item != null) navController.navigate(NavigationDestination.ResourceDetail.buildRoute(item.id))
                 }
             )
         }

@@ -20,7 +20,12 @@ data class GraphNode(
     var vz: Float = 0f,
     var radius: Float = 20f,
     var isPinned: Boolean = false, // e.g. when being dragged
-    var color: String? = null
+    var color: String? = null,
+    // Hierarchy: parent references for breadcrumb display
+    val parentTopicId: String? = null,
+    val parentTopicLabel: String? = null,
+    val parentResourceId: String? = null,
+    val parentResourceLabel: String? = null
 ) {
     // Helper to calculate distance to another point
     fun distanceTo(otherX: Float, otherY: Float): Float {
