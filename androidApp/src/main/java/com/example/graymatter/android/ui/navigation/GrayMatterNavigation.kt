@@ -50,6 +50,7 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import kotlinx.coroutines.flow.first
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
  * Main navigation graph for Gray Matter app.
@@ -70,9 +71,9 @@ fun GrayMatterNavigation(
     val draftingViewModel: com.example.graymatter.android.ui.viewmodel.DraftingViewModel = koinViewModel()
     val opinionRepository: com.example.graymatter.data.OpinionRepository = koinInject()
 
-    val topics by viewModel.topicsStream.collectAsState(initial = emptyList())
-    val items by viewModel.resourceEntriesStream.collectAsState(initial = emptyList())
-    val templates by templateViewModel.templates.collectAsState()
+    val topics by viewModel.topicsStream.collectAsStateWithLifecycle(initialValue = emptyList())
+    val items by viewModel.resourceEntriesStream.collectAsStateWithLifecycle(initialValue = emptyList())
+    val templates by templateViewModel.templates.collectAsStateWithLifecycle()
     var editingResource by remember { mutableStateOf<com.example.graymatter.domain.Resource?>(null) }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -183,8 +184,8 @@ fun GrayMatterNavigation(
                     ) { page ->
                     when (page) {
                         0 -> {
-                            val continueReadingItem by homeViewModel.continueReadingResourceEntry.collectAsState()
-                            val lastOpenedProgress by homeViewModel.lastOpenedProgress.collectAsState()
+                            val continueReadingItem by homeViewModel.continueReadingResourceEntry.collectAsStateWithLifecycle()
+                            val lastOpenedProgress by homeViewModel.lastOpenedProgress.collectAsStateWithLifecycle()
 
                             HomeScreen(
                                 viewModel = viewModel,
@@ -418,7 +419,7 @@ fun GrayMatterNavigation(
             val topic = topics.find { it.id == topicId }
             
             // Collect resources for this topic
-            val topicItems by viewModel.getResourceEntriesByTopic(topicId ?: "").collectAsState(initial = emptyList())
+            val topicItems by viewModel.getResourceEntriesByTopic(topicId ?: "").collectAsStateWithLifecycle(initialValue = emptyList())
             val resources = topicItems.map { it.resource }
 
             TopicSynthesisScreen(
@@ -537,8 +538,8 @@ fun GrayMatterNavigation(
             val resourceEntryId = backStackEntry.arguments?.getString(NavigationDestination.ResourceDetail.ARG_RESOURCE_ENTRY_ID) ?: return@composable
             val focusOpinionId = backStackEntry.arguments?.getString(NavigationDestination.ResourceDetail.ARG_FOCUS_OPINION_ID)
             val initialSearchQuery = backStackEntry.arguments?.getString(NavigationDestination.ResourceDetail.ARG_SEARCH_QUERY)
-            val itemDetails by viewModel.getResourceEntryDetails(resourceEntryId).collectAsState(initial = null)
-            val readingProgress by viewModel.getReadingProgressStream(itemDetails?.resource?.id ?: "").collectAsState(initial = null)
+            val itemDetails by viewModel.getResourceEntryDetails(resourceEntryId).collectAsStateWithLifecycle(initialValue = null)
+            val readingProgress by viewModel.getReadingProgressStream(itemDetails?.resource?.id ?: "").collectAsStateWithLifecycle(initialValue = null)
 
             ResourceDetailScreen(
                 resourceEntryDetails = itemDetails,
@@ -811,7 +812,7 @@ fun GrayMatterNavigation(
             )
         ) { backStackEntry ->
             val resourceEntryId = backStackEntry.arguments?.getString(NavigationDestination.AddToTopic.ARG_RESOURCE_ENTRY_ID)
-            val resourceEntryDetails by viewModel.getResourceEntryDetails(resourceEntryId ?: "").collectAsState(initial = null)
+            val resourceEntryDetails by viewModel.getResourceEntryDetails(resourceEntryId ?: "").collectAsStateWithLifecycle(initialValue = null)
             val currentTopicName = resourceEntryDetails?.topic?.name
 
             AddToTopicScreen(

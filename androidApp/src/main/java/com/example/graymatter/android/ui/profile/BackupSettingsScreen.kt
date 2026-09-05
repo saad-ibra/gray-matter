@@ -39,6 +39,7 @@ import com.example.graymatter.android.ui.viewmodel.BackupViewModel
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +47,7 @@ fun BackupSettingsScreen(
     viewModel: BackupViewModel,
     onBackClick: () -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showRestoreDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf<BackupInfo?>(null) }
     var exportTarget by remember { mutableStateOf<BackupInfo?>(null) }

@@ -75,6 +75,7 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButtonDefaults
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -83,7 +84,7 @@ fun ReferenceSelectorSheet(
     onDismissRequest: () -> Unit,
     onConfirm: (List<ReferenceSelectorItem>) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Dialog(
         onDismissRequest = onDismissRequest,

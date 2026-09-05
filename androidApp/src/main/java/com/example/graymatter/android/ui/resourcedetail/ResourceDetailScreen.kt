@@ -57,6 +57,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.res.painterResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
  * Resource Details Screen.
@@ -323,7 +324,7 @@ fun ResourceDetailScreen(
 
                     // RESOURCE LINKS section — visible for ALL resource types
                     run {
-                        val resourceLinks by onLoadResourceLinks(resourceEntryDetails.resource.id).collectAsState(initial = emptyList())
+                        val resourceLinks by onLoadResourceLinks(resourceEntryDetails.resource.id).collectAsStateWithLifecycle(initialValue = emptyList())
                         if (resourceLinks.isNotEmpty()) {
                             Column(
                                 modifier = Modifier
@@ -572,7 +573,7 @@ fun ResourceDetailScreen(
         if (showAddDialog) {
             // If showEditDialogId is set, find that opinion to edit
             val opinionToEdit = showEditDialogId?.let { id -> sortedOpinions.find { it.id == id } }
-            val initialTags by (if (opinionToEdit != null) onLoadTags(opinionToEdit.id) else kotlinx.coroutines.flow.flowOf(emptyList())).collectAsState(initial = emptyList())
+            val initialTags by (if (opinionToEdit != null) onLoadTags(opinionToEdit.id) else kotlinx.coroutines.flow.flowOf(emptyList())).collectAsStateWithLifecycle(initialValue = emptyList())
             OpinionEditDialog(
                 viewModel = referenceSelectorViewModel,
                 templates = templates,
@@ -1207,11 +1208,11 @@ private fun OpinionTimelineItem(
     }
     
     // Load initial reference links to pre-populate selection
-    val flowLinks by onLoadLinks(opinion.id).collectAsState(initial = emptyList())
+    val flowLinks by onLoadLinks(opinion.id).collectAsStateWithLifecycle(initialValue = emptyList())
     var selectedReferences by remember(flowLinks) { mutableStateOf(flowLinks) }
     var showReferenceSelector by remember { mutableStateOf(false) }
     
-    val flowTags by onLoadTags(opinion.id).collectAsState(initial = emptyList())
+    val flowTags by onLoadTags(opinion.id).collectAsStateWithLifecycle(initialValue = emptyList())
     var selectedTags by remember(flowTags) { mutableStateOf(flowTags) }
     
     val hasPageNumber = opinion.pageNumber != null
@@ -1964,7 +1965,7 @@ private fun OpinionTimelineItem(
                 }
 
                 // Reference Links Chips
-                val links by onLoadLinks(opinion.id).collectAsState(initial = emptyList())
+                val links by onLoadLinks(opinion.id).collectAsStateWithLifecycle(initialValue = emptyList())
                 if (links.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
@@ -2003,7 +2004,7 @@ private fun OpinionTimelineItem(
                 }
                 
                 // Tags Chips
-                val tags by onLoadTags(opinion.id).collectAsState(initial = emptyList())
+                val tags by onLoadTags(opinion.id).collectAsStateWithLifecycle(initialValue = emptyList())
                 if (tags.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(

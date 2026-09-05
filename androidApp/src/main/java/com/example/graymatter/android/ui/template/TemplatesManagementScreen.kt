@@ -26,13 +26,14 @@ import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.domain.CustomTemplate
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun TemplatesManagementScreen(
     templateViewModel: com.example.graymatter.android.ui.viewmodel.TemplateViewModel,
     onBackClick: () -> Unit
 ) {
-    val templates by templateViewModel.templates.collectAsState()
+    val templates by templateViewModel.templates.collectAsStateWithLifecycle()
     var editingTemplate by remember { mutableStateOf<CustomTemplate?>(null) }
     var showEditor by remember { mutableStateOf(false) }
     var templateToDeleteId by remember { mutableStateOf<String?>(null) }

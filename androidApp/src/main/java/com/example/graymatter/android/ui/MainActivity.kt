@@ -17,6 +17,7 @@ import com.example.graymatter.android.security.SecurityPreferences
 import com.example.graymatter.android.ui.screens.BiometricLockScreen
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import kotlinx.coroutines.launch
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
  * Main Activity for Gray Matter app.
@@ -78,7 +79,7 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             // ── Theme ──────────────────────────────────────────────────
-            val themeChoice by appPreferences.themeState.collectAsState()
+            val themeChoice by appPreferences.themeState.collectAsStateWithLifecycle()
             val darkTheme = when (themeChoice) {
                 AppTheme.DARK -> true
                 AppTheme.LIGHT -> false
@@ -86,7 +87,7 @@ class MainActivity : FragmentActivity() {
             }
             
             // ── Keep Screen Awake ──────────────────────────────────────
-            val keepAwake by appPreferences.keepScreenAwakeState.collectAsState()
+            val keepAwake by appPreferences.keepScreenAwakeState.collectAsStateWithLifecycle()
             if (keepAwake) {
                 window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             } else {
@@ -95,9 +96,9 @@ class MainActivity : FragmentActivity() {
             
             // ── App Content ────────────────────────────────────────────
             GrayMatterTheme(darkTheme = darkTheme) {
-                val isAppLockEnabled by securityPreferences.appLockState.collectAsState()
+                val isAppLockEnabled by securityPreferences.appLockState.collectAsStateWithLifecycle()
                 if (isAppLockEnabled) {
-                    val isUnlocked by biometricAuthManager.isUnlocked.collectAsState()
+                    val isUnlocked by biometricAuthManager.isUnlocked.collectAsStateWithLifecycle()
                     if (isUnlocked) {
                         GrayMatterApp(initialSharedUri = initialSharedUri)
                     } else {

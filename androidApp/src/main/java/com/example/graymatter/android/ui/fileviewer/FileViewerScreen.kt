@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.QuestionAnswer
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
  * Main file viewer screen.
@@ -74,12 +75,12 @@ fun FileViewerScreen(
     onNavigateToLookupOrigin: (opinionId: String, itemId: String) -> Unit = { _, _ -> },
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null
 ) {
-    val resource by viewModel.resource.collectAsState()
-    val settings by viewModel.settings.collectAsState()
-    val bookmarks by viewModel.bookmarks.collectAsState()
-    val searchResults by viewModel.searchResults.collectAsState()
-    val opinions by viewModel.opinions.collectAsState()
-    val globalLookupWords by viewModel.globalLookupWords.collectAsState()
+    val resource by viewModel.resource.collectAsStateWithLifecycle()
+    val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
+    val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
+    val opinions by viewModel.opinions.collectAsStateWithLifecycle()
+    val globalLookupWords by viewModel.globalLookupWords.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val appPreferences = remember { AppPreferences.getInstance(context) }
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -432,7 +433,7 @@ fun FileViewerScreen(
                     }
                 )
                 
-                val chapters = viewModel.chapters.collectAsState().value
+                val chapters = viewModel.chapters.collectAsStateWithLifecycle().value
                 if (chapters.isNotEmpty()) {
                     val currentFlat = remember(chapters) {
                         fun flatten(list: List<ChapterOutline>): List<ChapterOutline> = 
@@ -483,7 +484,7 @@ fun FileViewerScreen(
                     totalPages = viewModel.totalPages,
                     isExpanded = true,
                     isBookmarked = isCurrentPageBookmarked,
-                    chapters = viewModel.chapters.collectAsState().value,
+                    chapters = viewModel.chapters.collectAsStateWithLifecycle().value,
                     onPageSlide = { viewModel.jumpToPage(it) },
                     onPreviousPage = {
                         viewModel.previousPage()
@@ -519,7 +520,7 @@ fun FileViewerScreen(
                     totalPages = viewModel.totalPages,
                     isExpanded = false,
                     isBookmarked = false,
-                    chapters = viewModel.chapters.collectAsState().value,
+                    chapters = viewModel.chapters.collectAsStateWithLifecycle().value,
                     onPageSlide = {},
                     onPreviousPage = {},
                     onNextPage = {},
@@ -591,7 +592,7 @@ fun FileViewerScreen(
 
         if (viewModel.showChaptersSheet) {
             ChaptersSheet(
-                chapters = viewModel.chapters.collectAsState().value,
+                chapters = viewModel.chapters.collectAsStateWithLifecycle().value,
                 onChapterClick = { viewModel.jumpToChapter(it) },
                 onDismiss = { viewModel.toggleChaptersSheet() }
             )
@@ -897,7 +898,7 @@ fun FileViewerScreen(
         }
 
         if (viewModel.showTemplateSelectionDialog) {
-            val templates = viewModel.templates.collectAsState().value
+            val templates = viewModel.templates.collectAsStateWithLifecycle().value
             AlertDialog(
                 onDismissRequest = { viewModel.toggleTemplateSelectionDialog() },
                 containerColor = GrayMatterColors.SurfaceDark,
@@ -978,7 +979,7 @@ fun FileViewerScreen(
                             )
                             
                             TemplateSelector(
-                                templates = viewModel.templates.collectAsState().value,
+                                templates = viewModel.templates.collectAsStateWithLifecycle().value,
                                 selectedTemplate = template,
                                 onTemplateSelect = { viewModel.selectTemplateForNewEntry(it) },
                                 onCreateTemplate = {

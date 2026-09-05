@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.example.graymatter.android.preferences.AppPreferences
 import com.example.graymatter.android.preferences.AppTheme
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,8 +36,8 @@ fun AppearanceSettingsScreen(
     val context = LocalContext.current
     // Ideally use a ViewModel here, but for simplicity we directly use AppPreferences
     val appPreferences = AppPreferences.getInstance(context)
-    val currentTheme by appPreferences.themeState.collectAsState()
-    val keepScreenAwake by appPreferences.keepScreenAwakeState.collectAsState()
+    val currentTheme by appPreferences.themeState.collectAsStateWithLifecycle()
+    val keepScreenAwake by appPreferences.keepScreenAwakeState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

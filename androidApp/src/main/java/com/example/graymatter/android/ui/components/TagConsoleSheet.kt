@@ -27,6 +27,7 @@ import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.viewmodel.TagViewModel
 import com.example.graymatter.domain.Tag
 import kotlinx.coroutines.launch
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +36,7 @@ fun TagConsoleSheet(
     onDismissRequest: () -> Unit,
     onTagSelected: (Tag) -> Unit
 ) {
-    val allTags by viewModel.allTags.collectAsState()
+    val allTags by viewModel.allTags.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()
 

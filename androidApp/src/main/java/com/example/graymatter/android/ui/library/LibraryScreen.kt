@@ -49,6 +49,7 @@ import com.example.graymatter.domain.Topic
 import kotlinx.coroutines.delay
 import java.util.TreeMap
 import kotlin.math.roundToInt
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
  * Library Screen matching the "Topics & Synthesis" design mockup.
@@ -124,7 +125,7 @@ fun LibraryScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val appPreferences = remember { AppPreferences.getInstance(context) }
-    val recentColors by appPreferences.recentTopicColors.collectAsState(initial = emptyList())
+    val recentColors by appPreferences.recentTopicColors.collectAsStateWithLifecycle(initialValue = emptyList())
     var newTopicName by remember { mutableStateOf("") }
 
     // Sync with parent data when not actively dragging (preserves animation state)

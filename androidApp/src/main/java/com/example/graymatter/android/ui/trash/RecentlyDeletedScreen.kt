@@ -32,6 +32,7 @@ import com.example.graymatter.android.ui.viewmodel.TrashViewModel
 import com.example.graymatter.android.ui.components.TopicPickerSheet
 import kotlinx.coroutines.launch
 import kotlinx.datetime.toLocalDateTime
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 sealed class DeletedItemUiModel(val id: String, val title: String, val deletedAt: Long) {
     class TopicItem(id: String, title: String, deletedAt: Long) : DeletedItemUiModel(id, title, deletedAt)
@@ -46,12 +47,12 @@ fun RecentlyDeletedScreen(
     trashViewModel: TrashViewModel,
     onBackClick: () -> Unit
 ) {
-    val deletedTopics by trashViewModel.deletedTopics.collectAsState()
-    val deletedResources by trashViewModel.deletedResourceEntries.collectAsState()
-    val deletedOpinions by trashViewModel.deletedOpinions.collectAsState()
-    val deletedBookmarks by trashViewModel.deletedBookmarks.collectAsState()
-    val topics by viewModel.topicsStream.collectAsState()
-    val restoreNeedsTopicId by trashViewModel.restoreNeedsTopicId.collectAsState()
+    val deletedTopics by trashViewModel.deletedTopics.collectAsStateWithLifecycle()
+    val deletedResources by trashViewModel.deletedResourceEntries.collectAsStateWithLifecycle()
+    val deletedOpinions by trashViewModel.deletedOpinions.collectAsStateWithLifecycle()
+    val deletedBookmarks by trashViewModel.deletedBookmarks.collectAsStateWithLifecycle()
+    val topics by viewModel.topicsStream.collectAsStateWithLifecycle()
+    val restoreNeedsTopicId by trashViewModel.restoreNeedsTopicId.collectAsStateWithLifecycle()
     
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()

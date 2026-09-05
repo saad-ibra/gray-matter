@@ -33,6 +33,7 @@ import com.example.graymatter.android.ui.components.TopicPickerSheet
 import com.example.graymatter.android.ui.components.RecentItemCard
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
  * Home Screen.
@@ -52,9 +53,9 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     // Collect the reactive stream of the 4 most recent items with details
-    val recentItems by homeViewModel.recentResourceEntryDetails.collectAsState()
-    val orphanEntries by homeViewModel.orphanResourceEntries.collectAsState()
-    val topics by viewModel.topicsStream.collectAsState()
+    val recentItems by homeViewModel.recentResourceEntryDetails.collectAsStateWithLifecycle()
+    val orphanEntries by homeViewModel.orphanResourceEntries.collectAsStateWithLifecycle()
+    val topics by viewModel.topicsStream.collectAsStateWithLifecycle()
     
     var selectedOrphan by remember { mutableStateOf<ResourceEntry?>(null) }
     val scope = rememberCoroutineScope()

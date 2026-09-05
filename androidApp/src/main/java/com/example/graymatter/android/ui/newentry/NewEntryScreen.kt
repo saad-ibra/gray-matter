@@ -45,6 +45,7 @@ import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.components.MarkdownEditor
 import com.example.graymatter.domain.CustomTemplate
 import java.util.Locale
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
  * New Resource Screen.
@@ -66,17 +67,17 @@ fun NewEntryScreen(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     
-    val isSaving by draftingViewModel.isImporting.collectAsState()
-    val templates by templateViewModel.templates.collectAsState()
+    val isSaving by draftingViewModel.isImporting.collectAsStateWithLifecycle()
+    val templates by templateViewModel.templates.collectAsStateWithLifecycle()
 
-    val entryType by draftingViewModel.entryType.collectAsState()
-    val title by draftingViewModel.draftTitle.collectAsState()
-    val urlValue by draftingViewModel.draftUrl.collectAsState()
-    val opinionText by draftingViewModel.draftOpinion.collectAsState()
-    val noteContent by draftingViewModel.draftNoteContent.collectAsState()
-    val description by draftingViewModel.draftDescription.collectAsState()
-    val confidenceScore by draftingViewModel.draftConfidence.collectAsState()
-    val currentImagePath by draftingViewModel.draftImagePath.collectAsState()
+    val entryType by draftingViewModel.entryType.collectAsStateWithLifecycle()
+    val title by draftingViewModel.draftTitle.collectAsStateWithLifecycle()
+    val urlValue by draftingViewModel.draftUrl.collectAsStateWithLifecycle()
+    val opinionText by draftingViewModel.draftOpinion.collectAsStateWithLifecycle()
+    val noteContent by draftingViewModel.draftNoteContent.collectAsStateWithLifecycle()
+    val description by draftingViewModel.draftDescription.collectAsStateWithLifecycle()
+    val confidenceScore by draftingViewModel.draftConfidence.collectAsStateWithLifecycle()
+    val currentImagePath by draftingViewModel.draftImagePath.collectAsStateWithLifecycle()
 
     var showImageSourcePicker by remember { mutableStateOf(false) }
     var tempCameraUri by remember { mutableStateOf<android.net.Uri?>(null) }

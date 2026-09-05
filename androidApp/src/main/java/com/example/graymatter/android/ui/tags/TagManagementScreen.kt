@@ -22,6 +22,7 @@ import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.viewmodel.TagViewModel
 import com.example.graymatter.domain.Tag
 import kotlinx.coroutines.launch
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun TagManagementScreen(
@@ -30,7 +31,7 @@ fun TagManagementScreen(
     onTagClick: (String) -> Unit = {},
     onExportPdf: (Tag) -> Unit = {}
 ) {
-    val tags: List<Tag> by tagViewModel.allTags.collectAsState()
+    val tags: List<Tag> by tagViewModel.allTags.collectAsStateWithLifecycle()
     var showCreateDialog: Boolean by remember { mutableStateOf(false) }
     var editingTag: Tag? by remember { mutableStateOf(null) }
     var lastDeletedTag: Tag? by remember { mutableStateOf(null) }
@@ -201,7 +202,7 @@ private fun TagItem(
 ) {
     var showMenu: Boolean by remember { mutableStateOf(false) }
     val entryCount: Long by tagViewModel.getEntryCountByTagId(tag.id)
-        .collectAsState(initial = 0L)
+        .collectAsStateWithLifecycle(initialValue = 0L)
 
     Box(
         modifier = Modifier

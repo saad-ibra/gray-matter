@@ -88,6 +88,7 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 // ─── Pre-computed static geometry (allocated once, never recreated) ────────────
 
@@ -139,7 +140,7 @@ fun KnowledgeGraphScreen(
     onNavigateToTopic: (String) -> Unit = {},
     onNavigateToResource: (String) -> Unit = {}
 ) {
-    val graphState by viewModel.graphState.collectAsState()
+    val graphState by viewModel.graphState.collectAsStateWithLifecycle()
     
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }

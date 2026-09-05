@@ -37,6 +37,7 @@ import com.example.graymatter.domain.ResourceType
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
  * Premium full-screen search overlay for the Library.
@@ -109,7 +110,7 @@ fun LibrarySearchOverlay(
                     EmptySearchState(query = viewModel.searchQuery)
                 }
                 else -> {
-                    val recentSearches by viewModel.recentSearches.collectAsState()
+                    val recentSearches by viewModel.recentSearches.collectAsStateWithLifecycle()
                     if (recentSearches.isNotEmpty()) {
                         RecentSearchesList(
                             recentSearches = recentSearches,

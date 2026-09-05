@@ -21,6 +21,7 @@ import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.viewmodel.TagViewModel
 import com.example.graymatter.android.ui.viewmodel.HomeViewModel
 import kotlinx.coroutines.launch
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,11 +33,11 @@ fun TagEntriesScreen(
     onItemClick: (String, String) -> Unit,
     onExportPdf: () -> Unit = {}
 ) {
-    val tags by tagViewModel.allTags.collectAsState()
+    val tags by tagViewModel.allTags.collectAsStateWithLifecycle()
     val currentTag = tags.find { it.id == tagId }
     val tagName = currentTag?.name ?: "Unknown Tag"
 
-    val opinionsByTag by tagViewModel.getOpinionsByTagId(tagId).collectAsState(initial = emptyList())
+    val opinionsByTag by tagViewModel.getOpinionsByTagId(tagId).collectAsStateWithLifecycle(initialValue = emptyList())
     
     var selectedOpinionIds by remember { mutableStateOf(setOf<String>()) }
     val inSelectionMode = selectedOpinionIds.isNotEmpty()

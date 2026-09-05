@@ -60,10 +60,14 @@ sqldelight {
         create("GrayMatterDatabase") {
             packageName.set("com.example.graymatter.database")
             srcDirs("src/commonMain/sqldelight-graymatter")
+            schemaOutputDirectory.set(file("src/commonMain/sqldelight-graymatter/databases"))
+            verifyMigrations.set(true)
         }
         create("NotesDatabase") {
             packageName.set("com.example.notes.database")
             srcDirs("sqldelight-notes")
+            schemaOutputDirectory.set(file("sqldelight-notes/databases"))
+            verifyMigrations.set(true)
         }
     }
 }

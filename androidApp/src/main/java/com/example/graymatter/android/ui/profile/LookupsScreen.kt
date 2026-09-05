@@ -22,6 +22,7 @@ import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.viewmodel.LookupsViewModel
 import com.example.graymatter.domain.Opinion
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,8 +32,8 @@ fun LookupsScreen(
     onNavigateToOrigin: (itemId: String, opinionId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val activeLookups by viewModel.activeLookups.collectAsState()
-    val learntLookups by viewModel.learntLookups.collectAsState()
+    val activeLookups by viewModel.activeLookups.collectAsStateWithLifecycle()
+    val learntLookups by viewModel.learntLookups.collectAsStateWithLifecycle()
     
     var selectedTab by remember { mutableIntStateOf(0) } // 0 = Learning, 1 = Learnt
 

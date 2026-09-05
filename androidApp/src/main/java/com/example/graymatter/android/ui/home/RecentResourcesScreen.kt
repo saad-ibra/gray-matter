@@ -18,6 +18,7 @@ import com.example.graymatter.android.ui.components.RecentItemCard
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.viewmodel.HomeViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,7 +27,7 @@ fun RecentResourcesScreen(
     onBackClick: () -> Unit,
     onItemClick: (String) -> Unit
 ) {
-    val recentItems by homeViewModel.allRecentResourceEntryDetails.collectAsState()
+    val recentItems by homeViewModel.allRecentResourceEntryDetails.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

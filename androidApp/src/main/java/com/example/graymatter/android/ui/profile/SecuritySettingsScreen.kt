@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.viewmodel.SecurityViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +33,7 @@ fun SecuritySettingsScreen(
     viewModel: SecurityViewModel,
     onBackClick: () -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showPasswordDialog by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
