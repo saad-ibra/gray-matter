@@ -255,6 +255,95 @@ object PdfExportService {
         }
     }
 
+    fun generateTagPdf(
+        context: Context,
+        tag: com.example.graymatter.domain.Tag,
+        opinions: List<Opinion>,
+        resourceMap: Map<String, ResourceEntryWithDetails>
+    ): File? {
+        val document = PdfDocument()
+        var pageNumber = 1
+        var currentY = 0f
+        var pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
+        var page = document.startPage(pageInfo)
+        var canvas = page.canvas
+
+        // Draw background
+        canvas.drawColor(bgColor)
+
+        // Draw Tag Header
+        currentY = drawHeader(canvas, tag.name, 0f, "Tag Export")
+        currentY += 16f
+
+        currentY = drawText(canvas, "Tagged Entries (${opinions.size})", MARGIN, currentY, accentGreen, 12f, true)
+        currentY += 12f
+
+        // Group opinions by their parent resource to maintain context
+        val opinionsByResource = opinions.groupBy { it.itemId }
+
+        opinionsByResource.forEach { (itemId, ops) ->
+            val details = resourceMap[itemId]
+            
+            // Check if we need a new page for the resource title
+            if (currentY > PAGE_HEIGHT - MARGIN - 100f) {
+                drawFooter(canvas, pageNumber)
+                document.finishPage(page)
+                pageNumber++
+                pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
+                page = document.startPage(pageInfo)
+                canvas = page.canvas
+                canvas.drawColor(bgColor)
+                currentY = MARGIN
+            }
+
+            // Resource title separator
+            currentY = drawSeparator(canvas, currentY)
+            currentY += 16f
+            
+            val title = details?.resource?.title ?: "Unknown Resource"
+            currentY = drawText(canvas, title, MARGIN, currentY, textPrimary, 14f, true)
+            currentY += 12f
+
+            // Opinions for this resource
+            ops.sortedBy { it.createdAt }.forEachIndexed { index, opinion ->
+                val estimatedHeight = estimateOpinionHeight(opinion, index + 1)
+
+                if (currentY + estimatedHeight > PAGE_HEIGHT - MARGIN - 40f) {
+                    drawFooter(canvas, pageNumber)
+                    document.finishPage(page)
+                    pageNumber++
+                    pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
+                    page = document.startPage(pageInfo)
+                    canvas = page.canvas
+                    canvas.drawColor(bgColor)
+                    currentY = MARGIN
+                }
+
+                currentY = drawOpinionCard(canvas, opinion, index + 1, currentY)
+                currentY += 16f
+            }
+            
+            currentY += 24f
+        }
+
+        // Draw footer on last page
+        drawFooter(canvas, pageNumber)
+        document.finishPage(page)
+
+        // Write to file
+        val outputFile = File(context.cacheDir, "tag_export_${System.currentTimeMillis()}.pdf")
+        return try {
+            FileOutputStream(outputFile).use { out ->
+                document.writeTo(out)
+            }
+            document.close()
+            outputFile
+        } catch (e: Exception) {
+            document.close()
+            null
+        }
+    }
+
     private fun drawHeader(canvas: Canvas, title: String, startY: Float, subtitlePrefix: String = "Opinion History"): Float {
         var y = startY + MARGIN
 

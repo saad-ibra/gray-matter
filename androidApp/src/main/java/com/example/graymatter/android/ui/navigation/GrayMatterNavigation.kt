@@ -342,6 +342,24 @@ fun GrayMatterNavigation(
                 onBackClick = { navController.popBackStack() },
                 onTagClick = { tagId ->
                     navController.navigate(NavigationDestination.TagEntries.buildRoute(tagId))
+                },
+                onExportPdf = { tag ->
+                    coroutineScope.launch {
+                        val opinions = tagViewModel.getOpinionsByTagId(tag.id).first()
+                        val resources = homeViewModel.allRecentResourceEntryDetails.first()
+                        val resourceMap = resources.associateBy { it.resourceEntry.id } + resources.associateBy { it.resource.id }
+                        val pdfFile = com.example.graymatter.android.export.PdfExportService.generateTagPdf(
+                            context,
+                            tag,
+                            opinions,
+                            resourceMap
+                        )
+                        if (pdfFile != null) {
+                            com.example.graymatter.android.export.PdfExportService.sharePdf(context, pdfFile, "Tag Export: ${tag.name}")
+                        } else {
+                            android.widget.Toast.makeText(context, "Failed to generate PDF", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
             )
         }
@@ -360,8 +378,29 @@ fun GrayMatterNavigation(
                 tagViewModel = tagViewModel,
                 homeViewModel = homeViewModel,
                 onBackClick = { navController.popBackStack() },
-                onItemClick = { resourceEntryId ->
-                    navController.navigate(NavigationDestination.ResourceDetail.buildRoute(resourceEntryId))
+                onItemClick = { resourceEntryId, opinionId ->
+                    navController.navigate(NavigationDestination.ResourceDetail.buildRoute(resourceEntryId, opinionId))
+                },
+                onExportPdf = {
+                    coroutineScope.launch {
+                        val tag = tagViewModel.allTags.value.find { it.id == tagId }
+                        if (tag != null) {
+                            val opinions = tagViewModel.getOpinionsByTagId(tag.id).first()
+                            val resources = homeViewModel.allRecentResourceEntryDetails.first()
+                            val resourceMap = resources.associateBy { it.resourceEntry.id } + resources.associateBy { it.resource.id }
+                            val pdfFile = com.example.graymatter.android.export.PdfExportService.generateTagPdf(
+                                context,
+                                tag,
+                                opinions,
+                                resourceMap
+                            )
+                            if (pdfFile != null) {
+                                com.example.graymatter.android.export.PdfExportService.sharePdf(context, pdfFile, "Tag Export: ${tag.name}")
+                            } else {
+                                android.widget.Toast.makeText(context, "Failed to generate PDF", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
                 }
             )
         }

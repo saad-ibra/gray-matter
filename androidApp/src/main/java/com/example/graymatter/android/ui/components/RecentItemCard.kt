@@ -22,13 +22,17 @@ import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.domain.ResourceType
 import androidx.compose.ui.text.style.TextOverflow
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
+import androidx.compose.foundation.combinedClickable
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun RecentItemCard(
     title: String,
     time: String,
     type: ResourceType,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
+    selected: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val icon = when (type) {
@@ -43,9 +47,18 @@ fun RecentItemCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(GrayMatterTheme.colors.surface)
-            .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
+            .background(if (selected) GrayMatterTheme.colors.primary.copy(alpha = 0.15f) else GrayMatterTheme.colors.surface)
+            .border(
+                if (selected) 2.dp else 1.dp,
+                if (selected) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral800,
+                RoundedCornerShape(20.dp)
+            )
+            .then(
+                if (onLongClick != null) 
+                    Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+                else 
+                    Modifier.clickable(onClick = onClick)
+            )
             .padding(20.dp)
     ) {
         Row(

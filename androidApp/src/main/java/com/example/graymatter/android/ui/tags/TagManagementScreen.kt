@@ -27,7 +27,8 @@ import kotlinx.coroutines.launch
 fun TagManagementScreen(
     tagViewModel: TagViewModel,
     onBackClick: () -> Unit,
-    onTagClick: (String) -> Unit = {}
+    onTagClick: (String) -> Unit = {},
+    onExportPdf: (Tag) -> Unit = {}
 ) {
     val tags: List<Tag> by tagViewModel.allTags.collectAsState()
     var showCreateDialog: Boolean by remember { mutableStateOf(false) }
@@ -135,6 +136,7 @@ fun TagManagementScreen(
                         tagViewModel = tagViewModel,
                         onClick = { onTagClick(tag.id) },
                         onEdit = { editingTag = tag },
+                        onExportPdf = { onExportPdf(tag) },
                         onDelete = {
                             lastDeletedTag = tag
                             tagViewModel.deleteTag(tag.id)
@@ -194,6 +196,7 @@ private fun TagItem(
     tagViewModel: TagViewModel,
     onClick: () -> Unit,
     onEdit: () -> Unit,
+    onExportPdf: () -> Unit,
     onDelete: () -> Unit
 ) {
     var showMenu: Boolean by remember { mutableStateOf(false) }
@@ -263,6 +266,16 @@ private fun TagItem(
                         },
                         leadingIcon = {
                             Icon(Icons.Default.Edit, null, tint = GrayMatterTheme.colors.textPrimary)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Export as PDF", color = GrayMatterTheme.colors.textPrimary) },
+                        onClick = {
+                            showMenu = false
+                            onExportPdf()
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Default.PictureAsPdf, null, tint = GrayMatterTheme.colors.primary)
                         }
                     )
                     DropdownMenuItem(

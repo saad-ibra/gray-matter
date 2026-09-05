@@ -62,4 +62,34 @@ class TagViewModel(
     fun getOpinionsByTagId(tagId: String): Flow<List<com.example.graymatter.domain.Opinion>> {
         return opinionRepository.getOpinionsByTagId(tagId)
     }
+
+    fun removeTagFromOpinion(opinionId: String, tagId: String) {
+        viewModelScope.launch {
+            tagRepository.removeTagFromEntry(opinionId, tagId)
+        }
+    }
+
+    fun addTagToOpinion(opinionId: String, tagId: String) {
+        viewModelScope.launch {
+            tagRepository.addTagToEntry(
+                id = java.util.UUID.randomUUID().toString(),
+                entryId = opinionId,
+                entryType = "OPINION",
+                tagId = tagId,
+                createdAt = System.currentTimeMillis()
+            )
+        }
+    }
+
+    fun softDeleteOpinion(opinionId: String) {
+        viewModelScope.launch {
+            opinionRepository.softDeleteOpinion(opinionId)
+        }
+    }
+
+    fun undoDeleteOpinion(opinionId: String) {
+        viewModelScope.launch {
+            opinionRepository.undoDeleteOpinion(opinionId)
+        }
+    }
 }
