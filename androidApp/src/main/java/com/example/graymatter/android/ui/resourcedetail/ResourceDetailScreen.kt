@@ -75,8 +75,8 @@ fun ResourceDetailScreen(
     onOpenResource: () -> Unit,
     onOpenBookmark: (Bookmark) -> Unit,
     onUpdateDescription: (String, List<com.example.graymatter.domain.ReferenceSelectorItem>) -> Unit,
-    onAddOpinion: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>, String?) -> Unit,
-    onUpdateOpinion: (String, String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>, String?) -> Unit,
+    onAddOpinion: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>, List<com.example.graymatter.domain.Tag>, String?) -> Unit,
+    onUpdateOpinion: (String, String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>, List<com.example.graymatter.domain.Tag>, String?) -> Unit,
     onDeleteOpinion: (String) -> Unit,
     onUndoDeleteOpinion: (String) -> Unit = {},
     onRenameResource: (String) -> Unit,
@@ -137,10 +137,10 @@ fun ResourceDetailScreen(
         if (imageResultPath != null && visualText != null && visualConfidence != null) {
             if (showEditDialogId != null) {
                 // For simplicity, we just update the text, confidence, and image path.
-                onUpdateOpinion(showEditDialogId!!, visualText, visualConfidence, kotlinx.datetime.Clock.System.now().toEpochMilliseconds(), emptyList(), imageResultPath)
+                onUpdateOpinion(showEditDialogId!!, visualText, visualConfidence, kotlinx.datetime.Clock.System.now().toEpochMilliseconds(), emptyList(), emptyList(), imageResultPath)
                 showEditDialogId = null
             } else {
-                onAddOpinion(visualText, visualConfidence, emptyList(), imageResultPath)
+                onAddOpinion(visualText, visualConfidence, emptyList(), emptyList(), imageResultPath)
             }
             showAddDialog = false
             onClearVisualResult()
@@ -524,8 +524,8 @@ fun ResourceDetailScreen(
                         focusOpinionId = localFocusOpinionId,
                         templates = templates,
                         referenceSelectorViewModel = referenceSelectorViewModel,
-                        onUpdateOpinion = { opinionId, newText, newConfidence, newCreatedAt, newLinks, newImagePath ->
-                            onUpdateOpinion(opinionId, newText, newConfidence, newCreatedAt, newLinks, newImagePath)
+                        onUpdateOpinion = { opinionId, newText, newConfidence, newCreatedAt, newLinks, newTags, newImagePath ->
+                            onUpdateOpinion(opinionId, newText, newConfidence, newCreatedAt, newLinks, newTags, newImagePath)
                         },
                         onShareOpinion = onShareOpinion,
                         onShareOpinionMarkdown = onShareOpinionMarkdown,
@@ -572,20 +572,21 @@ fun ResourceDetailScreen(
         if (showAddDialog) {
             // If showEditDialogId is set, find that opinion to edit
             val opinionToEdit = showEditDialogId?.let { id -> sortedOpinions.find { it.id == id } }
+            val initialTags by (if (opinionToEdit != null) onLoadTags(opinionToEdit.id) else kotlinx.coroutines.flow.flowOf(emptyList())).collectAsState(initial = emptyList())
             OpinionEditDialog(
                 viewModel = referenceSelectorViewModel,
                 templates = templates,
                 initialText = opinionToEdit?.text ?: "",
                 initialConfidence = opinionToEdit?.confidenceScore ?: 0,
+                initialTags = initialTags,
                 onDismiss = { showAddDialog = false; showEditDialogId = null },
                 onCreateTemplate = { showTemplateEditor = true },
                 onNavigateToImageEditor = onNavigateToImageEditor,
-                onConfirm = { text, confidence, referenceLinks, imagePath ->
+                onConfirm = { text, confidence, referenceLinks, tags, imagePath ->
                     if (opinionToEdit != null) {
-                        // Preserve the original createdAt — do NOT update to now
-                        onUpdateOpinion(opinionToEdit.id, text, confidence, opinionToEdit.createdAt, referenceLinks, imagePath)
+                        onUpdateOpinion(opinionToEdit.id, text, confidence, opinionToEdit.createdAt, referenceLinks, tags, imagePath)
                     } else {
-                        onAddOpinion(text, confidence, referenceLinks, imagePath)
+                        onAddOpinion(text, confidence, referenceLinks, tags, imagePath)
                     }
                     showAddDialog = false
                     showEditDialogId = null
@@ -1074,7 +1075,7 @@ private fun OpinionTimeline(
     focusOpinionId: String? = null,
     templates: List<CustomTemplate>,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel?,
-    onUpdateOpinion: (String, String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>, String?) -> Unit,
+    onUpdateOpinion: (String, String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>, List<com.example.graymatter.domain.Tag>, String?) -> Unit,
     onDeleteOpinion: (String) -> Unit,
     onJumpToPage: (String, Int) -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
@@ -1101,7 +1102,7 @@ private fun OpinionTimeline(
                 isFocused = opinion.id == focusOpinionId,
                 templates = templates,
                 referenceSelectorViewModel = referenceSelectorViewModel,
-                onUpdate = { text, confidence, date, links, imagePath -> onUpdateOpinion(opinion.id, text, confidence, date, links, imagePath) },
+                onUpdate = { text, confidence, date, links, tags, imagePath -> onUpdateOpinion(opinion.id, text, confidence, date, links, tags, imagePath) },
                 onDelete = { onDeleteOpinion(opinion.id) },
                 onJump = {
                     opinion.pageNumber?.let { page ->
@@ -1136,7 +1137,7 @@ private fun OpinionTimelineItem(
     isFocused: Boolean = false,
     templates: List<CustomTemplate>,
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel?,
-    onUpdate: (String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>, String?) -> Unit,
+    onUpdate: (String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>, List<com.example.graymatter.domain.Tag>, String?) -> Unit,
     onDelete: () -> Unit,
     onJump: () -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
@@ -1209,6 +1210,9 @@ private fun OpinionTimelineItem(
     val flowLinks by onLoadLinks(opinion.id).collectAsState(initial = emptyList())
     var selectedReferences by remember(flowLinks) { mutableStateOf(flowLinks) }
     var showReferenceSelector by remember { mutableStateOf(false) }
+    
+    val flowTags by onLoadTags(opinion.id).collectAsState(initial = emptyList())
+    var selectedTags by remember(flowTags) { mutableStateOf(flowTags) }
     
     val hasPageNumber = opinion.pageNumber != null
 
@@ -1454,7 +1458,7 @@ private fun OpinionTimelineItem(
                                         } else {
                                             if (text.contains(" #learnt")) text else "$text #learnt"
                                         }
-                                        onUpdate(newText, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, opinion.imagePath)
+                                        onUpdate(newText, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, selectedTags, opinion.imagePath)
                                     }
                                 )
                             }
@@ -1510,47 +1514,7 @@ private fun OpinionTimelineItem(
             // Opinion Content
             if (isEditing && !isDictionary) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Knowledge Connections in Edit Mode
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("TIMELINE LINKS", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = GrayMatterTheme.colors.neutral500)
-                        TextButton(
-                            onClick = {
-                                referenceSelectorViewModel?.clearSelection()
-                                showReferenceSelector = true
-                            },
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Icon(Icons.Default.AddLink, null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Add")
-                        }
-                    }
-                    if (selectedReferences.isNotEmpty()) {
-                        Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            selectedReferences.forEach { ref ->
-                                val refText = when (ref) {
-                                    is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
-                                    is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
-                                    is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
-                                }
-                                InputChip(
-                                    selected = true,
-                                    onClick = { 
-                                        selectedReferences = selectedReferences.filter { it.id != ref.id }
-                                        onUpdate(text, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, opinion.imagePath)
-                                    },
-                                    label = { Text(refText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
-                                    trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
-                                    colors = InputChipDefaults.inputChipColors(
-                                        containerColor = GrayMatterTheme.colors.surfaceInput,
-                                        labelColor = GrayMatterTheme.colors.textPrimary,
-                                        trailingIconColor = GrayMatterTheme.colors.neutral500
-                                    ),
-                                    border = null
-                                )
-                            }
-                        }
-                    }
+
 
                     if (isTemplate) {
                         // Try to parse and show dynamic form for custom entry editing
@@ -1566,12 +1530,12 @@ private fun OpinionTimelineItem(
                                     val newValues = fieldValues.toMutableMap().apply { put(heading, newVal) }
                                     val newText = formatTemplateContent(template, newValues)
                                     text = newText
-                                    onUpdate(newText, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, opinion.imagePath)
+                                    onUpdate(newText, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, selectedTags, opinion.imagePath)
                                 },
                                 confidence = confidence,
                                 onConfidenceChange = {
                                     confidence = it
-                                    onUpdate(text, (it * 100).toInt(), opinion.createdAt, selectedReferences, opinion.imagePath)
+                                    onUpdate(text, (it * 100).toInt(), opinion.createdAt, selectedReferences, selectedTags, opinion.imagePath)
                                 }
                             )
                         } else {
@@ -1581,11 +1545,11 @@ private fun OpinionTimelineItem(
                                 confidence = confidence,
                                 onTextChange = { 
                                     text = it 
-                                    onUpdate(it, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, opinion.imagePath)
+                                    onUpdate(it, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, selectedTags, opinion.imagePath)
                                 },
                                 onConfidenceChange = { 
                                     confidence = it 
-                                    onUpdate(text, (it * 100).toInt(), opinion.createdAt, selectedReferences, opinion.imagePath)
+                                    onUpdate(text, (it * 100).toInt(), opinion.createdAt, selectedReferences, selectedTags, opinion.imagePath)
                                 }
                             )
                         }
@@ -1622,11 +1586,11 @@ private fun OpinionTimelineItem(
                                 val quotePart = currentParts[0]
                                 val newFullText = "$quotePart\n\n$newVal"
                                 text = newFullText
-                                onUpdate(newFullText, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, opinion.imagePath)
+                                onUpdate(newFullText, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, selectedTags, opinion.imagePath)
                             },
                             onConfidenceChange = { 
                                 confidence = it 
-                                onUpdate(text, (it * 100).toInt(), opinion.createdAt, selectedReferences, opinion.imagePath)
+                                onUpdate(text, (it * 100).toInt(), opinion.createdAt, selectedReferences, selectedTags, opinion.imagePath)
                             }
                         )
                     } else {
@@ -1641,14 +1605,156 @@ private fun OpinionTimelineItem(
                                     it
                                 }
                                 text = newFullText 
-                                onUpdate(newFullText, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, opinion.imagePath)
+                                onUpdate(newFullText, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, selectedTags, opinion.imagePath)
                             },
                             onConfidenceChange = { 
                                 confidence = it 
-                                onUpdate(text, (it * 100).toInt(), opinion.createdAt, selectedReferences, opinion.imagePath)
+                                onUpdate(text, (it * 100).toInt(), opinion.createdAt, selectedReferences, selectedTags, opinion.imagePath)
                             }
                         )
                     }
+
+                    // Unified Connections Dropdown
+                    var isConnectionsExpanded by remember { mutableStateOf(false) }
+                    var showTagConsole by remember { mutableStateOf(false) }
+                    
+                    Column {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { isConnectionsExpanded = !isConnectionsExpanded }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "CONNECTIONS",
+                                style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold),
+                                color = GrayMatterTheme.colors.textSecondary
+                            )
+                            Icon(
+                                if (isConnectionsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                null,
+                                tint = GrayMatterTheme.colors.neutral500
+                            )
+                        }
+
+                        AnimatedVisibility(
+                            visible = isConnectionsExpanded,
+                            enter = androidx.compose.animation.expandVertically(),
+                            exit = androidx.compose.animation.shrinkVertically()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(GrayMatterTheme.colors.surfaceInput)
+                                    .border(1.dp, GrayMatterTheme.colors.surfaceBorder, RoundedCornerShape(12.dp))
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                if (selectedTags.isEmpty() && selectedReferences.isEmpty()) {
+                                    Text("No connections added.", color = GrayMatterTheme.colors.neutral600, style = MaterialTheme.typography.bodyMedium)
+                                } else {
+                                    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                                    androidx.compose.foundation.layout.FlowRow(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        selectedTags.forEach { tag ->
+                                            androidx.compose.material3.InputChip(
+                                                selected = true,
+                                                onClick = { 
+                                                    selectedTags = selectedTags.filter { it.id != tag.id } 
+                                                    onUpdate(text, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, selectedTags, opinion.imagePath)
+                                                },
+                                                label = { Text(tag.name, style = MaterialTheme.typography.labelSmall) },
+                                                leadingIcon = { Icon(Icons.Default.Sell, null, modifier = Modifier.size(14.dp)) },
+                                                trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
+                                                colors = androidx.compose.material3.InputChipDefaults.inputChipColors(
+                                                    containerColor = GrayMatterTheme.colors.surfaceInput,
+                                                    labelColor = GrayMatterTheme.colors.textPrimary,
+                                                    leadingIconColor = GrayMatterTheme.colors.textPrimary,
+                                                    trailingIconColor = GrayMatterTheme.colors.neutral500
+                                                ),
+                                                border = androidx.compose.material3.InputChipDefaults.inputChipBorder(
+                                                    enabled = true,
+                                                    selected = true,
+                                                    borderColor = GrayMatterTheme.colors.surfaceBorder
+                                                )
+                                            )
+                                        }
+                                        selectedReferences.forEach { ref ->
+                                            val refText = when (ref) {
+                                                is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                                                is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                                                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                                            }
+                                            androidx.compose.material3.InputChip(
+                                                selected = true,
+                                                onClick = { 
+                                                    selectedReferences = selectedReferences.filter { it.id != ref.id } 
+                                                    onUpdate(text, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, selectedTags, opinion.imagePath)
+                                                },
+                                                label = { Text(refText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                                leadingIcon = { Icon(Icons.Default.Link, null, modifier = Modifier.size(14.dp)) },
+                                                trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
+                                                colors = androidx.compose.material3.InputChipDefaults.inputChipColors(
+                                                    containerColor = com.example.graymatter.android.ui.theme.GrayMatterColors.TypeLink.copy(alpha = 0.1f),
+                                                    labelColor = com.example.graymatter.android.ui.theme.GrayMatterColors.TypeLink,
+                                                    leadingIconColor = com.example.graymatter.android.ui.theme.GrayMatterColors.TypeLink,
+                                                    trailingIconColor = com.example.graymatter.android.ui.theme.GrayMatterColors.TypeLink
+                                                ),
+                                                border = androidx.compose.material3.InputChipDefaults.inputChipBorder(
+                                                    enabled = true,
+                                                    selected = true,
+                                                    borderColor = com.example.graymatter.android.ui.theme.GrayMatterColors.TypeLink.copy(alpha = 0.3f)
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Button(
+                                        onClick = { showTagConsole = true },
+                                        colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary.copy(alpha = 0.1f), contentColor = GrayMatterTheme.colors.primary)
+                                    ) {
+                                        Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Add Tag")
+                                    }
+                                    Button(
+                                        onClick = { 
+                                            referenceSelectorViewModel?.clearSelection()
+                                            showReferenceSelector = true 
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = com.example.graymatter.android.ui.theme.GrayMatterColors.TypeLink.copy(alpha = 0.1f), contentColor = com.example.graymatter.android.ui.theme.GrayMatterColors.TypeLink)
+                                    ) {
+                                        Icon(Icons.Default.Link, null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Add Link")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (showTagConsole) {
+                        com.example.graymatter.android.ui.components.TagConsoleSheet(
+                            viewModel = org.koin.androidx.compose.koinViewModel(),
+                            onDismissRequest = { showTagConsole = false },
+                            onTagSelected = { tag ->
+                                showTagConsole = false
+                                if (!selectedTags.any { it.id == tag.id }) {
+                                    selectedTags = selectedTags + tag
+                                    onUpdate(text, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, selectedTags, opinion.imagePath)
+                                }
+                            }
+                        )
+                    }
+
                 }
             } else {
                 if (isVisual) {
@@ -1962,7 +2068,7 @@ private fun OpinionTimelineItem(
         DateTimePicker(
             initialTimestamp = opinion.createdAt,
             onDismiss = { showDateTimePicker = false },
-            onConfirm = { onUpdate(text, (confidence * 100).toInt(), it, selectedReferences, opinion.imagePath) }
+            onConfirm = { onUpdate(text, (confidence * 100).toInt(), it, selectedReferences, selectedTags, opinion.imagePath) }
         )
     }
 
@@ -1973,7 +2079,7 @@ private fun OpinionTimelineItem(
             onConfirm = { items ->
                 showReferenceSelector = false
                 selectedReferences = (selectedReferences + items).distinctBy { it.id }
-                onUpdate(text, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, opinion.imagePath)
+                onUpdate(text, (confidence * 100).toInt(), opinion.createdAt, selectedReferences, selectedTags, opinion.imagePath)
             }
         )
     }
@@ -2209,12 +2315,14 @@ private fun OpinionEditDialog(
     templates: List<com.example.graymatter.domain.CustomTemplate> = emptyList(),
     initialText: String = "",
     initialConfidence: Int = 0,
+    initialTags: List<com.example.graymatter.domain.Tag> = emptyList(),
     onDismiss: () -> Unit, 
     onCreateTemplate: () -> Unit,
     onNavigateToImageEditor: (Uri, String, Int) -> Unit,
-    onConfirm: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>, String?) -> Unit
+    onConfirm: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>, List<com.example.graymatter.domain.Tag>, String?) -> Unit
 ) {
     var text by remember { mutableStateOf(initialText) }
+    var selectedTags by remember(initialTags) { mutableStateOf(initialTags) }
     var selectedTemplate by remember { mutableStateOf<com.example.graymatter.domain.CustomTemplate?>(null) }
     var templateFieldValues by remember { mutableStateOf(emptyMap<String, String>()) }
     var confidence by remember { mutableFloatStateOf(if (initialConfidence > 0) initialConfidence / 100f else 0.0f) }
@@ -2343,60 +2451,6 @@ private fun OpinionEditDialog(
                         }
                     )
                 } else {
-                    // Action row: Knowledge Connections + Add Image button
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("Knowledge Connections", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.neutral500)
-                                IconButton(
-                                    onClick = {
-                                        viewModel?.clearSelection()
-                                        showReferenceSelector = true
-                                    },
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(Icons.Default.Add, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
-                                }
-                            }
-                            
-                            if (selectedReferences.isNotEmpty()) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    selectedReferences.forEach { ref ->
-                                        val refText = when (ref) {
-                                            is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
-                                            is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
-                                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
-                                        }
-                                        InputChip(
-                                            selected = true,
-                                            onClick = { selectedReferences = selectedReferences.filter { it.id != ref.id } },
-                                            label = { Text(refText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
-                                            trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
-                                            colors = InputChipDefaults.inputChipColors(
-                                                containerColor = GrayMatterTheme.colors.surfaceInput,
-                                                labelColor = GrayMatterTheme.colors.textPrimary,
-                                                trailingIconColor = GrayMatterTheme.colors.neutral500
-                                            ),
-                                            border = null
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        
-                    }
-
                     // Text input or template
                     if (selectedTemplate != null) {
                         com.example.graymatter.android.ui.components.DynamicEntryForm(
@@ -2440,6 +2494,140 @@ private fun OpinionEditDialog(
                     )
                 }
 
+                // Unified Connections Dropdown
+                var isConnectionsExpanded by remember { mutableStateOf(false) }
+                var showTagConsole by remember { mutableStateOf(false) }
+                
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { isConnectionsExpanded = !isConnectionsExpanded }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "CONNECTIONS",
+                            style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold),
+                            color = GrayMatterTheme.colors.textSecondary
+                        )
+                        Icon(
+                            if (isConnectionsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            null,
+                            tint = GrayMatterTheme.colors.neutral500
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = isConnectionsExpanded,
+                        enter = androidx.compose.animation.expandVertically(),
+                        exit = androidx.compose.animation.shrinkVertically()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(GrayMatterTheme.colors.surfaceInput)
+                                .border(1.dp, GrayMatterTheme.colors.surfaceBorder, RoundedCornerShape(12.dp))
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            if (selectedTags.isEmpty() && selectedReferences.isEmpty()) {
+                                Text("No connections added.", color = GrayMatterTheme.colors.neutral600, style = MaterialTheme.typography.bodyMedium)
+                            } else {
+                                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                                androidx.compose.foundation.layout.FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    selectedTags.forEach { tag ->
+                                        androidx.compose.material3.InputChip(
+                                            selected = true,
+                                            onClick = { selectedTags = selectedTags.filter { it.id != tag.id } },
+                                            label = { Text(tag.name, style = MaterialTheme.typography.labelSmall) },
+                                            leadingIcon = { Icon(Icons.Default.Sell, null, modifier = Modifier.size(14.dp)) },
+                                            trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
+                                            colors = androidx.compose.material3.InputChipDefaults.inputChipColors(
+                                                containerColor = GrayMatterTheme.colors.surfaceInput,
+                                                labelColor = GrayMatterTheme.colors.textPrimary,
+                                                leadingIconColor = GrayMatterTheme.colors.textPrimary,
+                                                trailingIconColor = GrayMatterTheme.colors.neutral500
+                                            ),
+                                            border = androidx.compose.material3.InputChipDefaults.inputChipBorder(
+                                                enabled = true,
+                                                selected = true,
+                                                borderColor = GrayMatterTheme.colors.surfaceBorder
+                                            )
+                                        )
+                                    }
+                                    selectedReferences.forEach { ref ->
+                                        val refText = when (ref) {
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                                            is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                                        }
+                                        androidx.compose.material3.InputChip(
+                                            selected = true,
+                                            onClick = { selectedReferences = selectedReferences.filter { it.id != ref.id } },
+                                            label = { Text(refText, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                            leadingIcon = { Icon(Icons.Default.Link, null, modifier = Modifier.size(14.dp)) },
+                                            trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
+                                            colors = androidx.compose.material3.InputChipDefaults.inputChipColors(
+                                                containerColor = com.example.graymatter.android.ui.theme.GrayMatterColors.TypeLink.copy(alpha = 0.1f),
+                                                labelColor = com.example.graymatter.android.ui.theme.GrayMatterColors.TypeLink,
+                                                leadingIconColor = com.example.graymatter.android.ui.theme.GrayMatterColors.TypeLink,
+                                                trailingIconColor = com.example.graymatter.android.ui.theme.GrayMatterColors.TypeLink
+                                            ),
+                                            border = androidx.compose.material3.InputChipDefaults.inputChipBorder(
+                                                enabled = true,
+                                                selected = true,
+                                                borderColor = com.example.graymatter.android.ui.theme.GrayMatterColors.TypeLink.copy(alpha = 0.3f)
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Button(
+                                    onClick = { showTagConsole = true },
+                                    colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary.copy(alpha = 0.1f), contentColor = GrayMatterTheme.colors.primary)
+                                ) {
+                                    Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Add Tag")
+                                }
+                                Button(
+                                    onClick = { 
+                                        viewModel?.clearSelection()
+                                        showReferenceSelector = true 
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = com.example.graymatter.android.ui.theme.GrayMatterColors.TypeLink.copy(alpha = 0.1f), contentColor = com.example.graymatter.android.ui.theme.GrayMatterColors.TypeLink)
+                                ) {
+                                    Icon(Icons.Default.Link, null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Add Link")
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (showTagConsole) {
+                    com.example.graymatter.android.ui.components.TagConsoleSheet(
+                        viewModel = org.koin.androidx.compose.koinViewModel(),
+                        onDismissRequest = { showTagConsole = false },
+                        onTagSelected = { tag ->
+                            showTagConsole = false
+                            if (!selectedTags.any { it.id == tag.id }) {
+                                selectedTags = selectedTags + tag
+                            }
+                        }
+                    )
+                }
+
                 // Actions
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) { Text("Cancel", color = GrayMatterTheme.colors.neutral500) }
@@ -2460,7 +2648,7 @@ private fun OpinionEditDialog(
                             } else {
                                 text
                             }
-                            onConfirm(finalText, (confidence * 100).toInt(), selectedReferences, currentImagePath) 
+                            onConfirm(finalText, (confidence * 100).toInt(), selectedReferences, selectedTags, currentImagePath) 
                         }, 
                         colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = if (isVisualMode) Color.White else GrayMatterTheme.colors.onPrimary)
                     ) { Text(if (isVisualMode) "Save Visual" else "Save") }
