@@ -34,3 +34,5 @@ dependencyResolutionManagement {
 rootProject.name = "GrayMatter"
 include(":androidApp")
 include(":shared")
+include(":core:designsystem")
+include(":feature:tags")

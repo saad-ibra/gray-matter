@@ -671,7 +671,7 @@ fun NewEntryScreen(
                 }
                 
                 if (showTagConsole) {
-                    com.example.graymatter.android.ui.components.TagConsoleSheet(
+                    com.example.graymatter.android.ui.tags.TagConsoleSheet(
                         viewModel = tagViewModel,
                         onDismissRequest = { showTagConsole = false },
                         onTagSelected = { tag ->

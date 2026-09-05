@@ -1743,7 +1743,7 @@ private fun OpinionTimelineItem(
                     }
                     
                     if (showTagConsole) {
-                        com.example.graymatter.android.ui.components.TagConsoleSheet(
+                        com.example.graymatter.android.ui.tags.TagConsoleSheet(
                             viewModel = org.koin.androidx.compose.koinViewModel(),
                             onDismissRequest = { showTagConsole = false },
                             onTagSelected = { tag ->
@@ -2617,7 +2617,7 @@ private fun OpinionEditDialog(
                 }
                 
                 if (showTagConsole) {
-                    com.example.graymatter.android.ui.components.TagConsoleSheet(
+                    com.example.graymatter.android.ui.tags.TagConsoleSheet(
                         viewModel = org.koin.androidx.compose.koinViewModel(),
                         onDismissRequest = { showTagConsole = false },
                         onTagSelected = { tag ->

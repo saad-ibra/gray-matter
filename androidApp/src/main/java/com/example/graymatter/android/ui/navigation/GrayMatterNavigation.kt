@@ -377,7 +377,6 @@ fun GrayMatterNavigation(
             TagEntriesScreen(
                 tagId = tagId,
                 tagViewModel = tagViewModel,
-                homeViewModel = homeViewModel,
                 onBackClick = { navController.popBackStack() },
                 onItemClick = { resourceEntryId, opinionId ->
                     navController.navigate(NavigationDestination.ResourceDetail.buildRoute(resourceEntryId, opinionId))

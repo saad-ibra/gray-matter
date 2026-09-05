@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import com.example.graymatter.android.ui.components.RecentItemCard
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.viewmodel.TagViewModel
-import com.example.graymatter.android.ui.viewmodel.HomeViewModel
 import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -28,7 +27,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun TagEntriesScreen(
     tagId: String,
     tagViewModel: TagViewModel,
-    homeViewModel: HomeViewModel,
     onBackClick: () -> Unit,
     onItemClick: (String, String) -> Unit,
     onExportPdf: () -> Unit = {}

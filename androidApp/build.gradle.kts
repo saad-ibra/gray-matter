@@ -54,6 +54,8 @@ android {
 
 dependencies {
     implementation(project(":shared"))
+    implementation(project(":core:designsystem"))
+    implementation(project(":feature:tags"))
     // compose
     val composeBom = platform("androidx.compose:compose-bom:2024.02.01")
     implementation(composeBom)

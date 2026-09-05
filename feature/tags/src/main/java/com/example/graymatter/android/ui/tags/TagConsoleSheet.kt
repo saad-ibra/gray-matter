@@ -1,4 +1,4 @@
-package com.example.graymatter.android.ui.components
+package com.example.graymatter.android.ui.tags
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically

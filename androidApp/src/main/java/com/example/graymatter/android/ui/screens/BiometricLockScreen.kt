@@ -16,7 +16,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.graymatter.android.R
+import com.example.graymatter.core.designsystem.R
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
 
 /**
