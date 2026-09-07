@@ -102,7 +102,7 @@ These entries are specific to PDF resources.
 <br/>
 
 
-## Relatrix — 3D Knowledge Discovery
+## Relatrix: 3D Knowledge Discovery
 
 <br/>
 
