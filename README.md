@@ -10,13 +10,7 @@
 
 <br/>
 
-<a href="https://f-droid.org/packages/com.saadibra.graymatter">
-  <img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="60">
-</a>
-&nbsp;&nbsp;&nbsp;
-<a href="https://saadibra.mooo.com/relatrix/">
-  <img src="https://img.shields.io/badge/Interactive_Tutorial-Try_it_Live!-7F52FF?style=for-the-badge" alt="Interactive Web Tutorial" height="60">
-</a>
+<a href="https://f-droid.org/packages/com.saadibra.graymatter"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="60"></a>&nbsp;&nbsp;&nbsp;<a href="https://saadibra.mooo.com/relatrix/"><img src="https://img.shields.io/badge/Interactive_Tutorial-Try_it_Live-7F52FF?style=for-the-badge" alt="Interactive Web Tutorial" height="60"></a>
 
 <br/>
 <br/>
