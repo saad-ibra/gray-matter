@@ -4,6 +4,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -36,6 +37,7 @@ import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.TextSnippet
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -44,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -78,7 +81,7 @@ fun TutorialOverlay(onDismiss: () -> Unit) {
     var selectedOpinion by remember { mutableStateOf<String?>(null) }
     var selectedTopic by remember { mutableStateOf<String?>(null) }
 
-    val totalSlides = 9
+    val totalSlides = 10
 
     fun advanceTo(slide: Int) {
         currentSlide = slide
@@ -166,7 +169,8 @@ fun TutorialOverlay(onDismiss: () -> Unit) {
                                 opinion = selectedOpinion ?: "My thought",
                                 onExplored = { canAdvance = true }
                             )
-                            8 -> SlideReady()
+                            8 -> SlideTagsAndLinks()
+                            9 -> SlideReady()
                         }
                     }
 
@@ -943,9 +947,115 @@ private fun SlideGraph(
     }
 }
 
+
 // ════════════════════════════════════════════════════════════════════════
-//  Slide 8: You're Ready
+//  Slide 8: Tags & Links
 // ════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun SlideTagsAndLinks() {
+    val infiniteTransition = rememberInfiniteTransition(label = "links_anim")
+    val phase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 60f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "dash_phase"
+    )
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        Text("Tags & Knowledge Links",
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            color = GrayMatterTheme.colors.textPrimary, textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 8.dp))
+        Text("Connect entries across documents using moving dashed links, and group them instantly with custom tags.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = GrayMatterTheme.colors.textSecondary, textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 24.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color.Black.copy(alpha = 0.3f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+
+                // Draw moving dashed links
+                val linkColor = Color(0xFF64B5F6)
+                val dashEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 20f), phase = phase)
+
+                // Draw lines between "entries"
+                drawLine(
+                    color = linkColor.copy(alpha = 0.8f),
+                    start = Offset(w * 0.25f, h * 0.6f),
+                    end = Offset(w * 0.5f, h * 0.25f),
+                    strokeWidth = 6f,
+                    pathEffect = dashEffect
+                )
+                
+                drawLine(
+                    color = linkColor.copy(alpha = 0.8f),
+                    start = Offset(w * 0.5f, h * 0.25f),
+                    end = Offset(w * 0.75f, h * 0.6f),
+                    strokeWidth = 6f,
+                    pathEffect = dashEffect
+                )
+
+                // Draw Entry Nodes
+                drawCircle(color = GrayMatterColors.TypeOpinion, radius = 20f, center = Offset(w * 0.25f, h * 0.6f))
+                drawCircle(color = GrayMatterColors.TypeTemplate, radius = 20f, center = Offset(w * 0.5f, h * 0.25f))
+                drawCircle(color = GrayMatterColors.TypeVisual, radius = 20f, center = Offset(w * 0.75f, h * 0.6f))
+            }
+            
+            // Draw Beautiful Tags over Canvas
+            Box(Modifier.fillMaxSize()) {
+                // Tag 1
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .offset(x = 24.dp, y = (-24).dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFFE91E63).copy(alpha = 0.25f))
+                        .border(1.dp, Color(0xFFE91E63).copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFFF48FB1), modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("last minute revision", color = Color(0xFFF48FB1), style = MaterialTheme.typography.labelMedium)
+                }
+
+                // Tag 2
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(x = (-24).dp, y = (-36).dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFF00BCD4).copy(alpha = 0.25f))
+                        .border(1.dp, Color(0xFF00BCD4).copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFF80DEEA), modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("must read", color = Color(0xFF80DEEA), style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  Slide 9: You're Ready
+// ════════════════════════════════════════════════════════════════════════
+
 
 @Composable
 private fun SlideReady() {
