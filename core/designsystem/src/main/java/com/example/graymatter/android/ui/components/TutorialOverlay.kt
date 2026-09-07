@@ -25,6 +25,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Edit
@@ -81,11 +84,11 @@ fun TutorialOverlay(onDismiss: () -> Unit) {
     var selectedOpinion by remember { mutableStateOf<String?>(null) }
     var selectedTopic by remember { mutableStateOf<String?>(null) }
 
-    val totalSlides = 10
+    val totalSlides = 11
 
     fun advanceTo(slide: Int) {
         currentSlide = slide
-        canAdvance = slide == 0 || slide == totalSlides - 1
+        canAdvance = slide == 0 || slide == 8 || slide == 9 || slide == totalSlides - 1
     }
 
     fun goBack() {
@@ -169,8 +172,9 @@ fun TutorialOverlay(onDismiss: () -> Unit) {
                                 opinion = selectedOpinion ?: "My thought",
                                 onExplored = { canAdvance = true }
                             )
-                            8 -> SlideTagsAndLinks()
-                            9 -> SlideReady()
+                            8 -> SlideTags(onTagSelected = { canAdvance = true })
+                            9 -> SlideLinks(onLinked = { canAdvance = true })
+                            10 -> SlideReady()
                         }
                     }
 
@@ -182,6 +186,22 @@ fun TutorialOverlay(onDismiss: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Left slot (Back button or empty space to maintain center alignment)
+                        Box(modifier = Modifier.widthIn(min = 60.dp), contentAlignment = Alignment.CenterStart) {
+                            if (currentSlide > 0) {
+                                IconButton(
+                                    onClick = { goBack() },
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .background(GrayMatterTheme.colors.neutral800)
+                                ) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = GrayMatterTheme.colors.textPrimary)
+                                }
+                            }
+                        }
+
+                        // Middle slot (Progress dots)
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             repeat(totalSlides) { i ->
                                 Box(
@@ -196,26 +216,28 @@ fun TutorialOverlay(onDismiss: () -> Unit) {
                             }
                         }
 
-                        if (currentSlide == totalSlides - 1) {
-                            Button(
-                                onClick = onDismiss,
-                                colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary)
-                            ) {
-                                Text("Get Started", color = GrayMatterTheme.colors.onPrimary)
-                            }
-                        } else {
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                if (currentSlide > 0) {
-                                    TextButton(onClick = { goBack() }) {
-                                        Text("Back", color = GrayMatterTheme.colors.neutral500)
-                                    }
+                        // Right slot (Next button or Done button)
+                        Box(modifier = Modifier.widthIn(min = 60.dp), contentAlignment = Alignment.CenterEnd) {
+                            if (currentSlide == totalSlides - 1) {
+                                IconButton(
+                                    onClick = onDismiss,
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .background(GrayMatterTheme.colors.primary)
+                                ) {
+                                    Icon(Icons.Default.Check, contentDescription = "Done", tint = GrayMatterTheme.colors.onPrimary)
                                 }
-                                AnimatedVisibility(visible = canAdvance) {
-                                    Button(
+                            } else {
+                                if (canAdvance) {
+                                    IconButton(
                                         onClick = { advanceTo(currentSlide + 1) },
-                                        colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary)
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .clip(CircleShape)
+                                            .background(GrayMatterTheme.colors.primary)
                                     ) {
-                                        Text("Next", color = GrayMatterTheme.colors.onPrimary)
+                                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next", tint = GrayMatterTheme.colors.onPrimary)
                                     }
                                 }
                             }
@@ -949,11 +971,90 @@ private fun SlideGraph(
 
 
 // ════════════════════════════════════════════════════════════════════════
-//  Slide 8: Tags & Links
+//  Slide 8: Tags
 // ════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun SlideTagsAndLinks() {
+private fun SlideTags(onTagSelected: () -> Unit) {
+    var selectedTag by remember { mutableStateOf<String?>(null) }
+    
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        Text("Organize with Tags",
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            color = GrayMatterTheme.colors.textPrimary, textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 8.dp))
+        Text("Group related entries instantly.\nTap a tag below to categorize this thought.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = GrayMatterTheme.colors.textSecondary, textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 24.dp))
+            
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color.Black.copy(alpha = 0.2f))
+                .padding(20.dp)
+        ) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(16.dp).clip(CircleShape).background(GrayMatterColors.TypeOpinion))
+                    Spacer(Modifier.width(12.dp))
+                    Text("My crucial insight", color = GrayMatterTheme.colors.textPrimary, style = MaterialTheme.typography.bodyLarge)
+                }
+                
+                AnimatedVisibility(visible = selectedTag != null) {
+                    Row(
+                        modifier = Modifier
+                            .padding(top = 16.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(alpha = 0.15f))
+                            .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Sell, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(selectedTag ?: "", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+        }
+        
+        Spacer(Modifier.height(32.dp))
+        
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            val tags = listOf("important", "review")
+            tags.forEach { tag ->
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(if (selectedTag == tag) Color.White.copy(alpha = 0.2f) else GrayMatterTheme.colors.neutral800)
+                        .clickable { 
+                            selectedTag = tag
+                            onTagSelected()
+                        }
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Sell, contentDescription = null, tint = if (selectedTag == tag) Color.White else GrayMatterTheme.colors.textSecondary, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(tag, color = if (selectedTag == tag) Color.White else GrayMatterTheme.colors.textSecondary, style = MaterialTheme.typography.labelLarge)
+                }
+            }
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  Slide 9: Links
+// ════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun SlideLinks(onLinked: () -> Unit) {
+    var sourceSelected by remember { mutableStateOf(false) }
+    var targetSelected by remember { mutableStateOf(false) }
+    var linked by remember { mutableStateOf(false) }
+    
     val infiniteTransition = rememberInfiniteTransition(label = "links_anim")
     val phase by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -965,14 +1066,22 @@ private fun SlideTagsAndLinks() {
         label = "dash_phase"
     )
 
+    LaunchedEffect(sourceSelected, targetSelected) {
+        if (sourceSelected && targetSelected && !linked) {
+            linked = true
+            onLinked()
+        }
+    }
+
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        Text("Tags & Knowledge Links",
+        Text("Knowledge Links",
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = GrayMatterTheme.colors.textPrimary, textAlign = TextAlign.Center,
             modifier = Modifier.padding(bottom = 8.dp))
-        Text("Forge connections between related ideas across your library. Use tags to instantly categorize entries, and draw knowledge links to trace thoughts from one document to another.",
+        Text(if (linked) "Connected! You can jump between them instantly." else "Knowledge links can connect any Topic, Resource, or Entry in your library.\nTap the entries below to link them.",
             style = MaterialTheme.typography.bodyMedium,
-            color = GrayMatterTheme.colors.textSecondary, textAlign = TextAlign.Center,
+            color = if (linked) GrayMatterColors.TypeOpinion else GrayMatterTheme.colors.textSecondary, 
+            textAlign = TextAlign.Center,
             modifier = Modifier.padding(bottom = 24.dp))
 
         Box(
@@ -983,42 +1092,51 @@ private fun SlideTagsAndLinks() {
                 .background(Color.Black.copy(alpha = 0.3f)),
             contentAlignment = Alignment.Center
         ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val w = size.width
-                val h = size.height
+            if (linked) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+                    drawLine(
+                        color = Color.White.copy(alpha = 0.8f),
+                        start = Offset(w * 0.25f, h * 0.5f),
+                        end = Offset(w * 0.75f, h * 0.5f),
+                        strokeWidth = 6f,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 20f), phase = phase)
+                    )
+                }
+            }
 
-                // Draw moving dashed links
-                val linkColor = Color.White
-                val dashEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 20f), phase = phase)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset(x = 40.dp)
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(if (sourceSelected) GrayMatterColors.TypeOpinion else GrayMatterTheme.colors.neutral800)
+                    .clickable { sourceSelected = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.MenuBook, contentDescription = null, tint = if (sourceSelected) Color.Black else GrayMatterTheme.colors.textPrimary)
+            }
 
-                // Draw lines between "entries"
-                drawLine(
-                    color = linkColor.copy(alpha = 0.6f),
-                    start = Offset(w * 0.25f, h * 0.6f),
-                    end = Offset(w * 0.5f, h * 0.25f),
-                    strokeWidth = 6f,
-                    pathEffect = dashEffect
-                )
-                
-                drawLine(
-                    color = linkColor.copy(alpha = 0.6f),
-                    start = Offset(w * 0.5f, h * 0.25f),
-                    end = Offset(w * 0.75f, h * 0.6f),
-                    strokeWidth = 6f,
-                    pathEffect = dashEffect
-                )
-
-                // Draw Entry Nodes
-                drawCircle(color = GrayMatterColors.TypeOpinion, radius = 20f, center = Offset(w * 0.25f, h * 0.6f))
-                drawCircle(color = GrayMatterColors.TypeTemplate, radius = 20f, center = Offset(w * 0.5f, h * 0.25f))
-                drawCircle(color = GrayMatterColors.TypeVisual, radius = 20f, center = Offset(w * 0.75f, h * 0.6f))
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .offset(x = (-40).dp)
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(if (targetSelected) GrayMatterColors.TypeTemplate else GrayMatterTheme.colors.neutral800)
+                    .clickable { targetSelected = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.TextSnippet, contentDescription = null, tint = if (targetSelected) Color.Black else GrayMatterTheme.colors.textPrimary)
             }
         }
     }
 }
 
 // ════════════════════════════════════════════════════════════════════════
-//  Slide 9: You're Ready
+//  Slide 10: You're Ready
 // ════════════════════════════════════════════════════════════════════════
 
 
