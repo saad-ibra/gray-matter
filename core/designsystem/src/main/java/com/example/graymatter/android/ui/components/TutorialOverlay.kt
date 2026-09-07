@@ -970,7 +970,7 @@ private fun SlideTagsAndLinks() {
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = GrayMatterTheme.colors.textPrimary, textAlign = TextAlign.Center,
             modifier = Modifier.padding(bottom = 8.dp))
-        Text("Connect entries across documents using moving dashed links, and group them instantly with custom tags.",
+        Text("Forge connections between related ideas across your library. Use tags to instantly categorize entries, and draw knowledge links to trace thoughts from one document to another.",
             style = MaterialTheme.typography.bodyMedium,
             color = GrayMatterTheme.colors.textSecondary, textAlign = TextAlign.Center,
             modifier = Modifier.padding(bottom = 24.dp))
@@ -988,12 +988,12 @@ private fun SlideTagsAndLinks() {
                 val h = size.height
 
                 // Draw moving dashed links
-                val linkColor = Color(0xFF64B5F6)
+                val linkColor = Color.White
                 val dashEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 20f), phase = phase)
 
                 // Draw lines between "entries"
                 drawLine(
-                    color = linkColor.copy(alpha = 0.8f),
+                    color = linkColor.copy(alpha = 0.6f),
                     start = Offset(w * 0.25f, h * 0.6f),
                     end = Offset(w * 0.5f, h * 0.25f),
                     strokeWidth = 6f,
@@ -1001,7 +1001,7 @@ private fun SlideTagsAndLinks() {
                 )
                 
                 drawLine(
-                    color = linkColor.copy(alpha = 0.8f),
+                    color = linkColor.copy(alpha = 0.6f),
                     start = Offset(w * 0.5f, h * 0.25f),
                     end = Offset(w * 0.75f, h * 0.6f),
                     strokeWidth = 6f,
@@ -1012,41 +1012,6 @@ private fun SlideTagsAndLinks() {
                 drawCircle(color = GrayMatterColors.TypeOpinion, radius = 20f, center = Offset(w * 0.25f, h * 0.6f))
                 drawCircle(color = GrayMatterColors.TypeTemplate, radius = 20f, center = Offset(w * 0.5f, h * 0.25f))
                 drawCircle(color = GrayMatterColors.TypeVisual, radius = 20f, center = Offset(w * 0.75f, h * 0.6f))
-            }
-            
-            // Draw Beautiful Tags over Canvas
-            Box(Modifier.fillMaxSize()) {
-                // Tag 1
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .offset(x = 24.dp, y = (-24).dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFFE91E63).copy(alpha = 0.25f))
-                        .border(1.dp, Color(0xFFE91E63).copy(alpha = 0.5f), RoundedCornerShape(16.dp))
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFFF48FB1), modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("last minute revision", color = Color(0xFFF48FB1), style = MaterialTheme.typography.labelMedium)
-                }
-
-                // Tag 2
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset(x = (-24).dp, y = (-36).dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF00BCD4).copy(alpha = 0.25f))
-                        .border(1.dp, Color(0xFF00BCD4).copy(alpha = 0.5f), RoundedCornerShape(16.dp))
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Sell, contentDescription = null, tint = Color(0xFF80DEEA), modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("must read", color = Color(0xFF80DEEA), style = MaterialTheme.typography.labelMedium)
-                }
             }
         }
     }
