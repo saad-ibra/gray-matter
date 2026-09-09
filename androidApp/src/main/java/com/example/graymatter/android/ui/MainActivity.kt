@@ -5,6 +5,11 @@ import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Modifier
+
+
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -99,12 +104,16 @@ class MainActivity : FragmentActivity() {
                 val isAppLockEnabled by securityPreferences.appLockState.collectAsStateWithLifecycle()
                 val isUnlocked by biometricAuthManager.isUnlocked.collectAsStateWithLifecycle()
                 
-                if (!isAppLockEnabled || isUnlocked) {
+                androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
+                    // Always keep the app in the composition tree to preserve navigation state and saved instance state
                     GrayMatterApp(initialSharedUri = initialSharedUri)
-                } else {
-                    BiometricLockScreen(
-                        onAuthenticate = { biometricAuthManager.authenticate(this@MainActivity) }
-                    )
+                    
+                    if (isAppLockEnabled && !isUnlocked) {
+                        BiometricLockScreen(
+                            onAuthenticate = { biometricAuthManager.authenticate(this@MainActivity) },
+                            modifier = Modifier
+                        )
+                    }
                 }
             }
         }

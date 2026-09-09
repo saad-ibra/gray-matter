@@ -29,7 +29,7 @@ val androidViewModelModule = module {
     
     viewModel { com.example.graymatter.android.ui.viewmodel.HomeViewModel(get(), get()) }
     
-    viewModel { com.example.graymatter.android.ui.viewmodel.DraftingViewModel(get(), get(), get()) }
+    viewModel { params -> com.example.graymatter.android.ui.viewmodel.DraftingViewModel(get(), get(), get(), get()) }
     
     viewModel { com.example.graymatter.android.ui.viewmodel.TagViewModel(get(), get()) }
     

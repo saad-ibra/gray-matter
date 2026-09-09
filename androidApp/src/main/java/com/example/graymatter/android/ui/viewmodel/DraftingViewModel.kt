@@ -21,7 +21,8 @@ import java.util.UUID
 class DraftingViewModel(
     private val resourceEntryRepository: ResourceEntryRepository,
     private val autoLinkService: AutoLinkService,
-    private val tagRepository: com.example.graymatter.data.TagRepository
+    private val tagRepository: com.example.graymatter.data.TagRepository,
+    private val savedStateHandle: androidx.lifecycle.SavedStateHandle
 ) : ViewModel() {
 
     enum class EntryType { LINK, FILE, NOTE }
@@ -50,14 +51,14 @@ class DraftingViewModel(
     private val _draftImagePath = MutableStateFlow<String?>(null)
     val draftImagePath: StateFlow<String?> = _draftImagePath.asStateFlow()
 
-    fun updateEntryType(type: EntryType) { _entryType.value = type }
-    fun updateTitle(title: String) { _draftTitle.value = title }
-    fun updateUrl(url: String) { _draftUrl.value = url }
-    fun updateOpinion(opinion: String) { _draftOpinion.value = opinion }
-    fun updateNoteContent(content: String) { _draftNoteContent.value = content }
-    fun updateDescription(desc: String) { _draftDescription.value = desc }
-    fun updateConfidence(confidence: Float) { _draftConfidence.value = confidence }
-    fun updateImagePath(path: String?) { _draftImagePath.value = path }
+    fun updateEntryType(type: EntryType) { savedStateHandle["entryType"] = type }
+    fun updateTitle(title: String) { savedStateHandle["draftTitle"] = title }
+    fun updateUrl(url: String) { savedStateHandle["draftUrl"] = url }
+    fun updateOpinion(opinion: String) { savedStateHandle["draftOpinion"] = opinion }
+    fun updateNoteContent(content: String) { savedStateHandle["draftNoteContent"] = content }
+    fun updateDescription(desc: String) { savedStateHandle["draftDescription"] = desc }
+    fun updateConfidence(confidence: Float) { savedStateHandle["draftConfidence"] = confidence }
+    fun updateImagePath(path: String?) { savedStateHandle["draftImagePath"] = path }
 
     fun resetDraft() {
         _draftTitle.value = ""

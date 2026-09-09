@@ -16,6 +16,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
 import com.example.graymatter.core.designsystem.R
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
 
@@ -74,29 +76,41 @@ fun BiometricLockScreen(
 
             Spacer(modifier = Modifier.height(64.dp))
 
-            // Unlock button
-            Button(
+            // Sleek Unlock button
+            OutlinedButton(
                 onClick = onAuthenticate,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = GrayMatterTheme.colors.primary
+                    .padding(horizontal = 32.dp)
+                    .height(60.dp),
+                shape = RoundedCornerShape(30.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = GrayMatterTheme.colors.primary,
+                    containerColor = GrayMatterTheme.colors.primary.copy(alpha = 0.05f)
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp, 
+                    GrayMatterTheme.colors.primary.copy(alpha = 0.3f)
                 )
             ) {
-                Icon(
-                    Icons.Default.Lock,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = "Unlock",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Lock,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp)
                     )
-                )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Tap to Unlock",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.5.sp
+                        )
+                    )
+                }
             }
         }
     }
