@@ -1,4 +1,4 @@
-package com.example.graymatter.android.ui.fileviewer
+package com.example.graymatter.feature.fileviewer
 
 import androidx.compose.animation.core.InfiniteTransition
 import androidx.compose.animation.core.RepeatMode

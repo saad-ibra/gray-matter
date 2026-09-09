@@ -1,4 +1,4 @@
-package com.example.graymatter.android.ui.fileviewer
+package com.example.graymatter.feature.fileviewer
 
 import android.os.Build
 import android.os.VibrationEffect

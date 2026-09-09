@@ -865,9 +865,9 @@ fun GrayMatterNavigation(
             val initialPage = backStackEntry.arguments?.getInt(NavigationDestination.FileViewer.ARG_PAGE) ?: -1
             val initialSearchQuery = backStackEntry.arguments?.getString(NavigationDestination.FileViewer.ARG_SEARCH_QUERY)
             
-            val fileViewerViewModel: com.example.graymatter.android.ui.fileviewer.FileViewerViewModel = koinViewModel()
+            val fileViewerViewModel: com.example.graymatter.feature.fileviewer.FileViewerViewModel = koinViewModel()
 
-            com.example.graymatter.android.ui.fileviewer.FileViewerScreen(
+            com.example.graymatter.feature.fileviewer.FileViewerScreen(
                 viewModel = fileViewerViewModel,
                 referenceSelectorViewModel = referenceSelectorViewModel,
                 resourceId = resourceId,

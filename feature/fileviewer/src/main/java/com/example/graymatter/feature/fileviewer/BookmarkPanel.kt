@@ -1,4 +1,4 @@
-package com.example.graymatter.android.ui.fileviewer
+package com.example.graymatter.feature.fileviewer
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*

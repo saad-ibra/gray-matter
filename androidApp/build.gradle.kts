@@ -54,9 +54,12 @@ android {
 
 dependencies {
     implementation(project(":shared"))
+    implementation(project(":core:common"))
     implementation(project(":core:designsystem"))
     implementation(project(":feature:tags"))
     implementation(project(":feature:graph"))
+    implementation(project(":feature:fileviewer"))
+
     // compose
     val composeBom = platform("androidx.compose:compose-bom:2024.02.01")
     implementation(composeBom)
@@ -91,7 +94,6 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
     
     // PDF text extraction and advanced features
-    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 
     // Markdown rendering
     implementation("com.github.jeziellago:compose-markdown:0.5.0")
