@@ -97,17 +97,14 @@ class MainActivity : FragmentActivity() {
             // ── App Content ────────────────────────────────────────────
             GrayMatterTheme(darkTheme = darkTheme) {
                 val isAppLockEnabled by securityPreferences.appLockState.collectAsStateWithLifecycle()
-                if (isAppLockEnabled) {
-                    val isUnlocked by biometricAuthManager.isUnlocked.collectAsStateWithLifecycle()
-                    if (isUnlocked) {
-                        GrayMatterApp(initialSharedUri = initialSharedUri)
-                    } else {
-                        BiometricLockScreen(
-                            onAuthenticate = { biometricAuthManager.authenticate(this@MainActivity) }
-                        )
-                    }
-                } else {
+                val isUnlocked by biometricAuthManager.isUnlocked.collectAsStateWithLifecycle()
+                
+                if (!isAppLockEnabled || isUnlocked) {
                     GrayMatterApp(initialSharedUri = initialSharedUri)
+                } else {
+                    BiometricLockScreen(
+                        onAuthenticate = { biometricAuthManager.authenticate(this@MainActivity) }
+                    )
                 }
             }
         }

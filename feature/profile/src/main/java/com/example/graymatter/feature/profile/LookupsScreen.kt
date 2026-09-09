@@ -1,4 +1,4 @@
-package com.example.graymatter.android.ui.profile
+package com.example.graymatter.feature.profile
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,7 +20,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.theme.GrayMatterColors
-import com.example.graymatter.android.ui.viewmodel.LookupsViewModel
 import com.example.graymatter.domain.Opinion
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 

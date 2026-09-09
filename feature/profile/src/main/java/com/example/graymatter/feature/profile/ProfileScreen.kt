@@ -1,4 +1,4 @@
-package com.example.graymatter.android.ui.profile
+package com.example.graymatter.feature.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

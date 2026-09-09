@@ -12,6 +12,7 @@ import com.example.graymatter.android.di.androidAppModule
 import com.example.graymatter.android.di.androidViewModelModule
 import com.example.graymatter.feature.graph.graphModule
 import com.example.graymatter.feature.fileviewer.fileViewerModule
+import com.example.graymatter.feature.profile.profileModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -32,7 +33,7 @@ class GrayMatterApplication : Application(), Configuration.Provider {
             // Enable Koin logger (using ERROR level by default since DEBUG might be too verbose)
             androidLogger(Level.ERROR)
             androidContext(this@GrayMatterApplication)
-            modules(androidAppModule, sharedModule, androidViewModelModule, graphModule, fileViewerModule)
+            modules(androidAppModule, sharedModule, androidViewModelModule, graphModule, fileViewerModule, profileModule)
         }
         
         // Initialize WorkManager early if needed, 

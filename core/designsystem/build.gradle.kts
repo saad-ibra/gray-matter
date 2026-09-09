@@ -37,5 +37,4 @@ dependencies {
     
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("androidx.activity:activity-compose")
-    implementation("com.github.jeziellago:compose-markdown:0.5.0")
 }

@@ -3,7 +3,7 @@ plugins {
     kotlin("android")
 }
 android {
-    namespace = "com.example.graymatter.feature.fileviewer"
+    namespace = "com.example.graymatter.feature.profile"
     compileSdk = 34
     defaultConfig { minSdk = 24 }
     buildFeatures { compose = true }
@@ -23,19 +23,15 @@ dependencies {
     implementation(composeBom)
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.activity:activity-compose")
-
     implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.activity:activity-compose")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
     implementation("androidx.compose.material:material-icons-extended")
-    implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("io.insert-koin:koin-androidx-compose:3.5.0")
     
-    // PDF extraction
-    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
 
-    
-    // Markdown rendering (used by TemplateSelector/Editor in fileviewer maybe? I'll add just in case)
 }

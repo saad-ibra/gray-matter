@@ -39,7 +39,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
-import com.example.graymatter.android.ui.profile.ProfileScreen
+import com.example.graymatter.feature.profile.ProfileScreen
 import com.example.graymatter.android.ui.template.TemplatesManagementScreen
 import com.example.graymatter.android.ui.tags.TagManagementScreen
 import com.example.graymatter.android.ui.tags.TagEntriesScreen
@@ -969,8 +969,8 @@ fun GrayMatterNavigation(
         composable(
             route = NavigationDestination.Lookups.route
         ) {
-            val lookupsViewModel: com.example.graymatter.android.ui.viewmodel.LookupsViewModel = koinViewModel()
-            com.example.graymatter.android.ui.profile.LookupsScreen(
+            val lookupsViewModel: com.example.graymatter.feature.profile.LookupsViewModel = koinViewModel()
+            com.example.graymatter.feature.profile.LookupsScreen(
                 viewModel = lookupsViewModel,
                 onBackClick = { navController.popBackStack() },
                 onNavigateToOrigin = { itemId, opinionId ->
@@ -1019,8 +1019,8 @@ fun GrayMatterNavigation(
         composable(
             route = NavigationDestination.BackupSettings.route
         ) {
-            val backupViewModel: com.example.graymatter.android.ui.viewmodel.BackupViewModel = koinViewModel()
-            com.example.graymatter.android.ui.profile.BackupSettingsScreen(
+            val backupViewModel: com.example.graymatter.feature.profile.BackupViewModel = koinViewModel()
+            com.example.graymatter.feature.profile.BackupSettingsScreen(
                 viewModel = backupViewModel,
                 onBackClick = { navController.popBackStack() }
             )
@@ -1030,8 +1030,8 @@ fun GrayMatterNavigation(
         composable(
             route = NavigationDestination.SecuritySettings.route
         ) {
-            val securityViewModel: com.example.graymatter.android.ui.viewmodel.SecurityViewModel = koinViewModel()
-            com.example.graymatter.android.ui.profile.SecuritySettingsScreen(
+            val securityViewModel: com.example.graymatter.feature.profile.SecurityViewModel = koinViewModel()
+            com.example.graymatter.feature.profile.SecuritySettingsScreen(
                 viewModel = securityViewModel,
                 onBackClick = { navController.popBackStack() }
             )

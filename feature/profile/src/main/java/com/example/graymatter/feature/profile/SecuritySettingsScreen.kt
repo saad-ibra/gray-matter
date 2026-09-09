@@ -1,4 +1,4 @@
-package com.example.graymatter.android.ui.profile
+package com.example.graymatter.feature.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import com.example.graymatter.android.ui.theme.GrayMatterColors
-import com.example.graymatter.android.ui.viewmodel.SecurityViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)

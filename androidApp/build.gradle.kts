@@ -59,6 +59,8 @@ dependencies {
     implementation(project(":feature:tags"))
     implementation(project(":feature:graph"))
     implementation(project(":feature:fileviewer"))
+    implementation(project(":feature:profile"))
+
 
     // compose
     val composeBom = platform("androidx.compose:compose-bom:2024.02.01")
@@ -76,10 +78,11 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
 
     // work manager
-    implementation("androidx.work:work-runtime-ktx:2.8.1")
 
     // window dependency to get the size of the screen without insets
     implementation("androidx.window:window:1.2.0")
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
+
 
     // splashscreen api
     implementation("androidx.core:core-splashscreen:1.0.1")
@@ -96,15 +99,12 @@ dependencies {
     // PDF text extraction and advanced features
 
     // Markdown rendering
-    implementation("com.github.jeziellago:compose-markdown:0.5.0")
 
     // Koin
     implementation("io.insert-koin:koin-android:3.5.0")
     implementation("io.insert-koin:koin-androidx-compose:3.5.0")
 
     // Encrypted SharedPreferences (privacy-centric backup settings)
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // Biometric authentication (hardware-tied CryptoObject)
-    implementation("androidx.biometric:biometric:1.2.0-alpha05")
 }

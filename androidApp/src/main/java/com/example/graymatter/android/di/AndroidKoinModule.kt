@@ -4,7 +4,6 @@ import com.example.graymatter.android.security.SecureDatabaseKeyManager
 import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
 import com.example.graymatter.android.ui.viewmodel.TrashViewModel
 import com.example.graymatter.viewmodel.ReferenceSelectorViewModel
-import com.example.graymatter.android.ui.viewmodel.LookupsViewModel
 import com.example.graymatter.data.local.DatabaseDriverFactory
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.android.ext.koin.androidContext
@@ -32,15 +31,9 @@ val androidViewModelModule = module {
     
     viewModel { com.example.graymatter.android.ui.viewmodel.DraftingViewModel(get(), get(), get()) }
     
-    viewModel { LookupsViewModel(get()) }
-    
     viewModel { com.example.graymatter.android.ui.viewmodel.TagViewModel(get(), get()) }
     
     viewModel { com.example.graymatter.android.ui.library.LibrarySearchViewModel(androidContext() as android.app.Application, get(), get(), get(), get()) }
-    
-    viewModel { com.example.graymatter.android.ui.viewmodel.BackupViewModel(androidContext() as android.app.Application) }
-    
-    viewModel { com.example.graymatter.android.ui.viewmodel.SecurityViewModel(androidContext() as android.app.Application) }
     
     factory {
         ReferenceSelectorViewModel(get(), get(), get(), get(), null, get())

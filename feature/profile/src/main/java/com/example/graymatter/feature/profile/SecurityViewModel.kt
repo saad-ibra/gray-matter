@@ -1,4 +1,4 @@
-package com.example.graymatter.android.ui.viewmodel
+package com.example.graymatter.feature.profile
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
