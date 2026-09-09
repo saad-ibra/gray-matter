@@ -4,7 +4,6 @@ import com.example.graymatter.android.security.SecureDatabaseKeyManager
 import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
 import com.example.graymatter.android.ui.viewmodel.TrashViewModel
 import com.example.graymatter.android.ui.fileviewer.FileViewerViewModel
-import com.example.graymatter.android.ui.graph.KnowledgeGraphViewModel
 import com.example.graymatter.viewmodel.ReferenceSelectorViewModel
 import com.example.graymatter.android.ui.viewmodel.LookupsViewModel
 import com.example.graymatter.data.local.DatabaseDriverFactory
@@ -35,8 +34,6 @@ val androidViewModelModule = module {
     viewModel { com.example.graymatter.android.ui.viewmodel.DraftingViewModel(get(), get(), get()) }
     
     viewModel { FileViewerViewModel(get(), get(), get(), get(), get()) }
-    
-    viewModel { KnowledgeGraphViewModel(get(), get(), get(), get(), get()) }
     
     viewModel { LookupsViewModel(get()) }
     

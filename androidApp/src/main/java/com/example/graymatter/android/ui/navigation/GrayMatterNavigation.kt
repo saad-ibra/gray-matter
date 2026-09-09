@@ -263,24 +263,24 @@ fun GrayMatterNavigation(
                             )
                         }
                         2 -> {
-                            val graphViewModel: com.example.graymatter.android.ui.graph.KnowledgeGraphViewModel = koinViewModel()
+                            val graphViewModel: com.example.graymatter.feature.graph.KnowledgeGraphViewModel = koinViewModel()
 
                             // Force fresh data on every navigation — ViewModel is cached so init only runs once
                             LaunchedEffect(Unit) {
                                 graphViewModel.loadGraphData()
                             }
 
-                            com.example.graymatter.android.ui.graph.KnowledgeGraphScreen(
+                            com.example.graymatter.feature.graph.KnowledgeGraphScreen(
                                 viewModel = graphViewModel,
                                 initialSelectedNodeId = null,
                                 onBackClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
                                 onNavigateHome = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
                                 onNodeDoubleTap = { node ->
                                     when (node.type) {
-                                        com.example.graymatter.android.ui.graph.NodeType.TOPIC -> {
+                                        com.example.graymatter.feature.graph.NodeType.TOPIC -> {
                                             navController.navigate(NavigationDestination.TopicDetail.buildRoute(node.id))
                                         }
-                                        com.example.graymatter.android.ui.graph.NodeType.RESOURCE -> {
+                                        com.example.graymatter.feature.graph.NodeType.RESOURCE -> {
                                             val item = viewModel.resourceEntriesStream.value.find { it.resourceId == node.id }
                                             if (item != null) navController.navigate(NavigationDestination.ResourceDetail.buildRoute(item.id))
                                         }
@@ -897,14 +897,14 @@ fun GrayMatterNavigation(
         ) { backStackEntry ->
             val nodeId = backStackEntry.arguments?.getString(NavigationDestination.KnowledgeGraph.ARG_NODE_ID)
             
-            val graphViewModel: com.example.graymatter.android.ui.graph.KnowledgeGraphViewModel = koinViewModel()
+            val graphViewModel: com.example.graymatter.feature.graph.KnowledgeGraphViewModel = koinViewModel()
 
             // Force fresh data on every navigation — ViewModel is cached so init only runs once
             LaunchedEffect(Unit) {
                 graphViewModel.loadGraphData()
             }
 
-            com.example.graymatter.android.ui.graph.KnowledgeGraphScreen(
+            com.example.graymatter.feature.graph.KnowledgeGraphScreen(
                 viewModel = graphViewModel,
                 initialSelectedNodeId = nodeId,
                 onBackClick = { navController.popBackStack() },
@@ -915,10 +915,10 @@ fun GrayMatterNavigation(
                 },
                 onNodeDoubleTap = { node ->
                     when (node.type) {
-                        com.example.graymatter.android.ui.graph.NodeType.TOPIC -> {
+                        com.example.graymatter.feature.graph.NodeType.TOPIC -> {
                             navController.navigate(NavigationDestination.TopicDetail.buildRoute(node.id))
                         }
-                        com.example.graymatter.android.ui.graph.NodeType.RESOURCE -> {
+                        com.example.graymatter.feature.graph.NodeType.RESOURCE -> {
                             // Find corresponding item mapped to this resource
                             val item = viewModel.resourceEntriesStream.value.find { it.resourceId == node.id }
                             if (item != null) navController.navigate(NavigationDestination.ResourceDetail.buildRoute(item.id))

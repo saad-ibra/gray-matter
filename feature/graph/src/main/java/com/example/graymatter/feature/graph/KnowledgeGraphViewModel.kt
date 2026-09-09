@@ -1,4 +1,4 @@
-package com.example.graymatter.android.ui.graph
+package com.example.graymatter.feature.graph
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

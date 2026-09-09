@@ -1,4 +1,4 @@
-package com.example.graymatter.android.ui.graph
+package com.example.graymatter.feature.graph
 
 import androidx.compose.ui.geometry.Offset
 import kotlin.math.max
