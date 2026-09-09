@@ -1,4 +1,4 @@
-package com.example.graymatter.android.ui.topicsynthesis
+package com.example.graymatter.feature.notes.topicsynthesis
 import androidx.compose.animation.core.*
 
 import androidx.compose.foundation.background

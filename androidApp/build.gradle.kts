@@ -60,6 +60,8 @@ dependencies {
     implementation(project(":feature:graph"))
     implementation(project(":feature:fileviewer"))
     implementation(project(":feature:profile"))
+    implementation(project(":feature:notes"))
+
 
 
     // compose

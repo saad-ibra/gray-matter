@@ -1,4 +1,4 @@
-package com.example.graymatter.android.ui.resourcedetail
+package com.example.graymatter.feature.notes.resourcedetail
 
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
 import androidx.compose.animation.core.*

@@ -23,13 +23,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.graymatter.android.ui.addtotopic.AddToTopicScreen
-import com.example.graymatter.android.ui.resourcedetail.ResourceDetailScreen
+import com.example.graymatter.feature.notes.resourcedetail.ResourceDetailScreen
 import com.example.graymatter.android.ui.home.HomeScreen
 import com.example.graymatter.android.ui.home.RecentResourcesScreen
 import com.example.graymatter.android.ui.library.LibraryScreen
 import com.example.graymatter.android.ui.viewmodel.DraftingViewModel
 import com.example.graymatter.android.ui.newentry.NewEntryScreen
-import com.example.graymatter.android.ui.topicsynthesis.TopicSynthesisScreen
+import com.example.graymatter.feature.notes.topicsynthesis.TopicSynthesisScreen
 import com.example.graymatter.android.ui.components.MarkdownEditor
 import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
 import com.example.graymatter.domain.business.ExportService
