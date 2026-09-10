@@ -61,7 +61,8 @@ data class OpinionBlockState(
     var selectedTags: List<com.example.graymatter.domain.Tag> = emptyList(),
     var selectedReferences: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
     var isConnectionsExpanded: Boolean = false,
-    var showTagConsole: Boolean = false
+    var showTagConsole: Boolean = false,
+    var isDeleted: Boolean = false
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -982,7 +983,8 @@ private fun CustomizedOpinionSection(
     onCreateTemplate: () -> Unit,
     onShowImageSourcePicker: () -> Unit,
     currentImagePath: String?,
-    onImagePathChange: (String?) -> Unit
+    onImagePathChange: (String?) -> Unit,
+    onDeleteBlock: (() -> Unit)? = null
 ) {
     val isVisualMode = currentImagePath != null
     val accentColor = when {
@@ -1030,6 +1032,24 @@ private fun CustomizedOpinionSection(
                         onTemplateSelect = onTemplateSelect,
                         onCreateTemplate = onCreateTemplate
                     )
+                }
+                if (onDeleteBlock != null) {
+                    var showMenu by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { showMenu = true }, modifier = Modifier.size(36.dp)) {
+                            Icon(Icons.Default.MoreVert, "More Options", tint = GrayMatterTheme.colors.neutral500)
+                        }
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Delete block", color = GrayMatterTheme.colors.error) },
+                                onClick = {
+                                    showMenu = false
+                                    onDeleteBlock()
+                                },
+                                leadingIcon = { Icon(Icons.Default.Delete, "Delete", tint = GrayMatterTheme.colors.error) }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -1158,39 +1178,59 @@ private fun OpinionTimeline(
     onShowReferenceSelector: (Int) -> Unit
 ) {
     // Top Timeline Plus Button
-    Column(
+    Box(
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        contentAlignment = Alignment.TopCenter
     ) {
-        IconButton(
-            onClick = { opinionBlocks.add(0, OpinionBlockState()) },
+        // Vertical line directly connecting to the first block, drawn first so it's underneath
+        Box(
+            modifier = Modifier
+                .padding(top = 20.dp) // Starts halfway down the button
+                .width(2.dp)
+                .height(30.dp)
+                .background(GrayMatterTheme.colors.surfaceBorder)
+        )
+        
+        // Plus button drawn on top
+        Box(
             modifier = Modifier
                 .size(40.dp)
                 .background(GrayMatterTheme.colors.surface, CircleShape)
                 .border(1.dp, GrayMatterTheme.colors.surfaceBorder, CircleShape)
+                .clip(CircleShape)
+                .clickable { opinionBlocks.add(0, OpinionBlockState()) },
+            contentAlignment = Alignment.Center
         ) {
             Icon(Icons.Default.Add, contentDescription = "Add Opinion", tint = GrayMatterTheme.colors.textPrimary)
         }
-        
-        // Vertical line directly connecting to the first block
-        Box(
-            modifier = Modifier
-                .width(2.dp)
-                .height(16.dp)
-                .background(GrayMatterTheme.colors.surfaceBorder)
-        )
     }
 
     // Loop over all opinion blocks
     opinionBlocks.forEachIndexed { index, blockState ->
       androidx.compose.runtime.key(blockState.id) {
         
-        // We use MutableTransitionState for entrance animation
+        // We use MutableTransitionState for entrance and exit animations
         val state = remember { androidx.compose.animation.core.MutableTransitionState(false).apply { targetState = true } }
+        
+        // Trigger exit animation if marked for deletion
+        if (blockState.isDeleted && state.targetState) {
+            state.targetState = false
+        }
+        
+        // Remove from list once exit animation completes
+        LaunchedEffect(state.isIdle, state.targetState) {
+            if (state.isIdle && !state.targetState) {
+                val idx = opinionBlocks.indexOfFirst { it.id == blockState.id }
+                if (idx != -1) {
+                    opinionBlocks.removeAt(idx)
+                }
+            }
+        }
         
         androidx.compose.animation.AnimatedVisibility(
             visibleState = state,
-            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(expandFrom = androidx.compose.ui.Alignment.Top)
+            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(expandFrom = androidx.compose.ui.Alignment.Top),
+            exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(shrinkTowards = androidx.compose.ui.Alignment.Top)
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth()
@@ -1238,7 +1278,10 @@ private fun OpinionTimeline(
                                 imagePath = path,
                                 selectedTemplate = null
                             )
-                        }
+                        },
+                        onDeleteBlock = if (opinionBlocks.size > 1 && index < opinionBlocks.size - 1) { 
+                            { opinionBlocks[index] = blockState.copy(isDeleted = true) } 
+                        } else null
                     )
 
                     // Confidence Level Section

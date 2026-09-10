@@ -60,53 +60,87 @@ class DraftingViewModel(
     fun updateEntryType(type: EntryType) { savedStateHandle["entryType"] = type }
     fun updateTitle(title: String) { savedStateHandle["draftTitle"] = title }
     
-    private var titleFetchJob: kotlinx.coroutines.Job? = null
-    
-    fun updateUrl(url: String) { 
-        savedStateHandle["draftUrl"] = url 
-        
+    fun updateUrl(url: String) {
+        savedStateHandle["draftUrl"] = url
         val currentTitle = savedStateHandle.get<String>("draftTitle") ?: ""
-        if (currentTitle.isEmpty() && (url.startsWith("http://") || url.startsWith("https://"))) {
-            titleFetchJob?.cancel()
-            titleFetchJob = viewModelScope.launch(Dispatchers.IO) {
-                delay(500)
-                try {
-                    val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
-                    connection.requestMethod = "GET"
-                    connection.connectTimeout = 3000
-                    connection.readTimeout = 3000
-                    connection.setRequestProperty("User-Agent", "Mozilla/5.0")
-                    
-                    if (connection.responseCode == 200) {
-                        val inputStream = connection.inputStream
-                        val reader = java.io.BufferedReader(java.io.InputStreamReader(inputStream))
-                        var line: String?
-                        val sb = StringBuilder()
-                        var charsRead = 0
-                        while (reader.readLine().also { line = it } != null && charsRead < 15000) {
-                            sb.append(line)
-                            charsRead += line?.length ?: 0
-                            
-                            val content = sb.toString()
-                            val titleMatcher = java.util.regex.Pattern.compile("<title>(.*?)</title>", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(content)
-                            if (titleMatcher.find()) {
-                                val fetchedTitle = titleMatcher.group(1)?.trim()
-                                if (!fetchedTitle.isNullOrEmpty()) {
-                                    withContext(Dispatchers.Main) {
-                                        if (savedStateHandle.get<String>("draftTitle").isNullOrEmpty()) {
-                                            savedStateHandle["draftTitle"] = fetchedTitle.replace("&amp;", "&").replace("&#39;", "'").replace("&quot;", "\"")
-                                        }
-                                    }
-                                }
-                                break
-                            }
-                        }
-                        reader.close()
-                    }
-                } catch (e: Exception) {
-                    // Ignore errors, allow user to type manually
+        if (currentTitle.isEmpty() && url.isNotBlank()) {
+            val inferred = inferTitleFromUrl(url)
+            if (inferred.isNotBlank()) {
+                savedStateHandle["draftTitle"] = inferred
+            }
+        }
+    }
+
+    private fun inferTitleFromUrl(url: String): String {
+        return try {
+            var clean = url
+                .removePrefix("https://")
+                .removePrefix("http://")
+                .removePrefix("www.")
+            
+            if (clean.endsWith("/")) clean = clean.dropLast(1)
+            
+            // Remove query parameters and fragments
+            clean = clean.substringBefore("?").substringBefore("#")
+            
+            val parts = clean.split("/").filter { it.isNotBlank() }
+            if (parts.isEmpty()) return ""
+
+            // Common non-title segments to ignore
+            val ignoreKeywords = setOf(
+                "articleshow", "article", "post", "blog", "news", "story", "p", "id", 
+                "view", "details", "html", "php", "cms", "aspx", "category", "tag", "archives"
+            )
+
+            var slug = ""
+            
+            // Iterate backwards to find the most descriptive part
+            for (i in parts.indices.reversed()) {
+                val part = parts[i].lowercase()
+                
+                // Skip domain names (first part usually)
+                if (i == 0 && parts.size > 1) continue
+                
+                // Skip technical IDs or short noise
+                if (part.all { it.isDigit() || it == '.' } || 
+                    part.length < 4 || 
+                    ignoreKeywords.contains(part.substringBeforeLast(".")) ||
+                    part.contains("index.")
+                ) continue
+                
+                // If it has hyphens or underscores, it's likely the title slug
+                if (part.contains("-") || part.contains("_")) {
+                    slug = parts[i]
+                    break
+                }
+                
+                // Fallback to the first non-ignored part from the end
+                if (slug.isEmpty()) {
+                    slug = parts[i]
                 }
             }
+            
+            if (slug.isEmpty()) slug = parts.last()
+
+            // Final cleanup
+            var formatted = slug
+                .substringBeforeLast(".cms")
+                .substringBeforeLast(".html")
+                .substringBeforeLast(".php")
+                .substringBeforeLast(".htm")
+                .replace("-", " ")
+                .replace("_", " ")
+                .replace(Regex("\\s+"), " ") // Double spaces
+                .trim()
+            
+            // Robust formatting: Title Case
+            formatted = formatted.split(" ").filter { it.isNotBlank() }.joinToString(" ") { word ->
+                word.lowercase().replaceFirstChar { if (it.isLowerCase()) java.util.Locale.getDefault().let { loc -> it.titlecase(loc) } else it.toString() }
+            }
+            
+            formatted
+        } catch (e: Exception) {
+            ""
         }
     }
     fun updateOpinion(opinion: String) { savedStateHandle["draftOpinion"] = opinion }
