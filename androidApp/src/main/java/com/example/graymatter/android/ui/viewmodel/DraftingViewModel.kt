@@ -13,6 +13,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.datetime.Clock
 import java.util.Locale
 import java.util.UUID
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 
 /**
  * ViewModel dedicated to the heavy logic of creating new Resource Entries 
@@ -22,38 +27,88 @@ class DraftingViewModel(
     private val resourceEntryRepository: ResourceEntryRepository,
     private val autoLinkService: AutoLinkService,
     private val tagRepository: com.example.graymatter.data.TagRepository,
+    private val opinionRepository: com.example.graymatter.data.OpinionRepository,
     private val savedStateHandle: androidx.lifecycle.SavedStateHandle
 ) : ViewModel() {
 
+    data class OpinionDraft(
+        val text: String,
+        val confidence: Int,
+        val imagePath: String?,
+        val referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
+        val tags: List<com.example.graymatter.domain.Tag> = emptyList()
+    )
+
     enum class EntryType { LINK, FILE, NOTE }
 
-    private val _entryType = MutableStateFlow(EntryType.LINK)
-    val entryType: StateFlow<EntryType> = _entryType.asStateFlow()
+    val entryType: StateFlow<EntryType> = savedStateHandle.getStateFlow("entryType", EntryType.LINK)
 
-    private val _draftTitle = MutableStateFlow("")
-    val draftTitle: StateFlow<String> = _draftTitle.asStateFlow()
+    val draftTitle: StateFlow<String> = savedStateHandle.getStateFlow("draftTitle", "")
 
-    private val _draftUrl = MutableStateFlow("")
-    val draftUrl: StateFlow<String> = _draftUrl.asStateFlow()
+    val draftUrl: StateFlow<String> = savedStateHandle.getStateFlow("draftUrl", "")
 
-    private val _draftOpinion = MutableStateFlow("")
-    val draftOpinion: StateFlow<String> = _draftOpinion.asStateFlow()
+    val draftOpinion: StateFlow<String> = savedStateHandle.getStateFlow("draftOpinion", "")
 
-    private val _draftNoteContent = MutableStateFlow("")
-    val draftNoteContent: StateFlow<String> = _draftNoteContent.asStateFlow()
+    val draftNoteContent: StateFlow<String> = savedStateHandle.getStateFlow("draftNoteContent", "")
 
-    private val _draftDescription = MutableStateFlow("")
-    val draftDescription: StateFlow<String> = _draftDescription.asStateFlow()
+    val draftDescription: StateFlow<String> = savedStateHandle.getStateFlow("draftDescription", "")
 
-    private val _draftConfidence = MutableStateFlow(0f)
-    val draftConfidence: StateFlow<Float> = _draftConfidence.asStateFlow()
+    val draftConfidence: StateFlow<Float> = savedStateHandle.getStateFlow("draftConfidence", 0f)
 
-    private val _draftImagePath = MutableStateFlow<String?>(null)
-    val draftImagePath: StateFlow<String?> = _draftImagePath.asStateFlow()
+    val draftImagePath: StateFlow<String?> = savedStateHandle.getStateFlow("draftImagePath", null)
 
     fun updateEntryType(type: EntryType) { savedStateHandle["entryType"] = type }
     fun updateTitle(title: String) { savedStateHandle["draftTitle"] = title }
-    fun updateUrl(url: String) { savedStateHandle["draftUrl"] = url }
+    
+    private var titleFetchJob: kotlinx.coroutines.Job? = null
+    
+    fun updateUrl(url: String) { 
+        savedStateHandle["draftUrl"] = url 
+        
+        val currentTitle = savedStateHandle.get<String>("draftTitle") ?: ""
+        if (currentTitle.isEmpty() && (url.startsWith("http://") || url.startsWith("https://"))) {
+            titleFetchJob?.cancel()
+            titleFetchJob = viewModelScope.launch(Dispatchers.IO) {
+                delay(500)
+                try {
+                    val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = 3000
+                    connection.readTimeout = 3000
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0")
+                    
+                    if (connection.responseCode == 200) {
+                        val inputStream = connection.inputStream
+                        val reader = java.io.BufferedReader(java.io.InputStreamReader(inputStream))
+                        var line: String?
+                        val sb = StringBuilder()
+                        var charsRead = 0
+                        while (reader.readLine().also { line = it } != null && charsRead < 15000) {
+                            sb.append(line)
+                            charsRead += line?.length ?: 0
+                            
+                            val content = sb.toString()
+                            val titleMatcher = java.util.regex.Pattern.compile("<title>(.*?)</title>", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(content)
+                            if (titleMatcher.find()) {
+                                val fetchedTitle = titleMatcher.group(1)?.trim()
+                                if (!fetchedTitle.isNullOrEmpty()) {
+                                    withContext(Dispatchers.Main) {
+                                        if (savedStateHandle.get<String>("draftTitle").isNullOrEmpty()) {
+                                            savedStateHandle["draftTitle"] = fetchedTitle.replace("&amp;", "&").replace("&#39;", "'").replace("&quot;", "\"")
+                                        }
+                                    }
+                                }
+                                break
+                            }
+                        }
+                        reader.close()
+                    }
+                } catch (e: Exception) {
+                    // Ignore errors, allow user to type manually
+                }
+            }
+        }
+    }
     fun updateOpinion(opinion: String) { savedStateHandle["draftOpinion"] = opinion }
     fun updateNoteContent(content: String) { savedStateHandle["draftNoteContent"] = content }
     fun updateDescription(desc: String) { savedStateHandle["draftDescription"] = desc }
@@ -61,13 +116,13 @@ class DraftingViewModel(
     fun updateImagePath(path: String?) { savedStateHandle["draftImagePath"] = path }
 
     fun resetDraft() {
-        _draftTitle.value = ""
-        _draftUrl.value = ""
-        _draftOpinion.value = ""
-        _draftNoteContent.value = ""
-        _draftDescription.value = ""
-        _draftConfidence.value = 0f
-        _draftImagePath.value = null
+        savedStateHandle["draftTitle"] = ""
+        savedStateHandle["draftUrl"] = ""
+        savedStateHandle["draftOpinion"] = ""
+        savedStateHandle["draftNoteContent"] = ""
+        savedStateHandle["draftDescription"] = ""
+        savedStateHandle["draftConfidence"] = 0f
+        savedStateHandle["draftImagePath"] = null
     }
 
     private val _isImporting = MutableStateFlow(false)
@@ -80,18 +135,15 @@ class DraftingViewModel(
      */
     suspend fun createNewResourceEntry(
         url: String, 
-        opinionText: String, 
-        confidence: Int, 
+        opinions: List<OpinionDraft>, 
         title: String? = null, 
         description: String? = null, 
-        topicId: String? = null, 
-        referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
-        imagePath: String? = null,
-        tags: List<com.example.graymatter.domain.Tag> = emptyList()
+        topicId: String? = null
     ): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
         val resourceEntryId = generateUuid()
+        val firstOpinion = opinions.firstOrNull()
         val opinionId = generateUuid()
         
         resourceEntryRepository.createResourceEntryWithDetails(
@@ -104,29 +156,64 @@ class DraftingViewModel(
             title = title ?: extractTitleFromUrl(url),
             description = description,
             opinionId = opinionId,
-            opinionText = opinionText,
-            confidence = confidence,
+            opinionText = firstOpinion?.text ?: "",
+            confidence = firstOpinion?.confidence ?: 50,
             now = now,
-            imagePath = imagePath
+            imagePath = firstOpinion?.imagePath
         )
         
         if (topicId != null) {
             resourceEntryRepository.updateResourceEntryTopic(resourceEntryId, topicId)
         }
         
-        autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, opinionText, referenceLinks)
+        if (firstOpinion != null) {
+            autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, firstOpinion.text, firstOpinion.referenceLinks)
+            
+            firstOpinion.tags.forEach { tag ->
+                tagRepository.addTagToEntry(
+                    id = generateUuid(),
+                    entryId = opinionId,
+                    entryType = "OPINION",
+                    tagId = tag.id,
+                    createdAt = now
+                )
+            }
+        }
         
-        tags.forEach { tag ->
-            tagRepository.addTagToEntry(
-                id = generateUuid(),
-                entryId = opinionId,
-                entryType = "OPINION",
-                tagId = tag.id,
-                createdAt = now
-            )
+        // Save subsequent opinions
+        if (opinions.size > 1) {
+            saveSubsequentOpinions(resourceEntryId, opinions.drop(1), now)
         }
         
         return resourceEntryId
+    }
+
+    private suspend fun saveSubsequentOpinions(resourceEntryId: String, subsequentOpinions: List<OpinionDraft>, now: Long) {
+        for (opinionDraft in subsequentOpinions) {
+            val opId = generateUuid()
+            val op = com.example.graymatter.domain.Opinion(
+                id = opId,
+                itemId = resourceEntryId,
+                text = opinionDraft.text,
+                confidenceScore = opinionDraft.confidence,
+                imagePath = opinionDraft.imagePath,
+                createdAt = now,
+                updatedAt = now
+            )
+            opinionRepository.saveOpinion(op)
+            
+            autoLinkService.syncLinks(opId, com.example.graymatter.domain.ReferenceType.OPINION, opinionDraft.text, opinionDraft.referenceLinks)
+            
+            opinionDraft.tags.forEach { tag ->
+                tagRepository.addTagToEntry(
+                    id = generateUuid(),
+                    entryId = opId,
+                    entryType = "OPINION",
+                    tagId = tag.id,
+                    createdAt = now
+                )
+            }
+        }
     }
 
     /**
@@ -136,18 +223,15 @@ class DraftingViewModel(
         context: Context, 
         title: String, 
         content: String, 
-        opinionText: String, 
-        confidence: Int, 
+        opinions: List<OpinionDraft>, 
         description: String? = null, 
         topicId: String? = null, 
-        referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
-        opinionReferenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
-        imagePath: String? = null,
-        tags: List<com.example.graymatter.domain.Tag> = emptyList()
+        referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList()
     ): String {
         val now = Clock.System.now().toEpochMilliseconds()
         val resourceId = generateUuid()
         val resourceEntryId = generateUuid()
+        val firstOpinion = opinions.firstOrNull()
         val opinionId = generateUuid()
 
         // Create the .md file in internal storage
@@ -164,11 +248,12 @@ class DraftingViewModel(
             filePath = internalFile.absolutePath,
             extractedText = content,
             title = title,
+            description = description,
             opinionId = opinionId,
-            opinionText = opinionText,
-            confidence = confidence,
+            opinionText = firstOpinion?.text ?: "",
+            confidence = firstOpinion?.confidence ?: 50,
             now = now,
-            imagePath = imagePath
+            imagePath = firstOpinion?.imagePath
         )
         
         if (topicId != null) {
@@ -177,17 +262,25 @@ class DraftingViewModel(
         
         // Save note-level links as RESOURCE type (extracted from content)
         autoLinkService.syncLinks(resourceId, com.example.graymatter.domain.ReferenceType.RESOURCE, content, referenceLinks)
-        // Save opinion-level links as OPINION type (extracted from first opinion)
-        autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, opinionText, opinionReferenceLinks)
         
-        tags.forEach { tag ->
-            tagRepository.addTagToEntry(
-                id = generateUuid(),
-                entryId = opinionId,
-                entryType = "OPINION",
-                tagId = tag.id,
-                createdAt = now
-            )
+        if (firstOpinion != null) {
+            // Save opinion-level links as OPINION type (extracted from first opinion)
+            autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, firstOpinion.text, firstOpinion.referenceLinks)
+            
+            firstOpinion.tags.forEach { tag ->
+                tagRepository.addTagToEntry(
+                    id = generateUuid(),
+                    entryId = opinionId,
+                    entryType = "OPINION",
+                    tagId = tag.id,
+                    createdAt = now
+                )
+            }
+        }
+        
+        // Save subsequent opinions
+        if (opinions.size > 1) {
+            saveSubsequentOpinions(resourceEntryId, opinions.drop(1), now)
         }
         
         return resourceEntryId
@@ -201,14 +294,10 @@ class DraftingViewModel(
         context: Context,
         fileName: String,
         uri: Uri,
-        opinionText: String,
-        confidence: Int,
+        opinions: List<OpinionDraft>,
         title: String? = null,
         description: String? = null,
-        topicId: String? = null, 
-        referenceLinks: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
-        imagePath: String? = null,
-        tags: List<com.example.graymatter.domain.Tag> = emptyList()
+        topicId: String? = null
     ): String? {
         _isImporting.value = true
         return try {
@@ -223,6 +312,7 @@ class DraftingViewModel(
             val now = Clock.System.now().toEpochMilliseconds()
             val resourceId = generateUuid()
             val resourceEntryId = generateUuid()
+            val firstOpinion = opinions.firstOrNull()
             val opinionId = generateUuid()
             
             val resourceType = determineResourceType(fileName, internalPath)
@@ -237,26 +327,33 @@ class DraftingViewModel(
                 title = title ?: fileName,
                 description = description,
                 opinionId = opinionId,
-                opinionText = opinionText,
-                confidence = confidence,
+                opinionText = firstOpinion?.text ?: "",
+                confidence = firstOpinion?.confidence ?: 50,
                 now = now,
-                imagePath = imagePath
+                imagePath = firstOpinion?.imagePath
             )
             
             if (topicId != null) {
                 resourceEntryRepository.updateResourceEntryTopic(resourceEntryId, topicId)
             }
             
-            autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, opinionText, referenceLinks)
+            if (firstOpinion != null) {
+                autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, firstOpinion.text, firstOpinion.referenceLinks)
 
-            tags.forEach { tag ->
-                tagRepository.addTagToEntry(
-                    id = generateUuid(),
-                    entryId = opinionId,
-                    entryType = "OPINION",
-                    tagId = tag.id,
-                    createdAt = now
-                )
+                firstOpinion.tags.forEach { tag ->
+                    tagRepository.addTagToEntry(
+                        id = generateUuid(),
+                        entryId = opinionId,
+                        entryType = "OPINION",
+                        tagId = tag.id,
+                        createdAt = now
+                    )
+                }
+            }
+            
+            // Save subsequent opinions
+            if (opinions.size > 1) {
+                saveSubsequentOpinions(resourceEntryId, opinions.drop(1), now)
             }
 
             _isImporting.value = false

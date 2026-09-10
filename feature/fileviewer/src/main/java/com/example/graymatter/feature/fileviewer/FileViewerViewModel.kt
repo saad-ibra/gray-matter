@@ -214,10 +214,12 @@ class FileViewerViewModel(
                         for (i in 0 until total) {
                             stripper.startPage = i + 1
                             stripper.endPage = i + 1
-                            val text = stripper.getText(document) ?: ""
+                            val rawText = stripper.getText(document) ?: ""
+                            // Replace all newlines and multiple spaces with a single space
+                            val text = rawText.replace("\r\n", " ").replace("\n", " ").replace("\r", " ").replace(Regex(" {2,}"), " ").trim()
                             _pageTextMap[i] = text
                             if (res.extractedText == null) {
-                                fullTextBuilder.append(text).append("\n")
+                                fullTextBuilder.append(text).append(" ")
                             }
                         }
                         

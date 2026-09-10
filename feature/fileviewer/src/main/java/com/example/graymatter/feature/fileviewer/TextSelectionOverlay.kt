@@ -81,7 +81,7 @@ fun TextSelectionOverlay(
         if (searchQuery.length < 2 || characters.isEmpty()) {
             emptyList()
         } else {
-            val pageText = characters.joinToString("") { it.unicode }
+            val pageText = characters.assemblePdfText()
             
             // Try exact match first
             var idx = pageText.indexOf(searchQuery, ignoreCase = true)
@@ -155,7 +155,9 @@ fun TextSelectionOverlay(
     var showGlobalDictPopupId by remember { mutableStateOf<String?>(null) }
     var globalDictPopupOffset by remember { mutableStateOf<Offset?>(null) }
 
-    val pageText = remember(characters) { characters.joinToString("") { it.unicode } }
+    val pageTextAssembled = remember(characters) { characters.assemblePdfTextWithMap() }
+    val pageText = pageTextAssembled.text
+    val charIndicesMap = pageTextAssembled.charIndices
 
     LaunchedEffect(pageText) {
         dragStart = null
@@ -338,7 +340,7 @@ fun TextSelectionOverlay(
                 if (preferredIndex != null && preferredIndex >= 0 && preferredIndex < characters.size) {
                     val endIdx = (preferredIndex + quote.length).coerceAtMost(characters.size)
                     val chars = characters.subList(preferredIndex, endIdx)
-                    val textAtRange = chars.joinToString("") { it.unicode }
+                    val textAtRange = chars.assemblePdfText()
                     if (textAtRange.equals(quote, ignoreCase = true)) {
                         return@mapNotNull opinion.id to chars
                     }
@@ -346,9 +348,12 @@ fun TextSelectionOverlay(
                 
                 // 2. Fallback to searching the whole page (e.g. if document text shifted slightly)
                 val startIndex = pageText.indexOf(quote)
-                if (startIndex != -1) {
-                    val chars = characters.subList(startIndex, (startIndex + quote.length).coerceAtMost(characters.size))
-                    return@mapNotNull opinion.id to chars
+                if (startIndex != -1 && startIndex < charIndicesMap.size) {
+                    val startCharIdx = charIndicesMap[startIndex]
+                    val endCharIdx = charIndicesMap[(startIndex + quote.length - 1).coerceAtMost(charIndicesMap.size - 1)]
+                    if (startCharIdx <= endCharIdx && endCharIdx < characters.size) {
+                        return@mapNotNull opinion.id to characters.subList(startCharIdx, endCharIdx + 1)
+                    }
                 }
             }
             null
@@ -369,15 +374,18 @@ fun TextSelectionOverlay(
             while (searchStart < lowerPageText.length) {
                 val idx = lowerPageText.indexOf(phrase, searchStart)
                 if (idx == -1) break
-                val endIdx = minOf(idx + phrase.length, characters.size)
-                if (endIdx <= characters.size && idx < characters.size) {
-                    val matchChars = characters.subList(idx, endIdx)
-                    // Check if this range is already covered by a local persistent highlight
-                    val isCoveredLocally = persistentHighlights.any { (_, localChars) ->
-                        localChars.any { lc -> matchChars.any { mc -> mc === lc } }
-                    }
-                    if (!isCoveredLocally) {
-                        results.add(Triple("global_dict_${originOpinion.id}_$idx", matchChars, originOpinion))
+                
+                if (idx < charIndicesMap.size) {
+                    val startCharIdx = charIndicesMap[idx]
+                    val endCharIdx = charIndicesMap[(idx + phrase.length - 1).coerceAtMost(charIndicesMap.size - 1)]
+                    if (startCharIdx <= endCharIdx && endCharIdx < characters.size) {
+                        val matchChars = characters.subList(startCharIdx, endCharIdx + 1)
+                        val isCoveredLocally = persistentHighlights.any { (_, localChars) ->
+                            localChars.any { lc -> matchChars.any { mc -> mc === lc } }
+                        }
+                        if (!isCoveredLocally) {
+                            results.add(Triple("global_dict_${originOpinion.id}_$idx", matchChars, originOpinion))
+                        }
                     }
                 }
                 searchStart = idx + phrase.length
@@ -800,7 +808,7 @@ fun TextSelectionOverlay(
                 ) {
                     TextButton(onClick = {
                         val textChars = selectedCharacters.value
-                        val text = textChars.joinToString("") { it.unicode }
+                        val text = textChars.assemblePdfText()
                         val startIndex = characters.indexOf(textChars.first())
                         clipboardManager.setText(AnnotatedString(text))
                         dragStart = null
@@ -831,7 +839,7 @@ fun TextSelectionOverlay(
                                     .background(colorValue)
                                     .clickable {
                                         val textChars = selectedCharacters.value
-                                        val text = textChars.joinToString("") { it.unicode }
+                                        val text = textChars.assemblePdfText()
                                         val startIndex = characters.indexOf(textChars.first())
                                         dragStart = null
                                         dragEnd = null
@@ -844,7 +852,7 @@ fun TextSelectionOverlay(
                     
                     TextButton(onClick = {
                         val textChars = selectedCharacters.value
-                        val text = textChars.joinToString("") { it.unicode }
+                        val text = textChars.assemblePdfText()
                         val startIndex = characters.indexOf(textChars.first())
                         dragStart = null
                         dragEnd = null
@@ -885,7 +893,7 @@ fun TextSelectionOverlay(
                 ) {
                     TextButton(onClick = {
                         val chars = persistentHighlights.find { it.first == pId }?.second ?: emptyList()
-                        val text = chars.joinToString("") { it.unicode }
+                        val text = chars.assemblePdfText()
                         clipboardManager.setText(AnnotatedString(text))
                         showAnnotationPopupId = null
                         annotationPopupOffset = null
@@ -900,7 +908,7 @@ fun TextSelectionOverlay(
                     if (isDictionary) {
                         TextButton(onClick = {
                             val chars = persistentHighlights.find { it.first == pId }?.second ?: emptyList()
-                            val text = chars.joinToString("") { it.unicode }
+                            val text = chars.assemblePdfText()
                             showAnnotationPopupId = null
                             annotationPopupOffset = null
                             onActionCompleted("dictionary", text, pId, null)
@@ -911,7 +919,7 @@ fun TextSelectionOverlay(
                         // For non-dictionary entries (Opinions, Annotations)
                         TextButton(onClick = {
                             val chars = persistentHighlights.find { it.first == pId }?.second ?: emptyList()
-                            val text = chars.joinToString("") { it.unicode }
+                            val text = chars.assemblePdfText()
                             showAnnotationPopupId = null
                             annotationPopupOffset = null
                             onActionCompleted("edit", text, pId, null)
@@ -963,7 +971,7 @@ fun TextSelectionOverlay(
                             .padding(4.dp)
                     ) {
                         TextButton(onClick = {
-                            val text = highlightChars.joinToString("") { it.unicode }
+                            val text = highlightChars.assemblePdfText()
                             clipboardManager.setText(AnnotatedString(text))
                             showGlobalDictPopupId = null
                             globalDictPopupOffset = null
@@ -983,7 +991,7 @@ fun TextSelectionOverlay(
 
                         TextButton(onClick = {
                             val textChars = highlightChars
-                            val text = textChars.joinToString("") { it.unicode }
+                            val text = textChars.assemblePdfText()
                             val startIndex = characters.indexOf(textChars.first())
                             showGlobalDictPopupId = null
                             globalDictPopupOffset = null

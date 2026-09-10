@@ -78,6 +78,12 @@ class MainActivity : FragmentActivity() {
         if (intent.action == android.content.Intent.ACTION_SEND) {
             initialSharedUri = intent.getParcelableExtra<android.net.Uri>(android.content.Intent.EXTRA_STREAM)
                 ?: intent.clipData?.getItemAt(0)?.uri
+                ?: intent.getStringExtra(android.content.Intent.EXTRA_TEXT)?.let { 
+                    // Validate if it's a URL
+                    if (it.startsWith("http://") || it.startsWith("https://")) {
+                        android.net.Uri.parse(it)
+                    } else null
+                }
         } else if (intent.action == android.content.Intent.ACTION_VIEW) {
             initialSharedUri = intent.data
         }

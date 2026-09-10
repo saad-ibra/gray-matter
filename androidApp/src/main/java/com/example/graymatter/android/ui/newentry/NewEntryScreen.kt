@@ -51,6 +51,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
  * New Resource Screen.
  * Allows user to add a resource (link/file/note), an optional description, and first opinion.
  */
+data class OpinionBlockState(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    var text: String = "",
+    var confidence: Float = 0.5f,
+    var selectedTemplate: com.example.graymatter.domain.CustomTemplate? = null,
+    var templateFieldValues: Map<String, String> = emptyMap(),
+    var imagePath: String? = null,
+    var selectedTags: List<com.example.graymatter.domain.Tag> = emptyList(),
+    var selectedReferences: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
+    var isConnectionsExpanded: Boolean = false,
+    var showTagConsole: Boolean = false
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewEntryScreen(
@@ -79,7 +92,8 @@ fun NewEntryScreen(
     val confidenceScore by draftingViewModel.draftConfidence.collectAsStateWithLifecycle()
     val currentImagePath by draftingViewModel.draftImagePath.collectAsStateWithLifecycle()
 
-    var showImageSourcePicker by remember { mutableStateOf(false) }
+    var activeImagePickerIndex by remember { mutableStateOf<Int?>(null) }
+    var pendingImagePickerIndex by remember { mutableStateOf<Int?>(null) }
     var tempCameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
 
     var fileUri by remember { mutableStateOf<Uri?>(sharedUri) }
@@ -88,21 +102,27 @@ fun NewEntryScreen(
     // Auto-setup if a shared file was provided
     LaunchedEffect(sharedUri) {
         if (sharedUri != null) {
-            draftingViewModel.updateEntryType(DraftingViewModel.EntryType.FILE)
-            val fileName = com.example.graymatter.android.util.FileUtils.getFileNameFromUri(context, sharedUri)
-            originalFileName = fileName
-            
-            val extractedTitle = fileName.substringBeforeLast('.')
-                .replace(Regex("[_\\-]"), " ")
-                .replace(Regex("\\s+"), " ")
-                .trim()
-                .split(" ")
-                .filter { it.isNotBlank() }
-                .joinToString(" ") { word -> 
-                    word.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+            val scheme = sharedUri.scheme
+            if (scheme == "http" || scheme == "https") {
+                draftingViewModel.updateEntryType(DraftingViewModel.EntryType.LINK)
+                draftingViewModel.updateUrl(sharedUri.toString())
+            } else {
+                draftingViewModel.updateEntryType(DraftingViewModel.EntryType.FILE)
+                val fileName = com.example.graymatter.android.util.FileUtils.getFileNameFromUri(context, sharedUri)
+                originalFileName = fileName
+                
+                val extractedTitle = fileName.substringBeforeLast('.')
+                    .replace(Regex("[_\\-]"), " ")
+                    .replace(Regex("\\s+"), " ")
+                    .trim()
+                    .split(" ")
+                    .filter { it.isNotBlank() }
+                    .joinToString(" ") { word -> 
+                        word.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+                    }
+                if (extractedTitle.isNotBlank()) {
+                    draftingViewModel.updateTitle(extractedTitle)
                 }
-            if (extractedTitle.isNotBlank()) {
-                draftingViewModel.updateTitle(extractedTitle)
             }
         }
     }
@@ -110,30 +130,14 @@ fun NewEntryScreen(
     var showDescription by remember { mutableStateOf(false) }
     var isNoteEditorOpen by remember { mutableStateOf(false) }
     
-    // Custom Template State
-    var selectedTemplate by remember { mutableStateOf<CustomTemplate?>(null) }
-    var templateFieldValues by remember { mutableStateOf(mapOf<String, String>()) }
-
     // Reference Selector State
+    var activeReferencePickerIndex by remember { mutableStateOf<Int?>(null) }
     var showReferenceSelector by remember { mutableStateOf(false) }
     var noteSelectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
-    var opinionSelectedReferences by remember { mutableStateOf<List<com.example.graymatter.domain.ReferenceSelectorItem>>(emptyList()) }
-    var opinionSelectedTags by remember { mutableStateOf<List<com.example.graymatter.domain.Tag>>(emptyList()) }
     var referenceToInsert by remember { mutableStateOf<String?>(null) }
     var showTemplateEditor by remember { mutableStateOf(false) }
 
-    data class OpinionBlockState(
-        val id: String = java.util.UUID.randomUUID().toString(),
-        var text: String = "",
-        var confidence: Float = 0.5f,
-        var selectedTemplate: com.example.graymatter.domain.CustomTemplate? = null,
-        var templateFieldValues: Map<String, String> = emptyMap(),
-        var imagePath: String? = null,
-        var selectedTags: List<com.example.graymatter.domain.Tag> = emptyList(),
-        var selectedReferences: List<com.example.graymatter.domain.ReferenceSelectorItem> = emptyList(),
-        var isConnectionsExpanded: Boolean = false,
-        var showTagConsole: Boolean = false
-    )
+
     val opinionBlocks = remember { androidx.compose.runtime.mutableStateListOf(OpinionBlockState()) }
 
     // Sync first block with VM if it's new (for backwards compatibility with other screens feeding data)
@@ -198,8 +202,13 @@ fun NewEntryScreen(
     ) { uri: Uri? ->
         uri?.let {
             val path = com.example.graymatter.android.util.FileUtils.copyUriToInternalStorage(context, it, "visual_entry_${java.util.UUID.randomUUID()}.jpg")
-            draftingViewModel.updateImagePath(path)
-            selectedTemplate = null
+            if (pendingImagePickerIndex != null && pendingImagePickerIndex!! >= 0 && pendingImagePickerIndex!! < opinionBlocks.size) {
+                val idx = pendingImagePickerIndex!!
+                opinionBlocks[idx] = opinionBlocks[idx].copy(imagePath = path, selectedTemplate = null)
+            } else {
+                draftingViewModel.updateImagePath(path)
+            }
+            pendingImagePickerIndex = null
         }
     }
 
@@ -208,10 +217,19 @@ fun NewEntryScreen(
     ) { success ->
         if (success && tempCameraUri != null) {
             val path = com.example.graymatter.android.util.FileUtils.copyImageAndFixRotation(context, tempCameraUri!!, "visual_entry_${java.util.UUID.randomUUID()}.jpg")
-            draftingViewModel.updateImagePath(path)
-            selectedTemplate = null
+            if (pendingImagePickerIndex != null && pendingImagePickerIndex!! >= 0 && pendingImagePickerIndex!! < opinionBlocks.size) {
+                val idx = pendingImagePickerIndex!!
+                opinionBlocks[idx] = opinionBlocks[idx].copy(imagePath = path, selectedTemplate = null)
+            } else {
+                draftingViewModel.updateImagePath(path)
+            }
+            pendingImagePickerIndex = null
         }
     }
+
+    
+
+    
 
     // Removed: Auto-fill title from URL (now manual via "Load" button)
     /*
@@ -524,253 +542,19 @@ fun NewEntryScreen(
             }
             
 
-            HorizontalDivider(
-                color = GrayMatterTheme.colors.surfaceBorder, 
-                modifier = Modifier.padding(vertical = 12.dp)
-            )
-
-            // Add Opinion Button
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable {
-                        opinionBlocks.add(0, OpinionBlockState())
-                    }
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null, tint = GrayMatterTheme.colors.primary)
-                Spacer(Modifier.width(8.dp))
-                Text("Add Another Opinion", color = GrayMatterTheme.colors.primary, style = MaterialTheme.typography.titleMedium)
-            }
-
-            // Loop over all opinion blocks
-            opinionBlocks.forEachIndexed { index, blockState ->
-                val entryAccentColor = when {
-                    blockState.imagePath != null -> GrayMatterColors.TypeVisual
-                    blockState.selectedTemplate != null -> GrayMatterColors.TypeTemplate
-                    else -> GrayMatterColors.TypeOpinion
-                }
-                
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(entryAccentColor.copy(alpha = 0.1f))
-                        .border(1.dp, entryAccentColor.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-                    // Opinion Section
-                    CustomizedOpinionSection(
-                        opinionInput = blockState.text,
-                        onOpinionChange = { newText ->
-                            opinionBlocks[index] = blockState.copy(text = newText)
-                        },
-                        templates = templates,
-                        selectedTemplate = blockState.selectedTemplate,
-                        onTemplateSelect = { template ->
-                            opinionBlocks[index] = blockState.copy(
-                                selectedTemplate = template,
-                                imagePath = null,
-                                templateFieldValues = template?.headings?.associateWith { "" } ?: emptyMap()
-                            )
-                        },
-                        templateFieldValues = blockState.templateFieldValues,
-                        onFieldValueChange = { heading, value ->
-                            val newMap = blockState.templateFieldValues.toMutableMap().apply { put(heading, value) }
-                            opinionBlocks[index] = blockState.copy(templateFieldValues = newMap)
-                        },
-                        onCreateTemplate = { showTemplateEditor = true },
-                        onShowImageSourcePicker = { showImageSourcePicker = true },
-                        currentImagePath = blockState.imagePath,
-                        onImagePathChange = { path ->
-                            opinionBlocks[index] = blockState.copy(
-                                imagePath = path,
-                                selectedTemplate = null
-                            )
-                        }
-                    )
-
-                    // Confidence Level Section
-                    ConfidenceLevelSection(
-                        confidence = blockState.confidence,
-                        onConfidenceChange = { newConf ->
-                            opinionBlocks[index] = blockState.copy(confidence = newConf)
-                        },
-                        accentColor = entryAccentColor
-                    )
-
-                    // Unified Connections Dropdown
-                    Column {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { 
-                                    opinionBlocks[index] = blockState.copy(isConnectionsExpanded = !blockState.isConnectionsExpanded)
-                                }
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Default.Link,
-                                    null,
-                                    tint = entryAccentColor,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(Modifier.width(12.dp))
-                                Text(
-                                    "CONNECTIONS (${blockState.selectedTags.size + blockState.selectedReferences.size})",
-                                    style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.sp, fontWeight = FontWeight.Bold),
-                                    color = GrayMatterTheme.colors.textSecondary
-                                )
-                            }
-                            Icon(
-                                if (blockState.isConnectionsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                null,
-                                tint = GrayMatterTheme.colors.neutral500
-                            )
-                        }
-
-                        AnimatedVisibility(
-                            visible = blockState.isConnectionsExpanded,
-                            enter = expandVertically(),
-                            exit = shrinkVertically()
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(GrayMatterTheme.colors.surfaceInput)
-                                    .border(1.dp, GrayMatterTheme.colors.surfaceBorder, RoundedCornerShape(12.dp))
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                if (blockState.selectedTags.isEmpty() && blockState.selectedReferences.isEmpty()) {
-                                    Text("No connections added.", color = GrayMatterTheme.colors.neutral600, style = MaterialTheme.typography.bodyMedium)
-                                } else {
-                                    @OptIn(ExperimentalLayoutApi::class)
-                                    FlowRow(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        blockState.selectedTags.forEach { tag ->
-                                            InputChip(
-                                                selected = true,
-                                                onClick = { 
-                                                    val newTags = blockState.selectedTags.filter { it.id != tag.id }
-                                                    opinionBlocks[index] = blockState.copy(selectedTags = newTags)
-                                                },
-                                                label = { Text(tag.name, style = MaterialTheme.typography.labelSmall) },
-                                                leadingIcon = { Icon(Icons.Default.Sell, null, modifier = Modifier.size(14.dp)) },
-                                                trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
-                                                colors = InputChipDefaults.inputChipColors(
-                                                    containerColor = GrayMatterTheme.colors.surface,
-                                                    labelColor = GrayMatterTheme.colors.textPrimary,
-                                                    leadingIconColor = GrayMatterTheme.colors.neutral500,
-                                                    trailingIconColor = GrayMatterTheme.colors.neutral500
-                                                ),
-                                                border = InputChipDefaults.inputChipBorder(
-                                                    enabled = true,
-                                                    selected = true,
-                                                    borderColor = GrayMatterTheme.colors.surfaceBorder
-                                                )
-                                            )
-                                        }
-                                        blockState.selectedReferences.forEach { ref ->
-                                            val text = when (ref) {
-                                                is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
-                                                is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
-                                                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
-                                            }
-                                            InputChip(
-                                                selected = true,
-                                                onClick = { 
-                                                    val newRefs = blockState.selectedReferences.filter { it.id != ref.id }
-                                                    opinionBlocks[index] = blockState.copy(selectedReferences = newRefs)
-                                                },
-                                                label = { Text(text, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
-                                                leadingIcon = { Icon(Icons.Default.Link, null, modifier = Modifier.size(14.dp)) },
-                                                trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
-                                                colors = InputChipDefaults.inputChipColors(
-                                                    containerColor = GrayMatterColors.TypeLink.copy(alpha = 0.1f),
-                                                    labelColor = GrayMatterColors.TypeLink,
-                                                    leadingIconColor = GrayMatterColors.TypeLink,
-                                                    trailingIconColor = GrayMatterColors.TypeLink
-                                                ),
-                                                border = InputChipDefaults.inputChipBorder(
-                                                    enabled = true,
-                                                    selected = true,
-                                                    borderColor = GrayMatterColors.TypeLink.copy(alpha = 0.3f)
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Button(
-                                        onClick = { 
-                                            opinionBlocks[index] = blockState.copy(showTagConsole = true)
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary.copy(alpha = 0.1f), contentColor = GrayMatterTheme.colors.primary)
-                                    ) {
-                                        Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp))
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("Add Tag")
-                                    }
-                                    Button(
-                                        onClick = { 
-                                            referenceSelectorViewModel.clearSelection()
-                                            showReferenceSelector = true 
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.TypeLink.copy(alpha = 0.1f), contentColor = GrayMatterColors.TypeLink)
-                                    ) {
-                                        Icon(Icons.Default.Link, null, modifier = Modifier.size(16.dp))
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("Add Link")
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    if (blockState.showTagConsole) {
-                        com.example.graymatter.android.ui.tags.TagConsoleSheet(
-                            viewModel = tagViewModel,
-                            onDismissRequest = { 
-                                opinionBlocks[index] = blockState.copy(showTagConsole = false)
-                            },
-                            onTagSelected = { tag ->
-                                val newTags = if (!blockState.selectedTags.any { it.id == tag.id }) {
-                                    blockState.selectedTags + tag
-                                } else blockState.selectedTags
-                                opinionBlocks[index] = blockState.copy(showTagConsole = false, selectedTags = newTags)
-                            }
-                        )
-                    }
-                } // End Column for Opinion Block
-            } // End forEachIndexed
-            
-            HorizontalDivider(
-                color = GrayMatterTheme.colors.surfaceBorder, 
-                modifier = Modifier.padding(vertical = 12.dp)
+            Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                OpinionTimeline(
+                    opinionBlocks = opinionBlocks,
+                    templates = templates,
+                    tagViewModel = tagViewModel,
+                referenceSelectorViewModel = referenceSelectorViewModel,
+                onShowTemplateEditor = { showTemplateEditor = true },
+                onShowImageSourcePicker = { activeImagePickerIndex = it },
+                onShowReferenceSelector = { activeReferencePickerIndex = it }
             )
             
-            val firstBlock = opinionBlocks.firstOrNull() ?: OpinionBlockState()
-            val selectedTemplate = firstBlock.selectedTemplate
-            val currentImagePath = firstBlock.imagePath
-            val templateFieldValues = firstBlock.templateFieldValues
-            val opinionSelectedReferences = firstBlock.selectedReferences
-            val opinionSelectedTags = firstBlock.selectedTags
-            val confidenceScore = firstBlock.confidence
-            val opinionText = firstBlock.text
-
+            
+            
         // Save Button logic
         val isLinkValid = entryType == DraftingViewModel.EntryType.LINK && urlValue.isNotBlank()
         val isFileValid = entryType == DraftingViewModel.EntryType.FILE && fileUri != null
@@ -783,33 +567,39 @@ fun NewEntryScreen(
                 coroutineScope.launch {
                     val finalDesc = description.takeIf { it.isNotBlank() }
                     
-                    val finalOpinion = if (selectedTemplate != null && currentImagePath == null) {
-                        val sb = StringBuilder()
-                        sb.appendLine("[TEMPLATE:${selectedTemplate!!.name}]")
-                        selectedTemplate!!.headings.forEach { heading ->
-                            val value = templateFieldValues[heading] ?: ""
-                            if (value.isNotBlank()) {
-                                sb.appendLine("### $heading")
-                                sb.appendLine(value)
-                                sb.appendLine()
+                    val opinionDrafts = opinionBlocks.map { block ->
+                        val finalOpinion = if (block.selectedTemplate != null && block.imagePath == null) {
+                            val sb = StringBuilder()
+                            sb.appendLine("[TEMPLATE:${block.selectedTemplate!!.name}]")
+                            block.selectedTemplate!!.headings.forEach { heading ->
+                                val value = block.templateFieldValues[heading] ?: ""
+                                if (value.isNotBlank()) {
+                                    sb.appendLine("### $heading")
+                                    sb.appendLine(value)
+                                    sb.appendLine()
+                                }
                             }
+                            sb.toString().trim()
+                        } else {
+                            block.text
                         }
-                        sb.toString().trim()
-                    } else {
-                        opinionText
+                        
+                        com.example.graymatter.android.ui.viewmodel.DraftingViewModel.OpinionDraft(
+                            text = finalOpinion,
+                            confidence = (block.confidence * 100).toInt(),
+                            imagePath = block.imagePath,
+                            referenceLinks = block.selectedReferences,
+                            tags = block.selectedTags
+                        )
                     }
 
                     val newItemId = when (entryType) {
                         DraftingViewModel.EntryType.LINK -> draftingViewModel.createNewResourceEntry(
                             url = urlValue,
-                            opinionText = finalOpinion,
-                            confidence = (confidenceScore * 100).toInt(),
+                            opinions = opinionDrafts,
                             title = title.ifBlank { null },
                             description = finalDesc,
-                            topicId = preSelectedTopicId,
-                            referenceLinks = opinionSelectedReferences,
-                            imagePath = currentImagePath,
-                            tags = opinionSelectedTags
+                            topicId = preSelectedTopicId
                         )
                         DraftingViewModel.EntryType.FILE -> {
                             val finalTitle = if (title.isNotBlank() && originalFileName != null && !title.contains(".")) {
@@ -821,14 +611,10 @@ fun NewEntryScreen(
                                 context = context,
                                 fileName = originalFileName ?: "Unknown",
                                 uri = fileUri ?: Uri.EMPTY,
-                                opinionText = finalOpinion,
-                                confidence = (confidenceScore * 100).toInt(),
+                                opinions = opinionDrafts,
                                 title = finalTitle,
                                 description = finalDesc,
-                                topicId = preSelectedTopicId,
-                                referenceLinks = opinionSelectedReferences,
-                                imagePath = currentImagePath,
-                                tags = opinionSelectedTags
+                                topicId = preSelectedTopicId
                             )
                         }
                         DraftingViewModel.EntryType.NOTE -> {
@@ -837,14 +623,10 @@ fun NewEntryScreen(
                                 context = context,
                                 title = finalTitle,
                                 content = noteContent,
-                                opinionText = finalOpinion,
-                                confidence = (confidenceScore * 100).toInt(),
+                                opinions = opinionDrafts,
                                 description = finalDesc,
                                 topicId = preSelectedTopicId,
-                                referenceLinks = noteSelectedReferences,
-                                opinionReferenceLinks = opinionSelectedReferences,
-                                imagePath = currentImagePath,
-                                tags = opinionSelectedTags
+                                referenceLinks = noteSelectedReferences
                             )
                         }
                     }
@@ -865,20 +647,22 @@ fun NewEntryScreen(
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .imePadding()
-                .padding(16.dp)
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 0.dp)
         )
-}
+            } // Close the Timeline+SaveButton wrapper Column
+    }
 
-    if (showReferenceSelector) {
+    if (activeReferencePickerIndex != null) {
         com.example.graymatter.android.ui.components.ReferenceSelectorSheet(
             viewModel = referenceSelectorViewModel,
-            onDismissRequest = { showReferenceSelector = false },
+            onDismissRequest = { activeReferencePickerIndex = null },
             onConfirm = { items ->
-                showReferenceSelector = false
-                if (opinionBlocks.isNotEmpty()) {
-                    val newRefs = (opinionBlocks[0].selectedReferences + items).distinctBy { it.id }
-                    opinionBlocks[0] = opinionBlocks[0].copy(selectedReferences = newRefs)
+                if (activeReferencePickerIndex != null && activeReferencePickerIndex!! >= 0 && activeReferencePickerIndex!! < opinionBlocks.size) {
+                    val idx = activeReferencePickerIndex!!
+                    val newRefs = (opinionBlocks[idx].selectedReferences + items).distinctBy { it.id }
+                    opinionBlocks[idx] = opinionBlocks[idx].copy(selectedReferences = newRefs)
                 }
+                activeReferencePickerIndex = null
             }
         )
     }
@@ -894,9 +678,9 @@ fun NewEntryScreen(
         )
     }
 
-    if (showImageSourcePicker) {
+    if (activeImagePickerIndex != null) {
         androidx.compose.ui.window.Dialog(
-            onDismissRequest = { showImageSourcePicker = false },
+            onDismissRequest = { activeImagePickerIndex = null },
             properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Box(
@@ -906,7 +690,7 @@ fun NewEntryScreen(
                     .clickable(
                         indication = null,
                         interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-                    ) { showImageSourcePicker = false },
+                    ) { activeImagePickerIndex = null },
                 contentAlignment = Alignment.BottomCenter
             ) {
                 Box(
@@ -925,7 +709,7 @@ fun NewEntryScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text("Add Image", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textPrimary)
-                            IconButton(onClick = { showImageSourcePicker = false }) {
+                            IconButton(onClick = { activeImagePickerIndex = null }) {
                                 Icon(Icons.Default.Close, null, tint = GrayMatterTheme.colors.neutral600)
                             }
                         }
@@ -935,7 +719,8 @@ fun NewEntryScreen(
                         // Take Photo option
                         Surface(
                             onClick = {
-                                showImageSourcePicker = false
+                                pendingImagePickerIndex = activeImagePickerIndex
+                                activeImagePickerIndex = null
                                 tempCameraUri = com.example.graymatter.android.util.FileUtils.createTempImageUri(context)
                                 tempCameraUri?.let { cameraLauncher.launch(it) }
                             },
@@ -964,7 +749,8 @@ fun NewEntryScreen(
                         // Gallery option
                         Surface(
                             onClick = {
-                                showImageSourcePicker = false
+                                pendingImagePickerIndex = activeImagePickerIndex
+                                activeImagePickerIndex = null
                                 galleryPickerLauncher.launch("image/*")
                             },
                             color = GrayMatterTheme.colors.surfaceInput,
@@ -1357,4 +1143,280 @@ private fun SaveButton(onClick: () -> Unit, enabled: Boolean, isLoading: Boolean
             Text("Save Entry", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
         }
     }
+}
+
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun OpinionTimeline(
+    opinionBlocks: androidx.compose.runtime.snapshots.SnapshotStateList<OpinionBlockState>,
+    templates: List<CustomTemplate>,
+    tagViewModel: com.example.graymatter.android.ui.viewmodel.TagViewModel,
+    referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel,
+    onShowTemplateEditor: () -> Unit,
+    onShowImageSourcePicker: (Int) -> Unit,
+    onShowReferenceSelector: (Int) -> Unit
+) {
+    // Top Timeline Plus Button
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        IconButton(
+            onClick = { opinionBlocks.add(0, OpinionBlockState()) },
+            modifier = Modifier
+                .size(40.dp)
+                .background(GrayMatterTheme.colors.surface, CircleShape)
+                .border(1.dp, GrayMatterTheme.colors.surfaceBorder, CircleShape)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Add Opinion", tint = GrayMatterTheme.colors.textPrimary)
+        }
+        
+        // Vertical line directly connecting to the first block
+        Box(
+            modifier = Modifier
+                .width(2.dp)
+                .height(16.dp)
+                .background(GrayMatterTheme.colors.surfaceBorder)
+        )
+    }
+
+    // Loop over all opinion blocks
+    opinionBlocks.forEachIndexed { index, blockState ->
+      androidx.compose.runtime.key(blockState.id) {
+        
+        // We use MutableTransitionState for entrance animation
+        val state = remember { androidx.compose.animation.core.MutableTransitionState(false).apply { targetState = true } }
+        
+        androidx.compose.animation.AnimatedVisibility(
+            visibleState = state,
+            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(expandFrom = androidx.compose.ui.Alignment.Top)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val entryAccentColor = when {
+                    blockState.imagePath != null -> GrayMatterColors.TypeVisual
+                    blockState.selectedTemplate != null -> GrayMatterColors.TypeTemplate
+                    else -> GrayMatterColors.TypeOpinion
+                }
+                
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(entryAccentColor.copy(alpha = 0.1f))
+                        .border(1.dp, entryAccentColor.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    // Opinion Section
+                    CustomizedOpinionSection(
+                        opinionInput = blockState.text,
+                        onOpinionChange = { newText ->
+                            opinionBlocks[index] = blockState.copy(text = newText)
+                        },
+                        templates = templates,
+                        selectedTemplate = blockState.selectedTemplate,
+                        onTemplateSelect = { template ->
+                            opinionBlocks[index] = blockState.copy(
+                                selectedTemplate = template,
+                                imagePath = null,
+                                templateFieldValues = template?.headings?.associateWith { "" } ?: emptyMap()
+                            )
+                        },
+                        templateFieldValues = blockState.templateFieldValues,
+                        onFieldValueChange = { heading, value ->
+                            val newMap = blockState.templateFieldValues.toMutableMap().apply { put(heading, value) }
+                            opinionBlocks[index] = blockState.copy(templateFieldValues = newMap)
+                        },
+                        onCreateTemplate = { onShowTemplateEditor() },
+                        onShowImageSourcePicker = { onShowImageSourcePicker(index) },
+                        currentImagePath = blockState.imagePath,
+                        onImagePathChange = { path ->
+                            opinionBlocks[index] = blockState.copy(
+                                imagePath = path,
+                                selectedTemplate = null
+                            )
+                        }
+                    )
+
+                    // Confidence Level Section
+                    ConfidenceLevelSection(
+                        confidence = blockState.confidence,
+                        onConfidenceChange = { newConf ->
+                            opinionBlocks[index] = blockState.copy(confidence = newConf)
+                        },
+                        accentColor = entryAccentColor
+                    )
+
+                    // Unified Connections Dropdown
+                    Column {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { 
+                                    opinionBlocks[index] = blockState.copy(isConnectionsExpanded = !blockState.isConnectionsExpanded)
+                                }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.Link,
+                                    null,
+                                    tint = entryAccentColor,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    "CONNECTIONS (${blockState.selectedTags.size + blockState.selectedReferences.size})",
+                                    style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.sp, fontWeight = FontWeight.Bold),
+                                    color = GrayMatterTheme.colors.textSecondary
+                                )
+                            }
+                            Icon(
+                                if (blockState.isConnectionsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                null,
+                                tint = GrayMatterTheme.colors.neutral500
+                            )
+                        }
+
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = blockState.isConnectionsExpanded,
+                            enter = androidx.compose.animation.expandVertically(),
+                            exit = androidx.compose.animation.shrinkVertically()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(GrayMatterTheme.colors.surfaceInput)
+                                    .border(1.dp, GrayMatterTheme.colors.surfaceBorder, RoundedCornerShape(12.dp))
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                if (blockState.selectedTags.isEmpty() && blockState.selectedReferences.isEmpty()) {
+                                    Text("No connections added.", color = GrayMatterTheme.colors.neutral600, style = MaterialTheme.typography.bodyMedium)
+                                } else {
+                                    FlowRow(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        blockState.selectedTags.forEach { tag ->
+                                            androidx.compose.material3.InputChip(
+                                                selected = true,
+                                                onClick = { 
+                                                    val newTags = blockState.selectedTags.filter { it.id != tag.id }
+                                                    opinionBlocks[index] = blockState.copy(selectedTags = newTags)
+                                                },
+                                                label = { Text(tag.name, style = MaterialTheme.typography.labelSmall) },
+                                                leadingIcon = { Icon(Icons.Default.Sell, null, modifier = Modifier.size(14.dp)) },
+                                                trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
+                                                colors = androidx.compose.material3.InputChipDefaults.inputChipColors(
+                                                    containerColor = GrayMatterTheme.colors.surface,
+                                                    labelColor = GrayMatterTheme.colors.textPrimary,
+                                                    leadingIconColor = GrayMatterTheme.colors.neutral500,
+                                                    trailingIconColor = GrayMatterTheme.colors.neutral500
+                                                ),
+                                                border = androidx.compose.material3.InputChipDefaults.inputChipBorder(
+                                                    enabled = true,
+                                                    selected = true,
+                                                    borderColor = GrayMatterTheme.colors.surfaceBorder
+                                                )
+                                            )
+                                        }
+                                        blockState.selectedReferences.forEach { ref ->
+                                            val text = when (ref) {
+                                                is com.example.graymatter.domain.ReferenceSelectorItem.TopicItem -> ref.name
+                                                is com.example.graymatter.domain.ReferenceSelectorItem.ResourceItem -> ref.title
+                                                is com.example.graymatter.domain.ReferenceSelectorItem.DetailItem -> ref.snippet
+                                            }
+                                            androidx.compose.material3.InputChip(
+                                                selected = true,
+                                                onClick = { 
+                                                    val newRefs = blockState.selectedReferences.filter { it.id != ref.id }
+                                                    opinionBlocks[index] = blockState.copy(selectedReferences = newRefs)
+                                                },
+                                                label = { Text(text, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                                leadingIcon = { Icon(Icons.Default.Link, null, modifier = Modifier.size(14.dp)) },
+                                                trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) },
+                                                colors = androidx.compose.material3.InputChipDefaults.inputChipColors(
+                                                    containerColor = GrayMatterColors.TypeLink.copy(alpha = 0.1f),
+                                                    labelColor = GrayMatterColors.TypeLink,
+                                                    leadingIconColor = GrayMatterColors.TypeLink,
+                                                    trailingIconColor = GrayMatterColors.TypeLink
+                                                ),
+                                                border = androidx.compose.material3.InputChipDefaults.inputChipBorder(
+                                                    enabled = true,
+                                                    selected = true,
+                                                    borderColor = GrayMatterColors.TypeLink.copy(alpha = 0.3f)
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Button(
+                                        onClick = { 
+                                            opinionBlocks[index] = blockState.copy(showTagConsole = true)
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary.copy(alpha = 0.1f), contentColor = GrayMatterTheme.colors.primary)
+                                    ) {
+                                        Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Add Tag")
+                                    }
+                                    Button(
+                                        onClick = { 
+                                            referenceSelectorViewModel.clearSelection()
+                                            onShowReferenceSelector(index)
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = GrayMatterColors.TypeLink.copy(alpha = 0.1f), contentColor = GrayMatterColors.TypeLink)
+                                    ) {
+                                        Icon(Icons.Default.Link, null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Add Link")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (blockState.showTagConsole) {
+                        com.example.graymatter.android.ui.tags.TagConsoleSheet(
+                            viewModel = tagViewModel,
+                            onDismissRequest = { 
+                                opinionBlocks[index] = blockState.copy(showTagConsole = false)
+                            },
+                            onTagSelected = { tag ->
+                                val newTags = if (!blockState.selectedTags.any { it.id == tag.id }) {
+                                    blockState.selectedTags + tag
+                                } else blockState.selectedTags
+                                opinionBlocks[index] = blockState.copy(showTagConsole = false, selectedTags = newTags)
+                            }
+                        )
+                    }
+                } // End Column for Opinion Block
+                
+                // Timeline vertical line connecting to next opinion or save button
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentWidth(Alignment.CenterHorizontally)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(2.dp)
+                            .height(24.dp)
+                            .background(GrayMatterTheme.colors.surfaceBorder)
+                    )
+                }
+            } // End Column in AnimatedVisibility
+        } // End AnimatedVisibility
+      } // End key
+    } // End forEachIndexed
 }
