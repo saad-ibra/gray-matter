@@ -74,9 +74,9 @@ Relatrix is built around a few simple concepts that work together.
 
 ### 2. Timeline of Resources
 
-Every resource has a unified timeline to track your reflections and interactions with it.
+Every resource has a unified timeline of cards to track your reflections and interactions with it.
 
-#### General Entries
+#### General Card Entries
 
 | Entry Type | Description |
 |:---|:---|
@@ -84,7 +84,7 @@ Every resource has a unified timeline to track your reflections and interactions
 | **Template** | Structured forms for guided reflection. |
 | **Vision** | A visual note such as a photo, sketch, or screenshot with an optional caption. |
 
-#### PDF Entries
+#### PDF Card Entries
 
 These entries are specific to PDF resources.
 
@@ -92,7 +92,7 @@ These entries are specific to PDF resources.
 |:---|:---|
 | **Annotation** | A highlight or inline note anchored to a specific text passage. |
 | **Bookmark** | A saved point in the document, with additional reading context. |
-| **Lookup** | A definition for a specific phrase or term. |
+| **Lookup** | A specific phrase or term that was looked up through selected search engine in default browser. |
 
 ---
 <br/>
