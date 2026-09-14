@@ -442,7 +442,7 @@ class FileViewerViewModel(
                 page = currentPage,
                 percentPosition = if (totalPages > 0) (currentPage + 1).toDouble() / totalPages else 0.0,
                 title = "Page ${currentPage + 1}",
-                opinion = opinionText,
+                opinion = opinionText.takeIf { it.isNotBlank() },
                 confidenceScore = confidence,
                 createdAt = now
             )
@@ -451,18 +451,6 @@ class FileViewerViewModel(
             
             val item = resourceEntryRepository.getResourceEntryByResourceId(res.id)
             if (item != null) {
-                val opinionId = generateUuid()
-                val opinion = Opinion(
-                    id = opinionId,
-                    itemId = item.id,
-                    text = opinionText,
-                    confidenceScore = confidence,
-                    pageNumber = currentPage,
-                    createdAt = now,
-                    updatedAt = now
-                )
-                opinionRepository.saveOpinion(opinion)
-                autoLinkService.syncLinks(opinionId, com.example.graymatter.domain.ReferenceType.OPINION, opinionText, referenceLinks)
                 resourceEntryRepository.updateResourceEntryOpinionMetadata(item.id, now)
             }
             

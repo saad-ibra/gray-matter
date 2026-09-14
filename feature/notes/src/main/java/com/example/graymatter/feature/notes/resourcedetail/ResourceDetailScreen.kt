@@ -1230,88 +1230,73 @@ private fun BookmarkTimelineItem(
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
-                // Header: serial number + timestamp
-                Row(verticalAlignment = Alignment.Top) {
-                    Text(
-                        text = "%02d".format(serialNumber),
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = com.example.graymatter.android.ui.theme.InterFontFamily
-                        ),
-                        color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Icon(Icons.Default.Bookmark, null, tint = GrayMatterColors.TypeBookmark, modifier = Modifier.size(14.dp))
+                // Header: serial number + timestamp + confidence
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                    Row(modifier = Modifier.weight(1f).padding(end = 12.dp), verticalAlignment = Alignment.Top) {
+                        Text(
+                            text = serialNumber.toString(),
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = com.example.graymatter.android.ui.theme.InterFontFamily
+                            ),
+                            color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+    
+                        Spacer(modifier = Modifier.width(12.dp))
+    
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Icon(Icons.Default.Bookmark, null, tint = GrayMatterColors.TypeBookmark, modifier = Modifier.size(14.dp))
+                                Text(
+                                    text = "BOOKMARK",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                                    color = GrayMatterColors.TypeBookmark
+                                )
+                            }
+    
                             Text(
-                                text = "BOOKMARK",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                                color = GrayMatterColors.TypeBookmark
+                                text = formatDate(bookmark.createdAt).uppercase(),
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
+                                color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.6f)
+                            )
+                            Text(
+                                text = formatTime(bookmark.createdAt).uppercase(),
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp),
+                                color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.5f)
                             )
                         }
+                    }
 
-                        Text(
-                            text = formatDate(bookmark.createdAt).uppercase(),
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
-                            color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.6f)
-                        )
-                        Text(
-                            text = formatTime(bookmark.createdAt).uppercase(),
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp),
-                            color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.5f)
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ConfidenceBadge(score = bookmark.confidenceScore ?: 0)
+                        // Note: Bookmarks don't have a 3-dot menu yet, so we omit it to keep it simple, or we can add an empty Box to keep alignment.
+                        Box(modifier = Modifier.size(24.dp))
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Bookmark title / note
-                if (!bookmark.title.isNullOrBlank()) {
-                    Text(
-                        text = bookmark.title!!,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = GrayMatterTheme.colors.textPrimary,
-                        maxLines = 3
-                    )
-                }
-
-                if (!bookmark.opinion.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = bookmark.opinion!!,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = GrayMatterTheme.colors.textSecondary,
-                        maxLines = 5
-                    )
-                }
-
-                // Confidence bar
-                if (bookmark.confidenceScore != null && bookmark.confidenceScore!! > 0) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                val cleanText = bookmark.opinion ?: bookmark.title ?: ""
+                if (cleanText.isNotBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(GrayMatterTheme.colors.surfaceCard)
+                            .border(1.dp, GrayMatterTheme.colors.surfaceBorder, RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    ) {
                         Text(
-                            text = "${bookmark.confidenceScore}%",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = GrayMatterColors.TypeBookmark
-                        )
-                        LinearProgressIndicator(
-                            progress = { bookmark.confidenceScore!!.toFloat() / 100f },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp)),
-                            color = GrayMatterColors.TypeBookmark,
-                            trackColor = GrayMatterColors.TypeBookmark.copy(alpha = 0.15f)
+                            text = cleanText,
+                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
+                            color = GrayMatterTheme.colors.textPrimary
                         )
                     }
                 }
 
                 // Page tag
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
