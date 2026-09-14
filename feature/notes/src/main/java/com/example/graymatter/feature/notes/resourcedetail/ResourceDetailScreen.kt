@@ -60,6 +60,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
+ * Sealed interface for unified timeline items (opinions + bookmarks).
+ */
+private sealed interface TimelineItem {
+    val createdAt: Long
+    data class OpinionItem(val opinion: Opinion) : TimelineItem {
+        override val createdAt: Long get() = opinion.createdAt
+    }
+    data class BookmarkItem(val bookmark: Bookmark) : TimelineItem {
+        override val createdAt: Long get() = bookmark.createdAt
+    }
+}
+
+/**
  * Resource Details Screen.
  * Features a beautiful animated timeline where opinions and bookmark reflections are unified.
  */
@@ -212,7 +225,7 @@ fun ResourceDetailScreen(
                 var localFocusOpinionId by remember(focusOpinionId) { mutableStateOf(focusOpinionId) }
                 var pulseTrigger by remember { mutableLongStateOf(0L) }
                 
-                // Unified sorted list of Opinions
+                // Unified sorted list of Opinions + Bookmarks
                 val sortedOpinions = remember(resourceEntryDetails.opinions, selectedFilters) {
                     resourceEntryDetails.opinions.sortedByDescending { it.createdAt }
                         .filter { opinion ->
@@ -239,6 +252,14 @@ fun ResourceDetailScreen(
                             
                             selectedFilters.contains(type)
                         }
+                }
+
+                val sortedTimelineItems = remember(sortedOpinions, resourceEntryDetails.bookmarks, selectedFilters) {
+                    val opinionItems = sortedOpinions.map { TimelineItem.OpinionItem(it) }
+                    val bookmarkItems = if (selectedFilters.contains("Bookmark")) {
+                        resourceEntryDetails.bookmarks.map { TimelineItem.BookmarkItem(it) }
+                    } else emptyList()
+                    (opinionItems + bookmarkItems).sortedByDescending { it.createdAt }
                 }
 
                 // Header with unified dropdown menu
@@ -519,6 +540,7 @@ fun ResourceDetailScreen(
                     // Unified Timeline
                     OpinionTimeline(
                         opinions = sortedOpinions,
+                        timelineItems = sortedTimelineItems,
                         scrollState = scrollState,
                         resourceId = resourceEntryDetails.resource.id,
                         isEditing = isEditing,
@@ -1089,39 +1111,227 @@ private fun OpinionTimeline(
     onShareOpinionMarkdown: (Opinion) -> Unit = {},
     onStartEditingOpinion: (String) -> Unit = {},
     pulseTrigger: Long = 0L,
-    initialSearchQuery: String? = null
+    initialSearchQuery: String? = null,
+    timelineItems: List<TimelineItem> = emptyList()
 ) {
     Column {
-        opinions.forEachIndexed { index, opinion ->
-            OpinionTimelineItem(
-                opinion = opinion,
-                scrollState = scrollState,
-                serialNumber = opinions.size - index,
-                isFirst = index == 0,
-                isLast = index == opinions.lastIndex,
-                isEditing = isEditing,
-                isFocused = opinion.id == focusOpinionId,
-                templates = templates,
-                referenceSelectorViewModel = referenceSelectorViewModel,
-                onUpdate = { text, confidence, date, links, tags, imagePath -> onUpdateOpinion(opinion.id, text, confidence, date, links, tags, imagePath) },
-                onDelete = { onDeleteOpinion(opinion.id) },
-                onJump = {
-                    opinion.pageNumber?.let { page ->
-                        onJumpToPage(resourceId, page)
-                    }
-                },
-                onLoadLinks = onLoadLinks,
-                onLoadTags = onLoadTags,
-                onViewInGraph = onViewInGraph,
-                onNavigateToKnowledgeLink = onNavigateToKnowledgeLink,
-                onNavigateToTag = onNavigateToTag,
-                onImageClick = onImageClick,
-                onShareOpinion = onShareOpinion,
-                onShareOpinionMarkdown = onShareOpinionMarkdown,
-                onStartEditing = { onStartEditingOpinion(opinion.id) },
-                pulseTrigger = pulseTrigger,
-                initialSearchQuery = initialSearchQuery
+        timelineItems.forEachIndexed { index, item ->
+            when (item) {
+                is TimelineItem.OpinionItem -> {
+                    val opinion = item.opinion
+                    OpinionTimelineItem(
+                        opinion = opinion,
+                        scrollState = scrollState,
+                        serialNumber = timelineItems.size - index,
+                        isFirst = index == 0,
+                        isLast = index == timelineItems.lastIndex,
+                        isEditing = isEditing,
+                        isFocused = opinion.id == focusOpinionId,
+                        templates = templates,
+                        referenceSelectorViewModel = referenceSelectorViewModel,
+                        onUpdate = { text, confidence, date, links, tags, imagePath -> onUpdateOpinion(opinion.id, text, confidence, date, links, tags, imagePath) },
+                        onDelete = { onDeleteOpinion(opinion.id) },
+                        onJump = {
+                            opinion.pageNumber?.let { page ->
+                                onJumpToPage(resourceId, page)
+                            }
+                        },
+                        onLoadLinks = onLoadLinks,
+                        onLoadTags = onLoadTags,
+                        onViewInGraph = onViewInGraph,
+                        onNavigateToKnowledgeLink = onNavigateToKnowledgeLink,
+                        onNavigateToTag = onNavigateToTag,
+                        onImageClick = onImageClick,
+                        onShareOpinion = onShareOpinion,
+                        onShareOpinionMarkdown = onShareOpinionMarkdown,
+                        onStartEditing = { onStartEditingOpinion(opinion.id) },
+                        pulseTrigger = pulseTrigger,
+                        initialSearchQuery = initialSearchQuery
+                    )
+                }
+                is TimelineItem.BookmarkItem -> {
+                    BookmarkTimelineItem(
+                        bookmark = item.bookmark,
+                        serialNumber = timelineItems.size - index,
+                        isFirst = index == 0,
+                        isLast = index == timelineItems.lastIndex,
+                        onJump = { onJumpToPage(resourceId, item.bookmark.page) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BookmarkTimelineItem(
+    bookmark: Bookmark,
+    serialNumber: Int,
+    isFirst: Boolean,
+    isLast: Boolean,
+    onJump: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+    ) {
+        // Timeline line + dot (yellow for bookmarks)
+        Box(
+            modifier = Modifier
+                .width(32.dp)
+                .fillMaxHeight(),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            val dotSize = if (isFirst) 12.dp else 8.dp
+            val dotTopPadding = 12.dp
+            val lineColor = GrayMatterTheme.colors.neutral800
+
+            if (!isFirst) {
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(12.dp + dotSize / 2)
+                        .background(lineColor)
+                )
+            }
+
+            if (!isLast) {
+                Box(
+                    modifier = Modifier
+                        .padding(top = dotTopPadding + dotSize / 2)
+                        .width(1.dp)
+                        .fillMaxHeight()
+                        .background(lineColor)
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .padding(top = 12.dp)
+                    .size(dotSize)
+                    .clip(CircleShape)
+                    .background(GrayMatterColors.TypeBookmark)
+                    .border(2.dp, GrayMatterTheme.colors.background, CircleShape)
             )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Card content
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .padding(top = 8.dp, bottom = 16.dp, end = 16.dp)
+        ) {
+            Column {
+                // Header: serial number + timestamp
+                Row(verticalAlignment = Alignment.Top) {
+                    Text(
+                        text = "%02d".format(serialNumber),
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = com.example.graymatter.android.ui.theme.InterFontFamily
+                        ),
+                        color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Icon(Icons.Default.Bookmark, null, tint = GrayMatterColors.TypeBookmark, modifier = Modifier.size(14.dp))
+                            Text(
+                                text = "BOOKMARK",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                                color = GrayMatterColors.TypeBookmark
+                            )
+                        }
+
+                        Text(
+                            text = formatDate(bookmark.createdAt).uppercase(),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
+                            color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.6f)
+                        )
+                        Text(
+                            text = formatTime(bookmark.createdAt).uppercase(),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp),
+                            color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Bookmark title / note
+                if (!bookmark.title.isNullOrBlank()) {
+                    Text(
+                        text = bookmark.title!!,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = GrayMatterTheme.colors.textPrimary,
+                        maxLines = 3
+                    )
+                }
+
+                if (!bookmark.opinion.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = bookmark.opinion!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = GrayMatterTheme.colors.textSecondary,
+                        maxLines = 5
+                    )
+                }
+
+                // Confidence bar
+                if (bookmark.confidenceScore != null && bookmark.confidenceScore!! > 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = "${bookmark.confidenceScore}%",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = GrayMatterColors.TypeBookmark
+                        )
+                        LinearProgressIndicator(
+                            progress = { bookmark.confidenceScore!!.toFloat() / 100f },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(2.dp)),
+                            color = GrayMatterColors.TypeBookmark,
+                            trackColor = GrayMatterColors.TypeBookmark.copy(alpha = 0.15f)
+                        )
+                    }
+                }
+
+                // Page tag
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(GrayMatterColors.TypeBookmark.copy(alpha = 0.1f))
+                        .clickable { onJump() }
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Bookmark,
+                            contentDescription = null,
+                            tint = GrayMatterColors.TypeBookmark,
+                            modifier = Modifier.size(10.dp)
+                        )
+                        Text(
+                            "Page ${bookmark.page + 1}",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = GrayMatterColors.TypeBookmark,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
+                }
+            }
         }
     }
 }

@@ -178,7 +178,47 @@ class KnowledgeGraphViewModel(
                 }
             }
 
-            // 4. Setup Reference Links
+            // 4. Fetch and add real Bookmark entities
+            val allResources = resourceRepository.resourcesStream.first()
+            for (resource in allResources) {
+                val bookmarks = resourceRepository.getBookmarks(resource.id)
+                for (bookmark in bookmarks) {
+                    if (bookmark.isDeleted) continue
+                    val resourceNode = nodes.find { it.id == resource.id }
+                    val parentItem = allItems.find { it.resourceId == resource.id }
+                    val parentTopic = if (parentItem?.topicId != null) topicMap[parentItem.topicId] else null
+
+                    val bookmarkNode = GraphNode(
+                        id = bookmark.id,
+                        type = NodeType.BOOKMARK,
+                        label = bookmark.title?.take(20)?.plus("...") ?: "Bookmark pg ${bookmark.page + 1}",
+                        radius = 18f,
+                        parentTopicId = parentTopic?.id,
+                        parentTopicLabel = parentTopic?.name,
+                        parentResourceId = resource.id,
+                        parentResourceLabel = resource.title ?: "Untitled"
+                    )
+                    oldNodesMap[bookmarkNode.id]?.let { old ->
+                        bookmarkNode.x = old.x; bookmarkNode.y = old.y; bookmarkNode.z = old.z
+                        bookmarkNode.vx = old.vx; bookmarkNode.vy = old.vy; bookmarkNode.vz = old.vz
+                    }
+                    nodes.add(bookmarkNode)
+
+                    // Edge: Resource -> Bookmark
+                    if (resourceNode != null && existingEdgePairs.add(resourceNode.id to bookmarkNode.id)) {
+                        edges.add(
+                            GraphEdge(
+                                id = "${resourceNode.id}_${bookmark.id}",
+                                source = resourceNode,
+                                target = bookmarkNode,
+                                weight = 0.8f
+                            )
+                        )
+                    }
+                }
+            }
+
+            // 5. Setup Reference Links
             val existingRefEdges = mutableSetOf<Pair<String, String>>()
             allReferenceLinks.forEach { link ->
                 // Links are created from Opinions, Topics, or Resources to other Types
