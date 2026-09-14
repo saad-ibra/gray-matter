@@ -284,6 +284,15 @@ fun GrayMatterNavigation(
                                             val item = viewModel.resourceEntriesStream.value.find { it.resourceId == node.id }
                                             if (item != null) navController.navigate(NavigationDestination.ResourceDetail.buildRoute(item.id))
                                         }
+                                        com.example.graymatter.feature.graph.NodeType.BOOKMARK -> {
+                                            coroutineScope.launch {
+                                                val bookmark = resourceRepository.getBookmarkById(node.id)
+                                                if (bookmark != null) {
+                                                    val item = viewModel.resourceEntriesStream.value.find { it.resourceId == bookmark.resourceId }
+                                                    if (item != null) navController.navigate(NavigationDestination.ResourceDetail.buildRoute(item.id))
+                                                }
+                                            }
+                                        }
                                         else -> {
                                             coroutineScope.launch {
                                                 val opinion = opinionRepository.getOpinionById(node.id)
@@ -922,6 +931,15 @@ fun GrayMatterNavigation(
                             // Find corresponding item mapped to this resource
                             val item = viewModel.resourceEntriesStream.value.find { it.resourceId == node.id }
                             if (item != null) navController.navigate(NavigationDestination.ResourceDetail.buildRoute(item.id))
+                        }
+                        com.example.graymatter.feature.graph.NodeType.BOOKMARK -> {
+                            coroutineScope.launch {
+                                val bookmark = resourceRepository.getBookmarkById(node.id)
+                                if (bookmark != null) {
+                                    val item = viewModel.resourceEntriesStream.value.find { it.resourceId == bookmark.resourceId }
+                                    if (item != null) navController.navigate(NavigationDestination.ResourceDetail.buildRoute(item.id))
+                                }
+                            }
                         }
                         else -> {
                             // Opinions open the ItemDetail for their parent item

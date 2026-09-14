@@ -1222,9 +1222,14 @@ private fun BookmarkTimelineItem(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .padding(top = 8.dp, bottom = 16.dp, end = 16.dp)
+                .padding(bottom = if (isLast) 16.dp else 24.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(GrayMatterTheme.colors.surface)
+                .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(16.dp))
         ) {
-            Column {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
                 // Header: serial number + timestamp
                 Row(verticalAlignment = Alignment.Top) {
                     Text(
