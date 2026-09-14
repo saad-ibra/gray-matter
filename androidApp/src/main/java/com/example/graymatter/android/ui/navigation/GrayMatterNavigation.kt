@@ -70,6 +70,7 @@ fun GrayMatterNavigation(
     val librarySearchViewModel: com.example.graymatter.android.ui.library.LibrarySearchViewModel = koinViewModel()
     val draftingViewModel: com.example.graymatter.android.ui.viewmodel.DraftingViewModel = koinViewModel()
     val opinionRepository: com.example.graymatter.data.OpinionRepository = koinInject()
+    val resourceRepository: com.example.graymatter.data.ResourceRepository = koinInject()
 
     val topics by viewModel.topicsStream.collectAsStateWithLifecycle(initialValue = emptyList())
     val items by viewModel.resourceEntriesStream.collectAsStateWithLifecycle(initialValue = emptyList())
