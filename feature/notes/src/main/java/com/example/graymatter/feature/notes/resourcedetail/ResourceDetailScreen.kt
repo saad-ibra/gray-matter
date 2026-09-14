@@ -1437,6 +1437,16 @@ private fun BookmarkTimelineItem(
                                     },
                                     onClick = { showItemMenu = false; onDelete() }
                                 )
+                                androidx.compose.material3.HorizontalDivider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Icon(Icons.Default.Launch, null, tint = GrayMatterColors.TypeBookmark, modifier = Modifier.size(18.dp))
+                                            Text("Jump to Page ${bookmark.page + 1}", color = GrayMatterTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
+                                        }
+                                    },
+                                    onClick = { showItemMenu = false; onJump() }
+                                )
                             }
                         }
                     }
@@ -1481,7 +1491,6 @@ private fun BookmarkTimelineItem(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
                         .background(GrayMatterColors.TypeBookmark.copy(alpha = 0.1f))
-                        .clickable { onJump() }
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -3179,47 +3188,6 @@ private fun BookmarkEditDialog(
 ) {
     var text by remember { mutableStateOf(bookmark.opinion ?: bookmark.title ?: "") }
     var confidence by remember { mutableFloatStateOf((bookmark.confidenceScore ?: 0) / 100f) }
-    var showDateTimePicker by remember { mutableStateOf(false) }
-    var createdAt by remember { mutableLongStateOf(bookmark.createdAt) }
-    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = createdAt)
-    val timePickerState = rememberTimePickerState(
-        initialHour = java.util.Calendar.getInstance().apply { timeInMillis = createdAt }.get(java.util.Calendar.HOUR_OF_DAY),
-        initialMinute = java.util.Calendar.getInstance().apply { timeInMillis = createdAt }.get(java.util.Calendar.MINUTE),
-        is24Hour = false
-    )
-
-    if (showDateTimePicker) {
-        androidx.compose.material3.DatePickerDialog(
-            onDismissRequest = { showDateTimePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { dateMillis ->
-                        val cal = java.util.Calendar.getInstance().apply { timeInMillis = dateMillis }
-                        cal.set(java.util.Calendar.HOUR_OF_DAY, timePickerState.hour)
-                        cal.set(java.util.Calendar.MINUTE, timePickerState.minute)
-                        createdAt = cal.timeInMillis
-                    }
-                    showDateTimePicker = false
-                }) { Text("OK", color = GrayMatterTheme.colors.primary) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDateTimePicker = false }) { Text("Cancel", color = GrayMatterTheme.colors.textPrimary) }
-            },
-            colors = DatePickerDefaults.colors(containerColor = GrayMatterTheme.colors.surface)
-        ) {
-            DatePicker(
-                state = datePickerState,
-                colors = DatePickerDefaults.colors(
-                    selectedDayContainerColor = GrayMatterTheme.colors.primary,
-                    selectedDayContentColor = GrayMatterTheme.colors.onPrimary,
-                    todayContentColor = GrayMatterTheme.colors.primary,
-                    todayDateBorderColor = GrayMatterTheme.colors.primary
-                )
-            )
-            // Time picker could be shown sequentially in a real flow, simplified here
-        }
-    }
-
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier
@@ -3236,15 +3204,6 @@ private fun BookmarkEditDialog(
                     IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
                         Icon(Icons.Default.Close, "Close", tint = GrayMatterTheme.colors.textSecondary, modifier = Modifier.size(20.dp))
                     }
-                }
-
-                // Date Editor
-                Row(
-                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(GrayMatterTheme.colors.surfaceInput).clickable { showDateTimePicker = true }.padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(Icons.Default.CalendarToday, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(14.dp))
-                    Text(text = formatDate(createdAt) + " " + formatTime(createdAt), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textPrimary)
                 }
 
                 // Text Editor
@@ -3282,7 +3241,7 @@ private fun BookmarkEditDialog(
                 // Save Button
                 Button(
                     onClick = {
-                        onSave(text, (confidence * 100).toInt(), createdAt)
+                        onSave(text, (confidence * 100).toInt(), bookmark.createdAt)
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(12.dp),
