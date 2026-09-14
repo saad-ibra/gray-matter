@@ -131,6 +131,21 @@ class GrayMatterViewModel(
     /**
      * Soft deletes an opinion.
      */
+    fun deleteBookmark(bookmarkId: String) {
+        viewModelScope.launch {
+            resourceRepository.softDeleteBookmark(bookmarkId)
+        }
+    }
+
+    fun updateBookmark(bookmarkId: String, text: String, confidence: Int, date: Long) {
+        viewModelScope.launch {
+            val bookmark = resourceRepository.getBookmarkById(bookmarkId)
+            if (bookmark != null) {
+                resourceRepository.saveBookmark(bookmark.copy(opinion = text, confidenceScore = confidence, createdAt = date))
+            }
+        }
+    }
+
     fun deleteOpinion(opinionId: String) {
         viewModelScope.launch {
             val opinion = opinionRepository.getOpinionById(opinionId)

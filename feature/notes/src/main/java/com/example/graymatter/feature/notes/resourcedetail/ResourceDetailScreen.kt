@@ -93,6 +93,10 @@ fun ResourceDetailScreen(
     onAddOpinion: (String, Int, List<com.example.graymatter.domain.ReferenceSelectorItem>, List<com.example.graymatter.domain.Tag>, String?) -> Unit,
     onUpdateOpinion: (String, String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>, List<com.example.graymatter.domain.Tag>, String?) -> Unit,
     onDeleteOpinion: (String) -> Unit,
+    onDeleteBookmark: (String) -> Unit = {},
+    onUpdateBookmark: (String, String, Int, Long) -> Unit = { _, _, _, _ -> },
+    onShareBookmark: (Bookmark) -> Unit = {},
+    onShareBookmarkMarkdown: (Bookmark) -> Unit = {},
     onUndoDeleteOpinion: (String) -> Unit = {},
     onRenameResource: (String) -> Unit,
     onDeleteResourceEntry: () -> Unit,
@@ -1107,6 +1111,10 @@ private fun OpinionTimeline(
     referenceSelectorViewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel?,
     onUpdateOpinion: (String, String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>, List<com.example.graymatter.domain.Tag>, String?) -> Unit,
     onDeleteOpinion: (String) -> Unit,
+    onDeleteBookmark: (String) -> Unit = {},
+    onUpdateBookmark: (String, String, Int, Long) -> Unit = { _, _, _, _ -> },
+    onShareBookmark: (Bookmark) -> Unit = {},
+    onShareBookmarkMarkdown: (Bookmark) -> Unit = {},
     onJumpToPage: (String, Int) -> Unit,
     onLoadLinks: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.ReferenceSelectorItem>>,
     onLoadTags: (String) -> kotlinx.coroutines.flow.Flow<List<com.example.graymatter.domain.Tag>>,
@@ -1117,6 +1125,7 @@ private fun OpinionTimeline(
     onShareOpinion: (Opinion) -> Unit = {},
     onShareOpinionMarkdown: (Opinion) -> Unit = {},
     onStartEditingOpinion: (String) -> Unit = {},
+    onStartEditingBookmark: (String) -> Unit = {},
     pulseTrigger: Long = 0L,
     initialSearchQuery: String? = null,
     timelineItems: List<TimelineItem> = emptyList()
@@ -1163,8 +1172,15 @@ private fun OpinionTimeline(
                         isFirst = index == 0,
                         isLast = index == timelineItems.lastIndex,
                         isFocused = item.bookmark.id == focusOpinionId,
+                        isEditing = isEditing,
                         pulseTrigger = pulseTrigger,
                         scrollState = scrollState,
+                        onUpdate = { text, confidence, date -> onUpdateBookmark(item.bookmark.id, text, confidence, date) },
+                        onDelete = { onDeleteBookmark(item.bookmark.id) },
+                        onViewInGraph = onViewInGraph,
+                        onShareBookmark = onShareBookmark,
+                        onShareBookmarkMarkdown = onShareBookmarkMarkdown,
+                        onStartEditing = { onStartEditingBookmark(item.bookmark.id) },
                         onJump = { onJumpToPage(resourceId, item.bookmark.page) }
                     )
                 }
@@ -1182,10 +1198,18 @@ private fun BookmarkTimelineItem(
     isFirst: Boolean,
     isLast: Boolean,
     isFocused: Boolean = false,
+    isEditing: Boolean = false,
     pulseTrigger: Long = 0L,
     scrollState: ScrollState? = null,
+    onUpdate: (String, Int, Long) -> Unit = { _, _, _ -> },
+    onDelete: () -> Unit = {},
+    onViewInGraph: (String) -> Unit = {},
+    onShareBookmark: (Bookmark) -> Unit = {},
+    onShareBookmarkMarkdown: (Bookmark) -> Unit = {},
+    onStartEditing: () -> Unit = {},
     onJump: () -> Unit
 ) {
+    var showItemMenu by remember { mutableStateOf(false) }
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val dotScale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -1197,23 +1221,40 @@ private fun BookmarkTimelineItem(
     val backgroundColor = remember { androidx.compose.animation.Animatable(Color.Transparent) }
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
 
+    val density = LocalDensity.current
+    val configuration = LocalConfiguration.current
+    var itemHeight by remember { mutableIntStateOf(0) }
+
     LaunchedEffect(isFocused, pulseTrigger) {
         if (isFocused) {
-            bringIntoViewRequester.bringIntoView()
-            backgroundColor.animateTo(
-                targetValue = GrayMatterColors.TypeBookmark.copy(alpha = 0.2f),
-                animationSpec = tween(durationMillis = 300)
-            )
-            backgroundColor.animateTo(
-                targetValue = Color.Transparent,
-                animationSpec = tween(durationMillis = 1000)
-            )
+            val viewportHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
+            val itemH = itemHeight.toFloat()
+            
+            if (itemH > 0) {
+                bringIntoViewRequester.bringIntoView(
+                    rect = androidx.compose.ui.geometry.Rect(
+                        left = 0f,
+                        top = itemH / 2 - viewportHeight / 2,
+                        right = 0f,
+                        bottom = itemH / 2 + viewportHeight / 2
+                    )
+                )
+            } else {
+                bringIntoViewRequester.bringIntoView()
+            }
+
+            val pulseColor = GrayMatterColors.TypeBookmark.copy(alpha = 0.25f)
+            backgroundColor.animateTo(pulseColor, tween(150, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+            backgroundColor.animateTo(Color.Transparent, tween(800, easing = androidx.compose.animation.core.LinearOutSlowInEasing))
         }
     }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
+            .background(backgroundColor.value)
+            .bringIntoViewRequester(bringIntoViewRequester)
+            .onGloballyPositioned { itemHeight = it.size.height }
     ) {
         // Timeline line + dot (yellow for bookmarks)
         Box(
@@ -1309,9 +1350,66 @@ private fun BookmarkTimelineItem(
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ConfidenceBadge(score = bookmark.confidenceScore ?: 0)
-                        // Note: Bookmarks don't have a 3-dot menu yet, so we omit it to keep it simple, or we can add an empty Box to keep alignment.
-                        Box(modifier = Modifier.size(24.dp))
+                        if (bookmark.confidenceScore != null && bookmark.confidenceScore!! > 0) {
+                            ConfidenceBadge(score = bookmark.confidenceScore!!)
+                        }
+                        // 3-dot overflow menu
+                        Box {
+                            IconButton(onClick = { showItemMenu = true }, modifier = Modifier.size(24.dp)) {
+                                Icon(Icons.Default.MoreVert, "More options", tint = GrayMatterTheme.colors.neutral500, modifier = Modifier.size(18.dp))
+                            }
+                            DropdownMenu(
+                                expanded = showItemMenu,
+                                onDismissRequest = { showItemMenu = false },
+                                modifier = Modifier.background(GrayMatterTheme.colors.surface)
+                            ) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Icon(Icons.Default.Hub, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(18.dp))
+                                            Text("View in Relatrix", color = GrayMatterTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
+                                        }
+                                    },
+                                    onClick = { showItemMenu = false; onViewInGraph(bookmark.id) }
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Icon(Icons.Default.Image, null, tint = GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(18.dp))
+                                            Text("Export as Image", color = GrayMatterTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
+                                        }
+                                    },
+                                    onClick = { showItemMenu = false; onShareBookmark(bookmark) }
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Icon(Icons.Default.Description, null, tint = GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(18.dp))
+                                            Text("Export as Markdown", color = GrayMatterTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
+                                        }
+                                    },
+                                    onClick = { showItemMenu = false; onShareBookmarkMarkdown(bookmark) }
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Icon(Icons.Default.Edit, null, tint = GrayMatterTheme.colors.textPrimary, modifier = Modifier.size(18.dp))
+                                            Text("Edit Entry", color = GrayMatterTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
+                                        }
+                                    },
+                                    onClick = { showItemMenu = false; onStartEditing() }
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Icon(Icons.Default.Delete, null, tint = GrayMatterTheme.colors.error, modifier = Modifier.size(18.dp))
+                                            Text("Delete", color = GrayMatterTheme.colors.error, style = MaterialTheme.typography.bodyMedium)
+                                        }
+                                    },
+                                    onClick = { showItemMenu = false; onDelete() }
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -3026,4 +3124,130 @@ private fun formatTime(timestamp: Long): String {
 
 private fun formatFullDate(timestamp: Long): String {
     return SimpleDateFormat("MMM dd, yyyy • hh:mm a", Locale.getDefault()).format(Date(timestamp))
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BookmarkEditDialog(
+    bookmark: Bookmark,
+    onDismiss: () -> Unit,
+    onSave: (String, Int, Long) -> Unit
+) {
+    var text by remember { mutableStateOf(bookmark.opinion ?: bookmark.title ?: "") }
+    var confidence by remember { mutableFloatStateOf((bookmark.confidenceScore ?: 0) / 100f) }
+    var showDateTimePicker by remember { mutableStateOf(false) }
+    var createdAt by remember { mutableLongStateOf(bookmark.createdAt) }
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = createdAt)
+    val timePickerState = rememberTimePickerState(
+        initialHour = java.util.Calendar.getInstance().apply { timeInMillis = createdAt }.get(java.util.Calendar.HOUR_OF_DAY),
+        initialMinute = java.util.Calendar.getInstance().apply { timeInMillis = createdAt }.get(java.util.Calendar.MINUTE),
+        is24Hour = false
+    )
+
+    if (showDateTimePicker) {
+        androidx.compose.material3.DatePickerDialog(
+            onDismissRequest = { showDateTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { dateMillis ->
+                        val cal = java.util.Calendar.getInstance().apply { timeInMillis = dateMillis }
+                        cal.set(java.util.Calendar.HOUR_OF_DAY, timePickerState.hour)
+                        cal.set(java.util.Calendar.MINUTE, timePickerState.minute)
+                        createdAt = cal.timeInMillis
+                    }
+                    showDateTimePicker = false
+                }) { Text("OK", color = GrayMatterTheme.colors.primary) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDateTimePicker = false }) { Text("Cancel", color = GrayMatterTheme.colors.textPrimary) }
+            },
+            colors = DatePickerDefaults.colors(containerColor = GrayMatterTheme.colors.surface)
+        ) {
+            DatePicker(
+                state = datePickerState,
+                colors = DatePickerDefaults.colors(
+                    selectedDayContainerColor = GrayMatterTheme.colors.primary,
+                    selectedDayContentColor = GrayMatterTheme.colors.onPrimary,
+                    todayContentColor = GrayMatterTheme.colors.primary,
+                    todayDateBorderColor = GrayMatterTheme.colors.primary
+                )
+            )
+            // Time picker could be shown sequentially in a real flow, simplified here
+        }
+    }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(GrayMatterTheme.colors.surface)
+                .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(24.dp))
+                .padding(20.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                // Header
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("Edit Bookmark", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textPrimary)
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Close, "Close", tint = GrayMatterTheme.colors.textSecondary, modifier = Modifier.size(20.dp))
+                    }
+                }
+
+                // Date Editor
+                Row(
+                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(GrayMatterTheme.colors.surfaceInput).clickable { showDateTimePicker = true }.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.CalendarToday, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(14.dp))
+                    Text(text = formatDate(createdAt) + " " + formatTime(createdAt), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textPrimary)
+                }
+
+                // Text Editor
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Note", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textSecondary)
+                    Box(modifier = Modifier.fillMaxWidth().height(150.dp).background(GrayMatterTheme.colors.surfaceInput, RoundedCornerShape(12.dp)).border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(12.dp)).padding(12.dp)) {
+                        BasicTextField(
+                            value = text,
+                            onValueChange = { text = it },
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = GrayMatterTheme.colors.textPrimary),
+                            modifier = Modifier.fillMaxSize(),
+                            cursorBrush = SolidColor(GrayMatterTheme.colors.primary)
+                        )
+                    }
+                }
+
+                // Confidence Slider
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Confidence", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.textSecondary)
+                        Text("${(confidence * 100).toInt()}%", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.primary)
+                    }
+                    Slider(
+                        value = confidence,
+                        onValueChange = { confidence = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = SliderDefaults.colors(
+                            thumbColor = GrayMatterTheme.colors.primary,
+                            activeTrackColor = GrayMatterTheme.colors.primary,
+                            inactiveTrackColor = GrayMatterTheme.colors.neutral800
+                        )
+                    )
+                }
+
+                // Save Button
+                Button(
+                    onClick = {
+                        onSave(text, (confidence * 100).toInt(), createdAt)
+                    },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = GrayMatterTheme.colors.primary)
+                ) {
+                    Text("Save Changes", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = GrayMatterTheme.colors.onPrimary)
+                }
+            }
+        }
+    }
 }

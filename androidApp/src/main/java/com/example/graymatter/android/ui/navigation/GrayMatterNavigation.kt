@@ -597,6 +597,30 @@ fun GrayMatterNavigation(
                 onDeleteOpinion = { opinionId ->
                     viewModel.deleteOpinion(opinionId)
                 },
+                onDeleteBookmark = { bookmarkId ->
+                    viewModel.deleteBookmark(bookmarkId)
+                },
+                onUpdateBookmark = { id, text, conf, date ->
+                    viewModel.updateBookmark(id, text, conf, date)
+                },
+                onShareBookmark = { bookmark ->
+                    // Similar to onShareOpinion but for bookmark
+                    // Since it's a bookmark without images, we can just share it as text
+                    val shareIntent = android.content.Intent().apply {
+                        action = android.content.Intent.ACTION_SEND
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_TEXT, "Bookmark: ${bookmark.title ?: ""}\nNote: ${bookmark.opinion ?: ""}\nConfidence: ${bookmark.confidenceScore ?: 0}%")
+                    }
+                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Bookmark"))
+                },
+                onShareBookmarkMarkdown = { bookmark ->
+                    val shareIntent = android.content.Intent().apply {
+                        action = android.content.Intent.ACTION_SEND
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_TEXT, "> ${bookmark.title ?: ""}\n\n${bookmark.opinion ?: ""}")
+                    }
+                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Markdown"))
+                },
                 onRenameResource = { newName ->
                     itemDetails?.resource?.let { resource ->
                         // Maintain extension when renaming if it's a file
