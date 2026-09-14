@@ -137,6 +137,12 @@ class GrayMatterViewModel(
         }
     }
 
+    fun undoDeleteBookmark(bookmarkId: String) {
+        viewModelScope.launch {
+            resourceRepository.undoDeleteBookmark(bookmarkId)
+        }
+    }
+
     fun updateBookmark(bookmarkId: String, text: String, confidence: Int, date: Long) {
         viewModelScope.launch {
             val bookmark = resourceRepository.getBookmarkById(bookmarkId)

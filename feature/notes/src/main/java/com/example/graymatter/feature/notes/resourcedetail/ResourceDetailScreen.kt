@@ -94,6 +94,7 @@ fun ResourceDetailScreen(
     onUpdateOpinion: (String, String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>, List<com.example.graymatter.domain.Tag>, String?) -> Unit,
     onDeleteOpinion: (String) -> Unit,
     onDeleteBookmark: (String) -> Unit = {},
+    onUndoDeleteBookmark: (String) -> Unit = {},
     onUpdateBookmark: (String, String, Int, Long) -> Unit = { _, _, _, _ -> },
     onShareBookmark: (Bookmark) -> Unit = {},
     onShareBookmarkMarkdown: (Bookmark) -> Unit = {},
@@ -184,6 +185,7 @@ fun ResourceDetailScreen(
 
     var deletedResourceInfo by remember { mutableStateOf<Pair<String, String>?>(null) } // ID and Title
     var deletedOpinionInfo by remember { mutableStateOf<String?>(null) } // Opinion ID
+    var deletedBookmarkInfo by remember { mutableStateOf<String?>(null) }
 
     Box(modifier = modifier.fillMaxSize()) {
         Scaffold(
@@ -589,7 +591,10 @@ fun ResourceDetailScreen(
                                 showAddDialog = true // Assuming showAddDialog is used for both Add and Edit
                             }
                         },
-                        onDeleteBookmark = onDeleteBookmark,
+                        onDeleteBookmark = { bookmarkId ->
+                            deletedBookmarkInfo = bookmarkId
+                            onDeleteBookmark(bookmarkId)
+                        },
                         onUpdateBookmark = onUpdateBookmark,
                         onShareBookmark = onShareBookmark,
                         onShareBookmarkMarkdown = onShareBookmarkMarkdown,
@@ -1132,6 +1137,7 @@ private fun OpinionTimeline(
     onUpdateOpinion: (String, String, Int, Long, List<com.example.graymatter.domain.ReferenceSelectorItem>, List<com.example.graymatter.domain.Tag>, String?) -> Unit,
     onDeleteOpinion: (String) -> Unit,
     onDeleteBookmark: (String) -> Unit = {},
+    onUndoDeleteBookmark: (String) -> Unit = {},
     onUpdateBookmark: (String, String, Int, Long) -> Unit = { _, _, _, _ -> },
     onShareBookmark: (Bookmark) -> Unit = {},
     onShareBookmarkMarkdown: (Bookmark) -> Unit = {},

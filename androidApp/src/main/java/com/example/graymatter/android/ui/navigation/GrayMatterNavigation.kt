@@ -600,6 +600,9 @@ fun GrayMatterNavigation(
                 onDeleteBookmark = { bookmarkId ->
                     viewModel.deleteBookmark(bookmarkId)
                 },
+                onUndoDeleteBookmark = { bookmarkId ->
+                    viewModel.undoDeleteBookmark(bookmarkId)
+                },
                 onUpdateBookmark = { id, text, conf, date ->
                     viewModel.updateBookmark(id, text, conf, date)
                 },
