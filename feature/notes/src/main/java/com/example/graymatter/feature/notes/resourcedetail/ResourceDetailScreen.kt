@@ -1249,8 +1249,9 @@ private fun BookmarkTimelineItem(
                 modifier = Modifier
                     .padding(top = 12.dp)
                     .size(dotSize)
+                    .scale(dotScale)
                     .clip(CircleShape)
-                    .background(GrayMatterColors.TypeBookmark)
+                    .background(if (isFirst) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral600)
                     .border(2.dp, GrayMatterTheme.colors.background, CircleShape)
             )
         }
