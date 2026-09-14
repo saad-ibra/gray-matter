@@ -1209,6 +1209,10 @@ private fun BookmarkTimelineItem(
     onStartEditing: () -> Unit = {},
     onJump: () -> Unit
 ) {
+    val cleanInitialText = bookmark.opinion ?: bookmark.title ?: ""
+    var text by remember(cleanInitialText) { mutableStateOf(cleanInitialText) }
+    var confidence by remember(bookmark.confidenceScore) { mutableFloatStateOf((bookmark.confidenceScore ?: 0).toFloat() / 100f) }
+    var showDateTimePicker by remember { mutableStateOf(false) }
     var showItemMenu by remember { mutableStateOf(false) }
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val dotScale by infiniteTransition.animateFloat(
@@ -1336,16 +1340,20 @@ private fun BookmarkTimelineItem(
                                 )
                             }
     
-                            Text(
-                                text = formatDate(bookmark.createdAt).uppercase(),
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
-                                color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.6f)
-                            )
-                            Text(
-                                text = formatTime(bookmark.createdAt).uppercase(),
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp),
-                                color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.5f)
-                            )
+                            if (isEditing) {
+                                DateChip(timestamp = bookmark.createdAt, onClick = { showDateTimePicker = true })
+                            } else {
+                                Text(
+                                    text = formatDate(bookmark.createdAt).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
+                                    color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.6f)
+                                )
+                                Text(
+                                    text = formatTime(bookmark.createdAt).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp),
+                                    color = GrayMatterTheme.colors.textPrimary.copy(alpha = 0.5f)
+                                )
+                            }
                         }
                     }
 
@@ -1415,20 +1423,34 @@ private fun BookmarkTimelineItem(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                val cleanText = bookmark.opinion ?: bookmark.title ?: ""
-                if (cleanText.isNotBlank()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(GrayMatterColors.TypeBookmark.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .border(1.dp, GrayMatterColors.TypeBookmark.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = cleanText,
-                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
-                            color = GrayMatterTheme.colors.textPrimary
-                        )
+                if (isEditing) {
+                    OpinionEditor(
+                        text = text,
+                        confidence = confidence,
+                        onTextChange = { 
+                            text = it
+                            onUpdate(it, (confidence * 100).toInt(), bookmark.createdAt)
+                        },
+                        onConfidenceChange = {
+                            confidence = it
+                            onUpdate(text, (it * 100).toInt(), bookmark.createdAt)
+                        }
+                    )
+                } else {
+                    if (cleanInitialText.isNotBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(GrayMatterColors.TypeBookmark.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                                .border(1.dp, GrayMatterColors.TypeBookmark.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = cleanInitialText,
+                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
+                                color = GrayMatterTheme.colors.textPrimary
+                            )
+                        }
                     }
                 }
 
