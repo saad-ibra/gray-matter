@@ -1358,6 +1358,32 @@ private fun OpinionTimelineItem(
     var showDateTimePicker by remember { mutableStateOf(false) }
     var showItemMenu by remember { mutableStateOf(false) }
 
+    val cleanTextType = opinion.text.replace(Regex("\\[COLOR:[^\\]]+\\]\\s*", RegexOption.IGNORE_CASE), "")
+    val isAnnotation = cleanTextType.startsWith("> ") || cleanTextType.startsWith("[INDEX:")
+    val isDictionary = cleanTextType.startsWith("[DICT")
+    val isTemplate = cleanTextType.startsWith("[TEMPLATE:")
+    val isCustomTitle = cleanTextType.startsWith("[CUSTOM: ")
+    val hasPageNumber = opinion.pageNumber != null
+    val isPureBookmark = hasPageNumber && cleanTextType.isBlank() && opinion.imagePath == null
+    
+    val dynamicTitle = when {
+        isTemplate -> cleanTextType.substringAfter("[TEMPLATE:").substringBefore("]")
+        isCustomTitle -> cleanTextType.substringAfter("[CUSTOM: ").substringBefore("]")
+        else -> "CUSTOM ENTRY"
+    }
+    
+    val isVisual = opinion.imagePath != null
+    
+    val (titleStr, iconVector, typeColor) = when {
+        isVisual -> Triple("VISUAL", Icons.Default.Image, GrayMatterColors.TypeVisual)
+        isDictionary -> Triple("LOOKUP", Icons.Default.MenuBook, GrayMatterColors.TypeLookupMain)
+        isPureBookmark -> Triple("BOOKMARK", Icons.Default.Bookmark, GrayMatterColors.TypeBookmark)
+        isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.TypeAnnotation)
+        isTemplate -> Triple("TEMPLATE", Icons.Default.DashboardCustomize, GrayMatterColors.TypeTemplate)
+        isCustomTitle -> Triple(dynamicTitle.uppercase(), Icons.Default.EditNote, GrayMatterColors.TypeOpinion)
+        else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.TypeOpinion)
+    }
+
     @Composable
     fun highlightText(
         fullText: String,
@@ -1415,7 +1441,6 @@ private fun OpinionTimelineItem(
     val flowTags by onLoadTags(opinion.id).collectAsStateWithLifecycle(initialValue = emptyList())
     var selectedTags by remember(flowTags) { mutableStateOf(flowTags) }
     
-    val hasPageNumber = opinion.pageNumber != null
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val dotScale by infiniteTransition.animateFloat(
@@ -1510,7 +1535,7 @@ private fun OpinionTimelineItem(
                     .size(dotSize)
                     .scale(dotScale)
                     .clip(CircleShape)
-                    .background(if (isFirst) GrayMatterTheme.colors.primary else GrayMatterTheme.colors.neutral600)
+                    .background(typeColor)
                     .border(2.dp, GrayMatterTheme.colors.background, CircleShape)
             )
         }
@@ -1546,38 +1571,12 @@ private fun OpinionTimelineItem(
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Column {
-                        val cleanText = opinion.text.replace(Regex("\\[COLOR:[^\\]]+\\]\\s*", RegexOption.IGNORE_CASE), "")
-                        val isAnnotation = cleanText.startsWith("> ") || cleanText.startsWith("[INDEX:")
-                        val isDictionary = cleanText.startsWith("[DICT")
-                        val isTemplate = cleanText.startsWith("[TEMPLATE:")
-                        val isCustomTitle = cleanText.startsWith("[CUSTOM: ")
-                        val hasPageNumber = opinion.pageNumber != null
-                        val isPureBookmark = hasPageNumber && cleanText.isBlank() && opinion.imagePath == null
-                        
-                        val dynamicTitle = when {
-                            isTemplate -> cleanText.substringAfter("[TEMPLATE:").substringBefore("]")
-                            isCustomTitle -> cleanText.substringAfter("[CUSTOM: ").substringBefore("]")
-                            else -> "CUSTOM ENTRY"
-                        }
-                        
-                        val isVisual = opinion.imagePath != null
-                        
-                        val (title, icon, color) = when {
-                            isVisual -> Triple("VISUAL", Icons.Default.Image, GrayMatterColors.TypeVisual)
-                            isDictionary -> Triple("LOOKUP", Icons.Default.MenuBook, GrayMatterColors.TypeLookupMain)
-                            isPureBookmark -> Triple("BOOKMARK", Icons.Default.Bookmark, GrayMatterColors.TypeBookmark)
-                            isAnnotation -> Triple("ANNOTATION", Icons.Default.FormatQuote, GrayMatterColors.TypeAnnotation)
-                            isTemplate -> Triple("TEMPLATE", Icons.Default.DashboardCustomize, GrayMatterColors.TypeTemplate)
-                            isCustomTitle -> Triple(dynamicTitle.uppercase(), Icons.Default.EditNote, GrayMatterColors.TypeOpinion)
-                            else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.TypeOpinion)
-                        }
-
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Icon(icon, null, tint = color, modifier = Modifier.size(14.dp))
+                            Icon(iconVector, null, tint = typeColor, modifier = Modifier.size(14.dp))
                             Text(
-                                text = title,
+                                text = titleStr,
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                                color = color
+                                color = typeColor
                             )
                         }
 
