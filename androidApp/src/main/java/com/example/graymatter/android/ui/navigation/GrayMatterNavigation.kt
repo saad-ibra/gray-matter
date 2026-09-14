@@ -290,7 +290,7 @@ fun GrayMatterNavigation(
                                                 val bookmark = resourceRepository.getBookmarkById(node.id)
                                                 if (bookmark != null) {
                                                     val item = viewModel.resourceEntriesStream.value.find { it.resourceId == bookmark.resourceId }
-                                                    if (item != null) navController.navigate(NavigationDestination.ResourceDetail.buildRoute(item.id))
+                                                    if (item != null) navController.navigate(NavigationDestination.ResourceDetail.buildRoute(item.id, bookmark.id))
                                                 }
                                             }
                                         }
@@ -938,7 +938,7 @@ fun GrayMatterNavigation(
                                 val bookmark = resourceRepository.getBookmarkById(node.id)
                                 if (bookmark != null) {
                                     val item = viewModel.resourceEntriesStream.value.find { it.resourceId == bookmark.resourceId }
-                                    if (item != null) navController.navigate(NavigationDestination.ResourceDetail.buildRoute(item.id))
+                                    if (item != null) navController.navigate(NavigationDestination.ResourceDetail.buildRoute(item.id, bookmark.id))
                                 }
                             }
                         }

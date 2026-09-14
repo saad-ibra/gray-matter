@@ -77,6 +77,7 @@ private sealed interface TimelineItem {
  * Features a beautiful animated timeline where opinions and bookmark reflections are unified.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+
 @Composable
 fun ResourceDetailScreen(
     resourceEntryDetails: ResourceEntryWithDetails?,
@@ -769,6 +770,7 @@ fun ResourceDetailScreen(
 }
 }
 
+
 @Composable
 private fun RenameDialog(
     currentName: String,
@@ -806,6 +808,7 @@ private fun RenameDialog(
     )
 }
 
+
 @Composable
 private fun SectionHeader(text: String) {
     Text(
@@ -817,6 +820,7 @@ private fun SectionHeader(text: String) {
         color = GrayMatterTheme.colors.neutral500
     )
 }
+
 
 @Composable
 private fun DescriptionEditor(value: String, onValueChange: (String) -> Unit) {
@@ -840,6 +844,7 @@ private fun DescriptionEditor(value: String, onValueChange: (String) -> Unit) {
         )
     }
 }
+
 
 @Composable
 private fun ResourceDetailHeader(
@@ -983,6 +988,7 @@ private fun ResourceDetailHeader(
     }
 }
 
+
 @Composable
 private fun ResourceCard(
     title: String,
@@ -1089,6 +1095,7 @@ private fun ResourceCard(
     }
 }
 
+
 @Composable
 private fun OpinionTimeline(
     opinions: List<Opinion>,
@@ -1155,6 +1162,9 @@ private fun OpinionTimeline(
                         serialNumber = timelineItems.size - index,
                         isFirst = index == 0,
                         isLast = index == timelineItems.lastIndex,
+                        isFocused = item.bookmark.id == focusOpinionId,
+                        pulseTrigger = pulseTrigger,
+                        scrollState = scrollState,
                         onJump = { onJumpToPage(resourceId, item.bookmark.page) }
                     )
                 }
@@ -1163,14 +1173,43 @@ private fun OpinionTimeline(
     }
 }
 
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun BookmarkTimelineItem(
     bookmark: Bookmark,
     serialNumber: Int,
     isFirst: Boolean,
     isLast: Boolean,
+    isFocused: Boolean = false,
+    pulseTrigger: Long = 0L,
+    scrollState: ScrollState? = null,
     onJump: () -> Unit
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val dotScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = if (isFirst) 1.15f else 1f,
+        animationSpec = infiniteRepeatable(tween(1200), RepeatMode.Reverse),
+        label = "scale"
+    )
+
+    val backgroundColor = remember { androidx.compose.animation.Animatable(Color.Transparent) }
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+
+    LaunchedEffect(isFocused, pulseTrigger) {
+        if (isFocused) {
+            bringIntoViewRequester.bringIntoView()
+            backgroundColor.animateTo(
+                targetValue = GrayMatterColors.TypeBookmark.copy(alpha = 0.2f),
+                animationSpec = tween(durationMillis = 300)
+            )
+            backgroundColor.animateTo(
+                targetValue = Color.Transparent,
+                animationSpec = tween(durationMillis = 1000)
+            )
+        }
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1283,8 +1322,8 @@ private fun BookmarkTimelineItem(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(GrayMatterTheme.colors.surfaceCard)
-                            .border(1.dp, GrayMatterTheme.colors.surfaceBorder, RoundedCornerShape(12.dp))
+                            .background(GrayMatterColors.TypeBookmark.copy(alpha = 0.05f))
+                            .border(1.dp, GrayMatterColors.TypeBookmark.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                             .padding(16.dp)
                     ) {
                         Text(
@@ -1327,6 +1366,7 @@ private fun BookmarkTimelineItem(
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+
 @Composable
 private fun OpinionTimelineItem(
     opinion: Opinion,
@@ -1384,7 +1424,8 @@ private fun OpinionTimelineItem(
         else -> Triple("OPINION", Icons.Default.QuestionAnswer, GrayMatterColors.TypeOpinion)
     }
 
-    @Composable
+    
+@Composable
     fun highlightText(
         fullText: String,
         query: String?,
@@ -2285,6 +2326,7 @@ private fun OpinionTimelineItem(
     }
 }
 
+
 @Composable
 private fun DynamicEntryEditor(
     template: CustomTemplate,
@@ -2403,6 +2445,7 @@ private fun formatTemplateContent(template: CustomTemplate, values: Map<String, 
     return sb.toString().trim()
 }
 
+
 @Composable
 private fun DateChip(timestamp: Long, onClick: () -> Unit) {
     Box(
@@ -2428,6 +2471,7 @@ private fun DateChip(timestamp: Long, onClick: () -> Unit) {
     }
 }
 
+
 @Composable
 private fun ConfidenceBadge(score: Int) {
     Box(
@@ -2449,6 +2493,7 @@ private fun ConfidenceBadge(score: Int) {
     }
 }
 
+
 @Composable
 private fun OpinionEditor(text: String, confidence: Float, onTextChange: (String) -> Unit, onConfidenceChange: (Float) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -2468,6 +2513,7 @@ private fun OpinionEditor(text: String, confidence: Float, onTextChange: (String
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 private fun DateTimePicker(initialTimestamp: Long, onDismiss: () -> Unit, onConfirm: (Long) -> Unit) {
     var isTimeStep by remember { mutableStateOf(false) }
@@ -2509,6 +2555,7 @@ private fun DateTimePicker(initialTimestamp: Long, onDismiss: () -> Unit, onConf
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 private fun OpinionEditDialog(
     viewModel: com.example.graymatter.viewmodel.ReferenceSelectorViewModel? = null,
