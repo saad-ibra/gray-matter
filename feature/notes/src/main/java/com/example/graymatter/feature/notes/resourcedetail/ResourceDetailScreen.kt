@@ -127,6 +127,7 @@ fun ResourceDetailScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var showTemplateEditor by remember { mutableStateOf(false) }
     var showEditDialogId by remember { mutableStateOf<String?>(null) }
+    var showEditBookmarkDialogId by remember { mutableStateOf<String?>(null) }
     var showRenameDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var description by remember(resourceEntryDetails?.resourceEntry?.description) { mutableStateOf(resourceEntryDetails?.resourceEntry?.description ?: "") }
@@ -588,6 +589,11 @@ fun ResourceDetailScreen(
                                 showAddDialog = true // Assuming showAddDialog is used for both Add and Edit
                             }
                         },
+                        onDeleteBookmark = onDeleteBookmark,
+                        onUpdateBookmark = onUpdateBookmark,
+                        onShareBookmark = onShareBookmark,
+                        onShareBookmarkMarkdown = onShareBookmarkMarkdown,
+                        onStartEditingBookmark = { bookmarkId -> showEditBookmarkDialogId = bookmarkId },
                         pulseTrigger = pulseTrigger,
                         initialSearchQuery = initialSearchQuery
                     )
@@ -620,6 +626,20 @@ fun ResourceDetailScreen(
                     showEditDialogId = null
                 }
             )
+        }
+
+        if (showEditBookmarkDialogId != null && resourceEntryDetails != null) {
+            val bookmarkToEdit = resourceEntryDetails.bookmarks.find { it.id == showEditBookmarkDialogId }
+            if (bookmarkToEdit != null) {
+                BookmarkEditDialog(
+                    bookmark = bookmarkToEdit,
+                    onDismiss = { showEditBookmarkDialogId = null },
+                    onSave = { text, confidence, date ->
+                        onUpdateBookmark(bookmarkToEdit.id, text, confidence, date)
+                        showEditBookmarkDialogId = null
+                    }
+                )
+            }
         }
 
         if (showRenameDialog && resourceEntryDetails != null) {
@@ -1229,6 +1249,7 @@ private fun BookmarkTimelineItem(
     val configuration = LocalConfiguration.current
     var itemHeight by remember { mutableIntStateOf(0) }
 
+    val primaryColor = GrayMatterTheme.colors.primary
     LaunchedEffect(isFocused, pulseTrigger) {
         if (isFocused) {
             val viewportHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
@@ -1247,7 +1268,7 @@ private fun BookmarkTimelineItem(
                 bringIntoViewRequester.bringIntoView()
             }
 
-            val pulseColor = GrayMatterColors.TypeBookmark.copy(alpha = 0.25f)
+            val pulseColor = primaryColor.copy(alpha = 0.25f)
             backgroundColor.animateTo(pulseColor, tween(150, easing = androidx.compose.animation.core.FastOutSlowInEasing))
             backgroundColor.animateTo(Color.Transparent, tween(800, easing = androidx.compose.animation.core.LinearOutSlowInEasing))
         }

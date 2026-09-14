@@ -604,22 +604,34 @@ fun GrayMatterNavigation(
                     viewModel.updateBookmark(id, text, conf, date)
                 },
                 onShareBookmark = { bookmark ->
-                    // Similar to onShareOpinion but for bookmark
-                    // Since it's a bookmark without images, we can just share it as text
-                    val shareIntent = android.content.Intent().apply {
-                        action = android.content.Intent.ACTION_SEND
-                        type = "text/plain"
-                        putExtra(android.content.Intent.EXTRA_TEXT, "Bookmark: ${bookmark.title ?: ""}\nNote: ${bookmark.opinion ?: ""}\nConfidence: ${bookmark.confidenceScore ?: 0}%")
+                    val tempOpinion = com.example.graymatter.domain.Opinion(
+                        id = bookmark.id,
+                        itemId = bookmark.resourceId,
+                        text = bookmark.opinion ?: bookmark.title ?: "",
+                        confidenceScore = bookmark.confidenceScore ?: 0,
+                        pageNumber = bookmark.page,
+                        createdAt = bookmark.createdAt,
+                        updatedAt = bookmark.createdAt
+                    )
+                    val imageFile = com.example.graymatter.android.export.PngShareService.generateOpinionImage(context, tempOpinion, itemDetails?.resource?.title)
+                    if (imageFile != null) {
+                        com.example.graymatter.android.export.PngShareService.shareImage(context, imageFile, "Shared from GrayMatter")
+                    } else {
+                        android.widget.Toast.makeText(context, "Failed to generate image", android.widget.Toast.LENGTH_SHORT).show()
                     }
-                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Bookmark"))
                 },
                 onShareBookmarkMarkdown = { bookmark ->
-                    val shareIntent = android.content.Intent().apply {
-                        action = android.content.Intent.ACTION_SEND
-                        type = "text/plain"
-                        putExtra(android.content.Intent.EXTRA_TEXT, "> ${bookmark.title ?: ""}\n\n${bookmark.opinion ?: ""}")
-                    }
-                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Markdown"))
+                    val tempOpinion = com.example.graymatter.domain.Opinion(
+                        id = bookmark.id,
+                        itemId = bookmark.resourceId,
+                        text = bookmark.opinion ?: bookmark.title ?: "",
+                        confidenceScore = bookmark.confidenceScore ?: 0,
+                        pageNumber = bookmark.page,
+                        createdAt = bookmark.createdAt,
+                        updatedAt = bookmark.createdAt
+                    )
+                    val markdown = ExportService.exportOpinion(tempOpinion, itemDetails?.resource?.title)
+                    shareText(context, markdown, "Bookmark")
                 },
                 onRenameResource = { newName ->
                     itemDetails?.resource?.let { resource ->
