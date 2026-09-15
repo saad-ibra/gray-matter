@@ -154,7 +154,7 @@ fun SettingsScreen(
                 )
                 SettingsButton(
                     icon = Icons.Default.BugReport,
-                    title = "Report Issue / Request Feature",
+                    title = "Help Us Improve",
                     tint = GrayMatterTheme.colors.primary,
                     onClick = {
                         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/saad-ibra/gray-matter/issues"))
