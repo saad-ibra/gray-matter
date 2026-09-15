@@ -43,10 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun HomeScreen(
     viewModel: GrayMatterViewModel,
     homeViewModel: com.example.graymatter.android.ui.viewmodel.HomeViewModel,
-    continueReadingItem: ResourceEntryWithDetails?,
-    continueReadingProgress: com.example.graymatter.domain.ReadingProgress?,
     onCreateNewEntryClick: () -> Unit,
-    onNavigateToLibrary: () -> Unit,
     onNavigateToRecentResources: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onItemClick: (String) -> Unit,

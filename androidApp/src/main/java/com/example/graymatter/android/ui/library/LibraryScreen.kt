@@ -123,7 +123,6 @@ fun LibraryScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
     var selectedTopicForColor by remember { mutableStateOf<com.example.graymatter.domain.Topic?>(null) }
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
     val appPreferences = remember { AppPreferences.getInstance(context) }
     val recentColors by appPreferences.recentTopicColors.collectAsStateWithLifecycle(initialValue = emptyList())
     var newTopicName by remember { mutableStateOf("") }

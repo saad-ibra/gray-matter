@@ -76,7 +76,6 @@ fun LibrarySearchOverlay(
                 onQueryChange = { viewModel.updateQuery(it) },
                 onClose = onDismiss,
                 isSearching = viewModel.isSearching,
-                resultCount = viewModel.filteredResults.size,
                 focusRequester = focusRequester
             )
 
@@ -202,7 +201,6 @@ private fun SearchHeader(
     onQueryChange: (String) -> Unit,
     onClose: () -> Unit,
     isSearching: Boolean,
-    resultCount: Int,
     focusRequester: FocusRequester
 ) {
     Column {

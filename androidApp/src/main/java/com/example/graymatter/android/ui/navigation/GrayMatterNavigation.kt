@@ -185,19 +185,12 @@ fun GrayMatterNavigation(
                     ) { page ->
                     when (page) {
                         0 -> {
-                            val continueReadingItem by homeViewModel.continueReadingResourceEntry.collectAsStateWithLifecycle()
-                            val lastOpenedProgress by homeViewModel.lastOpenedProgress.collectAsStateWithLifecycle()
 
                             HomeScreen(
                                 viewModel = viewModel,
                                 homeViewModel = homeViewModel,
-                                continueReadingItem = continueReadingItem,
-                                continueReadingProgress = lastOpenedProgress,
                                 onCreateNewEntryClick = {
                                     navController.navigate(NavigationDestination.NewEntry.route)
-                                },
-                                onNavigateToLibrary = {
-                                    coroutineScope.launch { pagerState.animateScrollToPage(1) }
                                 },
                                 onItemClick = { resourceEntryId ->
                                     navController.navigate(NavigationDestination.ResourceDetail.buildRoute(resourceEntryId))
@@ -546,7 +539,6 @@ fun GrayMatterNavigation(
         ) { backStackEntry ->
             val resourceEntryId = backStackEntry.arguments?.getString(NavigationDestination.ResourceDetail.ARG_RESOURCE_ENTRY_ID) ?: return@composable
             val focusOpinionId = backStackEntry.arguments?.getString(NavigationDestination.ResourceDetail.ARG_FOCUS_OPINION_ID)
-            val initialSearchQuery = backStackEntry.arguments?.getString(NavigationDestination.ResourceDetail.ARG_SEARCH_QUERY)
             val itemDetails by viewModel.getResourceEntryDetails(resourceEntryId).collectAsStateWithLifecycle(initialValue = null)
             val readingProgress by viewModel.getReadingProgressStream(itemDetails?.resource?.id ?: "").collectAsStateWithLifecycle(initialValue = null)
 
@@ -889,10 +881,7 @@ fun GrayMatterNavigation(
             HomeScreen(
                 viewModel = viewModel,
                 homeViewModel = homeViewModel,
-                continueReadingItem = null,
-                continueReadingProgress = null,
                 onCreateNewEntryClick = {},
-                onNavigateToLibrary = { navController.navigate(NavigationDestination.Home.route) },
                 onNavigateToRecentResources = {},
                 onNavigateToSettings = {},
                 onItemClick = {}
