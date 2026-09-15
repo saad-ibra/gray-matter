@@ -48,7 +48,7 @@ fun HomeScreen(
     onCreateNewEntryClick: () -> Unit,
     onNavigateToLibrary: () -> Unit,
     onNavigateToRecentResources: () -> Unit,
-    onNavigateToProfile: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onItemClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -99,7 +99,7 @@ fun HomeScreen(
                                 )
                             )
                         )
-                        .clickable(onClick = onNavigateToProfile)
+                        .clickable(onClick = onNavigateToSettings)
                         .padding(1.5.dp)
                 ) {
                     Box(
@@ -110,7 +110,7 @@ fun HomeScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Person,
+                            imageVector = Icons.Default.Settings,
                             contentDescription = "Profile",
                             tint = GrayMatterTheme.colors.textSecondary,
                             modifier = Modifier.size(18.dp)

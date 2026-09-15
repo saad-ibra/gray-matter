@@ -1,4 +1,4 @@
-package com.example.graymatter.feature.profile
+package com.example.graymatter.feature.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,7 +26,7 @@ import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.components.TutorialOverlay
 
 @Composable
-fun ProfileScreen(
+fun SettingsScreen(
     onNavigateToTemplates: () -> Unit,
     onNavigateToRecentlyDeleted: () -> Unit,
     onNavigateToLookups: () -> Unit,
@@ -53,7 +53,7 @@ fun ProfileScreen(
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
             item {
-                ProfileHeader(onBackClick)
+                SettingsHeader(onBackClick)
             }
 
             item {
@@ -103,7 +103,7 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    text = "Settings",
+                    text = "System",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = GrayMatterTheme.colors.textSecondary,
                     modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 8.dp)
@@ -289,7 +289,7 @@ private fun SettingsButton(icon: androidx.compose.ui.graphics.vector.ImageVector
 }
 
 @Composable
-private fun ProfileHeader(onBackClick: () -> Unit) {
+private fun SettingsHeader(onBackClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -313,7 +313,7 @@ private fun ProfileHeader(onBackClick: () -> Unit) {
             )
         }
         Text(
-            text = "Profile",
+            text = "Settings",
             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
             color = GrayMatterTheme.colors.textPrimary
         )

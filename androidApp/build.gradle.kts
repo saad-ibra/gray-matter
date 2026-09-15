@@ -59,7 +59,7 @@ dependencies {
     implementation(project(":feature:tags"))
     implementation(project(":feature:graph"))
     implementation(project(":feature:fileviewer"))
-    implementation(project(":feature:profile"))
+    implementation(project(":feature:settings"))
     implementation(project(":feature:notes"))
 
 

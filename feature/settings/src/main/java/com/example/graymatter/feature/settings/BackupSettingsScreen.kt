@@ -1,4 +1,4 @@
-package com.example.graymatter.feature.profile
+package com.example.graymatter.feature.settings
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -34,7 +34,7 @@ import com.example.graymatter.android.backup.BackupFrequency
 import com.example.graymatter.android.backup.BackupInfo
 import com.example.graymatter.android.ui.theme.GrayMatterColors
 import com.example.graymatter.android.ui.theme.GrayMatterTheme
-import com.example.graymatter.feature.profile.BackupUiState
+import com.example.graymatter.feature.settings.BackupUiState
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*

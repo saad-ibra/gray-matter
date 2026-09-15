@@ -9,7 +9,7 @@ sealed class NavigationDestination(val route: String) {
     
     object Library : NavigationDestination("library")
     
-    object Profile : NavigationDestination("profile")
+    object Settings : NavigationDestination("settings")
     
     object Lookups : NavigationDestination("lookups")
     

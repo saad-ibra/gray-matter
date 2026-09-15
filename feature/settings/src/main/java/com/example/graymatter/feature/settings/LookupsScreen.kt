@@ -1,4 +1,4 @@
-package com.example.graymatter.feature.profile
+package com.example.graymatter.feature.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
