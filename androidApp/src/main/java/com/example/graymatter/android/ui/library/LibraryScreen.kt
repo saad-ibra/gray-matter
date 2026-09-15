@@ -201,32 +201,34 @@ fun LibraryScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
-
             // Search bar and Topic Menu
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
+                        .height(36.dp)
+                        .clip(CircleShape)
                         .background(GrayMatterTheme.colors.surface)
-                        .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(12.dp))
+                        .border(1.dp, GrayMatterTheme.colors.neutral800, CircleShape)
                         .clickable { showGlobalSearch = true }
-                        .padding(horizontal = 16.dp, vertical = 14.dp)
+                        .padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.CenterStart
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = null,
                             tint = GrayMatterTheme.colors.neutral500,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                         Text(
                             text = "Search",
@@ -237,13 +239,21 @@ fun LibraryScreen(
                 }
                 
                 Box {
-                    IconButton(
-                        onClick = { showTopicMenu = true },
+                    Box(
                         modifier = Modifier
-                            .background(GrayMatterTheme.colors.surface, CircleShape)
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(GrayMatterTheme.colors.surface)
                             .border(1.dp, GrayMatterTheme.colors.neutral800, CircleShape)
+                            .clickable { showTopicMenu = true },
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.MoreVert, "Topic Menu", tint = GrayMatterTheme.colors.textPrimary)
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Topic Menu",
+                            tint = GrayMatterTheme.colors.textSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                     DropdownMenu(
                         expanded = showTopicMenu,
