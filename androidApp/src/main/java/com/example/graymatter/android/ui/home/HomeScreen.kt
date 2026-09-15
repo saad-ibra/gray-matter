@@ -122,7 +122,7 @@ fun HomeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp),
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
                 AddNewEntryCard(onClick = onCreateNewEntryClick)
@@ -253,8 +253,8 @@ private fun AddNewEntryCard(
 ) {
     Box(
         modifier = modifier
-            .fillMaxWidth(0.85f)
-            .heightIn(min = 140.dp, max = 200.dp),
+            .fillMaxWidth()
+            .height(166.dp),
         contentAlignment = Alignment.Center
     ) {
         // Ambient glow effect

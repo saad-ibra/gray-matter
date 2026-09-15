@@ -281,8 +281,6 @@ fun LibraryScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
             // gridState is declared above so the auto-scroll LaunchedEffect can access it
             
             Box(modifier = Modifier.weight(1f)) {
