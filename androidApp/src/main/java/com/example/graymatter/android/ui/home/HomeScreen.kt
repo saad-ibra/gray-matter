@@ -276,9 +276,9 @@ private fun AddNewEntryCard(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(28.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(GrayMatterTheme.colors.surface)
-                .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(28.dp))
+                .border(1.dp, GrayMatterTheme.colors.neutral800, RoundedCornerShape(16.dp))
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
@@ -332,9 +332,9 @@ private fun ContinueReadingCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(GrayMatterTheme.colors.surface)
-            .border(1.5.dp, GrayMatterTheme.colors.primary.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
+            .border(1.5.dp, GrayMatterTheme.colors.primary.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(24.dp)
     ) {
