@@ -113,7 +113,7 @@ fun AppearanceSettingsScreen(
                 }
             }
 
-            Divider(color = GrayMatterTheme.colors.neutral800)
+            HorizontalDivider(color = GrayMatterTheme.colors.neutral800)
 
             // Display Section
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {

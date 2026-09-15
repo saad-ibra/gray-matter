@@ -196,7 +196,7 @@ fun TopicColorPickerSheet(
                         )
                     }
                 }
-                Divider(color = GrayMatterTheme.colors.neutral800, thickness = 1.dp)
+                HorizontalDivider(color = GrayMatterTheme.colors.neutral800, thickness = 1.dp)
             }
 
             // ── Suggested Colors Grid (6×6) ──
@@ -258,7 +258,7 @@ fun TopicColorPickerSheet(
             }
 
             // ── Divider ──
-            Divider(color = GrayMatterTheme.colors.neutral800, thickness = 1.dp)
+            HorizontalDivider(color = GrayMatterTheme.colors.neutral800, thickness = 1.dp)
 
             // ── Custom Color Section ──
             Text(

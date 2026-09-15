@@ -386,7 +386,7 @@ private fun ContinueReadingCard(
                         )
                     }
                     LinearProgressIndicator(
-                        progress = progress.percentComplete.toFloat(),
+                        progress = { progress.percentComplete.toFloat() },
                         modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
                         color = GrayMatterTheme.colors.primary,
                         trackColor = GrayMatterTheme.colors.neutral800

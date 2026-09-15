@@ -567,7 +567,7 @@ private fun TopicHeader(
                     leadingIcon = { Icon(Icons.Default.Hub, null, tint = GrayMatterTheme.colors.primary) }
                 )
                 
-                Divider(color = GrayMatterTheme.colors.neutral800)
+                HorizontalDivider(color = GrayMatterTheme.colors.neutral800)
                 
                 DropdownMenuItem(
                     text = { Text("Delete Topic", color = GrayMatterTheme.colors.error) },

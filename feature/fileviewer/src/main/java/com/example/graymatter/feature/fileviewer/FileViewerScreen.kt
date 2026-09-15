@@ -925,7 +925,7 @@ fun FileViewerScreen(
                             }
                         }
                         
-                        Divider(color = GrayMatterColors.Neutral800, modifier = Modifier.padding(vertical = 4.dp))
+                        HorizontalDivider(color = GrayMatterColors.Neutral800, modifier = Modifier.padding(vertical = 4.dp))
                         
                         TextButton(
                             onClick = { 

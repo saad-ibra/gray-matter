@@ -875,7 +875,7 @@ private fun TopicCard(
                                 leadingIcon = { Icon(Icons.Default.Hub, null, tint = GrayMatterTheme.colors.primary) }
                             )
 
-                            Divider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))
+                            HorizontalDivider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))
 
                             DropdownMenuItem(
                                 text = { Text("Delete", color = GrayMatterTheme.colors.error) },

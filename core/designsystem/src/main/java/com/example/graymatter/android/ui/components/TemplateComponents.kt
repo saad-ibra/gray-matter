@@ -66,7 +66,7 @@ fun TemplateSelector(
                 )
             }
             
-            Divider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))
+            HorizontalDivider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))
             
             DropdownMenuItem(
                 text = { 

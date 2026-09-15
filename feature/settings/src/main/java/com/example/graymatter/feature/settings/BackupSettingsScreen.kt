@@ -281,7 +281,7 @@ fun BackupSettingsScreen(
                                 }
                             }
 
-                            Divider(color = GrayMatterTheme.colors.neutral800, thickness = 0.5.dp)
+                            HorizontalDivider(color = GrayMatterTheme.colors.neutral800, thickness = 0.5.dp)
 
                             var showTimePicker by remember { mutableStateOf(false) }
 

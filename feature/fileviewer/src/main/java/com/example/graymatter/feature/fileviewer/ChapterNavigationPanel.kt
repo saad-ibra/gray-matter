@@ -65,7 +65,7 @@ fun ChapterNavigationPanel(
                 }
             }
 
-            Divider(color = Color.White.copy(alpha = 0.1f))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
 
             if (chapters.isEmpty()) {
                 Box(

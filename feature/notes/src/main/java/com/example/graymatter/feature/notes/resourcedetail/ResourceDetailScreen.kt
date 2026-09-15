@@ -996,7 +996,7 @@ private fun ResourceDetailHeader(
                             },
                             onClick = { menuExpanded = false; onMoveToTopic() }
                         )
-                        Divider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))
+                        HorizontalDivider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))
                         DropdownMenuItem(
                             text = {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -1880,7 +1880,7 @@ private fun OpinionTimelineItem(
                                 onClick = { showItemMenu = false; onDelete() }
                             )
                             if (opinion.pageNumber != null) {
-                                Divider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))
+                                HorizontalDivider(color = GrayMatterTheme.colors.neutral800, modifier = Modifier.padding(vertical = 4.dp))
                                 DropdownMenuItem(
                                     text = {
                                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

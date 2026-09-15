@@ -3,7 +3,7 @@ package com.example.graymatter.android.backup
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKeys
+import androidx.security.crypto.MasterKey
 
 /**
  * Manages backup settings using EncryptedSharedPreferences.
@@ -13,11 +13,13 @@ import androidx.security.crypto.MasterKeys
 class BackupPreferences(context: Context) {
 
     private val prefs: SharedPreferences by lazy {
-        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
         EncryptedSharedPreferences.create(
-            "graymatter_backup_prefs",
-            masterKeyAlias,
             context,
+            "graymatter_backup_prefs",
+            masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )

@@ -86,7 +86,7 @@ fun SecuritySettingsScreen(
                         onCheckedChange = { viewModel.setAppLockEnabled(it) }
                     )
                     
-                    Divider(color = GrayMatterTheme.colors.neutral800, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 12.dp))
+                    HorizontalDivider(color = GrayMatterTheme.colors.neutral800, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 12.dp))
                     
                     SecurityToggleItem(
                         icon = Icons.Default.VisibilityOff,
@@ -136,7 +136,7 @@ fun SecuritySettingsScreen(
                         }
                     }
                     
-                    Divider(color = GrayMatterTheme.colors.neutral800, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 16.dp))
+                    HorizontalDivider(color = GrayMatterTheme.colors.neutral800, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 16.dp))
                     
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Icon(Icons.Default.VerifiedUser, null, tint = GrayMatterTheme.colors.primary, modifier = Modifier.size(20.dp))
