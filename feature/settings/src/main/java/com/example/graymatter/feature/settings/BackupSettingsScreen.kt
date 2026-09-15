@@ -39,6 +39,10 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.delay
+import android.content.Intent
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,6 +50,8 @@ fun BackupSettingsScreen(
     viewModel: BackupViewModel,
     onBackClick: () -> Unit
 ) {
+    val context = LocalContext.current
+
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showRestoreDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf<BackupInfo?>(null) }
@@ -77,6 +83,20 @@ fun BackupSettingsScreen(
         state.statusMessage?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearStatusMessage()
+        }
+    }
+
+    LaunchedEffect(state.requireRestart) {
+        if (state.requireRestart) {
+            delay(1500) // Give the user time to read the success snackbar
+            val packageManager = context.packageManager
+            val intent = packageManager.getLaunchIntentForPackage(context.packageName)
+            val componentName = intent?.component
+            if (componentName != null) {
+                val mainIntent = Intent.makeRestartActivityTask(componentName)
+                context.startActivity(mainIntent)
+                Runtime.getRuntime().exit(0)
+            }
         }
     }
 

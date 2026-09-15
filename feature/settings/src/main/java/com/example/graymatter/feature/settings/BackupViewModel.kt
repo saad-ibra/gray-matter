@@ -33,7 +33,8 @@ data class BackupUiState(
     val backupTimeHour: Int = 2,
     val backupTimeMinute: Int = 0,
     val is24HourFormat: Boolean = true,
-    val isBackupEnabled: Boolean = false
+    val isBackupEnabled: Boolean = false,
+    val requireRestart: Boolean = false
 )
 
 class BackupViewModel(application: Application) : AndroidViewModel(application) {
@@ -164,7 +165,8 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
             // Note: BackupManager.restoreFromBackup already zeros the CharArray
             _uiState.value = _uiState.value.copy(
                 isRestoring = false,
-                statusMessage = if (success) "Restore complete — please restart the app" else "Restore failed — wrong password or corrupt file"
+                statusMessage = if (success) "Restore complete! Restarting app..." else "Restore failed — wrong password or corrupt file",
+                requireRestart = success
             )
         }
     }
