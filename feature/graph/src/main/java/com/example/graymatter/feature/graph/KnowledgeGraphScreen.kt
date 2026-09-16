@@ -922,8 +922,13 @@ fun KnowledgeGraphScreen(
             verticalAlignment = Alignment.Bottom
         ) {
             val physicsPanel = @Composable {
-                AnimatedVisibility(visible = showPhysicsPanel, enter = fadeIn(), exit = fadeOut()) {
+                val physicsAlpha by androidx.compose.animation.core.animateFloatAsState(
+                    targetValue = if (showPhysicsPanel) 1f else 0f,
+                    label = "physicsAlpha"
+                )
+                if (physicsAlpha > 0f) {
                     Surface(
+                        modifier = Modifier.alpha(physicsAlpha),
                         color = GrayMatterTheme.colors.surface,
                         shape = RoundedCornerShape(14.dp),
                         border = androidx.compose.foundation.BorderStroke(1.dp, GrayMatterTheme.colors.surfaceBorder),
@@ -1292,19 +1297,24 @@ fun KnowledgeGraphScreen(
         }
 
         // Selected Node Card
-        AnimatedVisibility(
-            visible = selectedNode != null,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 100.dp, start = 16.dp, end = 16.dp)
-        ) {
-            selectedNode?.let { node ->
+        var displayNode by remember { mutableStateOf<GraphNode?>(null) }
+        LaunchedEffect(selectedNode) {
+            if (selectedNode != null) displayNode = selectedNode
+        }
+        val infoAlpha by androidx.compose.animation.core.animateFloatAsState(
+            targetValue = if (selectedNode != null) 1f else 0f,
+            label = "infoAlpha"
+        )
+        if (infoAlpha > 0f) {
+            displayNode?.let { node ->
                 Card(
                     colors = CardDefaults.cardColors(containerColor = GrayMatterTheme.colors.surfaceCard),
                     shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 100.dp, start = 16.dp, end = 16.dp)
+                        .alpha(infoAlpha)
+                        .fillMaxWidth(),
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
