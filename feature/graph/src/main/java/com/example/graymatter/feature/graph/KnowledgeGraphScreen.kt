@@ -924,10 +924,11 @@ fun KnowledgeGraphScreen(
             val physicsPanel = @Composable {
                 AnimatedVisibility(visible = showPhysicsPanel, enter = fadeIn(), exit = fadeOut()) {
                     Surface(
-                        color = GrayMatterTheme.colors.surface.copy(alpha = 0.92f),
+                        color = GrayMatterTheme.colors.surface,
                         shape = RoundedCornerShape(14.dp),
-                        border = androidx.compose.foundation.BorderStroke(0.7.dp, GrayMatterTheme.colors.textPrimary.copy(alpha = 0.08f)),
-                        shadowElevation = 8.dp
+                        border = androidx.compose.foundation.BorderStroke(1.dp, GrayMatterTheme.colors.surfaceBorder),
+                        tonalElevation = 0.dp,
+                        shadowElevation = 12.dp
                     ) {
                         Column(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp).width(146.dp),
@@ -992,13 +993,11 @@ fun KnowledgeGraphScreen(
 
             // Main console card
             Surface(
-                color = GrayMatterTheme.colors.surface.copy(alpha = 0.92f),
+                color = GrayMatterTheme.colors.surface,
                 shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(
-                    0.7.dp, GrayMatterTheme.colors.textPrimary.copy(alpha = 0.08f)
-                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, GrayMatterTheme.colors.surfaceBorder),
                 tonalElevation = 0.dp,
-                shadowElevation = 8.dp
+                shadowElevation = 12.dp
             ) {
                 Column(
                     modifier = Modifier.padding(8.dp),
@@ -1115,7 +1114,7 @@ fun KnowledgeGraphScreen(
                         modifier = Modifier
                             .width(96.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(if (showPhysicsPanel) GrayMatterColors.Primary.copy(alpha = 0.12f) else Color.Transparent)
+                            .background(if (showPhysicsPanel) GrayMatterTheme.colors.primary.copy(alpha = 0.12f) else Color.Transparent)
                             .clickable { showPhysicsPanel = !showPhysicsPanel }
                             .padding(horizontal = 4.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -1124,14 +1123,14 @@ fun KnowledgeGraphScreen(
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = null,
-                            tint = if (showPhysicsPanel) GrayMatterColors.Primary else GrayMatterColors.Neutral400,
+                            tint = if (showPhysicsPanel) GrayMatterTheme.colors.primary else GrayMatterColors.Neutral400,
                             modifier = Modifier.size(12.dp)
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
                             text = "Physics",
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.SemiBold),
-                            color = if (showPhysicsPanel) GrayMatterColors.Primary else GrayMatterColors.Neutral400
+                            color = if (showPhysicsPanel) GrayMatterTheme.colors.primary else GrayMatterColors.Neutral400
                         )
                     }
 
@@ -1140,7 +1139,7 @@ fun KnowledgeGraphScreen(
                         modifier = Modifier
                             .width(96.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(if (showBottomFilters) GrayMatterColors.Primary.copy(alpha = 0.12f) else Color.Transparent)
+                            .background(if (showBottomFilters) GrayMatterTheme.colors.primary.copy(alpha = 0.12f) else Color.Transparent)
                             .clickable { showBottomFilters = !showBottomFilters }
                             .padding(horizontal = 4.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -1149,14 +1148,14 @@ fun KnowledgeGraphScreen(
                         Icon(
                             imageVector = Icons.Default.FilterList,
                             contentDescription = null,
-                            tint = if (showBottomFilters) GrayMatterColors.Primary else GrayMatterColors.Neutral400,
+                            tint = if (showBottomFilters) GrayMatterTheme.colors.primary else GrayMatterColors.Neutral400,
                             modifier = Modifier.size(12.dp)
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
                             text = "Filters",
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.SemiBold),
-                            color = if (showBottomFilters) GrayMatterColors.Primary else GrayMatterColors.Neutral400
+                            color = if (showBottomFilters) GrayMatterTheme.colors.primary else GrayMatterColors.Neutral400
                         )
                     }
                 }
@@ -1303,7 +1302,7 @@ fun KnowledgeGraphScreen(
         ) {
             selectedNode?.let { node ->
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF141414)),
+                    colors = CardDefaults.cardColors(containerColor = GrayMatterTheme.colors.surfaceCard),
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.fillMaxWidth(),
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
@@ -1332,7 +1331,7 @@ fun KnowledgeGraphScreen(
                                 onClick = { selectedNode = null },
                                 modifier = Modifier.size(28.dp)
                             ) {
-                                Icon(Icons.Default.Close, "Dismiss", tint = Color(0xFF888888), modifier = Modifier.size(18.dp))
+                                Icon(Icons.Default.Close, "Dismiss", tint = GrayMatterTheme.colors.textTertiary, modifier = Modifier.size(18.dp))
                             }
                         }
 
@@ -1355,13 +1354,13 @@ fun KnowledgeGraphScreen(
                                 Text(
                                     text = stripMarkdown(topicName),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = if (isTopic) Color.White else Color(0xFFAAAAAA),
+                                    color = if (isTopic) GrayMatterTheme.colors.textPrimary else GrayMatterTheme.colors.textSecondary,
                                     modifier = (if (node.parentTopicId != null) Modifier.clickable { onNavigateToTopic(node.parentTopicId!!) } else Modifier).weight(1f, fill = false),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color(0xFF555555), modifier = Modifier.size(16.dp))
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = GrayMatterTheme.colors.textTertiary, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
                             }
                             
@@ -1369,14 +1368,14 @@ fun KnowledgeGraphScreen(
                                 Text(
                                     text = stripMarkdown(resourceName),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = if (isResource) Color.White else Color(0xFFAAAAAA),
+                                    color = if (isResource) GrayMatterTheme.colors.textPrimary else GrayMatterTheme.colors.textSecondary,
                                     modifier = (if (node.parentResourceId != null) Modifier.clickable { onNavigateToResource(node.parentResourceId!!) } else Modifier).weight(1f, fill = false),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 if (entryType != null) {
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color(0xFF555555), modifier = Modifier.size(16.dp))
+                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = GrayMatterTheme.colors.textTertiary, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
                                 }
                             }
@@ -1400,7 +1399,7 @@ fun KnowledgeGraphScreen(
                             Text(
                                 text = stripMarkdown(node.label),
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = Color(0xFFDDDDDD),
+                                color = GrayMatterTheme.colors.textSecondary,
                                 maxLines = 3,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -1418,8 +1417,8 @@ fun KnowledgeGraphScreen(
                                 onClick = { centerRequestTick++ },
                                 modifier = Modifier.size(44.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF2A2A2E),
-                                    contentColor = Color.White
+                                    containerColor = GrayMatterTheme.colors.neutral800,
+                                    contentColor = GrayMatterTheme.colors.textPrimary
                                 ),
                                 shape = RoundedCornerShape(12.dp),
                                 contentPadding = PaddingValues(0.dp)
@@ -1435,8 +1434,8 @@ fun KnowledgeGraphScreen(
                                 onClick = { onNodeDoubleTap(node) },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF2A2A2E),
-                                    contentColor = Color.White
+                                    containerColor = GrayMatterTheme.colors.neutral800,
+                                    contentColor = GrayMatterTheme.colors.textPrimary
                                 ),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
@@ -1470,8 +1469,8 @@ fun KnowledgeGraphScreen(
         showDeleteDialog?.let { nodeToDelete ->
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = null },
-                containerColor = GrayMatterColors.SurfaceDark,
-                title = { Text("Delete ${nodeToDelete.type.name}?", color = Color.White) },
+                containerColor = GrayMatterTheme.colors.surfaceCard,
+                title = { Text("Delete ${nodeToDelete.type.name}?", color = GrayMatterTheme.colors.textPrimary) },
                 text = { Text("This will also delete all its connections and instances. This action can be undone for 10 seconds.", color = GrayMatterColors.Neutral500) },
                 confirmButton = {
                     TextButton(onClick = {
