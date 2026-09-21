@@ -224,6 +224,18 @@ fun GrayMatterNavigation(
                                 onDeleteTopics = { ids -> viewModel.deleteTopics(ids) },
                                 onUndoDeleteTopics = { ids -> viewModel.undoDeleteTopics(ids) },
                                 onRenameTopic = { id, name -> viewModel.renameTopic(id, name) },
+                                onExportLibrary = { uri ->
+                                    coroutineScope.launch {
+                                        android.widget.Toast.makeText(context, "Exporting library...", android.widget.Toast.LENGTH_SHORT).show()
+                                        val exportManager = org.koin.java.KoinJavaComponent.getKoin().get<com.example.graymatter.android.export.LibraryExportManager>()
+                                        val result = exportManager.exportLibraryToZip(context, uri)
+                                        if (result.isSuccess) {
+                                            android.widget.Toast.makeText(context, "Library exported successfully!", android.widget.Toast.LENGTH_LONG).show()
+                                        } else {
+                                            android.widget.Toast.makeText(context, "Export failed: ${result.exceptionOrNull()?.message}", android.widget.Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                },
                                 onExportTopicMarkdown = { topic ->
                                     coroutineScope.launch {
                                         val topicItems = viewModel.getResourceEntriesByTopic(topic.id).first()

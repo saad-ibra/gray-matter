@@ -1,6 +1,7 @@
 package com.example.graymatter.android.di
 
 import com.example.graymatter.android.security.SecureDatabaseKeyManager
+import com.example.graymatter.android.export.LibraryExportManager
 import com.example.graymatter.android.ui.viewmodel.GrayMatterViewModel
 import com.example.graymatter.android.ui.viewmodel.TrashViewModel
 import com.example.graymatter.viewmodel.ReferenceSelectorViewModel
@@ -10,6 +11,7 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
 val androidAppModule = module {
+    factory { LibraryExportManager(get(), get(), get(), get()) }
     // Hardware-backed key management for database encryption
     single { SecureDatabaseKeyManager(androidContext()) }
 

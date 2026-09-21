@@ -70,6 +70,7 @@ fun LibraryScreen(
     onRenameTopic: (String, String) -> Unit,
     onExportTopicMarkdown: (Topic) -> Unit,
     onExportTopicPdf: (Topic) -> Unit,
+    onExportLibrary: (android.net.Uri) -> Unit = {},
     onViewTopicInRelatrix: (String) -> Unit,
     onUpdateOrder: (List<String>) -> Unit,
     onUpdateTopicColor: (String, String?) -> Unit = { _, _ -> },
@@ -118,6 +119,11 @@ fun LibraryScreen(
 
     var topicSortOption by remember { mutableStateOf(com.example.graymatter.android.ui.components.SortOption.CUSTOM) }
     var showSortDialog by remember { mutableStateOf(false) }
+
+    val exportLibraryLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/zip"),
+        onResult = { uri -> uri?.let { onExportLibrary(it) } }
+    )
     var groupOption by remember { mutableStateOf(com.example.graymatter.android.ui.components.GroupOption.NONE) }
     var showTopicMenu by remember { mutableStateOf(false) }
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -276,6 +282,15 @@ fun LibraryScreen(
                                 showSortDialog = true
                             },
                             leadingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Sort, null, tint = GrayMatterTheme.colors.primary) }
+                        )
+                        HorizontalDivider(color = GrayMatterTheme.colors.neutral800)
+                        DropdownMenuItem(
+                            text = { Text("Export Library", color = GrayMatterTheme.colors.textPrimary) },
+                            onClick = {
+                                showTopicMenu = false
+                                exportLibraryLauncher.launch("Relatrix_Library.zip")
+                            },
+                            leadingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Share, null, tint = GrayMatterTheme.colors.primary) }
                         )
                     }
                 }

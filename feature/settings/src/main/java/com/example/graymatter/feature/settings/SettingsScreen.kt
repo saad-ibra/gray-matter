@@ -35,9 +35,15 @@ fun SettingsScreen(
     onNavigateToAppearanceSettings: () -> Unit = {},
     onNavigateToTags: () -> Unit = {},
     onBackClick: () -> Unit,
+    onExportLibrary: (android.net.Uri) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showTutorial by remember { mutableStateOf(false) }
+
+    val exportLibraryLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/zip"),
+        onResult = { uri -> uri?.let { onExportLibrary(it) } }
+    )
     var showSearchEngineDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val appPreferences = remember { AppPreferences.getInstance(context) }
@@ -109,6 +115,12 @@ fun SettingsScreen(
                     modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 8.dp)
                 )
 
+                SettingsButton(
+                    icon = Icons.Default.Download,
+                    title = "Download your data",
+                    tint = GrayMatterTheme.colors.primary,
+                    onClick = { exportLibraryLauncher.launch("Relatrix_Library.zip") }
+                )
                 SettingsButton(
                     icon = Icons.Default.Restore,
                     title = "Recently Deleted",
